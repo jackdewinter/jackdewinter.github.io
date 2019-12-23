@@ -1,5 +1,598 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/all.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2019-12-01T00:00:00-08:00</updated><entry><title>Website Soft Launch!</title><link href="https://jackdewinter.github.io/2019/12/01/website-soft-launch/" rel="alternate"></link><published>2019-12-01T00:00:00-08:00</published><updated>2019-12-01T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2019-12-01:/2019/12/01/website-soft-launch/</id><summary type="html">
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/all.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2019-12-22T00:00:00-08:00</updated><entry><title>Markdown Linter - Parser Testing Strategy</title><link href="https://jackdewinter.github.io/2019/12/22/markdown-linter-parser-testing-strategy/" rel="alternate"></link><published>2019-12-22T00:00:00-08:00</published><updated>2019-12-22T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2019-12-22:/2019/12/22/markdown-linter-parser-testing-strategy/</id><summary type="html">
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In the previous articles in this series, I discussed the requirements for the Markdown
+linter that I am writing.  From a development point of view, the main requirement is
+the need for an accurate stream of tokens emitted by the parser.  Due to the absence of
+any Markdown-to-token parsers …&lt;/p&gt;</summary><content type="html">
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In the previous articles in this series, I discussed the requirements for the Markdown
+linter that I am writing.  From a development point of view, the main requirement is
+the need for an accurate stream of tokens emitted by the parser.  Due to the absence of
+any Markdown-to-token parsers out there, I need to write a new parser that outputs an
+accurate stream of tokens instead of a stream of HTML text. With the last article
+showing the patterns I am using to test the parser, it is now time to figure out a set
+of good strategies for the project, to ensure I can complete it without losing my
+confidence (and sanity).&lt;/p&gt;
+&lt;h2 id="why-is-strategy-important-when-testing"&gt;Why Is Strategy Important When Testing?&lt;a class="headerlink" href="#why-is-strategy-important-when-testing" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;When my son was younger, like most boys in his age group, he loved playing with LEGO and
+he loved the idea of robots.  I mean, come on!  I am a lot older than him and I still
+like LEGO and the idea of robots!  Anyhow, at his school they advertised for 5th grade
+students that were interested in participating in a local
+&lt;a href="http://firstlegoleague.org/"&gt;FIRST Lego League&lt;/a&gt; robotics team. From the first mention
+of it, he was hooked.  As they needed some parents to help out, I participated with him
+as a coach.  That position was a very rewarding, very humbling, and very frustrating
+experience. Rewarding because I got to help 5th graders learn a little taste of what I
+did everyday at work.  Humbling because the look in the kid’s eyes when they really
+understood something reminded me of the benefits of being a coach.  Frustrating because
+of almost all of the rest of the time between those two types of moments.&lt;/p&gt;
+&lt;p&gt;I am not sure which parent, coach, or teacher helped me with a little gem of wisdom,
+but I remember it as clear as day:  People have problems moving boulders, people
+have success moving pebbles.  The idea behind that phrase is that if a team is
+confronted with a problem, it is like encountering a boulder that you need to move out
+of the way. Upon seeing a big boulder, many people take a look at it and say something
+similar to “Wow! That is too big to move!”  But if you take that boulder and break it
+down into smaller rocks, such as pebbles, many people will just laugh with ease at
+moving those rocks, even if they have to do it one at a time.  In a similar fashion,
+breaking down a big problem into smaller problems is a necessity in problem solving a
+situation.  The boulders-to-pebbles phrase is a phrase I still use to this day when
+coaching people in both my professional and personal lives.&lt;/p&gt;
+&lt;p&gt;Writing a parser that handles anything more significant than a single line of text is
+definitely “a boulder”.  I have been writing parsers for the better part of 25 years,
+and those parsers are still boulders to me. However, I know from experience that
+breaking down that “boulder-sized” task into more “pebble-sized” tasks works and works
+well.  So here are the various items of my strategy for this project.&lt;/p&gt;
+&lt;h2 id="strategy-0-define-and-execute-testing-linting-and-formatting"&gt;Strategy 0: Define and Execute Testing, Linting, and Formatting&lt;a class="headerlink" href="#strategy-0-define-and-execute-testing-linting-and-formatting" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;For me this is a strategy that I bring to almost every project, with very few
+exceptions.  I always start with some kind of workflow template that I apply to the
+project that performs formatting of the source code, linting of the source code, and
+executes the testing framework.  Since I am a stickler for this approach, the setup for
+this workflow usually takes 5 minutes or less, as I usually have at least one example
+project lying around.  By consistently executing this workflow before committing any
+changes, I keep the quality reasonably high as I go.&lt;/p&gt;
+&lt;p&gt;Knowing that I had this framework in place for the Markdown parser was a godsend.  My
+preference is to find frequent small break points during the implementation of a
+feature, and to use those points to run the workflow.  For me, it increases my
+confidence that I am either establishing a new “last known good point” or that I need
+to retrace my steps to the last known good point to address an issue.  That confidence
+helps me go forward with a positive attitude.&lt;/p&gt;
+&lt;h2 id="strategy-0a-suppress-major-issues-until-later"&gt;Strategy 0A: Suppress Major Issues Until Later&lt;a class="headerlink" href="#strategy-0a-suppress-major-issues-until-later" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;This may seem like somewhat of a counter to Strategy 0, but I see it more of allowing
+the project to grow, but being reminded that there is work to do.  Minor issues such
+as stylistics and documentation are handled right away, as they have a direct impact
+on the maintainability of the code as it moves forward.  Major issues usually involve
+a larger amount of code, and changing that much code usually has a fair amount of side
+effects unless you work to prevent those side effects.&lt;/p&gt;
+&lt;p&gt;Major issues are usually of the “too many/much” type, such as “too much complexity”,
+“too many statements”, or “too many boolean statements”.  When I get to a really good
+and stable point in the project, I know I will deal with these.  If I deal with the
+issues before I get to such a point, I am taking a chance that I won’t have the
+stability to make the change, while limiting and dealing with any potential side effects
+in a clean and efficient manner.&lt;/p&gt;
+&lt;p&gt;What is a good and stable point? For me, such a point has to have two dominant
+characteristics.  The first is that I need to have a solid collection of tests in place
+that I can execute.  These tests make sure that any refactoring doesn’t negatively
+affect the quality of the code. The second characteristic is that the source code for
+the project is at a point where there is a large degree of confidence that the
+code in the section that I want to refactor is very solid and very well defined.  This
+ensures that I can start looking for commonalities and efficiencies for refactoring
+that will enhance the source code, but not prematurely.&lt;/p&gt;
+&lt;h2 id="strategy-1-break-tests-and-development-into-task-groups"&gt;Strategy 1: Break Tests and Development Into Task Groups&lt;a class="headerlink" href="#strategy-1-break-tests-and-development-into-task-groups" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Following the principle of keeping things at a good size, don’t plan the entire project
+out ahead of time, but make sure to break things down into the groups of tasks that are
+needed as you need them.  Following an agile approach, make sure you have a good idea of
+what needs to be done for a given task group, and don’t worry about any more details of
+it until you need to.  And when you reach that point, reverify the tasks before going
+forward and flushing out the details.&lt;/p&gt;
+&lt;p&gt;For this parser, the
+&lt;a href="https://github.github.com/gfm"&gt;GitHub Flavored Markdown specification&lt;/a&gt; delineates it’s
+groups by the features in Markdown that are implemented.  Aligning the groups specified
+in that document with the groups for tests and development was a solid choice from a
+tracking point of view.  One of the reasons that I feel this worked well is because
+these feature groups have anywhere between 1 and 50 examples in each group.  While some
+of the larger ones were a tiny bit too big, for the most part it was a manageable
+number of scenarios to handle in each group.&lt;/p&gt;
+&lt;h2 id="strategy-2-organize-those-task-groups-themselves"&gt;Strategy 2: Organize Those Task Groups Themselves&lt;a class="headerlink" href="#strategy-2-organize-those-task-groups-themselves" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Once the task groups have been identified, take a step back and organize those task
+groups themselves.  There are almost always going to be task groups that have a natural
+affinity to be with similar task groups, so do so.  By doing similar tasks in
+groups, it will help identify refactorings that can be accomplished later, as well as
+the efficiency benefits from repeating similar processes.  Especially with a larger
+project, those little efficiency benefits can add up quickly.&lt;/p&gt;
+&lt;p&gt;As with the previous strategy, the GitHub Flavored Markdown specification comes to the
+rescue again.  There are some implementation notes near the end of the specification
+that provide some guidance on grouping.  The groups that I recognized were container
+blocks, normal blocks, and inline parsing.  Normal blocks are the foundation of the
+parsing, so it made sense to schedule those first.  Container blocks (lists and block
+quotes) add nesting requirements, so I scheduled those second.  Finally, once all of
+the block level tasks are done, inline parsing (such as for emphasis) can be performed
+on text blocks derived at after the processing of the normal and container blocks.
+After re-reading the end of the specification, the example that they gave seemed to
+indicate that as well, so I was probably on a decent path.&lt;/p&gt;
+&lt;h2 id="strategy-3-kiss"&gt;Strategy 3: K.I.S.S.&lt;a class="headerlink" href="#strategy-3-kiss" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;As I mentioned in the last article, I am a big proponent of the
+&lt;a href="https://en.wikipedia.org/wiki/KISS_principle"&gt;K.I.S.S principle&lt;/a&gt;.
+While I usually arrive at an end project that has lots of nice classes and functions,
+worrying about that at an early stage can often be counter productive.  Even if it means
+doing ugly string manipulations with variable names that you know you will change, that
+approach can often lead to cleaner code faster.  Worry about getting the logic and the
+algorithms right first, and then worry about making it “look pretty”.&lt;/p&gt;
+&lt;p&gt;A good example of this is my traditional development practice of giving variables and
+functions “garbage names” until I am finished with a set of functions.  Yes, that means
+during development I have variable names like “foobar”, “abc”, “sdf”, and “ghi”, just to
+name a few of them.  When I am creating the function, I maintain a good understanding of
+what the variables are doing, and I want to concentrate on the logic.  Once the logic
+is solid, I can then rename the variables to a descriptive name that accurately
+reflects it’s purpose and use.&lt;/p&gt;
+&lt;p&gt;I am not sure if this process works for everyone, but for me, not focusing on the names
+helps me focus on the logic itself.  I also find that having a “naming pass” at the
+function when I am done with the work helps me to give each variable a more meaningful
+name before I commit the changes.  Once again, this is one of my development practices
+that helps boost my productivity, and I acknowledge it might not work for everyone.&lt;/p&gt;
+&lt;p&gt;For the parser, I employed this strategy whole-heartedly.  The first couple of groups of
+work on the parser were performed by dealing with strings, with the only class for the
+parser being the single class containing the parsing logic.  Once I got to a good point
+(see above), I moved a number of the parsing functions and html functions into their
+own static helper modules.  Up until that point, it was just simpler to be creative
+with the logic in a raw form.  After that point, it made more sense to identify and
+solidify the logic that encapsulated some obvious patterns, moving those algorithms
+into their own classes for easy identification.&lt;/p&gt;
+&lt;p&gt;As with many things, finding the right points to perform changes like this are difficult
+to describe.  I can only say that “it felt like the right time for that change”.  And as
+I commit and stage code frequently, if I made a mistake, I could easily rewind and
+either retry the change, or abandon it altogether.&lt;/p&gt;
+&lt;h2 id="strategy-4-use-lots-of-debug-output"&gt;Strategy 4: Use Lots of Debug Output&lt;a class="headerlink" href="#strategy-4-use-lots-of-debug-output" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;There is a phrase that we use at work called “TTR” or Time-To-Resolution.
+This is usually measured as the time taken from knowing that you have a problem until
+the time that the problem is resolved and it’s solution is published.  Added during
+development and debugging, spurious debug output can help provide a journal or log of
+what is happening in the project, allowing for a more comprehensive comparison of the
+ output of a passing test with the output of a failing test at the same time.  &lt;/p&gt;
+&lt;p&gt;To be clear, using a debugger to load the code and step through it as it executes is
+another way to debug the code.  In fact, in a fairly decent number of situations I
+recommend that.  However, I find that the downside is that I don’t get to see the
+flow through the code in the same way as with lots of debug statements.  As with a
+lot of things, determining the balance between debug output and using a debugger
+will differ for individual developers and for individual projects.&lt;/p&gt;
+&lt;p&gt;Another benefit of the debug output approach is the transition from debug output to
+logging.  Once the project has been sufficiently stabilized and completed, one of the
+tasks that
+arises is usually to output useful log messages at various points throughout the code.
+I personally find that a certain percentage of the debug output that was good enough to
+emit during development can become quality log messages with only small changes.&lt;/p&gt;
+&lt;p&gt;The parser development definitely benefitted from this strategy.  Within a given task
+group, there were often two Markdown patterns that were almost the same.  Sometimes it
+looked like they should being parsed differently and sometimes I couldn’t figure out
+why they weren’t parsed differently.  By examining the debug output for both cases,
+I was able to verify whether or not the correct paths were followed, and if not, where
+the divergences occurred.  Sure, the debug was cryptic and most of it never made it in
+the final version of the parser. But when I needed to debug or verify during
+development, it was invaluable.&lt;/p&gt;
+&lt;h2 id="strategy-5-run-tests-frequently"&gt;Strategy 5: Run Tests Frequently&lt;a class="headerlink" href="#strategy-5-run-tests-frequently" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Don’t only run tests when a set of changes is ready to commit, run those tests
+frequently during the development of each task.  If done properly, most tests are there
+to verify things are as they should be, and to warn of changes or situations that fall
+outside of the requirements. If something is wrong, it is better to look through the
+last feature added to determine what the problem is, rather than trying to determine
+which of the last 5 features introduced that bad behavior.  Therefore, by executing the
+tests frequently, either the confidence that the project is working properly increases
+or there are early and frequent indications that something is wrong.&lt;/p&gt;
+&lt;p&gt;During the development of the parser, the tests were instrumental in making sure that
+I knew what features were “locked down” and which features needed work.  By keeping
+track of that when adding a new feature, I could easily see when work on a new feature
+caused a previously completed feature to fail it’s tests.  At that point, I knew I
+didn’t have the right solution, but I also had confidence that the changes were small
+enough to handle.&lt;/p&gt;
+&lt;p&gt;Also, as the specification is large, there were often cases that were present but not
+always spelled out in the documentation as well as they could have been.  However, time
+and time again, the saving grace for the specification were the examples, now scenarios
+and scenario tests in my project, sterling examples of what to expect.  And as I took
+care to make sure they ran quickly, I was able to run all of the scenario tests in less
+than 10 seconds.  For me, taking 10 seconds to ensure things were not broken was well
+worth the cost.&lt;/p&gt;
+&lt;h2 id="strategy-6-do-small-refactors-only-at-good-points"&gt;Strategy 6: Do Small Refactors Only At Good Points&lt;a class="headerlink" href="#strategy-6-do-small-refactors-only-at-good-points" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;While this strategy may look like a repeat of
+&lt;a href="https://jackdewinter.github.io/2019/12/22/markdown-linter-parser-testing-strategy/#strategy-0a-suppress-major-issues-until-later"&gt;Strategy 0A: Suppress Major Issues Until Later&lt;/a&gt;,
+the scope for this strategy is on a smaller, more local level.  Where Strategy 0A talks
+about refactoring major issues later, there are often obvious minor refactors that can
+be done at a local level.  These changes are often done right after a function is
+written to fulfil a feature and rarely includes more than one function.  A good example
+of this is taking a function that performs a given action twice with small variations
+and rewriting that function by encapsulating that repeated action into it’s own
+well-named function.  &lt;/p&gt;
+&lt;p&gt;While such refactors almost always improve the code, care must be taken to strike a
+good balance between making each method more readable and trying to optimize the
+function ahead of time.  For myself, it is often more efficient for me to see the raw
+code to recognize patterns from rather than already refactored code.  Unless I am the
+author of the refactored code, I find that I don’t see the same patterns as with the
+raw code.  As with many things, “Your Mileage May Vary”.&lt;/p&gt;
+&lt;p&gt;When implementing the parser, this strategy was effectively applied at the local
+level to improve readability and maintainability.  There were quite a few cases where
+the logic to detect a given case and the processing of that case were complicated.
+By assigning the detection of a given case to one function and the processing of that
+case to another function, the border between the two concepts was enhanced, making the
+calling function more readable.  As this kind of refactoring occurred at the local
+level, it employed this strategy quite effectively.&lt;/p&gt;
+&lt;h3 id="how-did-this-help"&gt;How Did This Help?&lt;a class="headerlink" href="#how-did-this-help" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;For one, I had a plan and a strategy to deal with things.  As always, something would
+happen during development which would require me to re-assess something. Given the
+above strategy, I had confidence that I would be able to deal with it, adjusting the
+different parts of the project as I went.&lt;/p&gt;
+&lt;p&gt;Basically, I took a boulder (writing a parser) and not only broke it down into pebbles
+(tasks needed to write the parser), but came up with a set of rules (strategy) on what
+to do if I found some rocks that were previously unknown or larger than a pebble.  As
+I mentioned at the start of the article, it’s a fairly simple bit of wisdom that I was
+taught, but what a gem it is!&lt;/p&gt;
+&lt;h2 id="what-comes-next"&gt;What Comes Next?&lt;a class="headerlink" href="#what-comes-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In the next article, I take the requirements, scenarios,
+and strategies and put them together to start writing the parser.  As one of the
+test groups that I came up with was normal Markdown blocks, I will describe how I
+implemented those blocks as well as the issues I had in doing so cleanly.&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category></entry><entry><title>Markdown Linter - Setting Up Parser Tests</title><link href="https://jackdewinter.github.io/2019/12/16/markdown-linter-setting-up-parser-tests/" rel="alternate"></link><published>2019-12-16T00:00:00-08:00</published><updated>2019-12-16T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2019-12-16:/2019/12/16/markdown-linter-setting-up-parser-tests/</id><summary type="html">
+&lt;h2 id="sidebar"&gt;Sidebar&lt;a class="headerlink" href="#sidebar" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;My apologies for this being a day or two later that usual.  My son brought home a
+cold that knocked the stuffing out of me, I needed to take some personal time to ensure
+I was feeling better before writing.  Thanks for your patience.&lt;/p&gt;
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;As a reminder of …&lt;/p&gt;</summary><content type="html">
+&lt;h2 id="sidebar"&gt;Sidebar&lt;a class="headerlink" href="#sidebar" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;My apologies for this being a day or two later that usual.  My son brought home a
+cold that knocked the stuffing out of me, I needed to take some personal time to ensure
+I was feeling better before writing.  Thanks for your patience.&lt;/p&gt;
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;As a reminder of the requirements from the
+&lt;a href="https://jackdewinter.github.io/2019/12/08/markdown-linter-collecting-requirements/"&gt;last article&lt;/a&gt;,
+the big bullet-point items are:
+command line driven, GitHub Flavored Markdown (for now), and preserving all tokens.  To
+make sure I have a solid set of goals to work towards, setting these requirements as
+part of the project was pivotal.  Now that I have that as a touchstone, I need to move
+forward with defining how to progress with the testing of the parser at the core of
+the linter.&lt;/p&gt;
+&lt;h2 id="why-write-a-parser"&gt;Why Write a Parser?&lt;a class="headerlink" href="#why-write-a-parser" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In taking a look at the kind of rules that linters support, I have observed that there
+are typically two categories of rules: general rules and grammar rules.  For general
+rules such as “tabs should not be used”, it is easy to look at any line in the
+document being scanned and look for a tab character.  For grammatical rules such
+as “headings should always be properly capitalized”, that scan is more difficult.
+The most difficult part of that rule is identifying whether or not any given piece
+of text is considered part of a header, thus engaging the rest of the rule.&lt;/p&gt;
+&lt;p&gt;From experience, to properly determine which part of grammar maps to which part of text
+requires a capable parser, written to the specifications of the language to be parsed.
+Based on my research from the
+&lt;a href="https://jackdewinter.github.io/2019/12/08/markdown-linter-collecting-requirements/"&gt;last article&lt;/a&gt;,
+all of the parsers that I found only translated Markdown into HTML, not any
+intermediate form.  Since I need a clean stream of tokens before translation to HTML,
+the only option is to write my own parser which will output a clean stream of parsed
+Markdown tokens.&lt;/p&gt;
+&lt;p&gt;As I am writing my own parser, I need to have a good set of tests to ensure
+that the parser works properly.  But where to start?&lt;/p&gt;
+&lt;h2 id="where-to-start-with-the-tests"&gt;Where To Start With The Tests?&lt;a class="headerlink" href="#where-to-start-with-the-tests" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Referring back to my article on &lt;a href="https://jackdewinter.github.io/2019/11/10/software-quality-reliability/"&gt;software reliability&lt;/a&gt;,
+the 2 main types of tests that I need to decide on are scenario tests and unit tests.
+In a nutshell, the purpose of a scenario test is to test the input and outputs of the
+project and the purpose of a unit test is to test a specific function of a specific
+components of the project.  Getting a hold of how to balance the quantity of tests that
+I need to write between the two of these types is my first priority.&lt;/p&gt;
+&lt;p&gt;As one of the initial requirements is to support the
+&lt;a href="https://github.github.com/gfm"&gt;GitHub Flavored Markdown specification&lt;/a&gt;, it is useful to
+note that the specification itself has 637 individual examples.  Each example provides
+for the input, in Markdown, and the output, in HTML.  While the output is not at the
+token level needed to satisfy my project’s third requirement, it should be close
+enough.  In looking at each of these examples, I need a solid set of rules that I
+can apply to the tokens to get them from my desired token-based output to a HTML-based
+output that matches the examples.  It is reasonable to collect these rules as I go when
+I develop the various types of elements to be parsed.  If I tried to do them to far
+ahead of time, it would invariably lead to a lot of rework.  Just in time is the way to
+go for these rules.&lt;/p&gt;
+&lt;p&gt;Taking another looking at the types of tests that I need to write, I realized that this
+project’s test viewpoint was inverted from the usual ratio of scenario tests to unit
+tests.  In most cases, if I have anything more than 20-30 scenario tests, I would think
+that I have not properly scoped the project.  However, with 637 scenarios already
+defined for me, it would be foolish not to write at least one scenario test for each of
+those scenarios, adding extra scenario tests and supportive unit tests where needed.
+In this case, it makes more sense to focus on the scenario tests as the major set of
+tests to write.&lt;/p&gt;
+&lt;p&gt;The balance of scenario tests to unit tests?&lt;/p&gt;
+&lt;p&gt;Given 637 scenarios ready to go, I need to create at least 637 scenario tests.
+For those scenario tests, experimenting with the first couple of scenario tests to
+find a process that worked seemed to be the most efficient way forward.  Given a simple
+and solid template for every scenario test, I had a lot of confidence to then use that
+template for each scenario test that I tackled.&lt;/p&gt;
+&lt;p&gt;And the unit tests?  In implementing any parsing code, I knew that I needed helper
+functions that parsed a specific type of foundational thing, like a tag in an HTML
+block or skipping ahead over any whitespace.  The unit tests are used to verify
+that those kind of foundational functions are operating properly, ensuring that the
+rest of the code can depend on those foundations with confidence.  As an added bonus,
+more combinations of the various sequences to parse could be tested without inflating
+the number of scenario tests.&lt;/p&gt;
+&lt;p&gt;Ground rules set?   Check.  On to the first scenario test.&lt;/p&gt;
+&lt;h2 id="starting-with-the-first-scenario-test"&gt;Starting With the First Scenario Test&lt;a class="headerlink" href="#starting-with-the-first-scenario-test" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;While it might not seem correct, starting with example number 189, the first test I
+did write was for
+&lt;a href="https://github.github.com/gfm/#example-189"&gt;GitHub Flavored Markdown example 189&lt;/a&gt;,
+the first example
+included in the specification for the paragraph blocks.  After solidly reading the
+specification, the general rule seemed to be that if it doesn’t fit into any other
+category, it is a paragraph.  If everything is going to be a paragraph until the other
+features are written, I felt that starting with the default case was the right choice.&lt;/p&gt;
+&lt;p&gt;After a number of passes at cleaning up the test for this first case, it boiled down to
+the following Python code.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="sd"&gt;"""&lt;/span&gt;
+&lt;span class="sd"&gt;https://github.github.com/gfm/#paragraphs&lt;/span&gt;
+&lt;span class="sd"&gt;"""&lt;/span&gt;
+&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;pymarkdown.tokenized_markdown&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;TokenizedMarkdown&lt;/span&gt;
+
+&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;.utils&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;assert_if_lists_different&lt;/span&gt;
+
+
+&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;test_paragraph_blocks_189&lt;/span&gt;&lt;span class="p"&gt;():&lt;/span&gt;
+    &lt;span class="sd"&gt;"""&lt;/span&gt;
+&lt;span class="sd"&gt;    Test case 189:  simple case of paragraphs&lt;/span&gt;
+&lt;span class="sd"&gt;    """&lt;/span&gt;
+
+    &lt;span class="c1"&gt;# Arrange&lt;/span&gt;
+    &lt;span class="n"&gt;tokenizer&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;TokenizedMarkdown&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+    &lt;span class="n"&gt;source_markdown&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;"""aaa&lt;/span&gt;
+
+&lt;span class="s2"&gt;bbb"""&lt;/span&gt;
+    &lt;span class="n"&gt;expected_tokens&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;
+        &lt;span class="s2"&gt;"[para:]"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="s2"&gt;"[text:aaa:]"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="s2"&gt;"[end-para]"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="s2"&gt;"[BLANK:]"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="s2"&gt;"[para:]"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="s2"&gt;"[text:bbb:]"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="s2"&gt;"[end-para]"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="p"&gt;]&lt;/span&gt;
+
+    &lt;span class="c1"&gt;# Act&lt;/span&gt;
+    &lt;span class="n"&gt;actual_tokens&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;tokenizer&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;transform&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;source_markdown&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+    &lt;span class="c1"&gt;# Assert&lt;/span&gt;
+    &lt;span class="n"&gt;assert_if_lists_different&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;expected_tokens&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;actual_tokens&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;h2 id="breaking-down-the-scenario-test"&gt;Breaking Down the Scenario Test&lt;a class="headerlink" href="#breaking-down-the-scenario-test" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;It might be a lot to take in all at once, so let’s break it down step by step.&lt;/p&gt;
+&lt;h3 id="start-of-the-module"&gt;Start of the Module&lt;a class="headerlink" href="#start-of-the-module" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;The start of the module needs to perform two important tasks: provide useful
+documentation to someone examining the tests and import any libraries needed.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="sd"&gt;"""&lt;/span&gt;
+&lt;span class="sd"&gt;https://github.github.com/gfm/#paragraphs&lt;/span&gt;
+&lt;span class="sd"&gt;"""&lt;/span&gt;
+&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;pymarkdown.tokenized_markdown&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;TokenizedMarkdown&lt;/span&gt;
+
+&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;.utils&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;assert_if_lists_different&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;The most useful and relevant information about the module that I was able to think of
+was the actual source for the test cases themselves.  That being the case, I felt that
+including the URI to the specific section in the
+&lt;a href="https://github.github.com/gfm"&gt;GitHub Flavored Markdown specification&lt;/a&gt; was the
+right choice for the module documentation.  For anyone reading the tests, it provides a
+solid reference point that answers most of the questions about why the tests are there
+and whether or not the tests are relevant.&lt;/p&gt;
+&lt;p&gt;Next are the import statements.  The first one statement imports the
+&lt;code&gt;TokenizedMarkdown&lt;/code&gt; class, a class that I set up to handle the parsing.  Initially this
+class was a quick and simple skeleton class, especially for the first paragraph case.
+However, it provided the framework for me to support more use cases while maintaining
+a uniform interface. The second import statement is used to include a function that
+provides a good comparison of the contents of the list returned from the &lt;code&gt;transform&lt;/code&gt;
+function of the &lt;code&gt;TokenizedMarkdown&lt;/code&gt; class and a simple text list of the expected
+tokens.  &lt;/p&gt;
+&lt;h3 id="arrange-the-data-for-the-test"&gt;Arrange The Data For The Test&lt;a class="headerlink" href="#arrange-the-data-for-the-test" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;From all of the useful pieces of information that I have learned about testing, the
+most useful bits about actually writing tests are the K.I.S.S. principle and the use of
+the Arrange-Act-Assert pattern.  The
+&lt;a href="https://en.wikipedia.org/wiki/KISS_principle"&gt;K.I.S.S principle&lt;/a&gt; constantly reminds me
+to not overcomplicate things, reducing the tests to what is really relevant for that
+thing or task.  The
+&lt;a href="https://docs.telerik.com/devtools/justmock/basic-usage/arrange-act-assert"&gt;Arrange-Act-Assert pattern&lt;/a&gt;
+reminds me that when writing tests, each test I write breaks down into setup, action,
+and verification (with cleanup occasionally being added if needed). As such, I always
+start writing my tests by adding a comment for each of those sections, with the rest
+of the function blank.  Once there, it’s easy to remember which parts of the tests
+go where!&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;test_paragraph_blocks_189&lt;/span&gt;&lt;span class="p"&gt;():&lt;/span&gt;
+    &lt;span class="sd"&gt;"""&lt;/span&gt;
+&lt;span class="sd"&gt;    Test case 189:  simple case of paragraphs&lt;/span&gt;
+&lt;span class="sd"&gt;    """&lt;/span&gt;
+
+    &lt;span class="c1"&gt;# Arrange&lt;/span&gt;
+    &lt;span class="n"&gt;tokenizer&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;TokenizedMarkdown&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+    &lt;span class="n"&gt;source_markdown&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;"""aaa&lt;/span&gt;
+
+&lt;span class="s2"&gt;bbb"""&lt;/span&gt;
+    &lt;span class="n"&gt;expected_tokens&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;
+        &lt;span class="s2"&gt;"[para:]"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="s2"&gt;"[text:aaa:]"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="s2"&gt;"[end-para]"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="s2"&gt;"[BLANK:]"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="s2"&gt;"[para:]"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="s2"&gt;"[text:bbb:]"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="s2"&gt;"[end-para]"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="p"&gt;]&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;The &lt;code&gt;Arrange&lt;/code&gt; part of this test is simple, consisting mostly of easy-to-read
+assignments.  The object to test needs to be setup in a way that it is completely
+enclosed within the test function.  The tokenizer object with no options is assigned to
+the &lt;code&gt;tokenizer&lt;/code&gt;, so a simple assignment takes care of it’s setup.  The &lt;code&gt;source_markdown&lt;/code&gt;
+variable is setup within Python’s
+&lt;a href="https://docs.python.org/3/tutorial/introduction.html#strings"&gt;triple-quotes&lt;/a&gt;
+to preserve newlines and provide an accurate look at the string being fed to the
+tokenizer.  This string is copied verbatim from the example represented by the function,
+in this case &lt;a href="https://github.github.com/gfm/#example-189"&gt;example 189&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;The final setup, the array assigned to the &lt;code&gt;expected_tokens&lt;/code&gt; variable, takes a bit more
+work.  When I wrote these, I sometimes wrote the expect tokens ahead of time, but more
+often than not used a known “bad” set of tokens and adjusted the tokens as I went.&lt;/p&gt;
+&lt;h3 id="act-tokenize-and-assert-verify-results"&gt;Act (Tokenize) and Assert (Verify Results)&lt;a class="headerlink" href="#act-tokenize-and-assert-verify-results" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;With all of the work on the setup of the tests, the Act and Assert parts of the test
+are very anticlimactic.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="c1"&gt;# Act&lt;/span&gt;
+    &lt;span class="n"&gt;actual_tokens&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;tokenizer&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;transform&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;source_markdown&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+    &lt;span class="c1"&gt;# Assert&lt;/span&gt;
+    &lt;span class="n"&gt;assert_if_lists_different&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;expected_tokens&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;actual_tokens&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Using the information that was established in the Arrange section of the test, the
+Act section simply applies the input (&lt;code&gt;source_markdown&lt;/code&gt;) to the object to test
+(&lt;code&gt;tokenizer&lt;/code&gt;) and collects the output in &lt;code&gt;actual_tokens&lt;/code&gt;.  The Assert section then
+takes the output tokens and compares them against the expected list of tokens in
+&lt;code&gt;expected_tokens&lt;/code&gt;.&lt;/p&gt;
+&lt;h3 id="why-not-use-pure-test-driven-development"&gt;Why Not Use Pure Test Driven Development?&lt;a class="headerlink" href="#why-not-use-pure-test-driven-development" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;In a normal project, I usually follow
+&lt;a href="https://en.wikipedia.org/wiki/Test-driven_development"&gt;Test Driven Development&lt;/a&gt;
+practices quite diligently, either writing the tests first and code second, or writing
+both tests and code at the same time.  As this was my first version of my first
+Markdown parser, I was aware that I was going to be adapting the tokens and token
+formats as I went, eventually arriving at a set of tokens that worked for all scenarios.
+Knowing that this churn was part of the development process for this project, I decided
+that a true Test Driven Development process would not be optimal.&lt;/p&gt;
+&lt;p&gt;For this project, it was very useful to adjust the process.  The balance that I struck
+with myself was to make sure that as I coded the parser to respond to a given scenario,
+I adjusted the tokens assigned to the &lt;code&gt;expected_tokens&lt;/code&gt; variable based on the example’s
+HTML output for the equivalent scenario test.  This process gave me the confidence to
+know that as I made tests pass by enabling the code behind the scenario, each individual
+passing test was both moving towards a fully functioning parser and protecting the work
+that I had already done in that direction.&lt;/p&gt;
+&lt;p&gt;To be clear, as I copied the template over, I adjusted the function name, the
+function’s doc-string, and the Markdown source text based on the scenario test that I
+was implementing.  The list of tokens in &lt;code&gt;expected_tokens&lt;/code&gt; were then populated with
+a “best guess” before I started working on the code to make that scenario pass.
+In a microscopic sense, as I updated the test and the test tokens before starting on
+the code, I was still adhering to Test Driven Development on a scenario-by-scenario
+level.&lt;/p&gt;
+&lt;p&gt;To me, this was a good balance to strike, evaluating the correct tokens as I went
+instead of trying to work out all 637 sets of tokens ahead of time.  &lt;/p&gt;
+&lt;h3 id="how-did-this-help"&gt;How Did This Help?&lt;a class="headerlink" href="#how-did-this-help" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Getting a good process to deal with the large bulk of scenario tests was a welcome
+relief.  While I still needed to create a strategy to deal with that bulk of scenario
+tests I would need to write (see the
+&lt;a href="https://jackdewinter.github.io/2019/12/22/markdown-linter-parser-testing-strategy/"&gt;next article&lt;/a&gt;
+for details on that), I had a
+solid template that was simple (see K.I.S.S. principle), easy to follow (see
+Arrange-Act-Assert pattern), and would scale.  This was indeed something that I
+was able to work with.&lt;/p&gt;
+&lt;h2 id="what-about-the-unit-tests"&gt;What About the Unit Tests?&lt;a class="headerlink" href="#what-about-the-unit-tests" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Compared to the scenario tests, writing unit tests for the parser’s foundation
+functions was easy.  In each case, there is a function to test with a very cleanly
+specified interface, providing for a clean definition of expected input and output.&lt;/p&gt;
+&lt;h2 id="what-comes-next"&gt;What Comes Next?&lt;a class="headerlink" href="#what-comes-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In the &lt;a href="https://jackdewinter.github.io/2019/12/22/markdown-linter-parser-testing-strategy/"&gt;next article&lt;/a&gt;,
+I look at the work that needs to
+be done and come up with general strategies that I use to implement the parser
+required for the linter.  With the specification’s 637 examples as a base for the
+scenario tests, good planning is needed to ensure the work can progress forward.&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category></entry><entry><title>Markdown Linter - Collecting Requirements</title><link href="https://jackdewinter.github.io/2019/12/08/markdown-linter-collecting-requirements/" rel="alternate"></link><published>2019-12-08T00:00:00-08:00</published><updated>2019-12-08T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2019-12-08:/2019/12/08/markdown-linter-collecting-requirements/</id><summary type="html">
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;My website is now up and running, even though in my mind it took forever.  To make sure
+everything was “just so”, I went through each article with a fine-toothed comb multiple
+times, each with a slightly different thing I was looking for.  In the end, it worked
+out …&lt;/p&gt;</summary><content type="html">
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;My website is now up and running, even though in my mind it took forever.  To make sure
+everything was “just so”, I went through each article with a fine-toothed comb multiple
+times, each with a slightly different thing I was looking for.  In the end, it worked
+out, but I wished I could have automated at least some of that work and reduced the time
+it took to do it.  And I also have a lingering question of whether or not I got
+everything, or did I miss something out?&lt;/p&gt;
+&lt;h2 id="what-is-a-linter"&gt;What Is a Linter?&lt;a class="headerlink" href="#what-is-a-linter" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;A long time ago, when I first heard the term “lint”, I thought someone was referring to
+the stuff that you find in the clothes dryer trap that you need to clean out.  According
+to &lt;a href="https://en.wikipedia.org/wiki/Lint_(software)"&gt;Wikipedia&lt;/a&gt;, my guess was close.
+Similar to the “undesirable bits of fiber and fluff found in sheep’s wool” from the
+Wikipedia article, software linters are used to detect undesirable practices and
+patterns in the objects they scan.  Once pointed out, the development team can then
+decide whether or not to address the issue or ignore the issue.&lt;/p&gt;
+&lt;h2 id="doing-my-research"&gt;Doing My Research&lt;a class="headerlink" href="#doing-my-research" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;I started looking around, and even though there are a number of Markdown-to-HTML command
+line programs out there, finding a solid Markdown linter was another story.  I did find
+a couple of starts at making one, but not a finished one that I could use.  The only
+exception was the NPM-based
+&lt;a href="https://marketplace.visualstudio.com/items?itemName=DavidAnson.vscode-markdownlint"&gt;Markdownlint&lt;/a&gt;
+by David Anson.  This VSCode plugin is pretty much a standard for anyone creating
+content in Markdown using VSCode, with well over 1.3 million downloads as of the writing
+of this article.  By default, as you save articles, this linter executes and produces a
+list of issues in the &lt;code&gt;Problems&lt;/code&gt; section at the bottom of the VSCode editor.&lt;/p&gt;
+&lt;p&gt;This tool is indeed handy while writing an article, but the act of verifying multiple
+articles becomes a bit of chore.  My general process was to open a document I wanted to
+inspect, make a small whitespace changes, save the file, and examine the &lt;code&gt;Problems&lt;/code&gt;
+section to see what the linter came up with.  Two things were more annoying about this
+process that others.  The first issue is that any issue for any file that is open is
+displayed in that section.  If I wanted to be efficient, it meant closing every other
+file and just working on a single file at a time.  The second issue is that other
+plugins write their problems there as well.  As a lot of my content is technical, there
+are a fair number of spelling issues that arise that I need to ignore.  Once again,
+neither one of these issues is a bad thing, just annoying.&lt;/p&gt;
+&lt;h2 id="what-are-the-requirements"&gt;What Are The Requirements?&lt;a class="headerlink" href="#what-are-the-requirements" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Doing some thinking about this during the couple of weeks that I worked on the website,
+a fairly decent set of requirements crystalized:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;must be able to see an accurate tokenization of the markdown document before translating to HTML&lt;ul&gt;
+&lt;li&gt;working with an accurate tokenization remedies any translation problems instead of translating from HTML&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;all whitespace must be encoded in that token stream as-is&lt;ul&gt;
+&lt;li&gt;for consistency, want an exact interpretation&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;initial tokenization for GitHub Flavored Markdown only, add others later&lt;ul&gt;
+&lt;li&gt;initial tests against the &lt;a href="https://github.github.com/gfm/"&gt;GitHub Flavored Markdown specs&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;plans to later add other flavors of parser&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;must be able to provide a consistent lexical scan of the Markdown document from the command line&lt;ul&gt;
+&lt;li&gt;clean feedback on violations&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;extending the base linting rules should require very little effort&lt;ul&gt;
+&lt;li&gt;clear support for adding custom linting rules.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;written in Python&lt;ul&gt;
+&lt;li&gt;good cross-platform support&lt;/li&gt;
+&lt;li&gt;same language as Pelican, used as the
+  &lt;a href="https://jackdewinter.github.io/2019/08/18/static-websites-choosing-a-static-web-site-generator/"&gt;Static Site Generator&lt;/a&gt; for my website&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;While there are only 5 requirements, they are important.  The first two requirements
+speak to reliability: the parsed Markdown tokens should be complete. The third
+requirement is for stability: write against one specification with a solid set of test
+cases before moving on to others.  The fourth requirement is all about usability: the
+linter can be run from any appropriate command line.  Finally, the fifth requirement is
+about extensibility:  add any needed custom rules.&lt;/p&gt;
+&lt;p&gt;From my point of view, these requirements help me visualize a project that will help me
+maintain my website by ensuring that any articles that I write conform to a simple set
+of rules.  Those rules can be checked by a script before I commit them, without having
+to load up a text editor.  Simple.&lt;/p&gt;
+&lt;h2 id="why-is-this-important-to-me"&gt;Why Is This Important To Me?&lt;a class="headerlink" href="#why-is-this-important-to-me" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Writing this section, it took me a couple of tries to word this properly.  In the end, I
+settled on a basic phrase:  It is a tool that I can use to make a software project
+better.&lt;/p&gt;
+&lt;p&gt;In other parts of my professional life, I take a look at things such as a Java project,
+and try and improve the quality of that project.  The input is mainly Java source code
+and the output is mainly JAR files that are executed by a JVM.  My website is no
+different.  Remove Java source code and insert Markdown documents.  Remove JAR files
+executed by a JVM and insert HTML files presented by a browser.  There are a few
+differences between the two types of projects, but in all of the important ways, they
+are the same.&lt;/p&gt;
+&lt;p&gt;I took the time to manually scan each article for my website multiple times before I
+did my website’s soft release.  To me, it just makes sense that there should be an
+easier way to perform that process.  Easier in terms of time, and easier in terms of
+consistency.  Unless I am missing something out there in the Internet, the only project
+that came close to fulfilling my requirements was &lt;code&gt;Markdownlint&lt;/code&gt;, and it still had some
+things missing.  I came to the realization that to be able to lint a Markdown file
+against a set of rules, I was going to have to write my own Markdown parser.&lt;/p&gt;
+&lt;p&gt;In the last couple of decades of professional life, I have written many parsers, so that
+part of the project doesn’t scare me.  Due to the great works of the people at the
+&lt;a href="https://github.github.com/gfm/"&gt;GFM site&lt;/a&gt;, there we a solid number of test cases that I
+can test the parser against.  The extensibility issue would make me look at different
+ways to integrate code into my tool, so a plus there.  All in all, a decent number of
+things I have to get right, but nothing too far out of my field of experience.&lt;/p&gt;
+&lt;p&gt;Sure it would be hard in places… but also a challenge!  Just the kind of thing I like!&lt;/p&gt;
+&lt;h2 id="what-comes-next"&gt;What Comes Next?&lt;a class="headerlink" href="#what-comes-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In the &lt;a href="https://jackdewinter.github.io/2019/12/16/markdown-linter-setting-up-parser-tests/"&gt;next article&lt;/a&gt;, I start breaking down the
+requirements for the Markdown parser and document how I will setup the tests for it.
+As I am parsing a well-known format with varying implementations already available, it
+is important to stay focused on one implementation and have a solid set of tests to
+ensure I don’t go backwards in my development.&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category></entry><entry><title>Website Soft Launch!</title><link href="https://jackdewinter.github.io/2019/12/01/website-soft-launch/" rel="alternate"></link><published>2019-12-01T00:00:00-08:00</published><updated>2019-12-01T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2019-12-01:/2019/12/01/website-soft-launch/</id><summary type="html">
 &lt;p&gt;Well, it took a lot of work, but the website is finally tuned up the way I want it to be!&lt;/p&gt;
 &lt;p&gt;I still have a number of small things to do to get the website up and running at 100%.
 However, I am doing this soft-launch to start publishing articles …&lt;/p&gt;</summary><content type="html">
@@ -3928,699 +4521,4 @@ a number of different notes I made for this project at various points, along wit
 for those notes.  Finally, I walked through the various setup that I performed on the various
 screens to get them on the display.&lt;/p&gt;
 &lt;p&gt;If you have followed this process through all 5 articles, thanks for your support, and I hope
-you take the time to look at some of the other articles on this site!&lt;/p&gt;</content><category term="Integrating Technology"></category><category term="glanceable displays"></category><category term="home dashboard"></category><category term="raspberry pi"></category><category term="Dakboard"></category></entry><entry><title>Glanceable Displays: Setting Up Our Display</title><link href="https://jackdewinter.github.io/2019/08/04/glanceable-displays-setting-up-our-display/" rel="alternate"></link><published>2019-08-04T00:00:00-07:00</published><updated>2019-08-04T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2019-08-04:/2019/08/04/glanceable-displays-setting-up-our-display/</id><summary type="html">&lt;h2 id="preface"&gt;Preface&lt;a class="headerlink" href="#preface" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;This is the fourth article in a series about Glanceable Displays and my efforts to create
-one for my household.  For other articles in the series, click on the title of the article
-under the heading “Glanceable Displays” on the right side of the webpage.&lt;/p&gt;
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-
-&lt;p&gt;In the first …&lt;/p&gt;</summary><content type="html">&lt;h2 id="preface"&gt;Preface&lt;a class="headerlink" href="#preface" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;This is the fourth article in a series about Glanceable Displays and my efforts to create
-one for my household.  For other articles in the series, click on the title of the article
-under the heading “Glanceable Displays” on the right side of the webpage.&lt;/p&gt;
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-
-&lt;p&gt;In the first article,
-&lt;a href="https://jackdewinter.github.io/2019/07/14/glanceable-displays-what-are-they/"&gt;Glanceable Displays: What Are They?&lt;/a&gt;,
-I introduced the concept of a Glanceable Display, describing a number of things to consider
-if you decided to embark on a project like this.  Assuming you decided to proceed, the article
-&lt;a href="https://jackdewinter.github.io/2019/07/21/glanceable-displays-installing-raspbian-on-a-raspberry-pi/"&gt;Glanceable Displays: Installing Raspbian on a Raspberry Pi&lt;/a&gt;
-detailed how I went from an unformatted Raspberry Pi to one with the Raspbian
-operating system installed.  As I prefer working from my own workstation, I also detailed
-the setup of the SSH service on the Raspberry Pi to allow for remote connections.  Finally,
-the article
-&lt;a href="https://jackdewinter.github.io/2019/07/28/glanceable-displays-fine-tuning-a-raspberry-pi-installation/"&gt;Glanceable Displays: Fine Tuning A Raspberry Pi Installation&lt;/a&gt;
-showed how I filled in a number of gaps that I encountered with the normal installation,
-namely setting up a wireless connection with my network and ensuring the Raspberry Pi has
-a solid understanding of the current time.&lt;/p&gt;
-&lt;p&gt;Having taken all of those steps to be confident that setting up the actual display will work,
-it is time to jump right in and set the display up.  But what is it actually that I was
-setting up?&lt;/p&gt;
-&lt;h2 id="what-are-our-displays-implementation-requirements"&gt;What Are Our Display’s Implementation Requirements?&lt;a class="headerlink" href="#what-are-our-displays-implementation-requirements" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;When it comes down to it, the articles in the series have been building up to this point.
-I now have a glanceable display is a Raspberry Pi.  Upon boot, it will start a web browser
-pointing at a specific webpage.  It’s that simple.  However, the devil is in the
-requirements.&lt;/p&gt;
-&lt;p&gt;The high level requirements for the display were covered in the first article in this series,
-&lt;a href="https://jackdewinter.github.io/2019/07/14/glanceable-displays-what-are-they/#the-decisions-for-our-glanceable-display"&gt;Glanceable Displays: What Are They?&lt;/a&gt;.  What is left are the specific
-requirements that will realize those high level requirements into an actual display: the
-implementation requirements.&lt;/p&gt;
-&lt;p&gt;The first set of implementation requirements is that any administration of the machine can be
-performed from my desktop.  With the exception of the Raspberry Pi seizing up, which
-I have noticed from time to time, I should not have to touch the Raspberry Pi itself.  For
-the most part, I will be running &lt;code&gt;sudo reboot&lt;/code&gt; to restart the machine, but all of that should
-be done without the need to plug a keyboard into the Raspberry Pi.  Thanks to the documentation
-in the previous articles, these requirements have been completed.&lt;/p&gt;
-&lt;p&gt;The second set of implementation requirements is that after a reboot of the machine, I shouldn’t
-need to plug in a keyboard and type some commands to get it started.  After the machine starts,
-it should open a browser and display the page or pages that are
-required. To be clear, on reboot with no keyboard and no mouse, the display should start by
-itself.  The physical cost of plugging a keyboard into the machine kind of defeats the
-“appliance” feel that I want it to have.&lt;/p&gt;
-&lt;p&gt;The final set of implementation requirements is that, to the best extent possible, any
-processing of what to show on the display should be performed on a machine other than the
-Raspberry Pi.  While some of the more recent machines have more power on them, I want to be able
-to use lower cost Raspberry Pi machines for the display.  If I must also run scripts to pull
-information to generate information for the display, it means I need a heftier machine.  While
-this may change later, I believe that starting with the lower machine requirements is the right
-thing to do.&lt;/p&gt;
-&lt;h2 id="installing-the-right-tools"&gt;Installing the Right Tools&lt;a class="headerlink" href="#installing-the-right-tools" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;To make sure that I had the right browser and other utilities I needed, I ran the following
-command:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;sudo apt-get install chromium-browser x11-xserver-utils unclutter
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;A lot of Raspbian installations will come with &lt;code&gt;chromium-browser&lt;/code&gt; package already installed,
-but I included it just to make sure it is there.  The &lt;code&gt;x11-xserver-utils&lt;/code&gt; package has one or
-two small utilities that will make the display look cleaner.  The &lt;code&gt;unclutter&lt;/code&gt; package allows
-me to hide the mouse cursor after inactivity, perfect for a display where I know there will
-be no mouse attached.&lt;/p&gt;
-&lt;div class="admonition note"&gt;
-&lt;p class="admonition-title"&gt;Note&lt;/p&gt;
-&lt;p&gt;When I was testing out the installation instructions, one of the things that made me include instructions on setting up a time server is the &lt;code&gt;apt-get&lt;/code&gt; command.  In certain cases, if your Raspberry Pi’s clock is too far in the past, you will not be able to access the right packages with &lt;code&gt;apt-get&lt;/code&gt;.  Please make sure your Raspberry Pi’s clock is current before using the &lt;code&gt;apt-get&lt;/code&gt; command.&lt;/p&gt;
-&lt;/div&gt;
-&lt;h2 id="creating-a-local-startup-file"&gt;Creating a Local Startup file&lt;a class="headerlink" href="#creating-a-local-startup-file" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;By default, Raspbian comes with a heavily modified version of the
-&lt;a href="https://wiki.archlinux.org/index.php/LXDE"&gt;LXDE&lt;/a&gt; or “Lightweight X-11 Desktop Environment”.
-According to
-&lt;a href="https://developer.toradex.com/knowledge-base/how-to-autorun-application-at-the-start-up-in-linux#X11_Desktop"&gt;the documentation&lt;/a&gt;,
-the startup configuration file for the a given user needs to be located at the path
-&lt;code&gt;/home/$user/.config/lxsession/LXDE-pi/autostart&lt;/code&gt;.  If it is not there, it
-will default to the generic file located at the path &lt;code&gt;/etc/xdg/lxsession/LXDE-pi/autostart&lt;/code&gt;.
-As this setup uses the default &lt;code&gt;pi&lt;/code&gt; user, the startup configuration file needs to reside at
-&lt;code&gt;/home/pi/.config/lxsession/LXDE-pi/autostart&lt;/code&gt;&lt;/p&gt;
-&lt;p&gt;Following the advice of various articles, I elected to create a copy of the &lt;code&gt;autostart&lt;/code&gt; file
-under the local &lt;code&gt;/home/pi/&lt;/code&gt; directory.  That way, if something bad happens, I can always restart
-the configuration by copying the default file into the &lt;code&gt;/home/pi/&lt;/code&gt; directory again.  To
-accomplish this, I executed the following commands:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;mkdir -p /home/pi/.config/lxsession/LXDE-pi/
-cp /etc/xdg/lxsession/LXDE-pi/autostart /home/pi/.config/lxsession/LXDE-pi/autostart
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;To place the file in the proper directory, I performed a &lt;code&gt;mkdir&lt;/code&gt; command as the &lt;code&gt;LXDE-pi&lt;/code&gt;
-directory did not exist with the clean Raspbian installation I was using.  Once I had the
-directory created, I used the &lt;code&gt;cp&lt;/code&gt; command to copy the default version of the &lt;code&gt;autostart&lt;/code&gt;
-file into that directory.  At that time, the file looked like this:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;@lxpanel --profile LXDE-pi
-@pcmanfm --desktop --profile LXDE-pi
-@xscreensaver -no-splash
-@point-rpi
-&lt;/pre&gt;&lt;/div&gt;
-&lt;h2 id="starting-chromium-in-kiosk-mode"&gt;Starting Chromium In Kiosk Mode&lt;a class="headerlink" href="#starting-chromium-in-kiosk-mode" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Now that the local startup file was present, I edited the file with the command
-&lt;code&gt;nano /home/pi/.config/lxsession/LXDE-pi/autostart&lt;/code&gt; in order to add my own startup commands. To
-be honest, I tried a number of different startup commands recommended by different articles, and
-each one had good points and bad points.  After much experimentation, I ended up with a simple
-set of startup commands which was as follows:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;@unclutter
-@xset s off
-@xset s noblank
-@xset -dpms
-
-@chromium-browser --incognito --start-maximized --disable-notifications --disable-extensions --disable-hang-monitor --disable-infobars --kiosk https://bingwallpaper.anerg.com/
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;As mentioned above, the &lt;a href="https://wiki.debian.org/unclutter"&gt;unclutter tool&lt;/a&gt; makes the mouse
-disappear when not used, which is perfect for a display that is never going to have a mouse.
-The &lt;a href="https://www.computerhope.com/unix/uxset.htm"&gt;xset tools&lt;/a&gt; allows for the setting of
-various XWindows related settings.  Specifically, the &lt;code&gt;s&lt;/code&gt; setting is for the screen saver
-and the &lt;code&gt;-dpms&lt;/code&gt; setting is for the monitor’s Energy Start features.  Finally, the Chromium
-browser is the browser I chose to start with for displaying the webpages as it has the most
-documentation on &lt;a href="https://www.computerhope.com/unix/uxset.htm"&gt;command line switches&lt;/a&gt;.&lt;/p&gt;
-&lt;div class="admonition note"&gt;
-&lt;p class="admonition-title"&gt;Note&lt;/p&gt;
-&lt;p&gt;When I say the most documentation on command line switches, look at the link.  The list is way too large to confidently comprehend.  As such, I had to take guesses as to which of the –disable switches I needed.&lt;/p&gt;
-&lt;/div&gt;
-&lt;p&gt;In order, the changes I made to the configuration file:&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;hide the mouse&lt;/li&gt;
-&lt;li&gt;turn the screen saver off&lt;/li&gt;
-&lt;li&gt;don’t blank the screen&lt;/li&gt;
-&lt;li&gt;turn off any Energy Star power save monitor features&lt;/li&gt;
-&lt;li&gt;start the browser (window maximized, incognito, in kiosk mode) pointing at the Bing wallpaper page&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;After I finished editing the file, I made sure to save the file (ctrl-X, &lt;code&gt;yes&lt;/code&gt;, enter), and
-then double checked all of my changes.  When I confident I had all of them entered
-correctly, I proceeded to the next step.&lt;/p&gt;
-&lt;h2 id="verifying-things-are-working-properly"&gt;Verifying things are Working Properly&lt;a class="headerlink" href="#verifying-things-are-working-properly" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;I issued a &lt;code&gt;sudo reboot&lt;/code&gt; to reboot the Raspberry Pi.&lt;/p&gt;
-&lt;p&gt;And waited.&lt;/p&gt;
-&lt;p&gt;And waited.&lt;/p&gt;
-&lt;p&gt;And waited.&lt;/p&gt;
-&lt;p&gt;If the repetition doesn’t make it clear, it felt like forever.  I was sure I had followed my
-own instructions properly. Even going off of my own notes, there was the anticipation of
-seeing whether or not it would work.  The Raspberry Pi I was using seemed slower than usual,
-but after a while, everything started up and it was displaying the website
-&lt;code&gt;https://bingwallpaper.anerg.com/&lt;/code&gt; in the browser.&lt;/p&gt;
-&lt;p&gt;As I checked the display, I saw the mouse pointer disappear after a few minutes.  Check.&lt;/p&gt;
-&lt;p&gt;After a couple of hours, the screen saver had not kicked in.  Check.&lt;/p&gt;
-&lt;p&gt;After a couple of hours, the monitor was still displaying the website. Check.&lt;/p&gt;
-&lt;p&gt;For the most part, due to some good notes that I kept, everything was up and running the way it
-was supposed to.&lt;/p&gt;
-&lt;h3 id="but-what-if-it-is-not"&gt;But What if it Is Not?&lt;a class="headerlink" href="#but-what-if-it-is-not" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;Let’s be honest.  The first 5-10 times that I performed this setup, I didn’t get it right and
-it was only my notetaking that helped me figure out which things worked and which didn’t. It
-took a lot of notetaking and a lot of debugging and looking at log files to figure out what
-was working.&lt;/p&gt;
-&lt;p&gt;The first log file that I used to debug things was the &lt;code&gt;/home/pi/.xsession-errors&lt;/code&gt; file.
-After executing the &lt;code&gt;cat /home/pi/.xsession-errors&lt;/code&gt; command, I noticed that while it didn’t
-have a lot of useful information, it had two important pieces of information:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;** Message: 17:00:13.893: main.vala:101: Session is LXDE-pi
-** Message: 17:00:13.894: main.vala:102: DE is LXDE
-** Message: 17:00:16.375: main.vala:133: log directory: /home/pi/.cache/lxsession/LXDE-pi
-** Message: 17:00:16.376: main.vala:134: log path: /home/pi/.cache/lxsession/LXDE-pi/run.log
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;This information let me know I was putting the changes in the right place, and where to look
-for the log for the current user’s session: &lt;code&gt;/home/pi/.cache/lxsession/LXDE-pi/run.log&lt;/code&gt;. Also,
-the fact that it was putting the logs in the &lt;code&gt;/home/pi/.cache/lxsession/LXDE-pi&lt;/code&gt; directory
-meant that it noticed the &lt;code&gt;autostart&lt;/code&gt; file that I added, as was using it.  That was
-a useful piece of verification.&lt;/p&gt;
-&lt;p&gt;When I started looking at that file, I was at first overwhelmed before I found a couple of
-tricks to help me out.  The first trick was to look for a file that looks like this:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;** Message: 17:00:16.917: autostart.vala:42: Autostart path : /home/pi/.config/lxsession/LXDE-pi/autostart
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Everything before that point are just the other parts of LXDE getting set up, and it really
-didn’t have any effect on what I was trying to do.  After that line were a series of lines that
-began with &lt;code&gt;Launching&lt;/code&gt;, corresponding with each line of the &lt;code&gt;autostart&lt;/code&gt; file.  The next section
-of lines complemented those lines, providing for the exit codes of each of the lines in that
-file.  Finally, there is a section starting with &lt;code&gt;Connecting ...&lt;/code&gt; that signifies the section
-of the log where the wired and wireless link status is logged.  While the link status is
-important, the fact that it gets to this point successfully generally means that the display
-is ready to go!&lt;/p&gt;
-&lt;h2 id="what-was-accomplished"&gt;What Was Accomplished&lt;a class="headerlink" href="#what-was-accomplished" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;This article detailed the work that was needed to take my Raspberry Pi from a sufficiently
-set up machine to fulfilling 2 out of the 3 requirements of my a glanceable display.  At this
-point, I have setup a Raspberry Pi that is remotely administered from a machine other than
-the Raspberry Pi itself, one of our requirements.  Another of the requirements is to have the
-machine start displaying a web browser automatically, without any requirement for a keyboard
-or mouse to be attached to the machine, which has also been accomplished.  Along the way
-of documenting that setup, I also provided some useful tools to clean up the display and some
-places to look for debug logs for the setup process.&lt;/p&gt;
-&lt;p&gt;Specifically, this article took the big step forward from a Raspberry Pi that was remotely
-administered, to a Raspberry Pi that automatically launches a web browser pointing to a specific
-webpage on reboot.  The next step is to provide that web browser with some content that is not
-generated on the Raspberry Pi itself.&lt;/p&gt;
-&lt;h2 id="whats-next"&gt;What’s Next?&lt;a class="headerlink" href="#whats-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;In the final article in this series,
-&lt;a href="https://jackdewinter.github.io/2019/08/11/glanceable-displays-what-do-i-want-to-display/"&gt;Glanceable Displays: What Do I Want To Display?&lt;/a&gt;
-I walk through the steps I took to determine where to get finalized webpages to display
-in my glanceable display, while adhering to the final implementation requirement of my
-glanceable display.&lt;/p&gt;</content><category term="Integrating Technology"></category><category term="glanceable displays"></category><category term="home dashboard"></category><category term="raspberry pi"></category><category term="linux chromium"></category><category term="linux kiosk mode"></category><category term="booting into chromium"></category></entry><entry><title>Glanceable Displays: Fine Tuning A Raspberry Pi Installation</title><link href="https://jackdewinter.github.io/2019/07/28/glanceable-displays-fine-tuning-a-raspberry-pi-installation/" rel="alternate"></link><published>2019-07-28T00:00:00-07:00</published><updated>2019-07-28T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2019-07-28:/2019/07/28/glanceable-displays-fine-tuning-a-raspberry-pi-installation/</id><summary type="html">&lt;h2 id="preface"&gt;Preface&lt;a class="headerlink" href="#preface" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;This is the third article in a series about Glanceable Displays and my efforts to create
-one for my household.  For other articles in the series, click on the title of the article
-under the heading “Glanceable Displays” on the right side of the webpage.&lt;/p&gt;
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-
-&lt;p&gt;In the &lt;a href="https://jackdewinter.github.io/2019/07/21/glanceable-displays-installing-raspbian-on-a-raspberry-pi/"&gt;previous …&lt;/a&gt;&lt;/p&gt;</summary><content type="html">&lt;h2 id="preface"&gt;Preface&lt;a class="headerlink" href="#preface" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;This is the third article in a series about Glanceable Displays and my efforts to create
-one for my household.  For other articles in the series, click on the title of the article
-under the heading “Glanceable Displays” on the right side of the webpage.&lt;/p&gt;
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-
-&lt;p&gt;In the &lt;a href="https://jackdewinter.github.io/2019/07/21/glanceable-displays-installing-raspbian-on-a-raspberry-pi/"&gt;previous article&lt;/a&gt;,
-I detailed the steps required to get the Raspbian (Linux) operating system installed on a
-Raspberry Pi with remote access through
-SSH enabled.&lt;/p&gt;
-&lt;p&gt;This article attempts to move the needle forward by tackling a number of the issues that I had
-in getting necessary foundation services up and running on my Raspberry Pi.  The two services
-that I had issues with were: ensuring that Wi-Fi was working properly and that the Raspberry
-Pi clock was being set properly.  Until I was confident that these two issues were resolved,
-I was not confident that I would be able to use my glanceable display in it’s intended
-location, as that location does not have any wired network access.&lt;/p&gt;
-&lt;div class="admonition note"&gt;
-&lt;p class="admonition-title"&gt;Note&lt;/p&gt;
-&lt;p&gt;As the steps in the previous article concluded with providing SSH access to the Raspberry Pi, I performed all of the following configuration using an SSH client.  While you are welcome to enter them through a keyboard directly connected to the Raspberry Pi, I did not test any of the steps in that manner.&lt;/p&gt;
-&lt;/div&gt;
-&lt;div class="admonition warning"&gt;
-&lt;p class="admonition-title"&gt;Warning&lt;/p&gt;
-&lt;p&gt;From the experience of reviewing and retrying these steps, &lt;code&gt;sudo reboot&lt;/code&gt; is a good friend. If it looks like something didn’t work and you think it should, consider using &lt;code&gt;sudo reboot&lt;/code&gt; to reboot the machine and carry on from there.  This is very handy when changing configuration.&lt;/p&gt;
-&lt;/div&gt;
-&lt;h2 id="step-1-wi-fi-access"&gt;Step 1: Wi-Fi Access&lt;a class="headerlink" href="#step-1-wi-fi-access" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Unless you have the fortune of having a wired network outlet available near your display AND
-enjoy the aesthetic of having a network cable going into your display, you most likely want
-to enable Wi-Fi access to your display.  Here are the steps I went though to get
-wireless access enabled.&lt;/p&gt;
-&lt;h3 id="step-1a-searching-for-existing-wireless-access"&gt;Step 1a: Searching for Existing Wireless Access&lt;a class="headerlink" href="#step-1a-searching-for-existing-wireless-access" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;The first command that I used to check for wireless network access was the &lt;code&gt;ifconfig&lt;/code&gt; command.
-This is a general command used to determine what network connections are available.   I had a
-network cable running into the machine, but nothing else, so the following response&lt;sup id="fnref:ellipses"&gt;&lt;a class="footnote-ref" href="#fn:ellipses"&gt;1&lt;/a&gt;&lt;/sup&gt;
-was expected:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;eth0: flags=4163&amp;lt;UP,BROADCAST,RUNNING,MULTICAST&amp;gt;  mtu 1500
-        ...
-lo: flags=73&amp;lt;UP,LOOPBACK,RUNNING&amp;gt;  mtu 65536
-        ...
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;While it looks like gibberish to some, it was what I expected.  Linux systems often use the
-tag &lt;code&gt;eth0&lt;/code&gt; for the first wired connection and the tag &lt;code&gt;lo&lt;/code&gt; for the loopback connection.  The
-important thing I noticed was that I didn’t see a &lt;code&gt;wlan0&lt;/code&gt; tag, typically used for the first
-wireless connection.  The clear observation I had was that the system did not currently have
-a capability to have a wireless connection.&lt;/p&gt;
-&lt;p&gt;This observation on a normal computer running Linux might be farfetched, but from information
-gained researching the Raspberry Pi on various forums, it is relatively normal for a Raspberry
-Pi to not have any wireless capability built-in.  As wireless components have recently become
-cheaper, it seems like it is only the latest versions of the Raspberry Pi 3 have wireless
-access built in.&lt;/p&gt;
-&lt;div class="admonition note"&gt;
-&lt;p class="admonition-title"&gt;Note&lt;/p&gt;
-&lt;p&gt;I have not repeated these steps on a newer Raspberry Pi, but I would expect that doing so would allow me to skip the next section on installing the adapter.  I will update the article once I have tested that scenario.&lt;/p&gt;
-&lt;/div&gt;
-&lt;h3 id="step-1b-installing-a-wireless-adapter"&gt;Step 1b: Installing a Wireless Adapter&lt;a class="headerlink" href="#step-1b-installing-a-wireless-adapter" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;In my instance, the machine I was configuring did not have any wireless capabilities built in.
-That was resolved in short order by noting down the connection requirements for the household
-router (WPA2-PSK (AES)) and purchasing an inexpensive USB Wi-Fi adapter from a nearby store.&lt;/p&gt;
-&lt;div class="admonition note"&gt;
-&lt;p class="admonition-title"&gt;Note&lt;/p&gt;
-&lt;p&gt;If possible, use that store’s online presence to inspect the possible adapters, verifying 1-3 choices for adapters that meet the router’s specifications.  While not necessary, it can avoid round trips to the store to try and find the right adapter.  Doing this, I found that my local store had a TP-Link TL WN823N USB Adapter that was right for the job for $15.&lt;/p&gt;
-&lt;/div&gt;
-&lt;p&gt;Returning home from the store with an inexpensive TP-Link TL WN823N adapter, I powered off the
-Raspberry Pi, installed the Wi-Fi adapter in one of the open USB slots, and powered up the
-Raspberry Pi.  Once Raspbian had booted up, I reconnected to the machine using SSH and entered
-the &lt;code&gt;lsusb&lt;/code&gt; command.  This command is similar to the &lt;code&gt;ls&lt;/code&gt; command to list files, but is used
-to list various USB components that the machine has recognized.  The response I received from
-that command was:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;Bus 001 Device 006: ID 2357:0109 TP-Link TL WN823N RTL8192EU
-Bus 001 Device 005: ID 0461:4e26 Primax Electronics, Ltd
-Bus 001 Device 004: ID 0461:4d64 Primax Electronics, Ltd
-Bus 001 Device 003: ID 0424:ec00 Standard Microsystems Corp. SMSC9512/9514 Fast Ethernet Adapter
-Bus 001 Device 002: ID 0424:9514 Standard Microsystems Corp. SMC9514 Hub
-Bus 001 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Seeing as the adapter I bought was a TP-Link TL WN823N, I was relieved to see it listed as
-device 06.  At this point it was clear to me that the Raspberry Pi recognized the adapter, and
-it was time to install the required drivers.&lt;/p&gt;
-&lt;h3 id="step-1c-installing-the-wi-fi-drivers"&gt;Step 1c: Installing the Wi-Fi Drivers&lt;a class="headerlink" href="#step-1c-installing-the-wi-fi-drivers" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;From a research point of view, this was the most frustrating part of getting wireless access
-working.  In most of the articles I researched, the authors seemed to assume that the drivers
-for a given adapter would already be installed in the Raspbian distribution.  The few articles
-I found that handled missing drivers were very specific, and not very helpful.  They often
-used the Raspbian &lt;code&gt;apt-get&lt;/code&gt; family of commands to look for an adapter, and each adapter
-I found seemed to have a slightly different way of making sure it worked properly.  As I
-was writing down notes for this article to help other people, that experience was frustrating
-and was far from helpful.&lt;/p&gt;
-&lt;p&gt;Everything changed when my research led me to a reference to the
-&lt;a href="https://www.umpah.net/raspberry-pi-security-cam-installing-motioneye/"&gt;Fars Robotics&lt;/a&gt;
-driver install script.  This breaks down the process into the following three commands:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;sudo wget http://www.fars-robotics.net/install-wifi -O /usr/bin/install-wifi
-sudo chmod +x /usr/bin/install-wifi
-sudo /usr/bin/install-wifi
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Instead of playing around with &lt;code&gt;apt-get&lt;/code&gt; commands and looking for a specific driver, this
-script automated the process, finding the correct driver and installing it.  The commands
-first downloaded the script into the &lt;code&gt;/usr/bin&lt;/code&gt; directory, set it to be executable, and then
-executed the downloaded script.  Within 60 seconds, it had completed, and it’s output suggested
-that the driver for my TP-Link TL WN823N had installed successfully.&lt;/p&gt;
-&lt;p&gt;To double check that it worked properly, I resubmitted the &lt;code&gt;ifconfig&lt;/code&gt; command and got the
-following:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;eth0: flags=4163&amp;lt;UP,BROADCAST,RUNNING,MULTICAST&amp;gt;  mtu 1500
-        inet 192.168.2.3  netmask 255.255.255.0  broadcast 192.168.2.255
-        ...
-lo: flags=73&amp;lt;UP,LOOPBACK,RUNNING&amp;gt;  mtu 65536
-        inet 127.0.0.1  netmask 255.0.0.0
-        ...
-wlan0: flags=4163&amp;lt;UP,BROADCAST,RUNNING,MULTICAST&amp;gt;  mtu 1500
-        ...
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Great!  Progress!  The new Wi-Fi adapter was installed, the driver was connected, and Raspbian
-was reporting that it could talk with it!  From experience, I now had to configure the machine
-to connect to the wireless network.  From the output, this was somewhat obvious.  For the
-&lt;code&gt;eth0&lt;/code&gt; and &lt;code&gt;lo&lt;/code&gt; adapters, there was a line beginning with &lt;code&gt;inet&lt;/code&gt; that described the current
-IPv4 setup for that adapter.  As the &lt;code&gt;wlan0&lt;/code&gt; adapter was missing the &lt;code&gt;inet&lt;/code&gt; line (and also the
-&lt;code&gt;inet6&lt;/code&gt; line), Raspbian could talk to the adapter, but the adapter was not connected to the
-local Wi-Fi network.&lt;/p&gt;
-&lt;p&gt;Next stop, configuring Wi-Fi access.&lt;/p&gt;
-&lt;h3 id="step-1d-configuring-wi-fi-access"&gt;Step 1d: Configuring Wi-Fi Access&lt;a class="headerlink" href="#step-1d-configuring-wi-fi-access" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;Similar to the previous section on Installing the Wi-Fi Drivers, I found many articles on how
-to do this by hand, each with its own little twist on how to set things up better.  In my case,
-I wanted to go for repeatable and easy, and the &lt;code&gt;sudo raspi-config&lt;/code&gt; command used
-to set up SSH access
-&lt;a href="https://jackdewinter.github.io/2019/07/21/glanceable-displays-installing-raspbian-on-a-raspberry-pi/#step-5-setting-up-ssh-access"&gt;in a prvious article&lt;/a&gt;
-proved to be the best solution.&lt;/p&gt;
-&lt;p&gt;From the main menu, I selected &lt;code&gt;2 network options&lt;/code&gt; and then &lt;code&gt;N2 WiFi&lt;/code&gt;.  As it was my first time
-setting up the network on this machine, I was prompted for my country, which I entered.  Next I
-was prompted with &lt;code&gt;Please enter SSID&lt;/code&gt;, and I responded with my router’s SSID.  This was
-followed with the inevitable &lt;code&gt;Please enter passphrase.  Leave it empty if none.&lt;/code&gt;, to which I
-responded with my router’s password.  Hoping everything would work out, I pressed the &lt;code&gt;Next&lt;/code&gt;
-button.&lt;/p&gt;
-&lt;p&gt;After waiting for approximately 30 seconds, the focus was returned to the main configuration
-screen.  Exiting out of that screen and back to the main screen, executing the &lt;code&gt;ifconfig&lt;/code&gt; now
-had the following response:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;eth0: flags=4099&amp;lt;UP,BROADCAST,MULTICAST&amp;gt;  mtu 1500
-        inet 192.168.2.3  netmask 255.255.255.0  broadcast 192.168.2.255
-        ...
-lo: flags=73&amp;lt;UP,LOOPBACK,RUNNING&amp;gt;  mtu 65536
-        inet 127.0.0.1  netmask 255.0.0.0
-        ...
-wlan0: flags=4163&amp;lt;UP,BROADCAST,RUNNING,MULTICAST&amp;gt;  mtu 1500
-        inet 192.168.2.67  netmask 255.255.255.0  broadcast 192.168.2.255
-        ...
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;This was what I was waiting for!  At the moment, the &lt;code&gt;eth0&lt;/code&gt; wired connection had an address of
-192.168.2.3 and the &lt;code&gt;wlan0&lt;/code&gt; wireless connection had an address of 192.168.2.67.  The address
-192.168.2.3 is the one I had been SSHing into while fixing up the Wi-Fi, so that lined up.
-Based on my router’s configuration, 192.168.2.67 was a likely address for a new machine, so
-that lined up.&lt;/p&gt;
-&lt;div class="admonition warning"&gt;
-&lt;p class="admonition-title"&gt;Warning&lt;/p&gt;
-&lt;p&gt;If you have your network secured, make sure you follow the normal steps for adding a new machine to your network.  This may include asking your local network person to add your machine to the network.  In my case, forgetting that step cost me over an hour trying to figure out why the Raspberry Pi would not connect to the network!&lt;/p&gt;
-&lt;/div&gt;
-&lt;p&gt;To verify things were working, I repeated the relevant portions of
-&lt;a href="https://jackdewinter.github.io/2019/07/21/glanceable-displays-installing-raspbian-on-a-raspberry-pi/#step-5-setting-up-ssh-access"&gt;Step 5: Setting Up SSH Access&lt;/a&gt;
-from the previous article, using the new address 192.168.2.67, instead of the old one
-192.168.2.3.  Once this succeeded, the final test was to disconnect the physical connection and
-see if the wireless connection worked.&lt;/p&gt;
-&lt;p&gt;It did take a lengthy bit of time, and one trip to a local store for hardware, but it was
-very gratifying being able to talk to the glanceable display over a wireless connection!&lt;/p&gt;
-&lt;h2 id="step-2-system-clock-synchronization"&gt;Step 2: System Clock Synchronization&lt;a class="headerlink" href="#step-2-system-clock-synchronization" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;While the Raspberry Pi is a useful little machine, it’s small form causes it to not have a
-component that many machine take for granted: a system clock.  Not having this set up for your
-glanceable display can cause any display of time to be extremely out of sync.  In addition,
-if the Raspberry Pi’s time is not decently close to the actual time, the downloading of extra
-components through mechanisms such as the &lt;code&gt;apt-get&lt;/code&gt; commands may fail.  To avoid these issues,
-setting up proper system clock synchronization is a must.&lt;/p&gt;
-&lt;h3 id="pre-requisite"&gt;Pre-Requisite&lt;a class="headerlink" href="#pre-requisite" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;The list of servers and download locations for the &lt;code&gt;apt&lt;/code&gt; family of commands has most likely
-changed since the Raspbian image was constructed.  If this is the case, any &lt;code&gt;apt&lt;/code&gt; commands
-that require any kind of package updates will most likely fail.  To solve this before it
-becomes an issue, I issued the following command to update those tables.&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;sudo apt-get update
-&lt;/pre&gt;&lt;/div&gt;
-&lt;h3 id="step-2a-installing-the-ntp-service"&gt;Step 2a: Installing the NTP Service&lt;a class="headerlink" href="#step-2a-installing-the-ntp-service" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;The quickest and most efficient solution to solve the synchronization issue was to install the
-NTP time service.  In the distribution of Raspbian that I was using, the NTP service was not
-installed.  When I entered the command &lt;code&gt;sudo systemctl status ntp&lt;/code&gt;, I saw the following
-output:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;Unit ntp.service could not be found.
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Based on various articles, the clear solution was to install the NTP service using &lt;code&gt;apt-get&lt;/code&gt;
-with the following command: &lt;code&gt;sudo apt-get install ntp&lt;/code&gt;.  Once that finished, when I repeated
-the &lt;code&gt;sudo systemctl status ntp&lt;/code&gt; command, I then received the following output:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;● ntp.service - Network Time Service
-   Loaded: loaded (/lib/systemd/system/ntp.service; enabled; vendor preset: enabled)
-   Active: active (running) since ...
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;At this point, I was satisfied that the NTP service was up and running, but not that it was
-working correctly.&lt;/p&gt;
-&lt;h3 id="step-2b-diagnosing-the-ntp-service-configuration"&gt;Step 2b: Diagnosing the NTP Service Configuration&lt;a class="headerlink" href="#step-2b-diagnosing-the-ntp-service-configuration" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;Once the service was loaded, I needed to confirm that the NTP service was working properly.
-The easy way to do this was to reboot the machine using &lt;code&gt;sudo reboot&lt;/code&gt; and then use the
-&lt;code&gt;date&lt;/code&gt; command to check the date.  When I followed that pattern, the date was over 2 weeks
-off from the actual time.  Time to go into debug mode.&lt;/p&gt;
-&lt;p&gt;The documentation on the NTP service mentions a useful command: &lt;code&gt;ntpq -p&lt;/code&gt;.  This command
-lists information about what the current NTP service is doing.   Presented as a series of
-columns, the important column was the number of seconds since the service successfully
-contacted a specific NTP server.&lt;/p&gt;
-&lt;p&gt;When I checked the output of the command, I was greeted with the following table:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;     remote           refid      st t when poll reach   delay   offset  jitter
-==============================================================================
- 0.debian.pool.n .POOL.          16 p    -   64    0    0.000    0.000   0.004
- 1.debian.pool.n .POOL.          16 p    -   64    0    0.000    0.000   0.004
- 2.debian.pool.n .POOL.          16 p    -   64    0    0.000    0.000   0.004
- 3.debian.pool.n .POOL.          16 p    -   64    0    0.000    0.000   0.004
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Looking at the when column, the issue seemed to be that it was not able to connect to those
-servers and get information about them.  Doing a bit of research, it turned out that other
-people have had problems with the default servers for the NTP server, and there were ways
-to address that.&lt;/p&gt;
-&lt;h3 id="step-2c-changing-the-ntp-service-configuration"&gt;Step 2c: Changing the NTP Service Configuration&lt;a class="headerlink" href="#step-2c-changing-the-ntp-service-configuration" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;Now that I had the NTP service installed and had issues with the default configuration, it
-was time to look at it.  The configuration for the service is located in the file
-&lt;code&gt;/etc/ntp.conf&lt;/code&gt;.  As I had found issues with the default configuration, I needed to learn
-more about this configuration file to fix the problem.&lt;/p&gt;
-&lt;p&gt;Looking at the file using a command like &lt;code&gt;more /etc/ntp.conf&lt;/code&gt; was daunting.  There were a
-number of 1-2 line sections with multiple lines of comments before them.  When I saw that,
-I was concerned.  In my experience, a large comment to useful line ratio means they are
-commenting the heck out of it, because people have done stupid things in the past.&lt;/p&gt;
-&lt;p&gt;Learning more about the configuration, it turned out that I only needed to look at one
-particular section.  The most important part of the configuration is a section that started
-with the follow text:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;# pool.ntp.org maps to about 1000 low-stratum NTP servers.  Your server will
-# pick a different set every time it starts up.  Please consider joining the
-# pool: &amp;lt;http://www.pool.ntp.org/join.html&amp;gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Right after this text, there was a group of servers specified where the first part of the
-server name was a number between 0 and 3, and the rest of the server name was the same.  Many
-of the articles I found didn’t touch the rest of the file, but focused on that small set of
-lines.&lt;/p&gt;
-&lt;p&gt;A very useful page I found during my research was the
-&lt;a href="http://support.ntp.org/bin/view/Servers/NTPPoolServers"&gt;NTP Pool Time Servers&lt;/a&gt;
-page.  Near the bottom of that page is a table that lists the various geographic areas,
-from which I selected the &lt;code&gt;North America&lt;/code&gt; selection.  At the top of the next page was a
-clearly marked section of text, with clear instruction to add that text to the &lt;code&gt;ntp.conf&lt;/code&gt; file.&lt;/p&gt;
-&lt;p&gt;Given that information, I went back to the Raspbian machine, entered &lt;code&gt;sudo nano /etc/ntp.conf&lt;/code&gt;
-to edit the &lt;code&gt;/etc/ntp.conf&lt;/code&gt; file, and replaced the default &lt;code&gt;debian&lt;/code&gt; servers in that section
-with the information from the clearly marked section of the NTP Pool Time Servers page.
-Followed up with &lt;code&gt;Ctrl-X&lt;/code&gt; to save, &lt;code&gt;y&lt;/code&gt; to save the file, &lt;code&gt;enter&lt;/code&gt; to use the provided file
-name, and it was changed.   Just to make sure, I did another &lt;code&gt;sudo reboot&lt;/code&gt; after verifying my
-changes, and the &lt;code&gt;date&lt;/code&gt; command now returned the right date.&lt;/p&gt;
-&lt;h3 id="step-2d-verify-that-the-ntp-service-is-working"&gt;Step 2d: Verify that the NTP Service is Working&lt;a class="headerlink" href="#step-2d-verify-that-the-ntp-service-is-working" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;div class="admonition warning"&gt;
-&lt;p class="admonition-title"&gt;Warning&lt;/p&gt;
-&lt;p&gt;As a number of Denial-Of-Service attacks have used the NTP port to return bad information, a number of routers come pre-configured with their firewalls set to block port 119 and 123, the NTP ports.  If you follow these instructions and are still having issues, check the firewall settings for your computer and your router.&lt;/p&gt;
-&lt;/div&gt;
-&lt;p&gt;Previously, when I had checked the status of the NTP service using the &lt;code&gt;ntpq -p&lt;/code&gt; command,
-I did not seeing anything other than &lt;code&gt;-&lt;/code&gt; in the when column of the output.  If things were
-working properly, I would expect that column to change.&lt;/p&gt;
-&lt;p&gt;Submitting the &lt;code&gt;ntpq -p&lt;/code&gt; command once the system rebooted, I got the following output:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;     remote           refid      st t when poll reach   delay   offset  jitter
-==============================================================================
--grom.polpo.org  127.67.113.92    2 u   21   64    1   59.302    9.614   6.053
-+199.180.133.100 140.142.234.133  3 u   17   64    1   26.382    5.225   3.611
-+time1-inapsales 216.218.254.202  2 u   17   64    1   41.043   -2.463   4.417
-*vps5.ctyme.com  216.218.254.202  2 u   18   64    1   36.759   -5.673   2.870
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Submitting the command multiple times, I observed that the when column values increased to
-a certain point before they started over with a low single digit number.  From the
-documentation, this was a good indication that each of those servers was being queried
-successfully, then registering itself for the next time to check against that server.&lt;/p&gt;
-&lt;p&gt;Seeing the successful connections with the NTP servers, the time synchronization issues
-were cleared up!  Just to be sure, I did a couple of cycles of &lt;code&gt;sudo reboot&lt;/code&gt; and checking
-the time, with no errors.&lt;/p&gt;
-&lt;h2 id="what-was-accomplished"&gt;What Was Accomplished&lt;a class="headerlink" href="#what-was-accomplished" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;This article detailed the steps taken to fix two of the major issues I had after installing
-Raspbian on my Raspberry Pi: the Wi-Fi access and the system clock being out of sync.  I worked
-through the various steps taken to ensure that the wireless access was up and running,
-including the various checks I did throughout the process.  I then walked through the steps
-I took to ensure that the time on the Raspberry Pi was reflecting actual time, despite not
-having an onboard system clock.&lt;/p&gt;
-&lt;p&gt;With this accomplished, I had confidence in having firm foundations on which to start building
-the display part of my glanceable display.&lt;/p&gt;
-&lt;h2 id="whats-next"&gt;What’s Next?&lt;a class="headerlink" href="#whats-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;In the next article in this series,
-&lt;a href="https://jackdewinter.github.io/2019/08/04/glanceable-displays-setting-up-our-display/"&gt;Glanceable Displays: Setting Up Our Display&lt;/a&gt;
-I walk through the steps I took to setup the Raspberry Pi to start the display upon boot
-for the glanceable display.&lt;/p&gt;
-&lt;div class="footnote"&gt;
-&lt;hr/&gt;
-&lt;ol&gt;
-&lt;li id="fn:ellipses"&gt;
-&lt;p&gt;In any of these examples, a set of ellipses (“…”) are used to denote that content was removed that was either sensitive or not relevant to the example being presented. &lt;a class="footnote-backref" href="#fnref:ellipses" title="Jump back to footnote 1 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
-&lt;/li&gt;
-&lt;/ol&gt;
-&lt;/div&gt;</content><category term="Integrating Technology"></category><category term="glanceable displays"></category><category term="home dashboard"></category><category term="raspberry pi"></category><category term="raspberry pi wi-fi"></category><category term="raspberry pi clock"></category><category term="linux ntp"></category><category term="linux wi-fi"></category></entry><entry><title>Glanceable Displays: Installing Raspbian on a Raspberry Pi</title><link href="https://jackdewinter.github.io/2019/07/21/glanceable-displays-installing-raspbian-on-a-raspberry-pi/" rel="alternate"></link><published>2019-07-21T00:00:00-07:00</published><updated>2019-07-21T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2019-07-21:/2019/07/21/glanceable-displays-installing-raspbian-on-a-raspberry-pi/</id><summary type="html">&lt;h2 id="preface"&gt;Preface&lt;a class="headerlink" href="#preface" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;This is the second article in a series about Glanceable Displays and my efforts to create
-one for my household.  For other articles in the series, click on the title of the article
-under the heading “Glanceable Displays” on the right side of the webpage.&lt;/p&gt;
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-
-&lt;p&gt;The methods detailed …&lt;/p&gt;</summary><content type="html">&lt;h2 id="preface"&gt;Preface&lt;a class="headerlink" href="#preface" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;This is the second article in a series about Glanceable Displays and my efforts to create
-one for my household.  For other articles in the series, click on the title of the article
-under the heading “Glanceable Displays” on the right side of the webpage.&lt;/p&gt;
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-
-&lt;p&gt;The methods detailed in this article provide for simple installation of the Raspbian
-operating system using the
-&lt;a href="https://www.raspberrypi.org/documentation/installation/noobs.md"&gt;New Out Of Box Software (NOOBS)&lt;/a&gt;
-installation method, as suggested for beginners by the
-&lt;a href="https://www.raspberrypi.org"&gt;Raspberry Pi site&lt;/a&gt;.  While there are more direct methods
-for experienced users, the NOOBs installation was selected for it’s simplicity and ease of
-installation.&lt;/p&gt;
-&lt;p&gt;Using the NOOBs installation, this article details the first steps I took in setting up one of
-my Raspberry Pi systems to be a glanceable display for my family.  Those steps start with the
-formatting of a MicroSD card and installation of the NOOBs installer on to that MicroSD card.
-After installing that card into the Raspberry Pi, the steps continue with the installation
-of a stock Raspbian distribution, detailing the a couple of questions that need to be answered
-to complete the installation.  Finally, to enable remote access, the last step is to ensure
-that I can access the Raspberry Pi using SSH for later configuration and control.&lt;/p&gt;
-&lt;h2 id="requirements"&gt;Requirements&lt;a class="headerlink" href="#requirements" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;ul&gt;
-&lt;li&gt;Raspberry Pi, version 3.0 or later&lt;/li&gt;
-&lt;li&gt;Power Supply for Raspberry Pi&lt;/li&gt;
-&lt;li&gt;Keyboard and Mouse&lt;/li&gt;
-&lt;li&gt;HDMI cable connected to monitor&lt;/li&gt;
-&lt;li&gt;Cat5 Ethernet cable&lt;/li&gt;
-&lt;li&gt;Notepad (electronic or paper) to write down notes on specifics of the installation&lt;/li&gt;
-&lt;/ul&gt;
-&lt;div class="admonition note"&gt;
-&lt;p class="admonition-title"&gt;Note&lt;/p&gt;
-&lt;p&gt;Please keep your own notes as you go, and refer back to them.  While I have tested the steps on my own Raspberry Pi machines, they were by no means exhaustive tests.&lt;/p&gt;
-&lt;/div&gt;
-&lt;h2 id="step-1-interfacing-with-a-microsd-card"&gt;Step 1: Interfacing With a MicroSD Card&lt;a class="headerlink" href="#step-1-interfacing-with-a-microsd-card" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;The configuration and main drive for a Raspberry Pi is a MicroSD card.  To get the card
-ready for use, your computer must be able to interface with the card.  &lt;/p&gt;
-&lt;p&gt;Most computers do not come with MicroSD slots, but there are a fair number with SD slots. To
-make things easier for MicroSD buyers, some of the more high
-end MicroSD makers include a MicroSD-to-SD adapter in their packaging, such as
-&lt;a href="https://www.amazon.com/gp/product/B06XWN9Q99"&gt;this 32GB MicroSD card from Amazon&lt;/a&gt;.  I started
-out using this, but found that the adapter was only good for 3-4 uses, not for continual use.&lt;/p&gt;
-&lt;p&gt;An alternative is a more multi-purpose adaptor, such as
-&lt;a href="https://www.amazon.com/gp/product/B01KFXS83W"&gt;this multi-adapter from Amazon&lt;/a&gt;.  As it is
-made from a more durable material, it will survive more uses.  The one that I bought from
-Amazon at 7.00 USD is still working after about 70+ uses, so at 0.10 USD per use, it has
-already paid for itself.  Also, as it has a USB adapter, I can plug it into a USB extension
-cable that I already have on my desk.&lt;/p&gt;
-&lt;p&gt;Whichever way you decide to go, make sure to add the MicroSD card to the adapter before
-plugging the adaptor into you computer.  Once it is securely in the adapter, make sure to
-apply it to the relevant slot on your computer firmly, and make sure the connection is there.
-On my Windows 10 machine, I can tell this happens as it will acknowledge the connection by
-opening up an Explorer window, with either a “please format” instruction or a list of any
-files in the directory.&lt;/p&gt;
-&lt;h2 id="step-2-getting-the-microsd-card-ready"&gt;Step 2: Getting the MicroSD Card Ready&lt;a class="headerlink" href="#step-2-getting-the-microsd-card-ready" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;div class="admonition note"&gt;
-&lt;p class="admonition-title"&gt;Note&lt;/p&gt;
-&lt;p&gt;Note that the steps that follow are for my Windows 10 machine.  The
-&lt;a href="https://www.raspberrypi.org/documentation/installation/noobs.md"&gt;NOOBs site&lt;/a&gt;, has sections for installing on Mac and Linux, but I did not test them.  If they do not work,please Google/Bing &lt;code&gt;linux microsd card format&lt;/code&gt; and &lt;code&gt;linux microsd card mount&lt;/code&gt;. Feel free to replace the generic &lt;code&gt;linux&lt;/code&gt; in the searches with the name of the Linux distribution that you are using.&lt;/p&gt;
-&lt;/div&gt;
-&lt;h3 id="step-2a-reformatting-a-used-microsd-card"&gt;Step 2a: Reformatting a Used MicroSD Card&lt;a class="headerlink" href="#step-2a-reformatting-a-used-microsd-card" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;Reusing old hardware is important, for important reasons such as the environment and cost to build.
-To make sure that is possible, it took me a number of tries to create a solid recipe for
-reformatting the MicroSD cards.  As I mention in the &lt;code&gt;Requirements&lt;/code&gt; section, keep good notes of
-what you do, or if following a recipe like this one, what changes you made to the recipe.&lt;/p&gt;
-&lt;p&gt;While there is a command line only tool that will also do the job, I found it clunky and hard
-to use.  Instead, the Disk Management applet for the control panel was the tool I settled on.
-This can be invoked by typing &lt;code&gt;partition&lt;/code&gt; in the search window on the tool bar and selecting
-the &lt;code&gt;create and format hard disk partitions&lt;/code&gt; item.&lt;/p&gt;
-&lt;p&gt;Selecting that item brought up the &lt;code&gt;Disk Management&lt;/code&gt; window, showing a break down of
-every drive connected to my computer.  When the MicroSD card was properly connected to the
-computer, it showed up as Removable media after all of my permanent drives.  Using the right
-mouse button, I clicked on each of the blocks on my MicroSD card and selected the
-&lt;code&gt;Delete Volume&lt;/code&gt; menu item until all of the volumes were gone.  When that was accomplished, I
-was left with two blocks, and right clicking on the rightmost block presented me with a
-&lt;code&gt;Delete Partition&lt;/code&gt; menu item, which consolidated all of the partitions into a single
-unallocated block.&lt;/p&gt;
-&lt;p&gt;From there, I was able to right click on the Unallocated partition to select the
-&lt;code&gt;Create Volume&lt;/code&gt; menu item.  This started a simple wizard that quickly walked me through
-the options for creating a new volume.  I used all defaults that were presented with the
-exception of the &lt;code&gt;file system&lt;/code&gt; and &lt;code&gt;quick format&lt;/code&gt; settings.  I changed the &lt;code&gt;file system&lt;/code&gt;
-setting to &lt;code&gt;FAT32&lt;/code&gt; and unchecked the &lt;code&gt;Use Quick Format&lt;/code&gt; checkbox, before clicking on
-finish and waiting for about 30 minutes before the format was complete.&lt;/p&gt;
-&lt;h3 id="step-2b-formatting-a-new-microsd-card"&gt;Step 2b: Formatting a New MicroSD Card&lt;a class="headerlink" href="#step-2b-formatting-a-new-microsd-card" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;From a Windows 10 point of view, this was easy.  When the MicroSD card was properly connected
-to my computer, it prompted me to format the card, presenting me with the format dialog
-itself.  When formatting the MicroSD card, it was important to select &lt;code&gt;FAT32&lt;/code&gt; as the type
-of format and to unselect &lt;code&gt;Quick Format&lt;/code&gt; on the dialog.  Once I clicked the format button,
-it took a good while before it was completed.  As a rough estimate, I guessed that it was
-roughly 1 minute per gigabyte on the MicroSD card, regardless of computer speed.&lt;/p&gt;
-&lt;h2 id="step-3-install-raspbian-lite-using-noobs"&gt;Step 3: Install Raspbian Lite Using NOOBS&lt;a class="headerlink" href="#step-3-install-raspbian-lite-using-noobs" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;div class="admonition note"&gt;
-&lt;p class="admonition-title"&gt;Note&lt;/p&gt;
-&lt;p&gt;When the format is finished from the previous step, it is important to go to your taskbar and eject the media from your computer.  I accomplished this by right clicking on the USB stick icon and selecting “Eject Mass Storage Device” from the menu.  At that point, I cleanly removed the adaptor and the MicroSD card from the computer to ensure the ejection was complete. When I tested various scenarios, any time that I forgot to eject the media at this point, it did not take later on.  &lt;/p&gt;
-&lt;/div&gt;
-&lt;p&gt;The people behind the Raspberry PI made sure there is a simple to use installation system
-that simplifies the task of installing operating systems on to the Raspberry Pi.  The
-&lt;a href="https://www.raspberrypi.org/documentation/installation/noobs.md"&gt;New Out Of Box Software (NOOBS)&lt;/a&gt;
-site aims to allow a fairly basic installation of Raspberry Pi operating systems with
-little effort.  Unless you are familiar with Linux systems, their installation can be
-very daunting, so it is best to keep the installation as simple as possible.&lt;/p&gt;
-&lt;p&gt;To start that process, I downloaded the
-&lt;a href="https://downloads.raspberrypi.org/NOOBS_latest"&gt;NOOBS zip file&lt;/a&gt; from their website
-to my computer.  After reinserting the MicroSD card and adapter to my computer, I then unzipped
-the contents of the &lt;code&gt;NOOBS_V3_2_0.zip&lt;/code&gt; file to the root of the drive for the MicroSD card.
-I had to take care to ensure that the contents were in the root of the drive, not in a
-subdirectory of the drive.  This happened enough times that I actually unzipped the files to
-a local directory and just used XCOPY to copy the files over, solving the placement problem
-for myself.&lt;/p&gt;
-&lt;p&gt;As with the note at the start of this section, once this action was done, I once again ejected
-the USB device before disconnecting it from the computer, for the same reasons.&lt;/p&gt;
-&lt;p&gt;Taking the MicroSD card, I found the MicroSD port on the Raspberry Pi.  The port is flat with
-the motherboard of the Raspberry Pi, and the cases I have all have a hole in the case to
-make it easy to find.  Inserting the card into the port, I then attached the other cables for
-monitor (HDMI), ethernet (Cat5), keyboard (USB), and mouse (USB), with the 5V adapter cable
-being last.&lt;/p&gt;
-&lt;p&gt;Two minutes later, I was presented with a screen which prompted me to select the operating
-system to install.  I tried a number of times to get the &lt;code&gt;Raspbian Lite&lt;/code&gt; install to work, but
-encountered a number of issues, so I defaulted to the stock &lt;code&gt;Raspbian [RECOMMENDED]&lt;/code&gt; install.
-Once I made this choice, I selected &lt;code&gt;Raspbian [RECOMMENDED]&lt;/code&gt; from the top of the list in the
-NOOBs installation dialog, followed by pressing the &lt;code&gt;Install&lt;/code&gt; button at the top.  From there,
-it took about 30 minutes or so before I was prompted with a dialog box that said:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;OS(es) installed successfully
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;When I pressed the &lt;code&gt;OK&lt;/code&gt; button on that dialog, the system rebooted with first a rainbow
-screen, then a screen with a big raspberry on it, then lots of text scrolling by quickly.
-After a relatively small amount of action and a lot of waiting, it was now time to set up
-the operating system for simple uses!&lt;/p&gt;
-&lt;h2 id="step-4-initial-system-setup"&gt;Step 4: Initial System Setup&lt;a class="headerlink" href="#step-4-initial-system-setup" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;There was a lot of text that scrolled by so quickly, I was unable to read it.  From what
-I could see, there were a lot of green OK texts on the left side, so I guessed that the
-installation had succeeded.  After a nice round of blinking lights from the Raspberry Pi,
-the desktop showed up and proceeded to walk me through the setup configuration.&lt;/p&gt;
-&lt;p&gt;The first dialog was pretty simple, with the title &lt;code&gt;Welcome to Raspberry Pi&lt;/code&gt;.  The important
-thing to note off of this dialog is at the bottom right of the dialog is the IP address that
-the system currently has assigned to it.  As this was important, I wrote it down, and
-proceeded with the rest of the configuration.  &lt;/p&gt;
-&lt;p&gt;The configuration is a series of simple dialogs, each giving a clear indication of what is
-required.  Whenever I pressed the &lt;code&gt;Next&lt;/code&gt; button, it wrote the information to the system
-configuration files.  As such, I expect delays between when I pressed the &lt;code&gt;Next&lt;/code&gt; button and
-when the next dialog showed up.  Turns out that was a rather healthy expectation.&lt;/p&gt;
-&lt;p&gt;Some of the things that were setup were:&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;country&lt;/li&gt;
-&lt;li&gt;language&lt;/li&gt;
-&lt;li&gt;time zone&lt;/li&gt;
-&lt;li&gt;the default user &lt;code&gt;pi&lt;/code&gt;&lt;/li&gt;
-&lt;li&gt;setting a new password for the user &lt;code&gt;pi&lt;/code&gt;&lt;/li&gt;
-&lt;li&gt;take care of black border&lt;/li&gt;
-&lt;li&gt;update software&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;Having tested this workflow, I knew that the next workflow for my glanceable display would
-include updating existing packages and installing new packages.  As such, I skipped the
-update software, knowing I would do it later.  Both paths produce the same results, so feel
-free to skip it like I did, or update at a later point.  &lt;/p&gt;
-&lt;div class="admonition warning"&gt;
-&lt;p class="admonition-title"&gt;Warning&lt;/p&gt;
-&lt;p&gt;If you forget the password for the user &lt;code&gt;pi&lt;/code&gt;, there is no easy way to recover what you changed the password to.  Consider creating a &lt;em&gt;fake&lt;/em&gt; entry in a password manager, like LastPass, and storing the password there for later use.&lt;/p&gt;
-&lt;/div&gt;
-&lt;h2 id="step-5-setting-up-ssh-access"&gt;Step 5: Setting Up SSH Access&lt;a class="headerlink" href="#step-5-setting-up-ssh-access" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;That being accomplished, the last thing to complete before stopping the installation of the
-bare bones system was to enable SSH access. By enabling SSH access, I could sit at my
-comfortable workspace, using my normal computer, chair, and desk instead of at the workbench
-where I had the Raspberry Pi connected.  Frankly, the computer was connected in an almost
-Frankenstein like mess of wires on an old desk with a chair that was normally reserved for
-people visiting, not typing. My own workspace looked very inviting compared to that mess.&lt;/p&gt;
-&lt;p&gt;To enable access, I entered the command &lt;code&gt;sudo raspi-config&lt;/code&gt;, selecting
-&lt;code&gt;5. Interfacing Options&lt;/code&gt;, then selecting &lt;code&gt;P2 SSH&lt;/code&gt;, and finally answering Yes to the question
-&lt;code&gt;Would you like the SSH server to be enabled?&lt;/code&gt;.  After this, the computer took about 30
-seconds before being responsive again, with the text &lt;code&gt;The SSH server is enabled.&lt;/code&gt; appearing
-on the screen.  Pressing the enter key, and then selecting &lt;code&gt;Finish&lt;/code&gt;, I was then back at the
-command prompt.&lt;/p&gt;
-&lt;p&gt;This was the moment I was working towards: being able to have a bare bones system to use that
-I could access from my own computer.  Entering &lt;code&gt;sudo reboot&lt;/code&gt;, I waited about 45 seconds for
-the system to reboot and to be greeted with the &lt;code&gt;raspberrypi login:&lt;/code&gt; prompt.  Looking just
-above that text, I saw the text:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;[ OK ] Started OpenBSD Secure Shell server.
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;This gave me a bit of confidence to move forward.  At the very least, the operating system
-was indicating that it should allow SSH access.  At the command line, I entered:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;ssh pi@192.168.2.3
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;and with the exception of the input &lt;code&gt;yes&lt;/code&gt; to answer the question, the output was as follows:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;The authenticity of host '192.168.2.3 (192.168.2.3)' can't be established.
-ECDSA key fingerprint is SHA256:`some text here`.
-Are you sure you want to continue connecting (yes/no)? yes
-Warning: Permanently added '192.168.2.3' (ECDSA) to the list of known hosts.
-...
-pi@raspberrypi:~ $
-&lt;/pre&gt;&lt;/div&gt;
-&lt;div class="admonition note"&gt;
-&lt;p class="admonition-title"&gt;Note&lt;/p&gt;
-&lt;p&gt;After each repeated installation on the same Raspberry Pi, when I went back to open a new SSH connection, it would report the error &lt;code&gt;WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!&lt;/code&gt;.  To allow access, I needed to edit the &lt;code&gt;~/.ssh/known_hosts&lt;/code&gt; file and remove the line for the IP address of the machine, as indicated at the end of the provided error message.&lt;/p&gt;
-&lt;/div&gt;
-&lt;h2 id="what-was-accomplished"&gt;What Was Accomplished&lt;a class="headerlink" href="#what-was-accomplished" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;This article detailed the steps taken to install the Raspbian operating system on a MicroSD
-card.  It started by my formatting of the MicroSD card and copying the NOOBs installer onto
-the card, followed by inserting it into the Raspberry Pi’s MicroSD slot.  The steps continued
-with the largely automated installation of the operating system, only requiring the answers
-to six questions on my part.  Finally, it concluded with the setup for SSH to allow me to
-configure the Raspberry Pi remotely.&lt;/p&gt;
-&lt;h2 id="whats-next"&gt;What’s Next?&lt;a class="headerlink" href="#whats-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;In the next article in this series,
-&lt;a href="https://jackdewinter.github.io/2019/07/28/glanceable-displays-fine-tuning-a-raspberry-pi-installation/"&gt;Glanceable Displays: Fine Tuning A Raspberry Pi Installation&lt;/a&gt;,
-I walk through the steps I took to move the installation from a bare bones system, to one that
-had Wi-Fi and time support set up properly.&lt;/p&gt;</content><category term="Integrating Technology"></category><category term="glanceable displays"></category><category term="home dashboard"></category><category term="raspberry pi"></category><category term="ssh access"></category></entry></feed>
+you take the time to look at some of the other articles on this site!&lt;/p&gt;</content><category term="Integrating Technology"></category><category term="glanceable displays"></category><category term="home dashboard"></category><category term="raspberry pi"></category><category term="Dakboard"></category></entry></feed>

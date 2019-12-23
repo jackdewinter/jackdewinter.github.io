@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="author" content="Jack De Winter" />
+
+        <meta name="description" content="Sidebar¶ My apologies for this being a day or two later that usual. My son brought home a cold that knocked the stuffing out of me, I needed to take some personal time to ensure I was feeling better before writing. Thanks for your patience. Introduction¶ As a reminder of …
+" />
+        <meta property="og:type" content="article" />
+        <meta name="twitter:card" content="summary">
+
+<meta name="keywords" content="markdown linter, Software Quality, " />
+
+<meta property="og:title" content="Markdown Linter - Setting Up Parser Tests "/>
+<meta property="og:url" content="https://jackdewinter.github.io/2019/12/16/markdown-linter-setting-up-parser-tests/" />
+<meta property="og:description" content="Sidebar¶ My apologies for this being a day or two later that usual. My son brought home a cold that knocked the stuffing out of me, I needed to take some personal time to ensure I was feeling better before writing. Thanks for your patience. Introduction¶ As a reminder of …" />
+<meta property="og:site_name" content="Jack&#39;s Digital Workbench" />
+<meta property="og:article:author" content="Jack De Winter" />
+<meta property="og:article:published_time" content="2019-12-16T00:00:00-08:00" />
+<meta name="twitter:title" content="Markdown Linter - Setting Up Parser Tests ">
+<meta name="twitter:description" content="Sidebar¶ My apologies for this being a day or two later that usual. My son brought home a cold that knocked the stuffing out of me, I needed to take some personal time to ensure I was feeling better before writing. Thanks for your patience. Introduction¶ As a reminder of …">
+
+        <title>Markdown Linter - Setting Up Parser Tests  · Jack&#39;s Digital Workbench
+</title>
+        <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://jackdewinter.github.io/theme/css/style.min.css?bec7d543">
+
+        <link href="https://jackdewinter.github.io/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Jack&#39;s Digital Workbench - Full Atom Feed" />
+
+
+    </head>
+    <body>
+        <div id="content">
+            <div class="navbar navbar-static-top">
+                <div class="navbar-inner">
+                    <div class="container-fluid">
+                        <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                        </a>
+                        <a class="brand" href="https://jackdewinter.github.io/"><span class=site-name>Jack's Digital Workbench</span></a>
+                        <div class="nav-collapse collapse">
+                            <ul class="nav pull-right top-menu">
+                                <li >
+                                    <a href=
+                                       https://jackdewinter.github.io
+                                    >Home</a>
+                                </li>
+                                <li ><a href="https://jackdewinter.github.io/categories">Categories</a></li>
+                                <li ><a href="https://jackdewinter.github.io/tags">Tags</a></li>
+                                <li ><a href="https://jackdewinter.github.io/archives">Archives</a></li>
+                                <li><form class="navbar-search" action="https://jackdewinter.github.io/search.html" onsubmit="return validateForm(this.elements['q'].value);"> <input type="text" class="search-query" placeholder="Search" name="q" id="tipue_search_input"></form></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="container-fluid">
+                <div class="row-fluid">
+                    <div class="span1"></div>
+                    <div class="span10">
+<article itemscope>
+<div class="row-fluid">
+    <header class="page-header span10 offset2">
+        <h1>
+            <a href="https://jackdewinter.github.io/2019/12/16/markdown-linter-setting-up-parser-tests/">
+                Markdown Linter - Setting Up Parser Tests
+            </a>
+        </h1>
+    </header>
+</div>
+
+<div class="row-fluid">
+    <div class="span2 table-of-content">
+        <nav>
+        <h4>Contents</h4>
+        <div class="toc">
+<ul>
+<li><a href="#sidebar">Sidebar</a></li>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#why-write-a-parser">Why Write a Parser?</a></li>
+<li><a href="#where-to-start-with-the-tests">Where To Start With The Tests?</a></li>
+<li><a href="#starting-with-the-first-scenario-test">Starting With the First Scenario Test</a></li>
+<li><a href="#breaking-down-the-scenario-test">Breaking Down the Scenario Test</a><ul>
+<li><a href="#start-of-the-module">Start of the Module</a></li>
+<li><a href="#arrange-the-data-for-the-test">Arrange The Data For The Test</a></li>
+<li><a href="#act-tokenize-and-assert-verify-results">Act (Tokenize) and Assert (Verify Results)</a></li>
+<li><a href="#why-not-use-pure-test-driven-development">Why Not Use Pure Test Driven Development?</a></li>
+<li><a href="#how-did-this-help">How Did This Help?</a></li>
+</ul>
+</li>
+<li><a href="#what-about-the-unit-tests">What About the Unit Tests?</a></li>
+<li><a href="#what-comes-next">What Comes Next?</a></li>
+</ul>
+</div>
+        </nav>
+    </div>
+    <div class="span8 article-content">
+            
+            
+<h2 id="sidebar">Sidebar<a class="headerlink" href="#sidebar" title="Permanent link">¶</a></h2>
+<p>My apologies for this being a day or two later that usual.  My son brought home a
+cold that knocked the stuffing out of me, I needed to take some personal time to ensure
+I was feeling better before writing.  Thanks for your patience.</p>
+<h2 id="introduction">Introduction<a class="headerlink" href="#introduction" title="Permanent link">¶</a></h2>
+<p>As a reminder of the requirements from the
+<a href="https://jackdewinter.github.io/2019/12/08/markdown-linter-collecting-requirements/">last article</a>,
+the big bullet-point items are:
+command line driven, GitHub Flavored Markdown (for now), and preserving all tokens.  To
+make sure I have a solid set of goals to work towards, setting these requirements as
+part of the project was pivotal.  Now that I have that as a touchstone, I need to move
+forward with defining how to progress with the testing of the parser at the core of
+the linter.</p>
+<h2 id="why-write-a-parser">Why Write a Parser?<a class="headerlink" href="#why-write-a-parser" title="Permanent link">¶</a></h2>
+<p>In taking a look at the kind of rules that linters support, I have observed that there
+are typically two categories of rules: general rules and grammar rules.  For general
+rules such as “tabs should not be used”, it is easy to look at any line in the
+document being scanned and look for a tab character.  For grammatical rules such
+as “headings should always be properly capitalized”, that scan is more difficult.
+The most difficult part of that rule is identifying whether or not any given piece
+of text is considered part of a header, thus engaging the rest of the rule.</p>
+<p>From experience, to properly determine which part of grammar maps to which part of text
+requires a capable parser, written to the specifications of the language to be parsed.
+Based on my research from the
+<a href="https://jackdewinter.github.io/2019/12/08/markdown-linter-collecting-requirements/">last article</a>,
+all of the parsers that I found only translated Markdown into HTML, not any
+intermediate form.  Since I need a clean stream of tokens before translation to HTML,
+the only option is to write my own parser which will output a clean stream of parsed
+Markdown tokens.</p>
+<p>As I am writing my own parser, I need to have a good set of tests to ensure
+that the parser works properly.  But where to start?</p>
+<h2 id="where-to-start-with-the-tests">Where To Start With The Tests?<a class="headerlink" href="#where-to-start-with-the-tests" title="Permanent link">¶</a></h2>
+<p>Referring back to my article on <a href="https://jackdewinter.github.io/2019/11/10/software-quality-reliability/">software reliability</a>,
+the 2 main types of tests that I need to decide on are scenario tests and unit tests.
+In a nutshell, the purpose of a scenario test is to test the input and outputs of the
+project and the purpose of a unit test is to test a specific function of a specific
+components of the project.  Getting a hold of how to balance the quantity of tests that
+I need to write between the two of these types is my first priority.</p>
+<p>As one of the initial requirements is to support the
+<a href="https://github.github.com/gfm">GitHub Flavored Markdown specification</a>, it is useful to
+note that the specification itself has 637 individual examples.  Each example provides
+for the input, in Markdown, and the output, in HTML.  While the output is not at the
+token level needed to satisfy my project’s third requirement, it should be close
+enough.  In looking at each of these examples, I need a solid set of rules that I
+can apply to the tokens to get them from my desired token-based output to a HTML-based
+output that matches the examples.  It is reasonable to collect these rules as I go when
+I develop the various types of elements to be parsed.  If I tried to do them to far
+ahead of time, it would invariably lead to a lot of rework.  Just in time is the way to
+go for these rules.</p>
+<p>Taking another looking at the types of tests that I need to write, I realized that this
+project’s test viewpoint was inverted from the usual ratio of scenario tests to unit
+tests.  In most cases, if I have anything more than 20-30 scenario tests, I would think
+that I have not properly scoped the project.  However, with 637 scenarios already
+defined for me, it would be foolish not to write at least one scenario test for each of
+those scenarios, adding extra scenario tests and supportive unit tests where needed.
+In this case, it makes more sense to focus on the scenario tests as the major set of
+tests to write.</p>
+<p>The balance of scenario tests to unit tests?</p>
+<p>Given 637 scenarios ready to go, I need to create at least 637 scenario tests.
+For those scenario tests, experimenting with the first couple of scenario tests to
+find a process that worked seemed to be the most efficient way forward.  Given a simple
+and solid template for every scenario test, I had a lot of confidence to then use that
+template for each scenario test that I tackled.</p>
+<p>And the unit tests?  In implementing any parsing code, I knew that I needed helper
+functions that parsed a specific type of foundational thing, like a tag in an HTML
+block or skipping ahead over any whitespace.  The unit tests are used to verify
+that those kind of foundational functions are operating properly, ensuring that the
+rest of the code can depend on those foundations with confidence.  As an added bonus,
+more combinations of the various sequences to parse could be tested without inflating
+the number of scenario tests.</p>
+<p>Ground rules set?   Check.  On to the first scenario test.</p>
+<h2 id="starting-with-the-first-scenario-test">Starting With the First Scenario Test<a class="headerlink" href="#starting-with-the-first-scenario-test" title="Permanent link">¶</a></h2>
+<p>While it might not seem correct, starting with example number 189, the first test I
+did write was for
+<a href="https://github.github.com/gfm/#example-189">GitHub Flavored Markdown example 189</a>,
+the first example
+included in the specification for the paragraph blocks.  After solidly reading the
+specification, the general rule seemed to be that if it doesn’t fit into any other
+category, it is a paragraph.  If everything is going to be a paragraph until the other
+features are written, I felt that starting with the default case was the right choice.</p>
+<p>After a number of passes at cleaning up the test for this first case, it boiled down to
+the following Python code.</p>
+<div class="highlight"><pre><span></span><span class="sd">"""</span>
+<span class="sd">https://github.github.com/gfm/#paragraphs</span>
+<span class="sd">"""</span>
+<span class="kn">from</span> <span class="nn">pymarkdown.tokenized_markdown</span> <span class="kn">import</span> <span class="n">TokenizedMarkdown</span>
+
+<span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">assert_if_lists_different</span>
+
+
+<span class="k">def</span> <span class="nf">test_paragraph_blocks_189</span><span class="p">():</span>
+    <span class="sd">"""</span>
+<span class="sd">    Test case 189:  simple case of paragraphs</span>
+<span class="sd">    """</span>
+
+    <span class="c1"># Arrange</span>
+    <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">TokenizedMarkdown</span><span class="p">()</span>
+    <span class="n">source_markdown</span> <span class="o">=</span> <span class="s2">"""aaa</span>
+
+<span class="s2">bbb"""</span>
+    <span class="n">expected_tokens</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s2">"[para:]"</span><span class="p">,</span>
+        <span class="s2">"[text:aaa:]"</span><span class="p">,</span>
+        <span class="s2">"[end-para]"</span><span class="p">,</span>
+        <span class="s2">"[BLANK:]"</span><span class="p">,</span>
+        <span class="s2">"[para:]"</span><span class="p">,</span>
+        <span class="s2">"[text:bbb:]"</span><span class="p">,</span>
+        <span class="s2">"[end-para]"</span><span class="p">,</span>
+    <span class="p">]</span>
+
+    <span class="c1"># Act</span>
+    <span class="n">actual_tokens</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">source_markdown</span><span class="p">)</span>
+
+    <span class="c1"># Assert</span>
+    <span class="n">assert_if_lists_different</span><span class="p">(</span><span class="n">expected_tokens</span><span class="p">,</span> <span class="n">actual_tokens</span><span class="p">)</span>
+</pre></div>
+<h2 id="breaking-down-the-scenario-test">Breaking Down the Scenario Test<a class="headerlink" href="#breaking-down-the-scenario-test" title="Permanent link">¶</a></h2>
+<p>It might be a lot to take in all at once, so let’s break it down step by step.</p>
+<h3 id="start-of-the-module">Start of the Module<a class="headerlink" href="#start-of-the-module" title="Permanent link">¶</a></h3>
+<p>The start of the module needs to perform two important tasks: provide useful
+documentation to someone examining the tests and import any libraries needed.</p>
+<div class="highlight"><pre><span></span><span class="sd">"""</span>
+<span class="sd">https://github.github.com/gfm/#paragraphs</span>
+<span class="sd">"""</span>
+<span class="kn">from</span> <span class="nn">pymarkdown.tokenized_markdown</span> <span class="kn">import</span> <span class="n">TokenizedMarkdown</span>
+
+<span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">assert_if_lists_different</span>
+</pre></div>
+<p>The most useful and relevant information about the module that I was able to think of
+was the actual source for the test cases themselves.  That being the case, I felt that
+including the URI to the specific section in the
+<a href="https://github.github.com/gfm">GitHub Flavored Markdown specification</a> was the
+right choice for the module documentation.  For anyone reading the tests, it provides a
+solid reference point that answers most of the questions about why the tests are there
+and whether or not the tests are relevant.</p>
+<p>Next are the import statements.  The first one statement imports the
+<code>TokenizedMarkdown</code> class, a class that I set up to handle the parsing.  Initially this
+class was a quick and simple skeleton class, especially for the first paragraph case.
+However, it provided the framework for me to support more use cases while maintaining
+a uniform interface. The second import statement is used to include a function that
+provides a good comparison of the contents of the list returned from the <code>transform</code>
+function of the <code>TokenizedMarkdown</code> class and a simple text list of the expected
+tokens.  </p>
+<h3 id="arrange-the-data-for-the-test">Arrange The Data For The Test<a class="headerlink" href="#arrange-the-data-for-the-test" title="Permanent link">¶</a></h3>
+<p>From all of the useful pieces of information that I have learned about testing, the
+most useful bits about actually writing tests are the K.I.S.S. principle and the use of
+the Arrange-Act-Assert pattern.  The
+<a href="https://en.wikipedia.org/wiki/KISS_principle">K.I.S.S principle</a> constantly reminds me
+to not overcomplicate things, reducing the tests to what is really relevant for that
+thing or task.  The
+<a href="https://docs.telerik.com/devtools/justmock/basic-usage/arrange-act-assert">Arrange-Act-Assert pattern</a>
+reminds me that when writing tests, each test I write breaks down into setup, action,
+and verification (with cleanup occasionally being added if needed). As such, I always
+start writing my tests by adding a comment for each of those sections, with the rest
+of the function blank.  Once there, it’s easy to remember which parts of the tests
+go where!</p>
+<div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">test_paragraph_blocks_189</span><span class="p">():</span>
+    <span class="sd">"""</span>
+<span class="sd">    Test case 189:  simple case of paragraphs</span>
+<span class="sd">    """</span>
+
+    <span class="c1"># Arrange</span>
+    <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">TokenizedMarkdown</span><span class="p">()</span>
+    <span class="n">source_markdown</span> <span class="o">=</span> <span class="s2">"""aaa</span>
+
+<span class="s2">bbb"""</span>
+    <span class="n">expected_tokens</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s2">"[para:]"</span><span class="p">,</span>
+        <span class="s2">"[text:aaa:]"</span><span class="p">,</span>
+        <span class="s2">"[end-para]"</span><span class="p">,</span>
+        <span class="s2">"[BLANK:]"</span><span class="p">,</span>
+        <span class="s2">"[para:]"</span><span class="p">,</span>
+        <span class="s2">"[text:bbb:]"</span><span class="p">,</span>
+        <span class="s2">"[end-para]"</span><span class="p">,</span>
+    <span class="p">]</span>
+</pre></div>
+<p>The <code>Arrange</code> part of this test is simple, consisting mostly of easy-to-read
+assignments.  The object to test needs to be setup in a way that it is completely
+enclosed within the test function.  The tokenizer object with no options is assigned to
+the <code>tokenizer</code>, so a simple assignment takes care of it’s setup.  The <code>source_markdown</code>
+variable is setup within Python’s
+<a href="https://docs.python.org/3/tutorial/introduction.html#strings">triple-quotes</a>
+to preserve newlines and provide an accurate look at the string being fed to the
+tokenizer.  This string is copied verbatim from the example represented by the function,
+in this case <a href="https://github.github.com/gfm/#example-189">example 189</a>.</p>
+<p>The final setup, the array assigned to the <code>expected_tokens</code> variable, takes a bit more
+work.  When I wrote these, I sometimes wrote the expect tokens ahead of time, but more
+often than not used a known “bad” set of tokens and adjusted the tokens as I went.</p>
+<h3 id="act-tokenize-and-assert-verify-results">Act (Tokenize) and Assert (Verify Results)<a class="headerlink" href="#act-tokenize-and-assert-verify-results" title="Permanent link">¶</a></h3>
+<p>With all of the work on the setup of the tests, the Act and Assert parts of the test
+are very anticlimactic.</p>
+<div class="highlight"><pre><span></span>    <span class="c1"># Act</span>
+    <span class="n">actual_tokens</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">source_markdown</span><span class="p">)</span>
+
+    <span class="c1"># Assert</span>
+    <span class="n">assert_if_lists_different</span><span class="p">(</span><span class="n">expected_tokens</span><span class="p">,</span> <span class="n">actual_tokens</span><span class="p">)</span>
+</pre></div>
+<p>Using the information that was established in the Arrange section of the test, the
+Act section simply applies the input (<code>source_markdown</code>) to the object to test
+(<code>tokenizer</code>) and collects the output in <code>actual_tokens</code>.  The Assert section then
+takes the output tokens and compares them against the expected list of tokens in
+<code>expected_tokens</code>.</p>
+<h3 id="why-not-use-pure-test-driven-development">Why Not Use Pure Test Driven Development?<a class="headerlink" href="#why-not-use-pure-test-driven-development" title="Permanent link">¶</a></h3>
+<p>In a normal project, I usually follow
+<a href="https://en.wikipedia.org/wiki/Test-driven_development">Test Driven Development</a>
+practices quite diligently, either writing the tests first and code second, or writing
+both tests and code at the same time.  As this was my first version of my first
+Markdown parser, I was aware that I was going to be adapting the tokens and token
+formats as I went, eventually arriving at a set of tokens that worked for all scenarios.
+Knowing that this churn was part of the development process for this project, I decided
+that a true Test Driven Development process would not be optimal.</p>
+<p>For this project, it was very useful to adjust the process.  The balance that I struck
+with myself was to make sure that as I coded the parser to respond to a given scenario,
+I adjusted the tokens assigned to the <code>expected_tokens</code> variable based on the example’s
+HTML output for the equivalent scenario test.  This process gave me the confidence to
+know that as I made tests pass by enabling the code behind the scenario, each individual
+passing test was both moving towards a fully functioning parser and protecting the work
+that I had already done in that direction.</p>
+<p>To be clear, as I copied the template over, I adjusted the function name, the
+function’s doc-string, and the Markdown source text based on the scenario test that I
+was implementing.  The list of tokens in <code>expected_tokens</code> were then populated with
+a “best guess” before I started working on the code to make that scenario pass.
+In a microscopic sense, as I updated the test and the test tokens before starting on
+the code, I was still adhering to Test Driven Development on a scenario-by-scenario
+level.</p>
+<p>To me, this was a good balance to strike, evaluating the correct tokens as I went
+instead of trying to work out all 637 sets of tokens ahead of time.  </p>
+<h3 id="how-did-this-help">How Did This Help?<a class="headerlink" href="#how-did-this-help" title="Permanent link">¶</a></h3>
+<p>Getting a good process to deal with the large bulk of scenario tests was a welcome
+relief.  While I still needed to create a strategy to deal with that bulk of scenario
+tests I would need to write (see the
+<a href="https://jackdewinter.github.io/2019/12/22/markdown-linter-parser-testing-strategy/">next article</a>
+for details on that), I had a
+solid template that was simple (see K.I.S.S. principle), easy to follow (see
+Arrange-Act-Assert pattern), and would scale.  This was indeed something that I
+was able to work with.</p>
+<h2 id="what-about-the-unit-tests">What About the Unit Tests?<a class="headerlink" href="#what-about-the-unit-tests" title="Permanent link">¶</a></h2>
+<p>Compared to the scenario tests, writing unit tests for the parser’s foundation
+functions was easy.  In each case, there is a function to test with a very cleanly
+specified interface, providing for a clean definition of expected input and output.</p>
+<h2 id="what-comes-next">What Comes Next?<a class="headerlink" href="#what-comes-next" title="Permanent link">¶</a></h2>
+<p>In the <a href="https://jackdewinter.github.io/2019/12/22/markdown-linter-parser-testing-strategy/">next article</a>,
+I look at the work that needs to
+be done and come up with general strategies that I use to implement the parser
+required for the linter.  With the specification’s 637 examples as a base for the
+scenario tests, good planning is needed to ensure the work can progress forward.</p>
+
+
+             
+ 
+                <p id="post-share-links">
+    Like this post? Share on:
+    <a href="https://twitter.com/intent/tweet?text=Markdown%20Linter%20-%20Setting%20Up%20Parser%20Tests&url=https%3A//jackdewinter.github.io/2019/12/16/markdown-linter-setting-up-parser-tests/&hashtags=markdown-linter" target="_blank" rel="nofollow noopener noreferrer" title="Share on Twitter">Twitter</a>
+    ❄
+    <a href="https://www.facebook.com/sharer/sharer.php?u=https%3A//jackdewinter.github.io/2019/12/16/markdown-linter-setting-up-parser-tests/" target="_blank" rel="nofollow noopener noreferrer" title="Share on Facebook">Facebook</a>
+    ❄
+    <a href="mailto:?subject=Markdown%20Linter%20-%20Setting%20Up%20Parser%20Tests&amp;body=https%3A//jackdewinter.github.io/2019/12/16/markdown-linter-setting-up-parser-tests/" target="_blank" rel="nofollow noopener noreferrer" title="Share via Email">Email</a>
+    </p>
+
+            
+            
+
+
+
+
+
+
+<section>
+    <h6 style="display:none;">Comments</h6>
+    <p id="comment-message">So what do you think? Did I miss something? Is any part unclear? Leave your comments below. </p>
+
+    <div class="accordion" id="accordion2">
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                <a class="accordion-toggle disqus-comment-count comment-count"
+                   data-toggle="collapse"
+                   data-parent="#accordion2"
+                   href="https://jackdewinter.github.io/2019/12/16/markdown-linter-setting-up-parser-tests/#comment_thread"
+                   id="comment-accordion-toggle">
+                    Comments
+                </a>
+            </div>
+            <div id="comment_thread" class="accordion-body collapse">
+                <div class="accordion-inner">
+                    <div class="comments">
+
+                        <script src="https://utteranc.es/client.js"
+        data-repo="jackdewinter/jackdewinter.github.io"
+        data-issue-term="markdown-linter-setting-up-parser-tests"
+        data-label="Comments"
+        data-theme="github-light"
+        crossorigin="anonymous"
+        async>
+</script>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+            <hr/>
+            <aside>
+            <nav>
+            <ul class="articles-timeline">
+                <li class="previous-article">« <a href="https://jackdewinter.github.io/2019/12/08/markdown-linter-collecting-requirements/" title="Previous: Markdown Linter - Collecting Requirements">Markdown Linter - Collecting Requirements</a></li>
+                <li class="next-article"><a href="https://jackdewinter.github.io/2019/12/22/markdown-linter-parser-testing-strategy/" title="Next: Markdown Linter - Parser Testing Strategy">Markdown Linter - Parser Testing Strategy</a> »</li>
+            </ul>
+            </nav>
+            </aside>
+        </div>
+        <section id="article-sidebar" class="span2">
+    <h4>Reading Time</h4>
+    <p>~9 min read</p>
+            <h4>Published</h4>
+            <time itemprop="dateCreated" datetime="2019-12-16T00:00:00-08:00">Dec 16, 2019</time>
+        <h4>Markdown Linter</h4>
+    <ul class="multi-parts-list">
+            <li >
+            <a href="https://jackdewinter.github.io/2019/12/08/markdown-linter-collecting-requirements/" title="Markdown Linter - Collecting Requirements">Part 1: Markdown Linter - Collecting Requirements</a>
+            </li>
+            <li  class="active-part">
+            Part 2: Markdown Linter - Setting Up Parser Tests
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2019/12/22/markdown-linter-parser-testing-strategy/" title="Markdown Linter - Parser Testing Strategy">Part 3: Markdown Linter - Parser Testing Strategy</a>
+            </li>
+    </ul>
+            <h4>Category</h4>
+            <a class="category-link" href="https://jackdewinter.github.io/categories#software-quality-ref">Software Quality</a>
+            <h4>Tags</h4>
+            <ul class="list-of-tags tags-in-article">
+                <li><a href="https://jackdewinter.github.io/tags#markdown-linter-ref">markdown linter
+                    <span>3</span>
+</a></li>
+            </ul>
+<h4>Stay in Touch</h4>
+<div id="sidebar-social-link">
+    <a href="https://github.com/jackdewinter" title="github-alt" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="GitHub" role="img" viewBox="0 0 512 512"><rect width="512" height="512" rx="15%" fill="#1B1817"/><path fill="#fff" d="M335 499c14 0 12 17 12 17H165s-2-17 12-17c13 0 16-6 16-12l-1-50c-71 16-86-28-86-28-12-30-28-37-28-37-24-16 1-16 1-16 26 2 40 26 40 26 22 39 59 28 74 22 2-17 9-28 16-35-57-6-116-28-116-126 0-28 10-51 26-69-3-6-11-32 3-67 0 0 21-7 70 26 42-12 86-12 128 0 49-33 70-26 70-26 14 35 6 61 3 67 16 18 26 41 26 69 0 98-60 120-117 126 10 8 18 24 18 48l-1 70c0 6 3 12 16 12z"/></svg>
+    </a>
+    <a href="https://www.linkedin.com/in/jackdewinter/" title="linkedin" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="LinkedIn" role="img" viewBox="0 0 512 512" fill="#fff"><rect width="512" height="512" rx="15%" fill="#0077b5"/><circle cx="142" cy="138" r="37"/><path stroke="#fff" stroke-width="66" d="M244 194v198M142 194v198"/><path d="M276 282c0-20 13-40 36-40 24 0 33 18 33 45v105h66V279c0-61-32-89-76-89-34 0-51 19-59 32"/></svg>
+    </a>
+    <a href="https://jackdewinter.github.io/feeds/all.atom.xml" title="" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="RSS" role="img" viewBox="0 0 512 512"><rect width="512" height="512" rx="15%" fill="#f80"/><circle cx="145" cy="367" r="35" fill="#fff"/><path fill="none" stroke="#fff" stroke-width="60" d="M109 241c89 0 162 73 162 162M109 127c152 0 276 124 276 276"/></svg>
+    </a>
+</div>
+            
+
+
+
+
+
+            
+
+
+
+
+
+        </section>
+</div>
+</article>
+                    </div>
+                    <div class="span1"></div>
+                </div>
+            </div>
+        </div>
+<footer>
+    <div>
+        
+&copy; Copyright 2019 by Jack De Winter and licensed under a <a rel="license"
+  href="http://creativecommons.org/licenses/by/4.0/">
+  <img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/80x15.png" />
+  Creative Commons Attribution 4.0 International License</a>.
+
+    </div>
+
+
+
+
+    <div id="fpowered">
+        Powered by: <a href="http://getpelican.com/" title="Pelican Home Page" target="_blank" rel="nofollow noopener noreferrer">Pelican</a>
+        Theme: <a href="https://elegant.oncrashreboot.com/" title="Theme Elegant Home Page" target="_blank" rel="nofollow noopener noreferrer">Elegant</a>
+    </div>
+</footer>            <script src="//code.jquery.com/jquery.min.js"></script>
+        <script src="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>
+        <script>
+            function validateForm(query)
+            {
+                return (query.length > 0);
+            }
+        </script>
+
+    <script>
+    (function () {
+        if (window.location.hash.match(/^#comment-\d+$/)) {
+            $('#comment_thread').collapse('show');
+        }
+    })();
+    window.onhashchange=function(){
+        if (window.location.hash.match(/^#comment-\d+$/))
+            window.location.reload(true);
+    }
+    $('#comment_thread').on('shown', function () {
+        var link = document.getElementById('comment-accordion-toggle');
+        var old_innerHTML = link.innerHTML;
+        $(link).fadeOut(200, function() {
+            $(this).text('Click here to hide comments').fadeIn(200);
+        });
+        $('#comment_thread').on('hidden', function () {
+            $(link).fadeOut(200, function() {
+                $(this).text(old_innerHTML).fadeIn(200);
+            });
+        })
+    })
+</script>
+
+    </body>
+    <!-- Theme: Elegant built for Pelican
+        License : MIT -->
+</html>

@@ -1,5 +1,598 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench - Software Quality</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/software-quality.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2019-11-10T00:00:00-08:00</updated><entry><title>Software Quality: Reliability</title><link href="https://jackdewinter.github.io/2019/11/10/software-quality-reliability/" rel="alternate"></link><published>2019-11-10T00:00:00-08:00</published><updated>2019-11-10T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2019-11-10:/2019/11/10/software-quality-reliability/</id><summary type="html">
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench - Software Quality</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/software-quality.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2019-12-22T00:00:00-08:00</updated><entry><title>Markdown Linter - Parser Testing Strategy</title><link href="https://jackdewinter.github.io/2019/12/22/markdown-linter-parser-testing-strategy/" rel="alternate"></link><published>2019-12-22T00:00:00-08:00</published><updated>2019-12-22T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2019-12-22:/2019/12/22/markdown-linter-parser-testing-strategy/</id><summary type="html">
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In the previous articles in this series, I discussed the requirements for the Markdown
+linter that I am writing.  From a development point of view, the main requirement is
+the need for an accurate stream of tokens emitted by the parser.  Due to the absence of
+any Markdown-to-token parsers …&lt;/p&gt;</summary><content type="html">
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In the previous articles in this series, I discussed the requirements for the Markdown
+linter that I am writing.  From a development point of view, the main requirement is
+the need for an accurate stream of tokens emitted by the parser.  Due to the absence of
+any Markdown-to-token parsers out there, I need to write a new parser that outputs an
+accurate stream of tokens instead of a stream of HTML text. With the last article
+showing the patterns I am using to test the parser, it is now time to figure out a set
+of good strategies for the project, to ensure I can complete it without losing my
+confidence (and sanity).&lt;/p&gt;
+&lt;h2 id="why-is-strategy-important-when-testing"&gt;Why Is Strategy Important When Testing?&lt;a class="headerlink" href="#why-is-strategy-important-when-testing" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;When my son was younger, like most boys in his age group, he loved playing with LEGO and
+he loved the idea of robots.  I mean, come on!  I am a lot older than him and I still
+like LEGO and the idea of robots!  Anyhow, at his school they advertised for 5th grade
+students that were interested in participating in a local
+&lt;a href="http://firstlegoleague.org/"&gt;FIRST Lego League&lt;/a&gt; robotics team. From the first mention
+of it, he was hooked.  As they needed some parents to help out, I participated with him
+as a coach.  That position was a very rewarding, very humbling, and very frustrating
+experience. Rewarding because I got to help 5th graders learn a little taste of what I
+did everyday at work.  Humbling because the look in the kid’s eyes when they really
+understood something reminded me of the benefits of being a coach.  Frustrating because
+of almost all of the rest of the time between those two types of moments.&lt;/p&gt;
+&lt;p&gt;I am not sure which parent, coach, or teacher helped me with a little gem of wisdom,
+but I remember it as clear as day:  People have problems moving boulders, people
+have success moving pebbles.  The idea behind that phrase is that if a team is
+confronted with a problem, it is like encountering a boulder that you need to move out
+of the way. Upon seeing a big boulder, many people take a look at it and say something
+similar to “Wow! That is too big to move!”  But if you take that boulder and break it
+down into smaller rocks, such as pebbles, many people will just laugh with ease at
+moving those rocks, even if they have to do it one at a time.  In a similar fashion,
+breaking down a big problem into smaller problems is a necessity in problem solving a
+situation.  The boulders-to-pebbles phrase is a phrase I still use to this day when
+coaching people in both my professional and personal lives.&lt;/p&gt;
+&lt;p&gt;Writing a parser that handles anything more significant than a single line of text is
+definitely “a boulder”.  I have been writing parsers for the better part of 25 years,
+and those parsers are still boulders to me. However, I know from experience that
+breaking down that “boulder-sized” task into more “pebble-sized” tasks works and works
+well.  So here are the various items of my strategy for this project.&lt;/p&gt;
+&lt;h2 id="strategy-0-define-and-execute-testing-linting-and-formatting"&gt;Strategy 0: Define and Execute Testing, Linting, and Formatting&lt;a class="headerlink" href="#strategy-0-define-and-execute-testing-linting-and-formatting" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;For me this is a strategy that I bring to almost every project, with very few
+exceptions.  I always start with some kind of workflow template that I apply to the
+project that performs formatting of the source code, linting of the source code, and
+executes the testing framework.  Since I am a stickler for this approach, the setup for
+this workflow usually takes 5 minutes or less, as I usually have at least one example
+project lying around.  By consistently executing this workflow before committing any
+changes, I keep the quality reasonably high as I go.&lt;/p&gt;
+&lt;p&gt;Knowing that I had this framework in place for the Markdown parser was a godsend.  My
+preference is to find frequent small break points during the implementation of a
+feature, and to use those points to run the workflow.  For me, it increases my
+confidence that I am either establishing a new “last known good point” or that I need
+to retrace my steps to the last known good point to address an issue.  That confidence
+helps me go forward with a positive attitude.&lt;/p&gt;
+&lt;h2 id="strategy-0a-suppress-major-issues-until-later"&gt;Strategy 0A: Suppress Major Issues Until Later&lt;a class="headerlink" href="#strategy-0a-suppress-major-issues-until-later" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;This may seem like somewhat of a counter to Strategy 0, but I see it more of allowing
+the project to grow, but being reminded that there is work to do.  Minor issues such
+as stylistics and documentation are handled right away, as they have a direct impact
+on the maintainability of the code as it moves forward.  Major issues usually involve
+a larger amount of code, and changing that much code usually has a fair amount of side
+effects unless you work to prevent those side effects.&lt;/p&gt;
+&lt;p&gt;Major issues are usually of the “too many/much” type, such as “too much complexity”,
+“too many statements”, or “too many boolean statements”.  When I get to a really good
+and stable point in the project, I know I will deal with these.  If I deal with the
+issues before I get to such a point, I am taking a chance that I won’t have the
+stability to make the change, while limiting and dealing with any potential side effects
+in a clean and efficient manner.&lt;/p&gt;
+&lt;p&gt;What is a good and stable point? For me, such a point has to have two dominant
+characteristics.  The first is that I need to have a solid collection of tests in place
+that I can execute.  These tests make sure that any refactoring doesn’t negatively
+affect the quality of the code. The second characteristic is that the source code for
+the project is at a point where there is a large degree of confidence that the
+code in the section that I want to refactor is very solid and very well defined.  This
+ensures that I can start looking for commonalities and efficiencies for refactoring
+that will enhance the source code, but not prematurely.&lt;/p&gt;
+&lt;h2 id="strategy-1-break-tests-and-development-into-task-groups"&gt;Strategy 1: Break Tests and Development Into Task Groups&lt;a class="headerlink" href="#strategy-1-break-tests-and-development-into-task-groups" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Following the principle of keeping things at a good size, don’t plan the entire project
+out ahead of time, but make sure to break things down into the groups of tasks that are
+needed as you need them.  Following an agile approach, make sure you have a good idea of
+what needs to be done for a given task group, and don’t worry about any more details of
+it until you need to.  And when you reach that point, reverify the tasks before going
+forward and flushing out the details.&lt;/p&gt;
+&lt;p&gt;For this parser, the
+&lt;a href="https://github.github.com/gfm"&gt;GitHub Flavored Markdown specification&lt;/a&gt; delineates it’s
+groups by the features in Markdown that are implemented.  Aligning the groups specified
+in that document with the groups for tests and development was a solid choice from a
+tracking point of view.  One of the reasons that I feel this worked well is because
+these feature groups have anywhere between 1 and 50 examples in each group.  While some
+of the larger ones were a tiny bit too big, for the most part it was a manageable
+number of scenarios to handle in each group.&lt;/p&gt;
+&lt;h2 id="strategy-2-organize-those-task-groups-themselves"&gt;Strategy 2: Organize Those Task Groups Themselves&lt;a class="headerlink" href="#strategy-2-organize-those-task-groups-themselves" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Once the task groups have been identified, take a step back and organize those task
+groups themselves.  There are almost always going to be task groups that have a natural
+affinity to be with similar task groups, so do so.  By doing similar tasks in
+groups, it will help identify refactorings that can be accomplished later, as well as
+the efficiency benefits from repeating similar processes.  Especially with a larger
+project, those little efficiency benefits can add up quickly.&lt;/p&gt;
+&lt;p&gt;As with the previous strategy, the GitHub Flavored Markdown specification comes to the
+rescue again.  There are some implementation notes near the end of the specification
+that provide some guidance on grouping.  The groups that I recognized were container
+blocks, normal blocks, and inline parsing.  Normal blocks are the foundation of the
+parsing, so it made sense to schedule those first.  Container blocks (lists and block
+quotes) add nesting requirements, so I scheduled those second.  Finally, once all of
+the block level tasks are done, inline parsing (such as for emphasis) can be performed
+on text blocks derived at after the processing of the normal and container blocks.
+After re-reading the end of the specification, the example that they gave seemed to
+indicate that as well, so I was probably on a decent path.&lt;/p&gt;
+&lt;h2 id="strategy-3-kiss"&gt;Strategy 3: K.I.S.S.&lt;a class="headerlink" href="#strategy-3-kiss" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;As I mentioned in the last article, I am a big proponent of the
+&lt;a href="https://en.wikipedia.org/wiki/KISS_principle"&gt;K.I.S.S principle&lt;/a&gt;.
+While I usually arrive at an end project that has lots of nice classes and functions,
+worrying about that at an early stage can often be counter productive.  Even if it means
+doing ugly string manipulations with variable names that you know you will change, that
+approach can often lead to cleaner code faster.  Worry about getting the logic and the
+algorithms right first, and then worry about making it “look pretty”.&lt;/p&gt;
+&lt;p&gt;A good example of this is my traditional development practice of giving variables and
+functions “garbage names” until I am finished with a set of functions.  Yes, that means
+during development I have variable names like “foobar”, “abc”, “sdf”, and “ghi”, just to
+name a few of them.  When I am creating the function, I maintain a good understanding of
+what the variables are doing, and I want to concentrate on the logic.  Once the logic
+is solid, I can then rename the variables to a descriptive name that accurately
+reflects it’s purpose and use.&lt;/p&gt;
+&lt;p&gt;I am not sure if this process works for everyone, but for me, not focusing on the names
+helps me focus on the logic itself.  I also find that having a “naming pass” at the
+function when I am done with the work helps me to give each variable a more meaningful
+name before I commit the changes.  Once again, this is one of my development practices
+that helps boost my productivity, and I acknowledge it might not work for everyone.&lt;/p&gt;
+&lt;p&gt;For the parser, I employed this strategy whole-heartedly.  The first couple of groups of
+work on the parser were performed by dealing with strings, with the only class for the
+parser being the single class containing the parsing logic.  Once I got to a good point
+(see above), I moved a number of the parsing functions and html functions into their
+own static helper modules.  Up until that point, it was just simpler to be creative
+with the logic in a raw form.  After that point, it made more sense to identify and
+solidify the logic that encapsulated some obvious patterns, moving those algorithms
+into their own classes for easy identification.&lt;/p&gt;
+&lt;p&gt;As with many things, finding the right points to perform changes like this are difficult
+to describe.  I can only say that “it felt like the right time for that change”.  And as
+I commit and stage code frequently, if I made a mistake, I could easily rewind and
+either retry the change, or abandon it altogether.&lt;/p&gt;
+&lt;h2 id="strategy-4-use-lots-of-debug-output"&gt;Strategy 4: Use Lots of Debug Output&lt;a class="headerlink" href="#strategy-4-use-lots-of-debug-output" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;There is a phrase that we use at work called “TTR” or Time-To-Resolution.
+This is usually measured as the time taken from knowing that you have a problem until
+the time that the problem is resolved and it’s solution is published.  Added during
+development and debugging, spurious debug output can help provide a journal or log of
+what is happening in the project, allowing for a more comprehensive comparison of the
+ output of a passing test with the output of a failing test at the same time.  &lt;/p&gt;
+&lt;p&gt;To be clear, using a debugger to load the code and step through it as it executes is
+another way to debug the code.  In fact, in a fairly decent number of situations I
+recommend that.  However, I find that the downside is that I don’t get to see the
+flow through the code in the same way as with lots of debug statements.  As with a
+lot of things, determining the balance between debug output and using a debugger
+will differ for individual developers and for individual projects.&lt;/p&gt;
+&lt;p&gt;Another benefit of the debug output approach is the transition from debug output to
+logging.  Once the project has been sufficiently stabilized and completed, one of the
+tasks that
+arises is usually to output useful log messages at various points throughout the code.
+I personally find that a certain percentage of the debug output that was good enough to
+emit during development can become quality log messages with only small changes.&lt;/p&gt;
+&lt;p&gt;The parser development definitely benefitted from this strategy.  Within a given task
+group, there were often two Markdown patterns that were almost the same.  Sometimes it
+looked like they should being parsed differently and sometimes I couldn’t figure out
+why they weren’t parsed differently.  By examining the debug output for both cases,
+I was able to verify whether or not the correct paths were followed, and if not, where
+the divergences occurred.  Sure, the debug was cryptic and most of it never made it in
+the final version of the parser. But when I needed to debug or verify during
+development, it was invaluable.&lt;/p&gt;
+&lt;h2 id="strategy-5-run-tests-frequently"&gt;Strategy 5: Run Tests Frequently&lt;a class="headerlink" href="#strategy-5-run-tests-frequently" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Don’t only run tests when a set of changes is ready to commit, run those tests
+frequently during the development of each task.  If done properly, most tests are there
+to verify things are as they should be, and to warn of changes or situations that fall
+outside of the requirements. If something is wrong, it is better to look through the
+last feature added to determine what the problem is, rather than trying to determine
+which of the last 5 features introduced that bad behavior.  Therefore, by executing the
+tests frequently, either the confidence that the project is working properly increases
+or there are early and frequent indications that something is wrong.&lt;/p&gt;
+&lt;p&gt;During the development of the parser, the tests were instrumental in making sure that
+I knew what features were “locked down” and which features needed work.  By keeping
+track of that when adding a new feature, I could easily see when work on a new feature
+caused a previously completed feature to fail it’s tests.  At that point, I knew I
+didn’t have the right solution, but I also had confidence that the changes were small
+enough to handle.&lt;/p&gt;
+&lt;p&gt;Also, as the specification is large, there were often cases that were present but not
+always spelled out in the documentation as well as they could have been.  However, time
+and time again, the saving grace for the specification were the examples, now scenarios
+and scenario tests in my project, sterling examples of what to expect.  And as I took
+care to make sure they ran quickly, I was able to run all of the scenario tests in less
+than 10 seconds.  For me, taking 10 seconds to ensure things were not broken was well
+worth the cost.&lt;/p&gt;
+&lt;h2 id="strategy-6-do-small-refactors-only-at-good-points"&gt;Strategy 6: Do Small Refactors Only At Good Points&lt;a class="headerlink" href="#strategy-6-do-small-refactors-only-at-good-points" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;While this strategy may look like a repeat of
+&lt;a href="https://jackdewinter.github.io/2019/12/22/markdown-linter-parser-testing-strategy/#strategy-0a-suppress-major-issues-until-later"&gt;Strategy 0A: Suppress Major Issues Until Later&lt;/a&gt;,
+the scope for this strategy is on a smaller, more local level.  Where Strategy 0A talks
+about refactoring major issues later, there are often obvious minor refactors that can
+be done at a local level.  These changes are often done right after a function is
+written to fulfil a feature and rarely includes more than one function.  A good example
+of this is taking a function that performs a given action twice with small variations
+and rewriting that function by encapsulating that repeated action into it’s own
+well-named function.  &lt;/p&gt;
+&lt;p&gt;While such refactors almost always improve the code, care must be taken to strike a
+good balance between making each method more readable and trying to optimize the
+function ahead of time.  For myself, it is often more efficient for me to see the raw
+code to recognize patterns from rather than already refactored code.  Unless I am the
+author of the refactored code, I find that I don’t see the same patterns as with the
+raw code.  As with many things, “Your Mileage May Vary”.&lt;/p&gt;
+&lt;p&gt;When implementing the parser, this strategy was effectively applied at the local
+level to improve readability and maintainability.  There were quite a few cases where
+the logic to detect a given case and the processing of that case were complicated.
+By assigning the detection of a given case to one function and the processing of that
+case to another function, the border between the two concepts was enhanced, making the
+calling function more readable.  As this kind of refactoring occurred at the local
+level, it employed this strategy quite effectively.&lt;/p&gt;
+&lt;h3 id="how-did-this-help"&gt;How Did This Help?&lt;a class="headerlink" href="#how-did-this-help" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;For one, I had a plan and a strategy to deal with things.  As always, something would
+happen during development which would require me to re-assess something. Given the
+above strategy, I had confidence that I would be able to deal with it, adjusting the
+different parts of the project as I went.&lt;/p&gt;
+&lt;p&gt;Basically, I took a boulder (writing a parser) and not only broke it down into pebbles
+(tasks needed to write the parser), but came up with a set of rules (strategy) on what
+to do if I found some rocks that were previously unknown or larger than a pebble.  As
+I mentioned at the start of the article, it’s a fairly simple bit of wisdom that I was
+taught, but what a gem it is!&lt;/p&gt;
+&lt;h2 id="what-comes-next"&gt;What Comes Next?&lt;a class="headerlink" href="#what-comes-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In the next article, I take the requirements, scenarios,
+and strategies and put them together to start writing the parser.  As one of the
+test groups that I came up with was normal Markdown blocks, I will describe how I
+implemented those blocks as well as the issues I had in doing so cleanly.&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category></entry><entry><title>Markdown Linter - Setting Up Parser Tests</title><link href="https://jackdewinter.github.io/2019/12/16/markdown-linter-setting-up-parser-tests/" rel="alternate"></link><published>2019-12-16T00:00:00-08:00</published><updated>2019-12-16T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2019-12-16:/2019/12/16/markdown-linter-setting-up-parser-tests/</id><summary type="html">
+&lt;h2 id="sidebar"&gt;Sidebar&lt;a class="headerlink" href="#sidebar" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;My apologies for this being a day or two later that usual.  My son brought home a
+cold that knocked the stuffing out of me, I needed to take some personal time to ensure
+I was feeling better before writing.  Thanks for your patience.&lt;/p&gt;
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;As a reminder of …&lt;/p&gt;</summary><content type="html">
+&lt;h2 id="sidebar"&gt;Sidebar&lt;a class="headerlink" href="#sidebar" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;My apologies for this being a day or two later that usual.  My son brought home a
+cold that knocked the stuffing out of me, I needed to take some personal time to ensure
+I was feeling better before writing.  Thanks for your patience.&lt;/p&gt;
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;As a reminder of the requirements from the
+&lt;a href="https://jackdewinter.github.io/2019/12/08/markdown-linter-collecting-requirements/"&gt;last article&lt;/a&gt;,
+the big bullet-point items are:
+command line driven, GitHub Flavored Markdown (for now), and preserving all tokens.  To
+make sure I have a solid set of goals to work towards, setting these requirements as
+part of the project was pivotal.  Now that I have that as a touchstone, I need to move
+forward with defining how to progress with the testing of the parser at the core of
+the linter.&lt;/p&gt;
+&lt;h2 id="why-write-a-parser"&gt;Why Write a Parser?&lt;a class="headerlink" href="#why-write-a-parser" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In taking a look at the kind of rules that linters support, I have observed that there
+are typically two categories of rules: general rules and grammar rules.  For general
+rules such as “tabs should not be used”, it is easy to look at any line in the
+document being scanned and look for a tab character.  For grammatical rules such
+as “headings should always be properly capitalized”, that scan is more difficult.
+The most difficult part of that rule is identifying whether or not any given piece
+of text is considered part of a header, thus engaging the rest of the rule.&lt;/p&gt;
+&lt;p&gt;From experience, to properly determine which part of grammar maps to which part of text
+requires a capable parser, written to the specifications of the language to be parsed.
+Based on my research from the
+&lt;a href="https://jackdewinter.github.io/2019/12/08/markdown-linter-collecting-requirements/"&gt;last article&lt;/a&gt;,
+all of the parsers that I found only translated Markdown into HTML, not any
+intermediate form.  Since I need a clean stream of tokens before translation to HTML,
+the only option is to write my own parser which will output a clean stream of parsed
+Markdown tokens.&lt;/p&gt;
+&lt;p&gt;As I am writing my own parser, I need to have a good set of tests to ensure
+that the parser works properly.  But where to start?&lt;/p&gt;
+&lt;h2 id="where-to-start-with-the-tests"&gt;Where To Start With The Tests?&lt;a class="headerlink" href="#where-to-start-with-the-tests" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Referring back to my article on &lt;a href="https://jackdewinter.github.io/2019/11/10/software-quality-reliability/"&gt;software reliability&lt;/a&gt;,
+the 2 main types of tests that I need to decide on are scenario tests and unit tests.
+In a nutshell, the purpose of a scenario test is to test the input and outputs of the
+project and the purpose of a unit test is to test a specific function of a specific
+components of the project.  Getting a hold of how to balance the quantity of tests that
+I need to write between the two of these types is my first priority.&lt;/p&gt;
+&lt;p&gt;As one of the initial requirements is to support the
+&lt;a href="https://github.github.com/gfm"&gt;GitHub Flavored Markdown specification&lt;/a&gt;, it is useful to
+note that the specification itself has 637 individual examples.  Each example provides
+for the input, in Markdown, and the output, in HTML.  While the output is not at the
+token level needed to satisfy my project’s third requirement, it should be close
+enough.  In looking at each of these examples, I need a solid set of rules that I
+can apply to the tokens to get them from my desired token-based output to a HTML-based
+output that matches the examples.  It is reasonable to collect these rules as I go when
+I develop the various types of elements to be parsed.  If I tried to do them to far
+ahead of time, it would invariably lead to a lot of rework.  Just in time is the way to
+go for these rules.&lt;/p&gt;
+&lt;p&gt;Taking another looking at the types of tests that I need to write, I realized that this
+project’s test viewpoint was inverted from the usual ratio of scenario tests to unit
+tests.  In most cases, if I have anything more than 20-30 scenario tests, I would think
+that I have not properly scoped the project.  However, with 637 scenarios already
+defined for me, it would be foolish not to write at least one scenario test for each of
+those scenarios, adding extra scenario tests and supportive unit tests where needed.
+In this case, it makes more sense to focus on the scenario tests as the major set of
+tests to write.&lt;/p&gt;
+&lt;p&gt;The balance of scenario tests to unit tests?&lt;/p&gt;
+&lt;p&gt;Given 637 scenarios ready to go, I need to create at least 637 scenario tests.
+For those scenario tests, experimenting with the first couple of scenario tests to
+find a process that worked seemed to be the most efficient way forward.  Given a simple
+and solid template for every scenario test, I had a lot of confidence to then use that
+template for each scenario test that I tackled.&lt;/p&gt;
+&lt;p&gt;And the unit tests?  In implementing any parsing code, I knew that I needed helper
+functions that parsed a specific type of foundational thing, like a tag in an HTML
+block or skipping ahead over any whitespace.  The unit tests are used to verify
+that those kind of foundational functions are operating properly, ensuring that the
+rest of the code can depend on those foundations with confidence.  As an added bonus,
+more combinations of the various sequences to parse could be tested without inflating
+the number of scenario tests.&lt;/p&gt;
+&lt;p&gt;Ground rules set?   Check.  On to the first scenario test.&lt;/p&gt;
+&lt;h2 id="starting-with-the-first-scenario-test"&gt;Starting With the First Scenario Test&lt;a class="headerlink" href="#starting-with-the-first-scenario-test" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;While it might not seem correct, starting with example number 189, the first test I
+did write was for
+&lt;a href="https://github.github.com/gfm/#example-189"&gt;GitHub Flavored Markdown example 189&lt;/a&gt;,
+the first example
+included in the specification for the paragraph blocks.  After solidly reading the
+specification, the general rule seemed to be that if it doesn’t fit into any other
+category, it is a paragraph.  If everything is going to be a paragraph until the other
+features are written, I felt that starting with the default case was the right choice.&lt;/p&gt;
+&lt;p&gt;After a number of passes at cleaning up the test for this first case, it boiled down to
+the following Python code.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="sd"&gt;"""&lt;/span&gt;
+&lt;span class="sd"&gt;https://github.github.com/gfm/#paragraphs&lt;/span&gt;
+&lt;span class="sd"&gt;"""&lt;/span&gt;
+&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;pymarkdown.tokenized_markdown&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;TokenizedMarkdown&lt;/span&gt;
+
+&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;.utils&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;assert_if_lists_different&lt;/span&gt;
+
+
+&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;test_paragraph_blocks_189&lt;/span&gt;&lt;span class="p"&gt;():&lt;/span&gt;
+    &lt;span class="sd"&gt;"""&lt;/span&gt;
+&lt;span class="sd"&gt;    Test case 189:  simple case of paragraphs&lt;/span&gt;
+&lt;span class="sd"&gt;    """&lt;/span&gt;
+
+    &lt;span class="c1"&gt;# Arrange&lt;/span&gt;
+    &lt;span class="n"&gt;tokenizer&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;TokenizedMarkdown&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+    &lt;span class="n"&gt;source_markdown&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;"""aaa&lt;/span&gt;
+
+&lt;span class="s2"&gt;bbb"""&lt;/span&gt;
+    &lt;span class="n"&gt;expected_tokens&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;
+        &lt;span class="s2"&gt;"[para:]"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="s2"&gt;"[text:aaa:]"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="s2"&gt;"[end-para]"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="s2"&gt;"[BLANK:]"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="s2"&gt;"[para:]"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="s2"&gt;"[text:bbb:]"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="s2"&gt;"[end-para]"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="p"&gt;]&lt;/span&gt;
+
+    &lt;span class="c1"&gt;# Act&lt;/span&gt;
+    &lt;span class="n"&gt;actual_tokens&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;tokenizer&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;transform&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;source_markdown&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+    &lt;span class="c1"&gt;# Assert&lt;/span&gt;
+    &lt;span class="n"&gt;assert_if_lists_different&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;expected_tokens&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;actual_tokens&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;h2 id="breaking-down-the-scenario-test"&gt;Breaking Down the Scenario Test&lt;a class="headerlink" href="#breaking-down-the-scenario-test" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;It might be a lot to take in all at once, so let’s break it down step by step.&lt;/p&gt;
+&lt;h3 id="start-of-the-module"&gt;Start of the Module&lt;a class="headerlink" href="#start-of-the-module" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;The start of the module needs to perform two important tasks: provide useful
+documentation to someone examining the tests and import any libraries needed.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="sd"&gt;"""&lt;/span&gt;
+&lt;span class="sd"&gt;https://github.github.com/gfm/#paragraphs&lt;/span&gt;
+&lt;span class="sd"&gt;"""&lt;/span&gt;
+&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;pymarkdown.tokenized_markdown&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;TokenizedMarkdown&lt;/span&gt;
+
+&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;.utils&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;assert_if_lists_different&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;The most useful and relevant information about the module that I was able to think of
+was the actual source for the test cases themselves.  That being the case, I felt that
+including the URI to the specific section in the
+&lt;a href="https://github.github.com/gfm"&gt;GitHub Flavored Markdown specification&lt;/a&gt; was the
+right choice for the module documentation.  For anyone reading the tests, it provides a
+solid reference point that answers most of the questions about why the tests are there
+and whether or not the tests are relevant.&lt;/p&gt;
+&lt;p&gt;Next are the import statements.  The first one statement imports the
+&lt;code&gt;TokenizedMarkdown&lt;/code&gt; class, a class that I set up to handle the parsing.  Initially this
+class was a quick and simple skeleton class, especially for the first paragraph case.
+However, it provided the framework for me to support more use cases while maintaining
+a uniform interface. The second import statement is used to include a function that
+provides a good comparison of the contents of the list returned from the &lt;code&gt;transform&lt;/code&gt;
+function of the &lt;code&gt;TokenizedMarkdown&lt;/code&gt; class and a simple text list of the expected
+tokens.  &lt;/p&gt;
+&lt;h3 id="arrange-the-data-for-the-test"&gt;Arrange The Data For The Test&lt;a class="headerlink" href="#arrange-the-data-for-the-test" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;From all of the useful pieces of information that I have learned about testing, the
+most useful bits about actually writing tests are the K.I.S.S. principle and the use of
+the Arrange-Act-Assert pattern.  The
+&lt;a href="https://en.wikipedia.org/wiki/KISS_principle"&gt;K.I.S.S principle&lt;/a&gt; constantly reminds me
+to not overcomplicate things, reducing the tests to what is really relevant for that
+thing or task.  The
+&lt;a href="https://docs.telerik.com/devtools/justmock/basic-usage/arrange-act-assert"&gt;Arrange-Act-Assert pattern&lt;/a&gt;
+reminds me that when writing tests, each test I write breaks down into setup, action,
+and verification (with cleanup occasionally being added if needed). As such, I always
+start writing my tests by adding a comment for each of those sections, with the rest
+of the function blank.  Once there, it’s easy to remember which parts of the tests
+go where!&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;test_paragraph_blocks_189&lt;/span&gt;&lt;span class="p"&gt;():&lt;/span&gt;
+    &lt;span class="sd"&gt;"""&lt;/span&gt;
+&lt;span class="sd"&gt;    Test case 189:  simple case of paragraphs&lt;/span&gt;
+&lt;span class="sd"&gt;    """&lt;/span&gt;
+
+    &lt;span class="c1"&gt;# Arrange&lt;/span&gt;
+    &lt;span class="n"&gt;tokenizer&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;TokenizedMarkdown&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+    &lt;span class="n"&gt;source_markdown&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;"""aaa&lt;/span&gt;
+
+&lt;span class="s2"&gt;bbb"""&lt;/span&gt;
+    &lt;span class="n"&gt;expected_tokens&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;
+        &lt;span class="s2"&gt;"[para:]"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="s2"&gt;"[text:aaa:]"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="s2"&gt;"[end-para]"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="s2"&gt;"[BLANK:]"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="s2"&gt;"[para:]"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="s2"&gt;"[text:bbb:]"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="s2"&gt;"[end-para]"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="p"&gt;]&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;The &lt;code&gt;Arrange&lt;/code&gt; part of this test is simple, consisting mostly of easy-to-read
+assignments.  The object to test needs to be setup in a way that it is completely
+enclosed within the test function.  The tokenizer object with no options is assigned to
+the &lt;code&gt;tokenizer&lt;/code&gt;, so a simple assignment takes care of it’s setup.  The &lt;code&gt;source_markdown&lt;/code&gt;
+variable is setup within Python’s
+&lt;a href="https://docs.python.org/3/tutorial/introduction.html#strings"&gt;triple-quotes&lt;/a&gt;
+to preserve newlines and provide an accurate look at the string being fed to the
+tokenizer.  This string is copied verbatim from the example represented by the function,
+in this case &lt;a href="https://github.github.com/gfm/#example-189"&gt;example 189&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;The final setup, the array assigned to the &lt;code&gt;expected_tokens&lt;/code&gt; variable, takes a bit more
+work.  When I wrote these, I sometimes wrote the expect tokens ahead of time, but more
+often than not used a known “bad” set of tokens and adjusted the tokens as I went.&lt;/p&gt;
+&lt;h3 id="act-tokenize-and-assert-verify-results"&gt;Act (Tokenize) and Assert (Verify Results)&lt;a class="headerlink" href="#act-tokenize-and-assert-verify-results" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;With all of the work on the setup of the tests, the Act and Assert parts of the test
+are very anticlimactic.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="c1"&gt;# Act&lt;/span&gt;
+    &lt;span class="n"&gt;actual_tokens&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;tokenizer&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;transform&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;source_markdown&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+    &lt;span class="c1"&gt;# Assert&lt;/span&gt;
+    &lt;span class="n"&gt;assert_if_lists_different&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;expected_tokens&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;actual_tokens&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Using the information that was established in the Arrange section of the test, the
+Act section simply applies the input (&lt;code&gt;source_markdown&lt;/code&gt;) to the object to test
+(&lt;code&gt;tokenizer&lt;/code&gt;) and collects the output in &lt;code&gt;actual_tokens&lt;/code&gt;.  The Assert section then
+takes the output tokens and compares them against the expected list of tokens in
+&lt;code&gt;expected_tokens&lt;/code&gt;.&lt;/p&gt;
+&lt;h3 id="why-not-use-pure-test-driven-development"&gt;Why Not Use Pure Test Driven Development?&lt;a class="headerlink" href="#why-not-use-pure-test-driven-development" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;In a normal project, I usually follow
+&lt;a href="https://en.wikipedia.org/wiki/Test-driven_development"&gt;Test Driven Development&lt;/a&gt;
+practices quite diligently, either writing the tests first and code second, or writing
+both tests and code at the same time.  As this was my first version of my first
+Markdown parser, I was aware that I was going to be adapting the tokens and token
+formats as I went, eventually arriving at a set of tokens that worked for all scenarios.
+Knowing that this churn was part of the development process for this project, I decided
+that a true Test Driven Development process would not be optimal.&lt;/p&gt;
+&lt;p&gt;For this project, it was very useful to adjust the process.  The balance that I struck
+with myself was to make sure that as I coded the parser to respond to a given scenario,
+I adjusted the tokens assigned to the &lt;code&gt;expected_tokens&lt;/code&gt; variable based on the example’s
+HTML output for the equivalent scenario test.  This process gave me the confidence to
+know that as I made tests pass by enabling the code behind the scenario, each individual
+passing test was both moving towards a fully functioning parser and protecting the work
+that I had already done in that direction.&lt;/p&gt;
+&lt;p&gt;To be clear, as I copied the template over, I adjusted the function name, the
+function’s doc-string, and the Markdown source text based on the scenario test that I
+was implementing.  The list of tokens in &lt;code&gt;expected_tokens&lt;/code&gt; were then populated with
+a “best guess” before I started working on the code to make that scenario pass.
+In a microscopic sense, as I updated the test and the test tokens before starting on
+the code, I was still adhering to Test Driven Development on a scenario-by-scenario
+level.&lt;/p&gt;
+&lt;p&gt;To me, this was a good balance to strike, evaluating the correct tokens as I went
+instead of trying to work out all 637 sets of tokens ahead of time.  &lt;/p&gt;
+&lt;h3 id="how-did-this-help"&gt;How Did This Help?&lt;a class="headerlink" href="#how-did-this-help" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Getting a good process to deal with the large bulk of scenario tests was a welcome
+relief.  While I still needed to create a strategy to deal with that bulk of scenario
+tests I would need to write (see the
+&lt;a href="https://jackdewinter.github.io/2019/12/22/markdown-linter-parser-testing-strategy/"&gt;next article&lt;/a&gt;
+for details on that), I had a
+solid template that was simple (see K.I.S.S. principle), easy to follow (see
+Arrange-Act-Assert pattern), and would scale.  This was indeed something that I
+was able to work with.&lt;/p&gt;
+&lt;h2 id="what-about-the-unit-tests"&gt;What About the Unit Tests?&lt;a class="headerlink" href="#what-about-the-unit-tests" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Compared to the scenario tests, writing unit tests for the parser’s foundation
+functions was easy.  In each case, there is a function to test with a very cleanly
+specified interface, providing for a clean definition of expected input and output.&lt;/p&gt;
+&lt;h2 id="what-comes-next"&gt;What Comes Next?&lt;a class="headerlink" href="#what-comes-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In the &lt;a href="https://jackdewinter.github.io/2019/12/22/markdown-linter-parser-testing-strategy/"&gt;next article&lt;/a&gt;,
+I look at the work that needs to
+be done and come up with general strategies that I use to implement the parser
+required for the linter.  With the specification’s 637 examples as a base for the
+scenario tests, good planning is needed to ensure the work can progress forward.&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category></entry><entry><title>Markdown Linter - Collecting Requirements</title><link href="https://jackdewinter.github.io/2019/12/08/markdown-linter-collecting-requirements/" rel="alternate"></link><published>2019-12-08T00:00:00-08:00</published><updated>2019-12-08T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2019-12-08:/2019/12/08/markdown-linter-collecting-requirements/</id><summary type="html">
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;My website is now up and running, even though in my mind it took forever.  To make sure
+everything was “just so”, I went through each article with a fine-toothed comb multiple
+times, each with a slightly different thing I was looking for.  In the end, it worked
+out …&lt;/p&gt;</summary><content type="html">
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;My website is now up and running, even though in my mind it took forever.  To make sure
+everything was “just so”, I went through each article with a fine-toothed comb multiple
+times, each with a slightly different thing I was looking for.  In the end, it worked
+out, but I wished I could have automated at least some of that work and reduced the time
+it took to do it.  And I also have a lingering question of whether or not I got
+everything, or did I miss something out?&lt;/p&gt;
+&lt;h2 id="what-is-a-linter"&gt;What Is a Linter?&lt;a class="headerlink" href="#what-is-a-linter" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;A long time ago, when I first heard the term “lint”, I thought someone was referring to
+the stuff that you find in the clothes dryer trap that you need to clean out.  According
+to &lt;a href="https://en.wikipedia.org/wiki/Lint_(software)"&gt;Wikipedia&lt;/a&gt;, my guess was close.
+Similar to the “undesirable bits of fiber and fluff found in sheep’s wool” from the
+Wikipedia article, software linters are used to detect undesirable practices and
+patterns in the objects they scan.  Once pointed out, the development team can then
+decide whether or not to address the issue or ignore the issue.&lt;/p&gt;
+&lt;h2 id="doing-my-research"&gt;Doing My Research&lt;a class="headerlink" href="#doing-my-research" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;I started looking around, and even though there are a number of Markdown-to-HTML command
+line programs out there, finding a solid Markdown linter was another story.  I did find
+a couple of starts at making one, but not a finished one that I could use.  The only
+exception was the NPM-based
+&lt;a href="https://marketplace.visualstudio.com/items?itemName=DavidAnson.vscode-markdownlint"&gt;Markdownlint&lt;/a&gt;
+by David Anson.  This VSCode plugin is pretty much a standard for anyone creating
+content in Markdown using VSCode, with well over 1.3 million downloads as of the writing
+of this article.  By default, as you save articles, this linter executes and produces a
+list of issues in the &lt;code&gt;Problems&lt;/code&gt; section at the bottom of the VSCode editor.&lt;/p&gt;
+&lt;p&gt;This tool is indeed handy while writing an article, but the act of verifying multiple
+articles becomes a bit of chore.  My general process was to open a document I wanted to
+inspect, make a small whitespace changes, save the file, and examine the &lt;code&gt;Problems&lt;/code&gt;
+section to see what the linter came up with.  Two things were more annoying about this
+process that others.  The first issue is that any issue for any file that is open is
+displayed in that section.  If I wanted to be efficient, it meant closing every other
+file and just working on a single file at a time.  The second issue is that other
+plugins write their problems there as well.  As a lot of my content is technical, there
+are a fair number of spelling issues that arise that I need to ignore.  Once again,
+neither one of these issues is a bad thing, just annoying.&lt;/p&gt;
+&lt;h2 id="what-are-the-requirements"&gt;What Are The Requirements?&lt;a class="headerlink" href="#what-are-the-requirements" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Doing some thinking about this during the couple of weeks that I worked on the website,
+a fairly decent set of requirements crystalized:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;must be able to see an accurate tokenization of the markdown document before translating to HTML&lt;ul&gt;
+&lt;li&gt;working with an accurate tokenization remedies any translation problems instead of translating from HTML&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;all whitespace must be encoded in that token stream as-is&lt;ul&gt;
+&lt;li&gt;for consistency, want an exact interpretation&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;initial tokenization for GitHub Flavored Markdown only, add others later&lt;ul&gt;
+&lt;li&gt;initial tests against the &lt;a href="https://github.github.com/gfm/"&gt;GitHub Flavored Markdown specs&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;plans to later add other flavors of parser&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;must be able to provide a consistent lexical scan of the Markdown document from the command line&lt;ul&gt;
+&lt;li&gt;clean feedback on violations&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;extending the base linting rules should require very little effort&lt;ul&gt;
+&lt;li&gt;clear support for adding custom linting rules.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;written in Python&lt;ul&gt;
+&lt;li&gt;good cross-platform support&lt;/li&gt;
+&lt;li&gt;same language as Pelican, used as the
+  &lt;a href="https://jackdewinter.github.io/2019/08/18/static-websites-choosing-a-static-web-site-generator/"&gt;Static Site Generator&lt;/a&gt; for my website&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;While there are only 5 requirements, they are important.  The first two requirements
+speak to reliability: the parsed Markdown tokens should be complete. The third
+requirement is for stability: write against one specification with a solid set of test
+cases before moving on to others.  The fourth requirement is all about usability: the
+linter can be run from any appropriate command line.  Finally, the fifth requirement is
+about extensibility:  add any needed custom rules.&lt;/p&gt;
+&lt;p&gt;From my point of view, these requirements help me visualize a project that will help me
+maintain my website by ensuring that any articles that I write conform to a simple set
+of rules.  Those rules can be checked by a script before I commit them, without having
+to load up a text editor.  Simple.&lt;/p&gt;
+&lt;h2 id="why-is-this-important-to-me"&gt;Why Is This Important To Me?&lt;a class="headerlink" href="#why-is-this-important-to-me" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Writing this section, it took me a couple of tries to word this properly.  In the end, I
+settled on a basic phrase:  It is a tool that I can use to make a software project
+better.&lt;/p&gt;
+&lt;p&gt;In other parts of my professional life, I take a look at things such as a Java project,
+and try and improve the quality of that project.  The input is mainly Java source code
+and the output is mainly JAR files that are executed by a JVM.  My website is no
+different.  Remove Java source code and insert Markdown documents.  Remove JAR files
+executed by a JVM and insert HTML files presented by a browser.  There are a few
+differences between the two types of projects, but in all of the important ways, they
+are the same.&lt;/p&gt;
+&lt;p&gt;I took the time to manually scan each article for my website multiple times before I
+did my website’s soft release.  To me, it just makes sense that there should be an
+easier way to perform that process.  Easier in terms of time, and easier in terms of
+consistency.  Unless I am missing something out there in the Internet, the only project
+that came close to fulfilling my requirements was &lt;code&gt;Markdownlint&lt;/code&gt;, and it still had some
+things missing.  I came to the realization that to be able to lint a Markdown file
+against a set of rules, I was going to have to write my own Markdown parser.&lt;/p&gt;
+&lt;p&gt;In the last couple of decades of professional life, I have written many parsers, so that
+part of the project doesn’t scare me.  Due to the great works of the people at the
+&lt;a href="https://github.github.com/gfm/"&gt;GFM site&lt;/a&gt;, there we a solid number of test cases that I
+can test the parser against.  The extensibility issue would make me look at different
+ways to integrate code into my tool, so a plus there.  All in all, a decent number of
+things I have to get right, but nothing too far out of my field of experience.&lt;/p&gt;
+&lt;p&gt;Sure it would be hard in places… but also a challenge!  Just the kind of thing I like!&lt;/p&gt;
+&lt;h2 id="what-comes-next"&gt;What Comes Next?&lt;a class="headerlink" href="#what-comes-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In the &lt;a href="https://jackdewinter.github.io/2019/12/16/markdown-linter-setting-up-parser-tests/"&gt;next article&lt;/a&gt;, I start breaking down the
+requirements for the Markdown parser and document how I will setup the tests for it.
+As I am parsing a well-known format with varying implementations already available, it
+is important to stay focused on one implementation and have a solid set of tests to
+ensure I don’t go backwards in my development.&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category></entry><entry><title>Software Quality: Reliability</title><link href="https://jackdewinter.github.io/2019/11/10/software-quality-reliability/" rel="alternate"></link><published>2019-11-10T00:00:00-08:00</published><updated>2019-11-10T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2019-11-10:/2019/11/10/software-quality-reliability/</id><summary type="html">
 &lt;p&gt;In the main article titled &lt;a href="https://jackdewinter.github.io/2019/09/15/what-is-software-quality/"&gt;What is Software Quality?&lt;/a&gt;, I
 took a high level look at what I believe are the 4 pillars of software quality.  This article
 will focus specifically on the Reliability pillar, with suggestions on how to measure
