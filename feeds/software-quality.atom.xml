@@ -1,5 +1,420 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench - Software Quality</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/software-quality.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2019-12-22T00:00:00-08:00</updated><entry><title>Markdown Linter - Parser Testing Strategy</title><link href="https://jackdewinter.github.io/2019/12/22/markdown-linter-parser-testing-strategy/" rel="alternate"></link><published>2019-12-22T00:00:00-08:00</published><updated>2019-12-22T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2019-12-22:/2019/12/22/markdown-linter-parser-testing-strategy/</id><summary type="html">
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench - Software Quality</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/software-quality.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2020-01-06T00:00:00-08:00</updated><entry><title>Scenario Testing Python Scripts</title><link href="https://jackdewinter.github.io/2020/01/06/scenario-testing-python-scripts/" rel="alternate"></link><published>2020-01-06T00:00:00-08:00</published><updated>2020-01-06T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-01-06:/2020/01/06/scenario-testing-python-scripts/</id><summary type="html">
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;As part of the process of
+&lt;a href="https://jackdewinter.github.io/2019/12/08/markdown-linter-collecting-requirements/"&gt;creating a Markdown Linter&lt;/a&gt;
+to use with my personal website, I firmly believe that it is imperative that I have
+solid testing on that linter and the tools necessary to test the linter.  This testing
+includes executing those Python tool scripts from start …&lt;/p&gt;</summary><content type="html">
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;As part of the process of
+&lt;a href="https://jackdewinter.github.io/2019/12/08/markdown-linter-collecting-requirements/"&gt;creating a Markdown Linter&lt;/a&gt;
+to use with my personal website, I firmly believe that it is imperative that I have
+solid testing on that linter and the tools necessary to test the linter.  This testing
+includes executing those Python tool scripts from start to finish and verifying that
+everything is working properly.  From my experience, one of the most efficient ways to
+scenario test the project’s Python scripts is to use an in-process framework for
+running Python scripts.&lt;/p&gt;
+&lt;p&gt;Because of the way that Python works, it is very feasible to scenario test the Python
+scripts using the in-process framework which I describe in this article.  To show
+how the framework works in practice, I reference my
+&lt;a href="https://github.com/jackdewinter/pyscan"&gt;PyScan project&lt;/a&gt; to
+illustrate how I use this framework to test the scenarios in that project.
+Specifically, I talk about the
+&lt;a href="https://github.com/jackdewinter/pyscan/blob/master/test/pytest_execute.py"&gt;pytest_execute.py file&lt;/a&gt;
+which contains the bulk of the code I use to write scenario tests with.&lt;sup id="fnref:1"&gt;&lt;a class="footnote-ref" href="#fn:1"&gt;1&lt;/a&gt;&lt;/sup&gt;&lt;/p&gt;
+&lt;h2 id="determine-the-requirements"&gt;Determine the Requirements&lt;a class="headerlink" href="#determine-the-requirements" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;As with most of my projects, the first thing I do for any new project is to cleanly
+determine and document the requirements for the project.  Even though this project is
+a single component used to test the tools and other components, I feel strongly that it
+is still important to follow those guidelines to ensure the right component is built in
+the right way.&lt;/p&gt;
+&lt;p&gt;The basic requirements are pretty easy to define for this in-process test component:
+execute the Python script independently and capture all relevant information about it’s
+execution, verifying that information against expected values.  The devil is in the
+details however.  I believe that a good definition of “execute the Python script” must
+include the ability to set the current working directory and arguments for the command
+line. For a good definition of “capture all relevant information”, I believe the
+requirements must include capturing of the script’s return code as well as any output
+to standard out (stdout) and standard error (stderr).  As this component executes the
+script in-process, any attempts to exit the script prematurely must be properly
+captured, and the state of the test must be returned to what it was at the beginning of
+the test. Finally, to satisfy the “verifying” requirement, the component must have easy
+to use comparison functions, with informative output on any differences that arise
+during verification.&lt;/p&gt;
+&lt;p&gt;Finding a balance between too many bulky requirements and too few lean requirements is
+a tough balance to achieve.  In this case, I feel that I have achieved that balance by
+ensuring all of the major parts of the requirements are specified at a high enough level
+to be able to communicate clearly without ambiguity.  Here’s hoping I get the balance
+right!&lt;/p&gt;
+&lt;h2 id="capture-relevant-information"&gt;Capture Relevant Information&lt;a class="headerlink" href="#capture-relevant-information" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;The first thing to take care of is a class that will contain the information to satisfy
+the “capture all relevant information” requirement above.  As the requirement specifies
+the 3 things that need to be captured, all that is left to do is to create a class to
+encapsulate these variables as follows:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;class&lt;/span&gt; &lt;span class="nc"&gt;InProcessResult&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+    &lt;span class="sd"&gt;"""&lt;/span&gt;
+&lt;span class="sd"&gt;    Class to provide for an encapsulation of the results of an execution.&lt;/span&gt;
+&lt;span class="sd"&gt;    """&lt;/span&gt;
+
+    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="fm"&gt;__init__&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;return_code&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;std_out&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;std_err&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;return_code&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;return_code&lt;/span&gt;
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;std_out&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;std_out&lt;/span&gt;
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;std_err&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;std_err&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;h2 id="executing-the-script"&gt;Executing the Script&lt;a class="headerlink" href="#executing-the-script" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Now that there is an object to collect the information about the script’s execution, a
+simple function is needed to collect that information.  In the &lt;code&gt;InProcessExecution&lt;/code&gt;
+base class, the &lt;code&gt;invoke_main&lt;/code&gt; function serves this purpose.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;invoke_main&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;arguments&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="bp"&gt;None&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;cwd&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="bp"&gt;None&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="sd"&gt;"""&lt;/span&gt;
+&lt;span class="sd"&gt;        Invoke the mainline so that we can capture results.&lt;/span&gt;
+&lt;span class="sd"&gt;        """&lt;/span&gt;
+
+        &lt;span class="n"&gt;saved_state&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;SystemState&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+
+        &lt;span class="n"&gt;std_output&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;io&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;StringIO&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+        &lt;span class="n"&gt;std_error&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;io&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;StringIO&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+        &lt;span class="k"&gt;try&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="n"&gt;returncode&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;
+            &lt;span class="n"&gt;sys&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;stdout&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;std_output&lt;/span&gt;
+            &lt;span class="n"&gt;sys&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;stderr&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;std_error&lt;/span&gt;
+
+            &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;arguments&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+                &lt;span class="n"&gt;sys&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;argv&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;arguments&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;copy&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+            &lt;span class="k"&gt;else&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+                &lt;span class="n"&gt;sys&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;argv&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[]&lt;/span&gt;
+            &lt;span class="n"&gt;sys&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;argv&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;insert&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;get_main_name&lt;/span&gt;&lt;span class="p"&gt;())&lt;/span&gt;
+
+            &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;cwd&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+                &lt;span class="n"&gt;os&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;chdir&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;cwd&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+            &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;execute_main&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+        &lt;span class="k"&gt;except&lt;/span&gt; &lt;span class="ne"&gt;SystemExit&lt;/span&gt; &lt;span class="k"&gt;as&lt;/span&gt; &lt;span class="n"&gt;this_exception&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="n"&gt;returncode&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;handle_system_exit&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;this_exception&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;std_error&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="k"&gt;except&lt;/span&gt; &lt;span class="ne"&gt;Exception&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="n"&gt;returncode&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;handle_normal_exception&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+        &lt;span class="k"&gt;finally&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="n"&gt;saved_state&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;restore&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;InProcessResult&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;returncode&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;std_output&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;std_error&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Before changing any of the existing system values, changes that by their very nature
+are be made across the entire Python interpreter, the original values of those system
+values are kept safely in an instance of the the &lt;code&gt;SystemState&lt;/code&gt; class in the
+&lt;code&gt;saved_state&lt;/code&gt; variable.  As I want to ensure that the saved system state is reverted
+back to regardless of what happens, a try-finally block is used to ensure that the
+&lt;code&gt;saved_state.restore&lt;/code&gt; function is called to restore the system back to it’s original
+state.&lt;/p&gt;
+&lt;p&gt;Once the system state is safely stored away, changes to those system values can be made.
+Instances of the &lt;code&gt;StringIo&lt;/code&gt; class are used to provide alternative streams for stdout
+and stderr.  A new array is assigned to &lt;code&gt;sys.argv&lt;/code&gt;, either an empty array if no
+arguments are provided or a copy of the provided array if provided.  To the start of
+that array is inserted the name of the main script, to ensure that libraries expecting
+a properly formatted array of system arguments are happy.  Finally, if an alternate
+working directory is provided to the function, the script changes to that directory.&lt;/p&gt;
+&lt;p&gt;To reiterate, the reason it is acceptable to make all of these changes to the system
+state is that we have a safe copy of the system state stored away that we will revert
+to when this function completes.&lt;/p&gt;
+&lt;p&gt;After the &lt;code&gt;execute_main&lt;/code&gt; function is called to execute the script in the specified
+manner, there are three possibilities that the function needs to capture the
+information for. In the case of a normal fall-through execution, the &lt;code&gt;returncode = 0&lt;/code&gt;
+statement at the start of the try-finally block sets the return code.  If a
+&lt;code&gt;SystemExit&lt;/code&gt; exception is thrown, the &lt;code&gt;handle_system_exit&lt;/code&gt; function does a bit of
+process to figure out the return code based on the contents of the exception.  Finally,
+if the execution is terminated for any other exception, the &lt;code&gt;handle_normal_exception&lt;/code&gt;
+makes sure to print out decent debug information and sets the return code to 1.  In all
+three cases, the collected values for stdout and stderr are collected, combined with
+the return code determined earlier in this paragraph, and a new instance of the
+&lt;code&gt;InProcessResult&lt;/code&gt; class is returned with these values.&lt;/p&gt;
+&lt;h2 id="verifying-actual-results-against-expected-results"&gt;Verifying Actual Results Against Expected Results&lt;a class="headerlink" href="#verifying-actual-results-against-expected-results" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;When I started with the &lt;code&gt;assert_results&lt;/code&gt; function, it was only 3 statements in quick
+succession: 3 assert statements asserting that the actual values for stdout, stderr and
+the return code matched the expected values.  However, as I started using that function,
+it was quickly apparent that when something did fail, there was a certain amount of
+repetitive debugging that I performed to determine why the assert was triggered.  At
+first I added some extra information to the assert statements, and that worked for the
+return code.  But there were still two issues.&lt;/p&gt;
+&lt;p&gt;The first issue was that, in the case where all 3 expected values were different than
+the actual values, it took 3 iterations of cleaning up the test before it passed.  Only
+when I cleared up the first failure did I see the second failure, and only after the
+second failure was dealt with did I see the third.  While this was workable, it was far
+from efficient.  The second issue was that if there were any differences with the
+contents of the stdout or stderr stream, the differences between the expected value and
+the actual value were hard to discern by just looking at them.&lt;/p&gt;
+&lt;p&gt;To address the first issue, I changed the simple &lt;code&gt;assert_results&lt;/code&gt; function to the
+following:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;assert_results&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;stdout&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="bp"&gt;None&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;stderr&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="bp"&gt;None&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;error_code&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;
+    &lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="sd"&gt;"""&lt;/span&gt;
+&lt;span class="sd"&gt;        Assert the results are as expected in the "assert" phase.&lt;/span&gt;
+&lt;span class="sd"&gt;        """&lt;/span&gt;
+
+        &lt;span class="n"&gt;stdout_error&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;assert_stream_contents&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"stdout"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;std_out&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;stdout&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="n"&gt;stderr_error&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;assert_stream_contents&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+            &lt;span class="s2"&gt;"stderr"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;std_err&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;stderr&lt;/span&gt;
+        &lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="n"&gt;return_code_error&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;assert_return_code&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;return_code&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;error_code&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+        &lt;span class="n"&gt;combined_error_msg&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;""&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;stdout_error&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="n"&gt;combined_error_msg&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;combined_error_msg&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="nb"&gt;str&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;stdout_error&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;stderr_error&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="n"&gt;combined_error_msg&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;combined_error_msg&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="nb"&gt;str&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;stderr_error&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;return_code_error&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="n"&gt;combined_error_msg&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;combined_error_msg&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="nb"&gt;str&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;return_code_error&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="k"&gt;assert&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="n"&gt;combined_error_msg&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
+            &lt;span class="s2"&gt;"Either stdout, stderr, or the return code was not as expected.&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;
+            &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;combined_error_msg&lt;/span&gt;
+        &lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;The key to resolving the first issue is in capturing the information about all
+differences that occur, and then asserting only once if any differences are encountered.
+To accomplish this, several comparison functions are required that capture individual
+asserts and relay that information back to the &lt;code&gt;assert_results&lt;/code&gt; function where they
+can be aggregated together.  It is these comparison functions that are at the heart
+of the &lt;code&gt;assert_results&lt;/code&gt; function.&lt;/p&gt;
+&lt;p&gt;The easiest
+of these comparison functions is the &lt;code&gt;assert_return_code&lt;/code&gt; function, which simply
+compares the actual return code and the expected return code.  If there is any
+difference, the error message for the assert statement is descriptive enough to provide
+a clear indication of what the difference is.  That raised &lt;code&gt;AssertionError&lt;/code&gt; is then
+captured and returned from the function so the &lt;code&gt;assert_results&lt;/code&gt; function can report on
+it.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="nd"&gt;@classmethod&lt;/span&gt;
+    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;assert_return_code&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;cls&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;actual_return_code&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;expected_return_code&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="sd"&gt;"""&lt;/span&gt;
+&lt;span class="sd"&gt;        Assert that the actual return code is as expected.&lt;/span&gt;
+&lt;span class="sd"&gt;        """&lt;/span&gt;
+
+        &lt;span class="n"&gt;result&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;
+        &lt;span class="k"&gt;try&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="k"&gt;assert&lt;/span&gt; &lt;span class="n"&gt;actual_return_code&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="n"&gt;expected_return_code&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
+                &lt;span class="s2"&gt;"Actual error code ("&lt;/span&gt;
+                &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="nb"&gt;str&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;actual_return_code&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+                &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s2"&gt;") and expected error code ("&lt;/span&gt;
+                &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="nb"&gt;str&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;expected_return_code&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+                &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s2"&gt;") differ."&lt;/span&gt;
+            &lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="k"&gt;except&lt;/span&gt; &lt;span class="ne"&gt;AssertionError&lt;/span&gt; &lt;span class="k"&gt;as&lt;/span&gt; &lt;span class="n"&gt;ex&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="n"&gt;result&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;ex&lt;/span&gt;
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;result&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;A slightly more complicated function is the &lt;code&gt;assert_stream_contents&lt;/code&gt; comparison
+function. To ensure
+that helpful information is returned in the assert failure message, it checks to see if
+the &lt;code&gt;expected_stream&lt;/code&gt; is set and calls &lt;code&gt;compare_versus_expected&lt;/code&gt; if so.  (More about
+that function in a minute.)  If not set, the assert used clearly states that the stream
+was expected to be empty, and the actual stream is not empty.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;assert_stream_contents&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;stream_name&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;actual_stream&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;expected_stream&lt;/span&gt;
+    &lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="sd"&gt;"""&lt;/span&gt;
+&lt;span class="sd"&gt;        Assert that the contents of the given stream are as expected.&lt;/span&gt;
+&lt;span class="sd"&gt;        """&lt;/span&gt;
+
+        &lt;span class="n"&gt;result&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;
+        &lt;span class="k"&gt;try&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;expected_stream&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+                &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;compare_versus_expected&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+                    &lt;span class="n"&gt;stream_name&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;actual_stream&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;expected_stream&lt;/span&gt;
+                &lt;span class="p"&gt;)&lt;/span&gt;
+            &lt;span class="k"&gt;else&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+                &lt;span class="k"&gt;assert&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="n"&gt;actual_stream&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;getvalue&lt;/span&gt;&lt;span class="p"&gt;(),&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
+                    &lt;span class="s2"&gt;"Expected "&lt;/span&gt;
+                    &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;stream_name&lt;/span&gt;
+                    &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s2"&gt;" to be empty. Not:&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;---&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;
+                    &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;actual_stream&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;getvalue&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+                    &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;---&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;
+                &lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="k"&gt;except&lt;/span&gt; &lt;span class="ne"&gt;AssertionError&lt;/span&gt; &lt;span class="k"&gt;as&lt;/span&gt; &lt;span class="n"&gt;ex&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="n"&gt;result&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;ex&lt;/span&gt;
+        &lt;span class="k"&gt;finally&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="n"&gt;actual_stream&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;close&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;result&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Addressing the second issue with the initial &lt;code&gt;assert_results&lt;/code&gt; function, the differences
+between the two streams being difficult to discern, is the &lt;code&gt;compare_versus_expected&lt;/code&gt;
+function.  My first variation on this function simply used the statement
+&lt;code&gt;assert actual_stream.getvalue() != expected_text&lt;/code&gt;, producing the same assert result,
+but lacking in the description of why the assert failed.  The second variation of this
+function added a better assert failure message, but left the task of identifying the
+difference between the two strings on the reader of the failure message.  The final
+variation of this function uses the &lt;code&gt;difflib&lt;/code&gt; module and the &lt;code&gt;difflib.ndiff&lt;/code&gt; function to
+provide a detailed line-by-line comparison between the actual stream contents and the
+expected stream contents.  By using the &lt;code&gt;difflib.ndiff&lt;/code&gt; function in this final
+variation, the assert failure message now
+contains a very easy to read list of the differences between the two streams.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;difflib&lt;/span&gt;
+
+    &lt;span class="nd"&gt;@classmethod&lt;/span&gt;
+    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;compare_versus_expected&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+        &lt;span class="bp"&gt;cls&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;stream_name&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;actual_stream&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;expected_text&lt;/span&gt;
+    &lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="sd"&gt;"""&lt;/span&gt;
+&lt;span class="sd"&gt;        Do a thorough comparison of the actual stream against the expected text.&lt;/span&gt;
+&lt;span class="sd"&gt;        """&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;actual_stream&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;getvalue&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="n"&gt;expected_text&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="n"&gt;diff&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;difflib&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;ndiff&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+                &lt;span class="n"&gt;expected_text&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;splitlines&lt;/span&gt;&lt;span class="p"&gt;(),&lt;/span&gt; &lt;span class="n"&gt;actual_stream&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;getvalue&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;splitlines&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+            &lt;span class="p"&gt;)&lt;/span&gt;
+
+            &lt;span class="n"&gt;diff_values&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;join&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;list&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;diff&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
+            &lt;span class="k"&gt;assert&lt;/span&gt; &lt;span class="bp"&gt;False&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
+                &lt;span class="n"&gt;stream_name&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s2"&gt;" not as expected:&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;---&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;diff_values&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;---&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;
+            &lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;h2 id="using-it-all-together"&gt;Using it all together&lt;a class="headerlink" href="#using-it-all-together" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;To start using the work that completed in the sections above, a proper subclass of the
+&lt;code&gt;InProcessExecution&lt;/code&gt; class is required.  Because that class is an abstract base class,
+a new class &lt;code&gt;MainlineExecutor&lt;/code&gt; is required to resolve the &lt;code&gt;execute_main&lt;/code&gt; function and
+the &lt;code&gt;get_main_name&lt;/code&gt; function.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;class&lt;/span&gt; &lt;span class="nc"&gt;MainlineExecutor&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;InProcessExecution&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="fm"&gt;__init__&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="nb"&gt;super&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="fm"&gt;__init__&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+        &lt;span class="n"&gt;resource_directory&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;os&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;path&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;join&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;os&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;getcwd&lt;/span&gt;&lt;span class="p"&gt;(),&lt;/span&gt; &lt;span class="s2"&gt;"test"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;"resources"&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;resource_directory&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;resource_directory&lt;/span&gt;
+
+    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;execute_main&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="n"&gt;PyScan&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;main&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+
+    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;get_main_name&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="s2"&gt;"main.py"&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;The &lt;code&gt;MainlineExecutor&lt;/code&gt; class implements those two required functions.  The
+&lt;code&gt;get_main_name&lt;/code&gt; function returns the name of the module entry point for the project.
+This name is inserted into the array of arguments to ensure that any functions based
+off of the command line &lt;code&gt;sys.argv&lt;/code&gt; array resolves properly.  The &lt;code&gt;execute_main&lt;/code&gt;
+function implements the actual code to invoke the main entry point for the script.  In
+the case of the PyScan project, the entry point at the end of the &lt;code&gt;main.py&lt;/code&gt; script is:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="vm"&gt;__name__&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="s2"&gt;"__main__"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+    &lt;span class="n"&gt;PyScan&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;main&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Therefore, the contents of the &lt;code&gt;execute_main&lt;/code&gt; function is &lt;code&gt;PyScan().main()&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;In addition to those two required functions, there is some extra code in the constructor
+for the class.  Instead of recomputing the resource directory in each test that requires
+it, the &lt;code&gt;MainlineExecutor&lt;/code&gt; class computes it in the constructor to keep the test
+functions as clean as possible.  While this is not required when subclassing from
+&lt;code&gt;InProcessExecution&lt;/code&gt;, it has proven very useful in practice.&lt;/p&gt;
+&lt;p&gt;To validate the use of the &lt;code&gt;MainlineExecutor&lt;/code&gt; class with the project, I created a
+simple scenario test to verify that the version of the scanner is correct.  This is
+very simple test, and verifying that the framework passes such a simple test increases
+the confidence in the framework itself.  At the start of the scenario test, the
+&lt;code&gt;executor&lt;/code&gt; variable is created and assigned an instance of our new class
+&lt;code&gt;MainlineExecutor&lt;/code&gt; as well as specify that the arguments to
+use for the script as &lt;code&gt;["--version"]&lt;/code&gt;. in the array &lt;code&gt;suppplied_arguments&lt;/code&gt;  In keeping
+with the Arrange-Act-Assert pattern, I then specify the expected behaviors for stdout
+(in &lt;code&gt;expected_output&lt;/code&gt;), stderr (in &lt;code&gt;expected_error&lt;/code&gt;), and the return code from the
+script (in &lt;code&gt;expected_return_code&lt;/code&gt;).&lt;/p&gt;
+&lt;p&gt;Having set everything up in the Assert section of the test, the Act section simply
+invokes the script using the &lt;code&gt;executor.invoke_main&lt;/code&gt; function with the
+&lt;code&gt;suppplied_arguments&lt;/code&gt; variable assigned previously, and collect the results.  Once
+collected, the &lt;code&gt;execute_results.assert_results&lt;/code&gt; function verifies those actual results
+against the expected results, asserting if there are differences.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;test_get_summarizer_version&lt;/span&gt;&lt;span class="p"&gt;():&lt;/span&gt;
+    &lt;span class="sd"&gt;"""&lt;/span&gt;
+&lt;span class="sd"&gt;    Make sure that we can get information about the version of the summarizer.&lt;/span&gt;
+&lt;span class="sd"&gt;    """&lt;/span&gt;
+
+    &lt;span class="c1"&gt;# Arrange&lt;/span&gt;
+    &lt;span class="n"&gt;executor&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;MainlineExecutor&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+    &lt;span class="n"&gt;suppplied_arguments&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s2"&gt;"--version"&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+
+    &lt;span class="n"&gt;expected_output&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;"""&lt;/span&gt;&lt;span class="se"&gt;\&lt;/span&gt;
+&lt;span class="s2"&gt;main.py 0.1.0&lt;/span&gt;
+&lt;span class="s2"&gt;"""&lt;/span&gt;
+    &lt;span class="n"&gt;expected_error&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;""&lt;/span&gt;
+    &lt;span class="n"&gt;expected_return_code&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;
+
+    &lt;span class="c1"&gt;# Act&lt;/span&gt;
+    &lt;span class="n"&gt;execute_results&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;executor&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;invoke_main&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;arguments&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;suppplied_arguments&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;cwd&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="bp"&gt;None&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+    &lt;span class="c1"&gt;# Assert&lt;/span&gt;
+    &lt;span class="n"&gt;execute_results&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;assert_results&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+        &lt;span class="n"&gt;expected_output&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;expected_error&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;expected_return_code&lt;/span&gt;
+    &lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;h2 id="what-does-using-this-look-like"&gt;What Does Using This Look Like?&lt;a class="headerlink" href="#what-does-using-this-look-like" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In terms of writing scenario tests, the tests are usually as simple to write as the
+&lt;code&gt;test_get_summarizer_version&lt;/code&gt; function in the last section.  If there are parts of the
+output that have a non-constant value, such as the full path of the directory in which
+the test is executed in, the &lt;code&gt;expected_output&lt;/code&gt; variable would have to be set to
+compensate for that variability, but that is an expected complexity.&lt;/p&gt;
+&lt;p&gt;For the PyScan project, a quick scan of the 
+&lt;a href="https://github.com/jackdewinter/pyscan/blob/master/test/test_scenarios.py"&gt;PyScan test_scenarios.py file&lt;/a&gt; reveals that for this project, the non-constant values most often
+occur with failure messages, especially ones that relay path information in their
+failure messages.  When that happens, such as with the
+&lt;code&gt;test_summarize_junit_report_with_bad_source&lt;/code&gt; test function, that extra complexity
+is not overwhelming and does not make the test function unreadable.&lt;/p&gt;
+&lt;p&gt;In terms of the test output for a passing test, there is no difference.  If executing
+&lt;code&gt;pipenv run pytest&lt;/code&gt; produced a &lt;code&gt;.&lt;/code&gt; for a successful test before, it remains a &lt;code&gt;.&lt;/code&gt; now.
+The big difference is in what is displayed when there is a difference in the test
+output.  &lt;/p&gt;
+&lt;p&gt;In the case where there is a single character difference in the test output, such as
+changing the expected output for the &lt;code&gt;test_get_summarizer_version&lt;/code&gt; test to
+&lt;code&gt;main.py 0.1.1&lt;/code&gt;, the output below
+clearly shows where the actual output and expected output differ.  Note that in these
+comparisons, the line that starts with the &lt;code&gt;-&lt;/code&gt; character is the expected output and
+the line that starts with the &lt;code&gt;+&lt;/code&gt; character is the actual output.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;E       AssertionError: Either stdout, stderr, or the return code was not as expected.
+E
+E       stdout not as expected:
+E       ---
+E       - main.py 0.1.1
+E       ?             ^
+E
+E       + main.py 0.1.0
+E       ?             ^
+E
+E       ---
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;In the case where a line in the test output is completely different, such as changing
+the expected output to &lt;code&gt;This is another line&lt;/code&gt;, the output below clearly reflects that
+difference:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;E       AssertionError: Either stdout, stderr, or the return code was not as expected.
+E
+E       stdout not as expected:
+E       ---
+E       - This is another line
+E       + main.py 0.1.0
+E       ---
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Finally, in the case where the actual output contains either more lines or less lines
+that the expected output, such as adding the line &lt;code&gt;This is another line&lt;/code&gt; to the
+expected output, the output below clearly shows that difference.  In this example, as
+the first line is at the start of both the actual output and expected output, it is
+shown without any prefix to the line.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;E       AssertionError: Either stdout, stderr, or the return code was not as expected.
+E
+E       stdout not as expected:
+E       ---
+E         main.py 0.1.0
+E       - This is another line
+E       ---
+&lt;/pre&gt;&lt;/div&gt;
+&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;While the &lt;code&gt;pytest_execute.py&lt;/code&gt; file that I use as the base for my scenario tests isn’t
+rocket science, it is invaluable to me in creating simple, easy-to-read scenario tests.
+At the heart of the module is the base requirement (as stated above) to execute the
+Python script independently, capture all relevant information about it’s execution,
+and then verifying that information against expected values.  Based on my experience
+and evolution of this module, I believe that it handily satisfies the requirements
+with ease.&lt;/p&gt;
+&lt;div class="footnote"&gt;
+&lt;hr/&gt;
+&lt;ol&gt;
+&lt;li id="fn:1"&gt;
+&lt;p&gt;To keep things simple for the article, the &lt;code&gt;additional_error&lt;/code&gt; parameter from a number of the functions has been removed.  This parameter is used in the PyMarkdown project and will be documented as part of my articles on that project. &lt;a class="footnote-backref" href="#fnref:1" title="Jump back to footnote 1 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/div&gt;</content><category term="Software Quality"></category><category term="pytest"></category><category term="scenario testing"></category></entry><entry><title>Have a Happy Winter Holiday 2019</title><link href="https://jackdewinter.github.io/2019/12/29/have-a-happy-winter-holiday-2019/" rel="alternate"></link><published>2019-12-29T00:00:00-08:00</published><updated>2019-12-29T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2019-12-29:/2019/12/29/have-a-happy-winter-holiday-2019/</id><summary type="html">&lt;p&gt;I just wanted to take a quick minute and wish everyone a  happy winter holiday season
+as 2019 winds to a close.  When I resume posts in the new year, I will be trying to
+publish weekly posts on Mondays instead of Sundays, and see how that goes.&lt;/p&gt;
+&lt;p&gt;Safe travels …&lt;/p&gt;</summary><content type="html">&lt;p&gt;I just wanted to take a quick minute and wish everyone a  happy winter holiday season
+as 2019 winds to a close.  When I resume posts in the new year, I will be trying to
+publish weekly posts on Mondays instead of Sundays, and see how that goes.&lt;/p&gt;
+&lt;p&gt;Safe travels, and well wishes.&lt;/p&gt;</content><category term="Software Quality"></category></entry><entry><title>Markdown Linter - Parser Testing Strategy</title><link href="https://jackdewinter.github.io/2019/12/22/markdown-linter-parser-testing-strategy/" rel="alternate"></link><published>2019-12-22T00:00:00-08:00</published><updated>2019-12-22T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2019-12-22:/2019/12/22/markdown-linter-parser-testing-strategy/</id><summary type="html">
 &lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;In the previous articles in this series, I discussed the requirements for the Markdown
 linter that I am writing.  From a development point of view, the main requirement is

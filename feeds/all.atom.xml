@@ -1,5 +1,420 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/all.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2019-12-22T00:00:00-08:00</updated><entry><title>Markdown Linter - Parser Testing Strategy</title><link href="https://jackdewinter.github.io/2019/12/22/markdown-linter-parser-testing-strategy/" rel="alternate"></link><published>2019-12-22T00:00:00-08:00</published><updated>2019-12-22T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2019-12-22:/2019/12/22/markdown-linter-parser-testing-strategy/</id><summary type="html">
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/all.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2020-01-06T00:00:00-08:00</updated><entry><title>Scenario Testing Python Scripts</title><link href="https://jackdewinter.github.io/2020/01/06/scenario-testing-python-scripts/" rel="alternate"></link><published>2020-01-06T00:00:00-08:00</published><updated>2020-01-06T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-01-06:/2020/01/06/scenario-testing-python-scripts/</id><summary type="html">
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;As part of the process of
+&lt;a href="https://jackdewinter.github.io/2019/12/08/markdown-linter-collecting-requirements/"&gt;creating a Markdown Linter&lt;/a&gt;
+to use with my personal website, I firmly believe that it is imperative that I have
+solid testing on that linter and the tools necessary to test the linter.  This testing
+includes executing those Python tool scripts from start …&lt;/p&gt;</summary><content type="html">
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;As part of the process of
+&lt;a href="https://jackdewinter.github.io/2019/12/08/markdown-linter-collecting-requirements/"&gt;creating a Markdown Linter&lt;/a&gt;
+to use with my personal website, I firmly believe that it is imperative that I have
+solid testing on that linter and the tools necessary to test the linter.  This testing
+includes executing those Python tool scripts from start to finish and verifying that
+everything is working properly.  From my experience, one of the most efficient ways to
+scenario test the project’s Python scripts is to use an in-process framework for
+running Python scripts.&lt;/p&gt;
+&lt;p&gt;Because of the way that Python works, it is very feasible to scenario test the Python
+scripts using the in-process framework which I describe in this article.  To show
+how the framework works in practice, I reference my
+&lt;a href="https://github.com/jackdewinter/pyscan"&gt;PyScan project&lt;/a&gt; to
+illustrate how I use this framework to test the scenarios in that project.
+Specifically, I talk about the
+&lt;a href="https://github.com/jackdewinter/pyscan/blob/master/test/pytest_execute.py"&gt;pytest_execute.py file&lt;/a&gt;
+which contains the bulk of the code I use to write scenario tests with.&lt;sup id="fnref:1"&gt;&lt;a class="footnote-ref" href="#fn:1"&gt;1&lt;/a&gt;&lt;/sup&gt;&lt;/p&gt;
+&lt;h2 id="determine-the-requirements"&gt;Determine the Requirements&lt;a class="headerlink" href="#determine-the-requirements" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;As with most of my projects, the first thing I do for any new project is to cleanly
+determine and document the requirements for the project.  Even though this project is
+a single component used to test the tools and other components, I feel strongly that it
+is still important to follow those guidelines to ensure the right component is built in
+the right way.&lt;/p&gt;
+&lt;p&gt;The basic requirements are pretty easy to define for this in-process test component:
+execute the Python script independently and capture all relevant information about it’s
+execution, verifying that information against expected values.  The devil is in the
+details however.  I believe that a good definition of “execute the Python script” must
+include the ability to set the current working directory and arguments for the command
+line. For a good definition of “capture all relevant information”, I believe the
+requirements must include capturing of the script’s return code as well as any output
+to standard out (stdout) and standard error (stderr).  As this component executes the
+script in-process, any attempts to exit the script prematurely must be properly
+captured, and the state of the test must be returned to what it was at the beginning of
+the test. Finally, to satisfy the “verifying” requirement, the component must have easy
+to use comparison functions, with informative output on any differences that arise
+during verification.&lt;/p&gt;
+&lt;p&gt;Finding a balance between too many bulky requirements and too few lean requirements is
+a tough balance to achieve.  In this case, I feel that I have achieved that balance by
+ensuring all of the major parts of the requirements are specified at a high enough level
+to be able to communicate clearly without ambiguity.  Here’s hoping I get the balance
+right!&lt;/p&gt;
+&lt;h2 id="capture-relevant-information"&gt;Capture Relevant Information&lt;a class="headerlink" href="#capture-relevant-information" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;The first thing to take care of is a class that will contain the information to satisfy
+the “capture all relevant information” requirement above.  As the requirement specifies
+the 3 things that need to be captured, all that is left to do is to create a class to
+encapsulate these variables as follows:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;class&lt;/span&gt; &lt;span class="nc"&gt;InProcessResult&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+    &lt;span class="sd"&gt;"""&lt;/span&gt;
+&lt;span class="sd"&gt;    Class to provide for an encapsulation of the results of an execution.&lt;/span&gt;
+&lt;span class="sd"&gt;    """&lt;/span&gt;
+
+    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="fm"&gt;__init__&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;return_code&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;std_out&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;std_err&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;return_code&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;return_code&lt;/span&gt;
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;std_out&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;std_out&lt;/span&gt;
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;std_err&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;std_err&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;h2 id="executing-the-script"&gt;Executing the Script&lt;a class="headerlink" href="#executing-the-script" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Now that there is an object to collect the information about the script’s execution, a
+simple function is needed to collect that information.  In the &lt;code&gt;InProcessExecution&lt;/code&gt;
+base class, the &lt;code&gt;invoke_main&lt;/code&gt; function serves this purpose.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;invoke_main&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;arguments&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="bp"&gt;None&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;cwd&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="bp"&gt;None&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="sd"&gt;"""&lt;/span&gt;
+&lt;span class="sd"&gt;        Invoke the mainline so that we can capture results.&lt;/span&gt;
+&lt;span class="sd"&gt;        """&lt;/span&gt;
+
+        &lt;span class="n"&gt;saved_state&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;SystemState&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+
+        &lt;span class="n"&gt;std_output&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;io&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;StringIO&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+        &lt;span class="n"&gt;std_error&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;io&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;StringIO&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+        &lt;span class="k"&gt;try&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="n"&gt;returncode&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;
+            &lt;span class="n"&gt;sys&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;stdout&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;std_output&lt;/span&gt;
+            &lt;span class="n"&gt;sys&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;stderr&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;std_error&lt;/span&gt;
+
+            &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;arguments&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+                &lt;span class="n"&gt;sys&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;argv&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;arguments&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;copy&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+            &lt;span class="k"&gt;else&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+                &lt;span class="n"&gt;sys&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;argv&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[]&lt;/span&gt;
+            &lt;span class="n"&gt;sys&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;argv&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;insert&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;get_main_name&lt;/span&gt;&lt;span class="p"&gt;())&lt;/span&gt;
+
+            &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;cwd&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+                &lt;span class="n"&gt;os&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;chdir&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;cwd&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+            &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;execute_main&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+        &lt;span class="k"&gt;except&lt;/span&gt; &lt;span class="ne"&gt;SystemExit&lt;/span&gt; &lt;span class="k"&gt;as&lt;/span&gt; &lt;span class="n"&gt;this_exception&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="n"&gt;returncode&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;handle_system_exit&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;this_exception&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;std_error&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="k"&gt;except&lt;/span&gt; &lt;span class="ne"&gt;Exception&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="n"&gt;returncode&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;handle_normal_exception&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+        &lt;span class="k"&gt;finally&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="n"&gt;saved_state&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;restore&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;InProcessResult&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;returncode&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;std_output&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;std_error&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Before changing any of the existing system values, changes that by their very nature
+are be made across the entire Python interpreter, the original values of those system
+values are kept safely in an instance of the the &lt;code&gt;SystemState&lt;/code&gt; class in the
+&lt;code&gt;saved_state&lt;/code&gt; variable.  As I want to ensure that the saved system state is reverted
+back to regardless of what happens, a try-finally block is used to ensure that the
+&lt;code&gt;saved_state.restore&lt;/code&gt; function is called to restore the system back to it’s original
+state.&lt;/p&gt;
+&lt;p&gt;Once the system state is safely stored away, changes to those system values can be made.
+Instances of the &lt;code&gt;StringIo&lt;/code&gt; class are used to provide alternative streams for stdout
+and stderr.  A new array is assigned to &lt;code&gt;sys.argv&lt;/code&gt;, either an empty array if no
+arguments are provided or a copy of the provided array if provided.  To the start of
+that array is inserted the name of the main script, to ensure that libraries expecting
+a properly formatted array of system arguments are happy.  Finally, if an alternate
+working directory is provided to the function, the script changes to that directory.&lt;/p&gt;
+&lt;p&gt;To reiterate, the reason it is acceptable to make all of these changes to the system
+state is that we have a safe copy of the system state stored away that we will revert
+to when this function completes.&lt;/p&gt;
+&lt;p&gt;After the &lt;code&gt;execute_main&lt;/code&gt; function is called to execute the script in the specified
+manner, there are three possibilities that the function needs to capture the
+information for. In the case of a normal fall-through execution, the &lt;code&gt;returncode = 0&lt;/code&gt;
+statement at the start of the try-finally block sets the return code.  If a
+&lt;code&gt;SystemExit&lt;/code&gt; exception is thrown, the &lt;code&gt;handle_system_exit&lt;/code&gt; function does a bit of
+process to figure out the return code based on the contents of the exception.  Finally,
+if the execution is terminated for any other exception, the &lt;code&gt;handle_normal_exception&lt;/code&gt;
+makes sure to print out decent debug information and sets the return code to 1.  In all
+three cases, the collected values for stdout and stderr are collected, combined with
+the return code determined earlier in this paragraph, and a new instance of the
+&lt;code&gt;InProcessResult&lt;/code&gt; class is returned with these values.&lt;/p&gt;
+&lt;h2 id="verifying-actual-results-against-expected-results"&gt;Verifying Actual Results Against Expected Results&lt;a class="headerlink" href="#verifying-actual-results-against-expected-results" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;When I started with the &lt;code&gt;assert_results&lt;/code&gt; function, it was only 3 statements in quick
+succession: 3 assert statements asserting that the actual values for stdout, stderr and
+the return code matched the expected values.  However, as I started using that function,
+it was quickly apparent that when something did fail, there was a certain amount of
+repetitive debugging that I performed to determine why the assert was triggered.  At
+first I added some extra information to the assert statements, and that worked for the
+return code.  But there were still two issues.&lt;/p&gt;
+&lt;p&gt;The first issue was that, in the case where all 3 expected values were different than
+the actual values, it took 3 iterations of cleaning up the test before it passed.  Only
+when I cleared up the first failure did I see the second failure, and only after the
+second failure was dealt with did I see the third.  While this was workable, it was far
+from efficient.  The second issue was that if there were any differences with the
+contents of the stdout or stderr stream, the differences between the expected value and
+the actual value were hard to discern by just looking at them.&lt;/p&gt;
+&lt;p&gt;To address the first issue, I changed the simple &lt;code&gt;assert_results&lt;/code&gt; function to the
+following:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;assert_results&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;stdout&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="bp"&gt;None&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;stderr&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="bp"&gt;None&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;error_code&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;
+    &lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="sd"&gt;"""&lt;/span&gt;
+&lt;span class="sd"&gt;        Assert the results are as expected in the "assert" phase.&lt;/span&gt;
+&lt;span class="sd"&gt;        """&lt;/span&gt;
+
+        &lt;span class="n"&gt;stdout_error&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;assert_stream_contents&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"stdout"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;std_out&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;stdout&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="n"&gt;stderr_error&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;assert_stream_contents&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+            &lt;span class="s2"&gt;"stderr"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;std_err&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;stderr&lt;/span&gt;
+        &lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="n"&gt;return_code_error&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;assert_return_code&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;return_code&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;error_code&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+        &lt;span class="n"&gt;combined_error_msg&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;""&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;stdout_error&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="n"&gt;combined_error_msg&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;combined_error_msg&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="nb"&gt;str&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;stdout_error&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;stderr_error&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="n"&gt;combined_error_msg&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;combined_error_msg&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="nb"&gt;str&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;stderr_error&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;return_code_error&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="n"&gt;combined_error_msg&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;combined_error_msg&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="nb"&gt;str&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;return_code_error&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="k"&gt;assert&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="n"&gt;combined_error_msg&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
+            &lt;span class="s2"&gt;"Either stdout, stderr, or the return code was not as expected.&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;
+            &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;combined_error_msg&lt;/span&gt;
+        &lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;The key to resolving the first issue is in capturing the information about all
+differences that occur, and then asserting only once if any differences are encountered.
+To accomplish this, several comparison functions are required that capture individual
+asserts and relay that information back to the &lt;code&gt;assert_results&lt;/code&gt; function where they
+can be aggregated together.  It is these comparison functions that are at the heart
+of the &lt;code&gt;assert_results&lt;/code&gt; function.&lt;/p&gt;
+&lt;p&gt;The easiest
+of these comparison functions is the &lt;code&gt;assert_return_code&lt;/code&gt; function, which simply
+compares the actual return code and the expected return code.  If there is any
+difference, the error message for the assert statement is descriptive enough to provide
+a clear indication of what the difference is.  That raised &lt;code&gt;AssertionError&lt;/code&gt; is then
+captured and returned from the function so the &lt;code&gt;assert_results&lt;/code&gt; function can report on
+it.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="nd"&gt;@classmethod&lt;/span&gt;
+    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;assert_return_code&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;cls&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;actual_return_code&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;expected_return_code&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="sd"&gt;"""&lt;/span&gt;
+&lt;span class="sd"&gt;        Assert that the actual return code is as expected.&lt;/span&gt;
+&lt;span class="sd"&gt;        """&lt;/span&gt;
+
+        &lt;span class="n"&gt;result&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;
+        &lt;span class="k"&gt;try&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="k"&gt;assert&lt;/span&gt; &lt;span class="n"&gt;actual_return_code&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="n"&gt;expected_return_code&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
+                &lt;span class="s2"&gt;"Actual error code ("&lt;/span&gt;
+                &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="nb"&gt;str&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;actual_return_code&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+                &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s2"&gt;") and expected error code ("&lt;/span&gt;
+                &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="nb"&gt;str&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;expected_return_code&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+                &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s2"&gt;") differ."&lt;/span&gt;
+            &lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="k"&gt;except&lt;/span&gt; &lt;span class="ne"&gt;AssertionError&lt;/span&gt; &lt;span class="k"&gt;as&lt;/span&gt; &lt;span class="n"&gt;ex&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="n"&gt;result&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;ex&lt;/span&gt;
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;result&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;A slightly more complicated function is the &lt;code&gt;assert_stream_contents&lt;/code&gt; comparison
+function. To ensure
+that helpful information is returned in the assert failure message, it checks to see if
+the &lt;code&gt;expected_stream&lt;/code&gt; is set and calls &lt;code&gt;compare_versus_expected&lt;/code&gt; if so.  (More about
+that function in a minute.)  If not set, the assert used clearly states that the stream
+was expected to be empty, and the actual stream is not empty.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;assert_stream_contents&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;stream_name&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;actual_stream&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;expected_stream&lt;/span&gt;
+    &lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="sd"&gt;"""&lt;/span&gt;
+&lt;span class="sd"&gt;        Assert that the contents of the given stream are as expected.&lt;/span&gt;
+&lt;span class="sd"&gt;        """&lt;/span&gt;
+
+        &lt;span class="n"&gt;result&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;
+        &lt;span class="k"&gt;try&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;expected_stream&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+                &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;compare_versus_expected&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+                    &lt;span class="n"&gt;stream_name&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;actual_stream&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;expected_stream&lt;/span&gt;
+                &lt;span class="p"&gt;)&lt;/span&gt;
+            &lt;span class="k"&gt;else&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+                &lt;span class="k"&gt;assert&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="n"&gt;actual_stream&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;getvalue&lt;/span&gt;&lt;span class="p"&gt;(),&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
+                    &lt;span class="s2"&gt;"Expected "&lt;/span&gt;
+                    &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;stream_name&lt;/span&gt;
+                    &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s2"&gt;" to be empty. Not:&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;---&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;
+                    &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;actual_stream&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;getvalue&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+                    &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;---&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;
+                &lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="k"&gt;except&lt;/span&gt; &lt;span class="ne"&gt;AssertionError&lt;/span&gt; &lt;span class="k"&gt;as&lt;/span&gt; &lt;span class="n"&gt;ex&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="n"&gt;result&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;ex&lt;/span&gt;
+        &lt;span class="k"&gt;finally&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="n"&gt;actual_stream&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;close&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;result&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Addressing the second issue with the initial &lt;code&gt;assert_results&lt;/code&gt; function, the differences
+between the two streams being difficult to discern, is the &lt;code&gt;compare_versus_expected&lt;/code&gt;
+function.  My first variation on this function simply used the statement
+&lt;code&gt;assert actual_stream.getvalue() != expected_text&lt;/code&gt;, producing the same assert result,
+but lacking in the description of why the assert failed.  The second variation of this
+function added a better assert failure message, but left the task of identifying the
+difference between the two strings on the reader of the failure message.  The final
+variation of this function uses the &lt;code&gt;difflib&lt;/code&gt; module and the &lt;code&gt;difflib.ndiff&lt;/code&gt; function to
+provide a detailed line-by-line comparison between the actual stream contents and the
+expected stream contents.  By using the &lt;code&gt;difflib.ndiff&lt;/code&gt; function in this final
+variation, the assert failure message now
+contains a very easy to read list of the differences between the two streams.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;difflib&lt;/span&gt;
+
+    &lt;span class="nd"&gt;@classmethod&lt;/span&gt;
+    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;compare_versus_expected&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+        &lt;span class="bp"&gt;cls&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;stream_name&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;actual_stream&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;expected_text&lt;/span&gt;
+    &lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="sd"&gt;"""&lt;/span&gt;
+&lt;span class="sd"&gt;        Do a thorough comparison of the actual stream against the expected text.&lt;/span&gt;
+&lt;span class="sd"&gt;        """&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;actual_stream&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;getvalue&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="n"&gt;expected_text&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="n"&gt;diff&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;difflib&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;ndiff&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+                &lt;span class="n"&gt;expected_text&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;splitlines&lt;/span&gt;&lt;span class="p"&gt;(),&lt;/span&gt; &lt;span class="n"&gt;actual_stream&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;getvalue&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;splitlines&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+            &lt;span class="p"&gt;)&lt;/span&gt;
+
+            &lt;span class="n"&gt;diff_values&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;join&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;list&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;diff&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
+            &lt;span class="k"&gt;assert&lt;/span&gt; &lt;span class="bp"&gt;False&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
+                &lt;span class="n"&gt;stream_name&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s2"&gt;" not as expected:&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;---&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;diff_values&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;---&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;
+            &lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;h2 id="using-it-all-together"&gt;Using it all together&lt;a class="headerlink" href="#using-it-all-together" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;To start using the work that completed in the sections above, a proper subclass of the
+&lt;code&gt;InProcessExecution&lt;/code&gt; class is required.  Because that class is an abstract base class,
+a new class &lt;code&gt;MainlineExecutor&lt;/code&gt; is required to resolve the &lt;code&gt;execute_main&lt;/code&gt; function and
+the &lt;code&gt;get_main_name&lt;/code&gt; function.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;class&lt;/span&gt; &lt;span class="nc"&gt;MainlineExecutor&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;InProcessExecution&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="fm"&gt;__init__&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="nb"&gt;super&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="fm"&gt;__init__&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+        &lt;span class="n"&gt;resource_directory&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;os&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;path&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;join&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;os&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;getcwd&lt;/span&gt;&lt;span class="p"&gt;(),&lt;/span&gt; &lt;span class="s2"&gt;"test"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;"resources"&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;resource_directory&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;resource_directory&lt;/span&gt;
+
+    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;execute_main&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="n"&gt;PyScan&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;main&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+
+    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;get_main_name&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="s2"&gt;"main.py"&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;The &lt;code&gt;MainlineExecutor&lt;/code&gt; class implements those two required functions.  The
+&lt;code&gt;get_main_name&lt;/code&gt; function returns the name of the module entry point for the project.
+This name is inserted into the array of arguments to ensure that any functions based
+off of the command line &lt;code&gt;sys.argv&lt;/code&gt; array resolves properly.  The &lt;code&gt;execute_main&lt;/code&gt;
+function implements the actual code to invoke the main entry point for the script.  In
+the case of the PyScan project, the entry point at the end of the &lt;code&gt;main.py&lt;/code&gt; script is:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="vm"&gt;__name__&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="s2"&gt;"__main__"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+    &lt;span class="n"&gt;PyScan&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;main&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Therefore, the contents of the &lt;code&gt;execute_main&lt;/code&gt; function is &lt;code&gt;PyScan().main()&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;In addition to those two required functions, there is some extra code in the constructor
+for the class.  Instead of recomputing the resource directory in each test that requires
+it, the &lt;code&gt;MainlineExecutor&lt;/code&gt; class computes it in the constructor to keep the test
+functions as clean as possible.  While this is not required when subclassing from
+&lt;code&gt;InProcessExecution&lt;/code&gt;, it has proven very useful in practice.&lt;/p&gt;
+&lt;p&gt;To validate the use of the &lt;code&gt;MainlineExecutor&lt;/code&gt; class with the project, I created a
+simple scenario test to verify that the version of the scanner is correct.  This is
+very simple test, and verifying that the framework passes such a simple test increases
+the confidence in the framework itself.  At the start of the scenario test, the
+&lt;code&gt;executor&lt;/code&gt; variable is created and assigned an instance of our new class
+&lt;code&gt;MainlineExecutor&lt;/code&gt; as well as specify that the arguments to
+use for the script as &lt;code&gt;["--version"]&lt;/code&gt;. in the array &lt;code&gt;suppplied_arguments&lt;/code&gt;  In keeping
+with the Arrange-Act-Assert pattern, I then specify the expected behaviors for stdout
+(in &lt;code&gt;expected_output&lt;/code&gt;), stderr (in &lt;code&gt;expected_error&lt;/code&gt;), and the return code from the
+script (in &lt;code&gt;expected_return_code&lt;/code&gt;).&lt;/p&gt;
+&lt;p&gt;Having set everything up in the Assert section of the test, the Act section simply
+invokes the script using the &lt;code&gt;executor.invoke_main&lt;/code&gt; function with the
+&lt;code&gt;suppplied_arguments&lt;/code&gt; variable assigned previously, and collect the results.  Once
+collected, the &lt;code&gt;execute_results.assert_results&lt;/code&gt; function verifies those actual results
+against the expected results, asserting if there are differences.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;test_get_summarizer_version&lt;/span&gt;&lt;span class="p"&gt;():&lt;/span&gt;
+    &lt;span class="sd"&gt;"""&lt;/span&gt;
+&lt;span class="sd"&gt;    Make sure that we can get information about the version of the summarizer.&lt;/span&gt;
+&lt;span class="sd"&gt;    """&lt;/span&gt;
+
+    &lt;span class="c1"&gt;# Arrange&lt;/span&gt;
+    &lt;span class="n"&gt;executor&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;MainlineExecutor&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+    &lt;span class="n"&gt;suppplied_arguments&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s2"&gt;"--version"&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+
+    &lt;span class="n"&gt;expected_output&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;"""&lt;/span&gt;&lt;span class="se"&gt;\&lt;/span&gt;
+&lt;span class="s2"&gt;main.py 0.1.0&lt;/span&gt;
+&lt;span class="s2"&gt;"""&lt;/span&gt;
+    &lt;span class="n"&gt;expected_error&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;""&lt;/span&gt;
+    &lt;span class="n"&gt;expected_return_code&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;
+
+    &lt;span class="c1"&gt;# Act&lt;/span&gt;
+    &lt;span class="n"&gt;execute_results&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;executor&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;invoke_main&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;arguments&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;suppplied_arguments&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;cwd&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="bp"&gt;None&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+    &lt;span class="c1"&gt;# Assert&lt;/span&gt;
+    &lt;span class="n"&gt;execute_results&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;assert_results&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+        &lt;span class="n"&gt;expected_output&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;expected_error&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;expected_return_code&lt;/span&gt;
+    &lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;h2 id="what-does-using-this-look-like"&gt;What Does Using This Look Like?&lt;a class="headerlink" href="#what-does-using-this-look-like" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In terms of writing scenario tests, the tests are usually as simple to write as the
+&lt;code&gt;test_get_summarizer_version&lt;/code&gt; function in the last section.  If there are parts of the
+output that have a non-constant value, such as the full path of the directory in which
+the test is executed in, the &lt;code&gt;expected_output&lt;/code&gt; variable would have to be set to
+compensate for that variability, but that is an expected complexity.&lt;/p&gt;
+&lt;p&gt;For the PyScan project, a quick scan of the 
+&lt;a href="https://github.com/jackdewinter/pyscan/blob/master/test/test_scenarios.py"&gt;PyScan test_scenarios.py file&lt;/a&gt; reveals that for this project, the non-constant values most often
+occur with failure messages, especially ones that relay path information in their
+failure messages.  When that happens, such as with the
+&lt;code&gt;test_summarize_junit_report_with_bad_source&lt;/code&gt; test function, that extra complexity
+is not overwhelming and does not make the test function unreadable.&lt;/p&gt;
+&lt;p&gt;In terms of the test output for a passing test, there is no difference.  If executing
+&lt;code&gt;pipenv run pytest&lt;/code&gt; produced a &lt;code&gt;.&lt;/code&gt; for a successful test before, it remains a &lt;code&gt;.&lt;/code&gt; now.
+The big difference is in what is displayed when there is a difference in the test
+output.  &lt;/p&gt;
+&lt;p&gt;In the case where there is a single character difference in the test output, such as
+changing the expected output for the &lt;code&gt;test_get_summarizer_version&lt;/code&gt; test to
+&lt;code&gt;main.py 0.1.1&lt;/code&gt;, the output below
+clearly shows where the actual output and expected output differ.  Note that in these
+comparisons, the line that starts with the &lt;code&gt;-&lt;/code&gt; character is the expected output and
+the line that starts with the &lt;code&gt;+&lt;/code&gt; character is the actual output.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;E       AssertionError: Either stdout, stderr, or the return code was not as expected.
+E
+E       stdout not as expected:
+E       ---
+E       - main.py 0.1.1
+E       ?             ^
+E
+E       + main.py 0.1.0
+E       ?             ^
+E
+E       ---
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;In the case where a line in the test output is completely different, such as changing
+the expected output to &lt;code&gt;This is another line&lt;/code&gt;, the output below clearly reflects that
+difference:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;E       AssertionError: Either stdout, stderr, or the return code was not as expected.
+E
+E       stdout not as expected:
+E       ---
+E       - This is another line
+E       + main.py 0.1.0
+E       ---
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Finally, in the case where the actual output contains either more lines or less lines
+that the expected output, such as adding the line &lt;code&gt;This is another line&lt;/code&gt; to the
+expected output, the output below clearly shows that difference.  In this example, as
+the first line is at the start of both the actual output and expected output, it is
+shown without any prefix to the line.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;E       AssertionError: Either stdout, stderr, or the return code was not as expected.
+E
+E       stdout not as expected:
+E       ---
+E         main.py 0.1.0
+E       - This is another line
+E       ---
+&lt;/pre&gt;&lt;/div&gt;
+&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;While the &lt;code&gt;pytest_execute.py&lt;/code&gt; file that I use as the base for my scenario tests isn’t
+rocket science, it is invaluable to me in creating simple, easy-to-read scenario tests.
+At the heart of the module is the base requirement (as stated above) to execute the
+Python script independently, capture all relevant information about it’s execution,
+and then verifying that information against expected values.  Based on my experience
+and evolution of this module, I believe that it handily satisfies the requirements
+with ease.&lt;/p&gt;
+&lt;div class="footnote"&gt;
+&lt;hr/&gt;
+&lt;ol&gt;
+&lt;li id="fn:1"&gt;
+&lt;p&gt;To keep things simple for the article, the &lt;code&gt;additional_error&lt;/code&gt; parameter from a number of the functions has been removed.  This parameter is used in the PyMarkdown project and will be documented as part of my articles on that project. &lt;a class="footnote-backref" href="#fnref:1" title="Jump back to footnote 1 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/div&gt;</content><category term="Software Quality"></category><category term="pytest"></category><category term="scenario testing"></category></entry><entry><title>Have a Happy Winter Holiday 2019</title><link href="https://jackdewinter.github.io/2019/12/29/have-a-happy-winter-holiday-2019/" rel="alternate"></link><published>2019-12-29T00:00:00-08:00</published><updated>2019-12-29T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2019-12-29:/2019/12/29/have-a-happy-winter-holiday-2019/</id><summary type="html">&lt;p&gt;I just wanted to take a quick minute and wish everyone a  happy winter holiday season
+as 2019 winds to a close.  When I resume posts in the new year, I will be trying to
+publish weekly posts on Mondays instead of Sundays, and see how that goes.&lt;/p&gt;
+&lt;p&gt;Safe travels …&lt;/p&gt;</summary><content type="html">&lt;p&gt;I just wanted to take a quick minute and wish everyone a  happy winter holiday season
+as 2019 winds to a close.  When I resume posts in the new year, I will be trying to
+publish weekly posts on Mondays instead of Sundays, and see how that goes.&lt;/p&gt;
+&lt;p&gt;Safe travels, and well wishes.&lt;/p&gt;</content><category term="Software Quality"></category></entry><entry><title>Markdown Linter - Parser Testing Strategy</title><link href="https://jackdewinter.github.io/2019/12/22/markdown-linter-parser-testing-strategy/" rel="alternate"></link><published>2019-12-22T00:00:00-08:00</published><updated>2019-12-22T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2019-12-22:/2019/12/22/markdown-linter-parser-testing-strategy/</id><summary type="html">
 &lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;In the previous articles in this series, I discussed the requirements for the Markdown
 linter that I am writing.  From a development point of view, the main requirement is
@@ -4026,499 +4441,4 @@ would it?&lt;/p&gt;
 &lt;p&gt;I will probably write an upcoming article about this to explain it fully.  In essence, if you are writing in English for an international audience, you have to remember that a fair percentage of your readers are not native English speakers.  Until they reach a point in their English proficiency, they will typically think in their native language and translate what they are reading from English to that native language.  As such, you want to keep your language as free from idioms and imprecision as possible.&amp;#160;&lt;a class="footnote-backref" href="#fnref:International-Tone" title="Jump back to footnote 2 in the text"&gt;&amp;#8617;&lt;/a&gt;&lt;/p&gt;
 &lt;/li&gt;
 &lt;/ol&gt;
-&lt;/div&gt;</content><category term="Personal"></category><category term="trying your best"></category><category term="trying something new"></category><category term="teachable moments"></category><category term="what are SDETs"></category><category term="teaching software quality"></category></entry><entry><title>Static Websites: Choosing a Static (Web) Site Generator</title><link href="https://jackdewinter.github.io/2019/08/18/static-websites-choosing-a-static-web-site-generator/" rel="alternate"></link><published>2019-08-18T00:00:00-07:00</published><updated>2019-08-18T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2019-08-18:/2019/08/18/static-websites-choosing-a-static-web-site-generator/</id><summary type="html">
-&lt;p&gt;This is the first article in a series about setting up my own website using a
-Static Site Generator.  For other articles in the series, click on the title of the article
-under the heading “Static Site Generators” on the right side of the webpage.&lt;/p&gt;
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Why do I want …&lt;/p&gt;</summary><content type="html">
-&lt;p&gt;This is the first article in a series about setting up my own website using a
-Static Site Generator.  For other articles in the series, click on the title of the article
-under the heading “Static Site Generators” on the right side of the webpage.&lt;/p&gt;
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Why do I want a static website?  &lt;/p&gt;
-&lt;p&gt;It has been on my mind for a couple of years that I would like to talk about some of the
-things that I find cool and other things that I feel strongly about.  As a big proponent of
-&lt;a href="https://en.wikipedia.org/wiki/Servant_leadership"&gt;servant leadership&lt;/a&gt;, I want to help and
-inspire people to do more, be more, and help more.&lt;/p&gt;
-&lt;p&gt;Basically, I want a low-friction, easy to use platform that allows me to communicate with and
-help others in my own way.  I also want tooling and workflows to be efficient so that I can
-spend more time communicating and less time fidgeting on the website.&lt;/p&gt;
-&lt;p&gt;To this end, I want to focus on something that is simple, but extensible.  I want to be able
-to have a good mix of my own pages and a blog, allowing for flexibility on what I am doing. I
-want to be able to focus on the message and my voice, rather than the medium.&lt;/p&gt;
-&lt;p&gt;From my research, Static Site Generators fulfils those requirements in spades.  But as with
-a number of things I do, I want to take the time to determine if they are the right choice
-for my website, and if so, select the right one for me.  I would rather take a small
-amount of time now to ensure it is a good fit, than to take time reworking things because it
-wasn’t.&lt;/p&gt;
-&lt;h2 id="what-are-static-site-generators"&gt;What are Static Site Generators?&lt;a class="headerlink" href="#what-are-static-site-generators" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Static Site Generators (SSGs) are programs that take a certain type of website and shift
-the heavy loading of the website from the content-request point to the content-update point.
-Put another way, the decision of what content to show the viewer of the web page is changed
-from when the web page is requested by the browser to when the web page content is updated by
-the author.  Therefore, to be eligible to use a SSG for a given website, that website must
-have all its content available when the content is updated, with no real time content
-present.  There are small ways to get around that restriction, but those present their own
-challenges.  As such, I am going to assume that 95% of the website is going to be static, and
-that all the important information is within that 95%.&lt;/p&gt;
-&lt;p&gt;SSGs themselves usually combine different technologies to achieve their results: writing,
-templating/styling, metadata, and publishing.  The pages for the site need to be written in
-either a supplied WYSIWYG editor or in some format like Markdown.  Once the pages are written,
-generic styling and templating are applied to the collection of pages to make sure that the
-branding on the pages is consistent.  To help organize the pages, most SSGs include some form
-of metadata that is attached to the pages, used by the SSG to group pages and provide other
-guidance to the SSG itself.  Finally, when the pages are checked over, there needs to be a
-simple way to publish them to the intended website.&lt;/p&gt;
-&lt;p&gt;Reducing the barrier to entry and keeping it low is essential to a SSGs success.  Therefore
-providing multiple technology choices for parts of the SSG is common.  All the SSGs that I
-looked at had a variety of options for most of these technologies, with templating and styling
-being the exception. In the case of templating, most of the SSGs support a single default
-templating engine that is used on all the pages.  With respect to styling, common HTML
-technologies such as Cascading Style Sheets (CSSs) are most commonly used.  Besides keeping
-the cost of the templating and styling low, using a common technology allows for lots of
-examples to be provided by the Internet at a low cost.&lt;/p&gt;
-&lt;h3 id="is-a-static-site-generator-the-right-choice-for-me"&gt;Is a Static Site Generator The Right Choice For Me?&lt;a class="headerlink" href="#is-a-static-site-generator-the-right-choice-for-me" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;In determining whether SSGs are the right technology for my site, I started making a list of
-the things I was primarily worried about with a website:&lt;/p&gt;
-&lt;ol&gt;
-&lt;li&gt;
-&lt;p&gt;Security&lt;/p&gt;
-&lt;p&gt;As I deal with security concerns at work, this one was top of mind.  How often have I
-heard about various platforms and websites being hacked in the last month?  To avoid this,
-I want to keep my website as simple as possible.  Static pages created by a SSG leave a
-single attack vector: the repository where my website’s HTML pages are being stored.&lt;/p&gt;
-&lt;p&gt;Mitigating attacks by only having a single attack vector is very attractive solution for
-me.&lt;/p&gt;
-&lt;/li&gt;
-&lt;li&gt;
-&lt;p&gt;Ease Of Use&lt;/p&gt;
-&lt;p&gt;I don’t want to be messing with the website more than I have to.  I either want to be
-updating something on the site in response to something I am working on, or working on that
-thing. I am already used to writing documentation at work in Markdown, so writing web
-pages in Markdown is already very efficient for me.  In a similar manner, at work I keep
-documentation in a version control system, so keeping the pages in their various stages of
-completion in a readable form in version control is also efficient.&lt;/p&gt;
-&lt;p&gt;Using my already existing workflows, with minor modifications, is an acceptable
-solution that keeps ease of use high.&lt;/p&gt;
-&lt;/li&gt;
-&lt;li&gt;
-&lt;p&gt;Real-Time Contents and User Input&lt;/p&gt;
-&lt;p&gt;A lot of my focus at work is making sure that we can anticipate and plan for events that
-happen to change our system’s state.  If a user or another system sends a request to our
-system, can we validate the request, verify the system is in a good state for the request,
-and enforce the correct behavior for the response?  Any good SSG takes care of this issue
-by eliminating any change of state.&lt;/p&gt;
-&lt;p&gt;Resolving the concerns of state management by removing all state information seems like an
-ideal solution for the limited scope of my personal website.&lt;/p&gt;
-&lt;/li&gt;
-&lt;/ol&gt;
-&lt;p&gt;Once those were out of the way, only the big question remained:  Do I have any plans for a web
-site that would require it to support dynamic content?  My primary purpose is to allow me
-to communicate to interested readers.  As such, the sites’s content is largely going to
-change only when I write something new and publish it.  Based on the 95% barrier I set for
-myself above, such content appears to be will within that barrier.&lt;/p&gt;
-&lt;p&gt;To handle the remaining 5%, I am fine with any dynamic content for my site being generated
-using JavaScript.  A good example of that is using something like &lt;a href="https://disqus.com/"&gt;Disqus&lt;/a&gt;
-for dynamic comments.  By handling such things with a Javascript approach, I can keep the
-simple things simple, only making things more complex when they need to be.  To me, that seems
-to be a solid way to handle the few exceptions that may arise.&lt;/p&gt;
-&lt;p&gt;For those reasons, I believe an SSG is an ideal choice for a personal website with a blog.&lt;/p&gt;
-&lt;h2 id="which-one-to-choose"&gt;Which One to Choose?&lt;a class="headerlink" href="#which-one-to-choose" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;In case I need or want to do any extension work, I want the SSG to be in a language I am
-comfortable with, maintaining the ease of use concern from the previous section.  At the
-moment, that limits the SSG language to C#, Java, and Python.  While I can work effectively in
-other languages, the comfort and enjoyment levels are not there.  As I am doing this for
-myself, I want the writing of any extensions to be easy and fun to increase the chances that I
-will stick with the writing and the SSG choice.&lt;/p&gt;
-&lt;p&gt;Looking at a number of sites, these are the SSGs that appear the most.&lt;/p&gt;
-&lt;table&gt;
-&lt;thead&gt;
-&lt;tr&gt;
-&lt;th&gt;Generator&lt;/th&gt;
-&lt;th&gt;Language&lt;/th&gt;
-&lt;th&gt;Website&lt;/th&gt;
-&lt;th&gt;Last Updated&lt;/th&gt;
-&lt;/tr&gt;
-&lt;/thead&gt;
-&lt;tbody&gt;
-&lt;tr&gt;
-&lt;td&gt;Hugo&lt;/td&gt;
-&lt;td&gt;Go&lt;/td&gt;
-&lt;td&gt;&lt;a href="https://gohugo.io/"&gt;https://gohugo.io/&lt;/a&gt;&lt;/td&gt;
-&lt;td&gt;May 30, 2019&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;Pelican&lt;/td&gt;
-&lt;td&gt;Python&lt;/td&gt;
-&lt;td&gt;&lt;a href="http://blog.getpelican.com/"&gt;http://blog.getpelican.com/&lt;/a&gt;&lt;/td&gt;
-&lt;td&gt;May 13, 2019&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;Hexo&lt;/td&gt;
-&lt;td&gt;Node.js&lt;/td&gt;
-&lt;td&gt;&lt;a href="https://hexo.io/"&gt;https://hexo.io/&lt;/a&gt;&lt;/td&gt;
-&lt;td&gt;Jun 6, 2019&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;Jekyll&lt;/td&gt;
-&lt;td&gt;Ruby&lt;/td&gt;
-&lt;td&gt;&lt;a href="http://jekyllrb.com"&gt;http://jekyllrb.com&lt;/a&gt;&lt;/td&gt;
-&lt;td&gt;Jun 9, 2019&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;Gatsby&lt;/td&gt;
-&lt;td&gt;NodeJs&lt;/td&gt;
-&lt;td&gt;&lt;a href="https://github.com/gatsbyjs"&gt;https://github.com/gatsbyjs&lt;/a&gt;&lt;/td&gt;
-&lt;td&gt;Jun 9, 2019&lt;/td&gt;
-&lt;/tr&gt;
-&lt;/tbody&gt;
-&lt;/table&gt;
-&lt;p&gt;(Note that the last updated column is current as of 2019-Jun-09.)&lt;/p&gt;
-&lt;p&gt;Given these goals in mind, I looked through the choices for static site generators and decided
-to go with Pelican.  It’s written in Python, has been maintained recently, any extensions are
-written in Python, and seems to be easy to use.  This choice supports my desire to write pages
-and articles in Markdown, and any needed extensions can be tweaked if needed.&lt;/p&gt;
-&lt;h2 id="what-was-accomplished"&gt;What Was Accomplished&lt;a class="headerlink" href="#what-was-accomplished" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;At the beginning of this article, I was intrigued by Static Site Generators and whether or not
-SSGs would be an effective tool for me to communicate through.  During the article, I not
-only determined that it was the right fit, but selected the Pelican as the SSG to use, based
-on its Python coding and recent updating.&lt;/p&gt;
-&lt;p&gt;I feel that this determination to use SSGs, and Pelican specifically, puts me in a good
-position to start building my website with confidence.&lt;/p&gt;
-&lt;h2 id="if-you-are-trying-to-decide"&gt;If You Are Trying To Decide…&lt;a class="headerlink" href="#if-you-are-trying-to-decide" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;If you are trying to decide if SSGs, or a specific SSG, will work for you and your site,
-I would encourage you to walk through a similar process to what I did.  Figure out your own
-concerns for your own website, and determine whether or not an SSG will address those
-concerns.  If you think you may write extension for it, take a look at the language of the SSG
-and make sure you are familiar with the extension language.  Most importantly, figure out
-whether your choice of SSGs in general or a specific SSG will serve as a tool for you to
-publish your information, or whether it will be an impediment to you publishing.  &lt;/p&gt;
-&lt;p&gt;From the point where I was at when I made the decision, Pelican appeared to be a good choice
-for me.  I did some research to make sure this was the right choice for me.  Make sure you
-ask yourself those questions, get those answers through research, and make sure your choice
-is going to work for you!&lt;/p&gt;
-&lt;h2 id="whats-next"&gt;What’s Next?&lt;a class="headerlink" href="#whats-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Next, I need to start exploring Pelican and how to set it up with default content.  This will
-be covered in the article
-&lt;a href="https://jackdewinter.github.io/2019/08/25/static-websites-setting-up-the-pelican-static-site-generator/"&gt;Setting Up the Pelican Static Site Generator&lt;/a&gt;.&lt;/p&gt;</content><category term="Integrating Technology"></category><category term="static website generator"></category><category term="pelican website generator"></category><category term="choosing site generator"></category></entry><entry><title>Glanceable Displays: What Do I Want To Display?</title><link href="https://jackdewinter.github.io/2019/08/11/glanceable-displays-what-do-i-want-to-display/" rel="alternate"></link><published>2019-08-11T00:00:00-07:00</published><updated>2019-08-11T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2019-08-11:/2019/08/11/glanceable-displays-what-do-i-want-to-display/</id><summary type="html">&lt;h2 id="preface"&gt;Preface&lt;a class="headerlink" href="#preface" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;This is the final article in a series about Glanceable Displays and my efforts to create
-one for my household.  For other articles in the series, click on the title of the article
-under the heading “Glanceable Displays” on the right side of the webpage.&lt;/p&gt;
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-
-&lt;p&gt;In the previous …&lt;/p&gt;</summary><content type="html">&lt;h2 id="preface"&gt;Preface&lt;a class="headerlink" href="#preface" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;This is the final article in a series about Glanceable Displays and my efforts to create
-one for my household.  For other articles in the series, click on the title of the article
-under the heading “Glanceable Displays” on the right side of the webpage.&lt;/p&gt;
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-
-&lt;p&gt;In the previous article
-&lt;a href="https://jackdewinter.github.io/2019/08/04/glanceable-displays-setting-up-our-display/"&gt;Glanceable Displays: Setting Up Our Display&lt;/a&gt;,
-I added the finishing touches to allow a Raspberry Pi to display a single web page on my
-Glanceable Display.  It took a bit of time to get there, but the work that I put in over the
-previous articles made sure that the foundation for the Glanceable Display is solid, a
-necessity for a device that I want to be as “hands-off” as it can be.&lt;/p&gt;
-&lt;p&gt;This article takes a look at the options and work I did to put a series of web pages on that
-display.  I have tried to document the various processes that I went through with my family’s
-display to help any readers come up with a good way to help them come up with their own
-requirements for their Glanceable Display.&lt;/p&gt;
-&lt;h2 id="what-are-my-options"&gt;What Are My Options?&lt;a class="headerlink" href="#what-are-my-options" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;As of the writing of this article, there are 3 major options available:&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;roll your own&lt;/li&gt;
-&lt;li&gt;use Dakboard&lt;/li&gt;
-&lt;li&gt;use Magic Mirror&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;To walk through each of these issues, I have shared my “Pros and Cons” lists, as well as some
-general discussion on those lists.&lt;/p&gt;
-&lt;h3 id="option-1-roll-your-own"&gt;Option 1: Roll Your Own&lt;a class="headerlink" href="#option-1-roll-your-own" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;table&gt;
-&lt;thead&gt;
-&lt;tr&gt;
-&lt;th&gt;Pros&lt;/th&gt;
-&lt;th&gt;Cons&lt;/th&gt;
-&lt;/tr&gt;
-&lt;/thead&gt;
-&lt;tbody&gt;
-&lt;tr&gt;
-&lt;td&gt;write it yourself&lt;/td&gt;
-&lt;td&gt;write it yourself&lt;/td&gt;
-&lt;/tr&gt;
-&lt;/tbody&gt;
-&lt;/table&gt;
-&lt;p&gt;Writing down a list of pros and cons for this option, I came up with the same thing on both sides:
-write it yourself.  On the pros side, you have the freedom to do what you want, however
-you want to do it.   On the cons side, you have the responsibility to learn and create what
-you want, as well as maintaining it, debugging it, and hosting it.  While this is the option
-with the greatest ability to be creative, it is also the option with the greatest costs.&lt;/p&gt;
-&lt;p&gt;Taking a hard look at this option, while I am capable of doing that work, it would be slightly
-outside of my normal comfort zone.  Any changes would likely be code changes, and not configuration
-changes.  The web pages would have to be hosted somewhere, either on a local machine or in
-the cloud, and the monetary and time costs associated with that.  Taking all of this into account,
-the maintenance cost seemed to be the primary cost, and it just seemed to continue to get higher
-with this option.  For the most part, this was immediately discarded by me, and that decision was
-backed up by my family.  It seems that I get grumpy if I have to do too much maintenance on our
-systems at home, and they would prefer to avoid that, is possible.  Go figure!&lt;/p&gt;
-&lt;h3 id="option-2-use-dakboard"&gt;Option 2: Use Dakboard&lt;a class="headerlink" href="#option-2-use-dakboard" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;table&gt;
-&lt;thead&gt;
-&lt;tr&gt;
-&lt;th&gt;Pros&lt;/th&gt;
-&lt;th&gt;Cons&lt;/th&gt;
-&lt;/tr&gt;
-&lt;/thead&gt;
-&lt;tbody&gt;
-&lt;tr&gt;
-&lt;td&gt;professional solution&lt;/td&gt;
-&lt;td&gt;locked in to their pricing scheme&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;they do the dev and testing&lt;/td&gt;
-&lt;td&gt;locked in to their feature set&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;multiple screens available&lt;/td&gt;
-&lt;td&gt;not in control of new features&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;loops of screens available&lt;/td&gt;
-&lt;td&gt;&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;simple WYSIWYG editors&lt;/td&gt;
-&lt;td&gt;&lt;/td&gt;
-&lt;/tr&gt;
-&lt;/tbody&gt;
-&lt;/table&gt;
-&lt;p&gt;This option uses the frequently sited &lt;a href="https://dakboard.com/site"&gt;DAKboard&lt;/a&gt; site to host and
-maintain the webpages to display.  As &lt;a href="https://dakboard.com/pricing"&gt;their pricing&lt;/a&gt; indicates,
-if you want to do something custom, you are at least looking at their Essential package.
-However, for that monthly fee, you do get a number of neat features that &lt;strong&gt;just work&lt;/strong&gt;.  The
-first feature is the WYSIWYG editor, with which you create custom screens.  You get seamless
-integration with different types of calendars and both provided and custom data sources.&lt;/p&gt;
-&lt;p&gt;Comparing this option to the previous option was like comparing night to dark.  Yes, there is a
-monetary cost to consider.  But for that cost, any screens I created would be hosted on their
-server.  The maintenance cost for me is the configuration of the screens, with no development
-or debugging cost.  And that maintenance cost would be limited to look-and-feel issues with the
-displays, not debugging why something is not working.  Taking an honest look at the
-cost-to-benefit ratio for this option, the primary cost was the monthly fee and there were
-multiple features that just worked on the benefit side, making this a promising option.&lt;/p&gt;
-&lt;h3 id="option-3-use-magic-mirror"&gt;Option 3: Use Magic Mirror&lt;a class="headerlink" href="#option-3-use-magic-mirror" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;table&gt;
-&lt;thead&gt;
-&lt;tr&gt;
-&lt;th&gt;Pros&lt;/th&gt;
-&lt;th&gt;Cons&lt;/th&gt;
-&lt;/tr&gt;
-&lt;/thead&gt;
-&lt;tbody&gt;
-&lt;tr&gt;
-&lt;td&gt;lots of third party plugins&lt;/td&gt;
-&lt;td&gt;oriented to sharing a single screen&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;can customized output&lt;/td&gt;
-&lt;td&gt;you handle the installation of plugins&lt;/td&gt;
-&lt;/tr&gt;
-&lt;tr&gt;
-&lt;td&gt;&lt;/td&gt;
-&lt;td&gt;you handle the configuration&lt;/td&gt;
-&lt;/tr&gt;
-&lt;/tbody&gt;
-&lt;/table&gt;
-&lt;p&gt;This option uses an open source solution that is often cited,
-&lt;a href="https://magicmirror.builders/"&gt;Magic Mirror&lt;/a&gt;.  As this solution is open source, you will be
-putting your own time into this project to download and configure things.  That configuration
-is mostly done with a file editor and the testing of changes, re-iterating with reboots of the
-system.  If there is something that you need this to do, if worse comes to worse, you can write
-the plugin and get it into Magic Mirror’s ecosystem.&lt;/p&gt;
-&lt;p&gt;From my viewpoint, this option landed somewhere between the Dakboard option and the Roll Your Own
-option.  While there is a lot of existing choices and a framework to host it, there is still a
-bunch of experimentation and maintenance that is needed to get this working.  The big issue here
-is that MagicMirror is intended to be a single screen display that shows a collection of
-information, not a series of screens with different information.&lt;/p&gt;
-&lt;h2 id="what-did-i-decide"&gt;What Did I Decide?&lt;a class="headerlink" href="#what-did-i-decide" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;To satisfy my family’s requirements, Dakboard’s solution was the best fit for what I wanted to do.
-As this is a family project, an implicit requirement is that if we decided that we want to change
-something, I need to be able to affect that change pretty quickly.  Between Dakboard’s features and
-their custom screen editor, I had confidence that I would be able to make these changes quickly.&lt;/p&gt;
-&lt;p&gt;The decision came down to an easy calculation of cost versus benefit.  For Dakboard’s monthly
-pricing, the ease of which our glanceable display would display information and require almost no
-maintenance is still worth it.  While spending time on side projects is fun for me, this project’s
-main goal is to use a glanceable display to make an appliance that we all use.  In my mind,
-spending hours laboring over the maintenance of the appliance defeats the purpose of calling it
-an appliance.&lt;/p&gt;
-&lt;h2 id="starting-to-use-dakboard"&gt;Starting to Use Dakboard&lt;a class="headerlink" href="#starting-to-use-dakboard" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Using my family’s requirements as a guideline, starting to use Dakboard was a pretty easy journey.
-As I knew we needed around 2-3 pages in rotation, the default templates were not satisfactory and I
-registered for a premium account.  At the time of this article, that premium account was 5.95 USD
-per month and included 3 screens that can be added to a single loop.  Depending on what my family’s
-future plans are, we might revisit the pricing, but for now that works for us.&lt;/p&gt;
-&lt;p&gt;Logging in to my Dakboard account, I had a screen called &lt;code&gt;My Predefined Screen&lt;/code&gt; ready to go in my
-account.  Taking a quick look at it, from my point of view, it was too cluttered and busy for our
-family.  Based on prior discussions, we distinctly wanted 2 screens: one for a calendar and one for
-the weather.  Everything after that was extra.  Selecting the &lt;code&gt;Add a Custom Screen or Template&lt;/code&gt;
-button under &lt;code&gt;Custom Screens&lt;/code&gt;, I was left at a screen asking me to put things together for the
-screen.  Where to start?&lt;/p&gt;
-&lt;h2 id="thinking-through-a-theme"&gt;Thinking through a theme&lt;a class="headerlink" href="#thinking-through-a-theme" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Before I came back to write about this point in the article, I tried a number of times to create
-screens that took care of our requirements for calendars and weather… but they didn’t seem right.
-It just didn’t seem to me like the pages where cohesive and their purpose clear.  It wasn’t until I
-took a couple of days away from the project that I realized my problem: the pages didn’t have a
-common theme.&lt;/p&gt;
-&lt;p&gt;Now being aware that I needed to find a theme, I went to Dakboard’s Templates display for
-inspiration.  After a bit of thinking, I figured that the folks at Dakboard
-wanted to put their best foot forward, so they probably had someone with artistic experience help
-them with their templates.  As such, using them as meta-templates or inspiration for our screens
-seemed like a straight forward thing to do.&lt;/p&gt;
-&lt;p&gt;Similar to my approach for deciding on the software to use to generate the pages, I went through
-each of the template screens, writing down good and bad things about each one.  Right off the mark,
-I was able to eliminate some screens as too busy for my taste, which helped out.  In the end, the
-list of things I wanted for the display boiled down to the following items:&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;a horizontal layout instead of a vertical layout&lt;/li&gt;
-&lt;li&gt;the left quarter of each screen will be very simple text on background of a rotating set of images&lt;/li&gt;
-&lt;li&gt;good examples of this are the &lt;code&gt;Simple Agenda&lt;/code&gt; and &lt;code&gt;Big Calendar&lt;/code&gt; templates&lt;/li&gt;
-&lt;li&gt;the current date and time will appear at the top of that quarter&lt;/li&gt;
-&lt;li&gt;only current weather warnings will appears the bottom of that quarter&lt;/li&gt;
-&lt;li&gt;the remaining three quarters of each screen will have a singular focus&lt;/li&gt;
-&lt;li&gt;the calendar screen will have a calendar that takes up the entire screen, due to it’s importance to our family&lt;ul&gt;
-&lt;li&gt;the &lt;code&gt;Big Calendar&lt;/code&gt; screen is a good example, but must support a different color for each family member&lt;/li&gt;
-&lt;/ul&gt;
-&lt;/li&gt;
-&lt;li&gt;the weather screen will have specific items related to the weather, including a storm map if possible&lt;ul&gt;
-&lt;li&gt;the &lt;code&gt;Beach&lt;/code&gt; screen’s left side is a good example&lt;/li&gt;
-&lt;/ul&gt;
-&lt;/li&gt;
-&lt;li&gt;the final screen will have other things we want to display and test out&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;Keeping with my desire to keep my family on board with the project, I talked to them about this
-after dinner one night, and with the exception of some small squabbles (about which family member
-got represented with which color on the calendar) everything was good to proceed.&lt;/p&gt;
-&lt;h2 id="doing-the-work-the-left-quarter-panels"&gt;Doing the work - The Left Quarter Panels&lt;a class="headerlink" href="#doing-the-work-the-left-quarter-panels" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;To make the transitions between screens seamless, it was important to me to ensure that the size of
-the left image panel and the date and time panels we consistent through all three screens.  While
-it might have appeared to be a very pedantic behavior on my part, I wanted to reduce any barriers
-to adoption by my family.  From doing some reading on user interfaces for my job, choppy or
-inconsistent interfaces can often turn off users.  Based on that experience, the extra time
-used to get it “just right” was a worthwhile investment for me.&lt;/p&gt;
-&lt;p&gt;To carry the theming further, I wanted the images displayed in this left image panel to have a
-common theme.  Looking through stock images from &lt;a href="http://unsplash.com"&gt;Unsplash&lt;/a&gt;, I went through and
-started downloading 15-20 images that were 634 pixels by 951 pixels, a common size available on the
-site.  Looking at the download directory, I noticed that those pictures appeared to have 3 common
-groups: pictures of night skies, pictures of nature, and pictures of various paths.  I then created
-three new folders to hold each group of pictures, moved the relevant pictures into their own
-directory, and pointed the image panels of each screen to a specific directory.&lt;/p&gt;
-&lt;p&gt;Before moving on to the next part of the screens, I added these screens to a loop and looked over
-and over again at various parts of the display, making sure that the display was reflecting what
-I wanted the look and feel to be.  After a number of nitpicky hours of fiddling with panel size and
-location, I brought my family in and took some creative criticism on the screens.  I took their
-feedback and applied it to the screens, repeating the vetting process with myself and then the other
-members of my family until it was just right.  Once I had everyone onboard, I moved to the content
-of the other screens.&lt;/p&gt;
-&lt;h2 id="doing-the-work-the-calendar-screen"&gt;Doing the work - The Calendar Screen&lt;a class="headerlink" href="#doing-the-work-the-calendar-screen" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Dragging the Calendar panel to the screen was the easiest part of this screen.  While the biggest
-decision was to decide whether or not to use the &lt;code&gt;Monthly&lt;/code&gt; calendar type or the &lt;code&gt;Big Monthly&lt;/code&gt;
-calendar type, it was the small details that really needed tweaking.&lt;/p&gt;
-&lt;p&gt;The first part was to add each of our personal calendars to the panel.  The people at Dakboard
-facilitated this by having a button called &lt;code&gt;Show iCal help&lt;/code&gt; that displays easy to follow
-instructions.  I had no problems adding each of our personal calendars to the screen, and assigning
-unique colors to each of those calendars.  The fine tuning and nitpicking came over the next 2
-weeks as me and my family took a look at the display and tried various options to get it dialed in
-to what we needed.&lt;/p&gt;
-&lt;p&gt;The reason that this screen is so important to my family is that we all use our phones to record
-when we have things to do and where we need to be to do them.  Having a separate whiteboard that we
-had to update with those schedules wasn’t working for us, so having something that was able to use
-the same calendar source as our phones was pivotal to it’s acceptance.&lt;/p&gt;
-&lt;h2 id="doing-the-work-the-weather-screen"&gt;Doing the work - The Weather Screen&lt;a class="headerlink" href="#doing-the-work-the-weather-screen" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;In approaching this screen’s design, it was important for me to think of how my family intended to
-use this screen.  In asking my family, there were three main use cases:&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;What will the weather be like today? (for dressing)&lt;/li&gt;
-&lt;li&gt;What will the weather be like in a few days? (for planning)&lt;/li&gt;
-&lt;li&gt;Are there any weather alerts for the area? (for implementing plan-B to avoid the bad weather)&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;For the first two, it has been hard to figure out which two weather sources are more accurate,
-Darksky Weather or OpenWeatherMap, so instead I just show both.  In the future, I am going to have
-to change that, but for now my family is still deciding.  To increase our information though, we
-have a precipitation radar map courtesy of
-&lt;a href="https://weather.com/maps/usnorthwestdopplerradar"&gt;The Weather Channel&lt;/a&gt;.
-To embed it in the panel, I added an image panel, went to the weather map I wanted to add, right
-clicked on the image and then selected &lt;code&gt;Copy Image Address&lt;/code&gt; and placed that in the configuration
-for the image panel.  It took a couple of tries to get it looking the way I wanted, but was pretty
-easy.&lt;/p&gt;
-&lt;p&gt;Adding the weather alerts was even easier for me as Dakboard already had a separate panel for that.
-It was as simple as adding the panel, setting the location, and saving the panel.  One note for all
-of these weather panels was that they worked better when I used the closest major city instead of
-the small town that I live in.  Results were weird when I didn’t do this, and if I figured it out
-correctly, were showing the weather for New York City!&lt;/p&gt;
-&lt;h2 id="doing-the-work-the-left-over-screen"&gt;Doing the work - The Left-over Screen&lt;a class="headerlink" href="#doing-the-work-the-left-over-screen" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Yes, the left-overs.  Where to put the fun stuff that really didn’t fit in anywhere else?&lt;/p&gt;
-&lt;p&gt;For fun, I used the News/Rss Panel to add feeds for
-&lt;a href="https://www.brainyquote.com/link/quotebr.rss"&gt;Brainy Quotes&lt;/a&gt;
-and 
-&lt;a href="http://feeds.feedburner.com/wordthink/vIYJ"&gt;Word of the Day&lt;/a&gt;.
-The panels were easy to configure and get them to display in a way that was easy to read.&lt;/p&gt;
-&lt;p&gt;My wife’s family loves Christmas, so I added a X Days Until Christmas display using the Countdown
-panel, setting the date to December 25, 2019 and to show only the days.&lt;/p&gt;
-&lt;p&gt;The really fun panel was to show the number of astronauts currently in space as counted by NASA.
-Searching online, I found NASA’s open api which includes the number of astronauts in space
-complete with instructions on &lt;a href="http://open-notify.org/Open-Notify-API/"&gt;how to interpret the data&lt;/a&gt;.
-Adding it into a new Fetch panel, I set the panel to extract the number of people in space from
-the &lt;code&gt;number&lt;/code&gt; field and use the &lt;code&gt;user-astronaut&lt;/code&gt; icon from font-awesome to display beside the number.&lt;/p&gt;
-&lt;p&gt;I am sure there will be more fun things to add, but confident that this was a good start, it was
-time to wrap it up.&lt;/p&gt;
-&lt;h2 id="wrapping-the-screens-in-a-loop"&gt;Wrapping The Screens in a Loop&lt;a class="headerlink" href="#wrapping-the-screens-in-a-loop" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;To facilitate the showing of multiple screens in succession, Dakboard provides a wrapper called
-a loop.  A loop can change the current screen at a various intervals from every 15 seconds to every
-hour.  To add a loop, I went to the main screen for my account, clicked on the loops button
-and followed the simple instructions provided on the popup that appeared.  For my family, I chose
-a change frequency of 15 seconds and added all 3 of the screens I created into the loop.  To view
-the loop, I clicked on the &lt;code&gt;View Loop&lt;/code&gt; button that was visible once I clicked on the ellipses (…)
-at the bottom of the panel in the loops display.&lt;/p&gt;
-&lt;p&gt;Once things looked right on my computer, it was time to add them to the glanceable display.  When
-I pressed the &lt;code&gt;View Loop&lt;/code&gt; button, the browser changed to an URL that begins with
-&lt;code&gt;https://dakboard.com/loop/uuid/&lt;/code&gt;.  This URL is the actual URL you need to use to view the loop
-from any browser without having to go through the configuration screen.  SSHing into our glanceable
-display, I went back to my notes in the article on
-&lt;a href="https://jackdewinter.github.io/2019/08/04/glanceable-displays-setting-up-our-display/#starting-chromium-in-kiosk-mode"&gt;Setting Up Our Display - Starting Chromium In Kiosk Mode&lt;/a&gt;
-and replaced the placeholder URL of &lt;code&gt;https://bingwallpaper.anerg.com/&lt;/code&gt; with the URL that I found
-from the &lt;code&gt;View Loop&lt;/code&gt; window.&lt;/p&gt;
-&lt;p&gt;Double checking my work, I used my SSH session to enter &lt;code&gt;sudo reboot&lt;/code&gt; and reboot the glanceable
-display.  After a couple of minutes of boot up time, the glanceable display finished it’s startup
-and began showing the web page from Dakboard, rotating through the screens!&lt;/p&gt;
-&lt;h2 id="how-did-it-work"&gt;How Did It Work?&lt;a class="headerlink" href="#how-did-it-work" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;I started the first draft of this article in late July, just after I got the glanceable display
-working for my family.  As of October, when I am adding this section to the article, we are using
-the display on a daily basis, mostly in the way it was intended.  We continue to tweak little
-bits on the “Left-over” screen, but the other screens are dialed in the way we want them to be.&lt;/p&gt;
-&lt;p&gt;One of the things that I believe is crucial to it’s success is the placement in our kitchen.  We
-have a nice corner where we have it plugged in, out of the way of various devices, tucked under the
-cupboards where we store our dinnerware and our glasses.  This ensures that when we go to get some
-food or drink, we almost instinctivly glance down at the display as we are getting something out
-of one of those cupboards.  For me, this eliminates the “but I didn’t look at the display” factor
-for each of us, as we each know that getting something from those cupboards means we saw the
-display, if even for a second.&lt;/p&gt;
-&lt;p&gt;It also may have seemed like a small thing to include my family in the process, but I firmly
-believe that engaging with them at various points and incorporating their feedback into the project
-had a large bearing in their acceptance of the display.  It was important to all of us to be able
-to talk to the others and say “hey, can we add X to the display” and talk through whether there
-was a benefit to all of us from including that idea on the display.  By including each family
-member in the creation process and design process, they continue to have an investment in what is
-being displayed, and ensuring it is current and relevant.  &lt;/p&gt;
-&lt;p&gt;And yes, we have all had to ask or remind each other to add various meetings on to our own
-calendars so they show up on the main calendar.  By their very act of doing that, I know they are
-using the calendar.  By the number of times my wife has mentioned that there is snow at the
-nearby Snoqualmie Pass, I know the weather screen is getting used, especially the weather alerts
-section.  The harder one to figure out is the “Left-Overs” screen, but I am sure that I have
-had my son try hard to seamlessly work the word of the day into casual conversations, sometimes
-with hilarious results.  But it’s the thought that counts!&lt;/p&gt;
-&lt;h2 id="what-was-accomplished"&gt;What Was Accomplished&lt;a class="headerlink" href="#what-was-accomplished" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;This article detailed the work that was needed to take my family’s glanceable display from
-an appliance that was just sitting around to one that we use every day.  I shared with readers
-a number of different notes I made for this project at various points, along with my rationale
-for those notes.  Finally, I walked through the various setup that I performed on the various
-screens to get them on the display.&lt;/p&gt;
-&lt;p&gt;If you have followed this process through all 5 articles, thanks for your support, and I hope
-you take the time to look at some of the other articles on this site!&lt;/p&gt;</content><category term="Integrating Technology"></category><category term="glanceable displays"></category><category term="home dashboard"></category><category term="raspberry pi"></category><category term="Dakboard"></category></entry></feed>
+&lt;/div&gt;</content><category term="Personal"></category><category term="trying your best"></category><category term="trying something new"></category><category term="teachable moments"></category><category term="what are SDETs"></category><category term="teaching software quality"></category></entry></feed>
