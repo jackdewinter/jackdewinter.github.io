@@ -1,5 +1,462 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/all.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2020-01-13T00:00:00-08:00</updated><entry><title>Measuring Testing in Python Scripts</title><link href="https://jackdewinter.github.io/2020/01/13/measuring-testing-in-python-scripts/" rel="alternate"></link><published>2020-01-13T00:00:00-08:00</published><updated>2020-01-13T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-01-13:/2020/01/13/measuring-testing-in-python-scripts/</id><summary type="html">
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/all.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2020-01-20T00:00:00-08:00</updated><entry><title>Clarity Through The Summarizing of Test Measurements</title><link href="https://jackdewinter.github.io/2020/01/20/clarity-through-the-summarizing-of-test-measurements/" rel="alternate"></link><published>2020-01-20T00:00:00-08:00</published><updated>2020-01-20T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-01-20:/2020/01/20/clarity-through-the-summarizing-of-test-measurements/</id><summary type="html">
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;As part of the process of
+&lt;a href="https://jackdewinter.github.io/2019/12/08/markdown-linter-collecting-requirements/"&gt;creating a Markdown Linter&lt;/a&gt;
+to use with my personal website, I firmly believe that it is imperative that I have
+solid testing on the linter and the tools necessary to test the linter.  In previous
+articles, I talked about the framework I use …&lt;/p&gt;</summary><content type="html">
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;As part of the process of
+&lt;a href="https://jackdewinter.github.io/2019/12/08/markdown-linter-collecting-requirements/"&gt;creating a Markdown Linter&lt;/a&gt;
+to use with my personal website, I firmly believe that it is imperative that I have
+solid testing on the linter and the tools necessary to test the linter.  In previous
+articles, I talked about the framework I use to
+&lt;a href="https://jackdewinter.github.io/2020/01/06/scenario-testing-python-scripts/"&gt;scenario test Python scripts&lt;/a&gt; and
+how my current PyTest setup
+&lt;a href="https://jackdewinter.github.io/2020/01/13/measuring-testing-in-python-scripts/"&gt;produces useful test reports&lt;/a&gt;,
+both human-readable and machine-readable.  These two things allow me to properly
+test my Python scripts, to collect information on the tests used to verify those
+scripts, and to determine how well the collection of tests covers those scripts.&lt;/p&gt;
+&lt;p&gt;While the human-readable reports are very useful for digging into issues, I often find
+that I need a simple and concise “this is where you are now” summary that gives me the
+most pertinent information from those reports.  Enter the next tool in my toolbox, a
+Python script that summarizes information from the machine-readable reports,
+unimaginatively called &lt;code&gt;PyScan&lt;/code&gt;.  While it is simple tool, I constantly use this tool
+when writing new Python scripts and their tests to ensure the development is going in
+the direction that I want to.  This article describes how I use the tool and how it
+provides a benefit to my development process.&lt;/p&gt;
+&lt;h2 id="why-not-discuss-the-script-itself"&gt;Why Not Discuss The Script Itself?&lt;a class="headerlink" href="#why-not-discuss-the-script-itself" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;When coming up with the idea for this article, I had two beneficial paths
+available: focus on the code behind the PyScan tool or focus on the usage of the PyScan
+tool.  Both paths have merit and benefit,
+and both paths easily provide enough substance for a full article.  After a lot of
+thought, I decided to focus on the usage of this tool instead of the code itself.  I
+made this decision primarily due to my heavy use of the PyScan tool and it’s
+significant benefit to my development process.&lt;/p&gt;
+&lt;p&gt;I rely on the PyScan to give me an accurate summary of the tests used to verify any
+changes along with the impact on code coverage for each of those changes.  While I
+can develop without PyScan, I find that using PyScan immediately increases my
+confidence in each change I make.  When I make a given type of change to either the
+source code or the test code, I expect a related side-effect to appear in the test
+results report and the test coverage report.  By having PyScan produce summaries of the
+test results and test coverage, each side-effect is more visible, therefore
+adding validation that the changes made are the right changes.&lt;/p&gt;
+&lt;p&gt;In the end, the choice became an easy one: focus on the choice with the most positive
+impact.  I felt that documenting how I use this tool satisfied that requirement with
+room to spare.  I also felt that if any readers are still interested in looking at the
+code behind the script, it’s easy enough to point them to the project’s
+&lt;a href="https://github.com/jackdewinter/pyscan"&gt;GitHub repository&lt;/a&gt; and make sure it is well
+documented.&lt;/p&gt;
+&lt;h2 id="setting-up-pyscan-for-its-own-project"&gt;Setting Up PyScan For It’s Own Project&lt;a class="headerlink" href="#setting-up-pyscan-for-its-own-project" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Based on the setup from
+&lt;a href="https://jackdewinter.github.io/2020/01/13/measuring-testing-in-python-scripts/"&gt;the last article&lt;/a&gt;, the PyTest command
+line options &lt;code&gt;--junitxml=report/tests.xml&lt;/code&gt; and &lt;code&gt;--cov-report xml:report/coverage.xml&lt;/code&gt;
+place the &lt;code&gt;tests.xml&lt;/code&gt; file and the &lt;code&gt;coverage.xml&lt;/code&gt; file in the &lt;code&gt;report&lt;/code&gt; directory.
+Based on observation, the &lt;code&gt;tests.xml&lt;/code&gt; file is in a JUnit XML format and the
+&lt;code&gt;coverage.xml&lt;/code&gt;
+file is in a Cobertura XML format.  The format of the &lt;code&gt;tests.xml&lt;/code&gt; is pretty obvious from
+the command line flag required to generate it.  The format of the &lt;code&gt;coverage.xml&lt;/code&gt; file
+took a bit more effort, but the following line of the file keyed me to it’s format:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="c"&gt;&amp;lt;!-- Based on https://raw.githubusercontent.com/cobertura/web/master/htdocs/xml/coverage-04.dtd --&amp;gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;From within the project’s root directory, the main script is located at &lt;code&gt;../main.py&lt;/code&gt;.
+Since the project uses &lt;code&gt;pipenv&lt;/code&gt;, the command line to invoke the script is
+&lt;code&gt;pipenv run python pyscan/main.py&lt;/code&gt; and invoking the script with the &lt;code&gt;--help&lt;/code&gt; option
+gives us the options that we can use.  Following the information from the help text,
+the command line that I use from the project’s root directory is:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;pipenv run python pyscan/main.py --junit report/tests.xml --cobertura report/coverage.xml
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;With everything set up properly, the output from that command looks like:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;Test Results Summary
+--------------------
+
+Class Name                     Total Tests   Failed Tests   Skipped Tests
+----------------------------  ------------  -------------  --------------
+test.test_coverage_profiles              2              0               0
+test.test_coverage_scenarios            12              0               0
+test.test_publish_scenarios              9              0               0
+test.test_results_scenarios             19              0               0
+test.test_scenarios                      1              0               0
+---                                     --              -               -
+TOTALS                                  43              0               0
+
+Test Coverage Summary
+---------------------
+
+Type           Covered   Measured   Percentage
+------------  --------  ---------  -----------
+Instructions       ---        ---        -----
+Lines              505        507        99.61
+Branches           158        164        96.34
+Complexity         ---        ---        -----
+Methods            ---        ---        -----
+Classes            ---        ---        -----
+&lt;/pre&gt;&lt;/div&gt;
+&lt;h2 id="before-we-continue"&gt;Before We Continue…&lt;a class="headerlink" href="#before-we-continue" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;To complete my setup, there are two more things that are needed.  The first thing is
+that I primarily execute the tests from a simple Windows script called &lt;code&gt;ptest.cmd&lt;/code&gt;.
+While there is a lot of code in the &lt;code&gt;ptest.cmd&lt;/code&gt; script to handle errors and options,
+when the script is boiled down to it’s bare essence, the script runs tests and reports
+on those tests as follows:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;pipenv run pytest
+pipenv run python pyscan/main.py --only-changes --junit report/tests.xml --cobertura=report/coverage.xml
+&lt;/pre&gt;&lt;/div&gt;
+&lt;div class="admonition note"&gt;
+&lt;p class="admonition-title"&gt;Note&lt;/p&gt;
+&lt;p&gt;I also have a Bash version called &lt;code&gt;ptest.sh&lt;/code&gt; which I have experimented with locally, but is not checked in to the project.  If you are interested in this script, please let me know in the comments below.&lt;/p&gt;
+&lt;/div&gt;
+&lt;p&gt;Setting up a script like &lt;code&gt;ptest&lt;/code&gt; keeps things simple and easy-to-use.  One
+notable part of the script is that there is a little bit of logic in the script to not
+summarize any coverage if there are any issues running the tests under PyTest.  Call me
+a purist, but if the tests fail to execute or are not passing, any
+measurements of how well the tests cover the code are moot.&lt;/p&gt;
+&lt;p&gt;The other thing that I have setup is a small change to the command line for PyScan.  In
+the “bare essence” text above, after the text &lt;code&gt;pyscan/main.py&lt;/code&gt;, there is a new option
+used for PyScan: the &lt;code&gt;--only-changes&lt;/code&gt; option.  By adding the &lt;code&gt;--only-changes&lt;/code&gt; option,
+PyScan restricts the output to only those items that show changes.  If no changes are
+detected, it displays a simple line stating that no changes have been observed.  In the
+case of the above output, the output with this new option is as follows:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;Test Results Summary
+--------------------
+
+Test results have not changed since last published test results.
+
+Test Coverage Summary
+---------------------
+
+Test coverage has not changed since last published test coverage.
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;To me, this gives a very clear indication that things have not changed.  In the
+following sections, I go through different cases and explain what changes I made and
+what effects I expect to see summarized.&lt;/p&gt;
+&lt;h2 id="introducing-changes-and-observing-behavior"&gt;Introducing Changes and Observing Behavior&lt;a class="headerlink" href="#introducing-changes-and-observing-behavior" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;For this section of the article, I temporarily added a “phantom” feature called
+“nothing” to PyScan.  This feature is facilitated by two code changes.
+In the &lt;code&gt;__parse_arguments&lt;/code&gt; function, I added the following code:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;        &lt;span class="n"&gt;parser&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;add_argument&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+            &lt;span class="s2"&gt;"--nothing"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+            &lt;span class="n"&gt;dest&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;"do_nothing"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+            &lt;span class="n"&gt;action&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;"store_true"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+            &lt;span class="n"&gt;default&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="bp"&gt;False&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+            &lt;span class="n"&gt;help&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;"only_changes"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;and in the &lt;code&gt;main&lt;/code&gt; function, I changed the code as follows:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;        &lt;span class="n"&gt;args&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__parse_arguments&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;args&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;do_nothing&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="k"&gt;print&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"noop"&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+            &lt;span class="n"&gt;sys&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;exit&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Note that this feature is only present for the sake of these examples, and is not in
+the project’s code base.&lt;/p&gt;
+&lt;h3 id="adding-new-code"&gt;Adding New Code&lt;a class="headerlink" href="#adding-new-code" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;When I added the above code for the samples, the output that I got after running
+the tests was:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;Test Results Summary
+--------------------
+
+Test results have not changed since last published test results.
+
+Test Coverage Summary
+---------------------
+
+Type       Covered   Measured     Percentage
+--------  --------  ---------  -------------
+Lines     507 (+2)   511 (+4)  99.22 (-0.39)
+Branches  159 (+1)   166 (+2)  95.78 (-0.56)
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Based on the introduced changes, this output was expected.  In the &lt;code&gt;Measured&lt;/code&gt; column,
+4 new lines were added (1 in &lt;code&gt;__parse_arguments&lt;/code&gt; and 3 in &lt;code&gt;main&lt;/code&gt;) and the
+&lt;code&gt;if args.do_nothing:&lt;/code&gt; line added 2 branches (1 for True and one for False). In the
+&lt;code&gt;Covered&lt;/code&gt; column, without any tests to exercise the new code, 2 lines are
+covered by default (1 in &lt;code&gt;__parse_arguments&lt;/code&gt; and 1 in &lt;code&gt;main&lt;/code&gt;) and 1 branch is covered
+by default (the False case of &lt;code&gt;if args.do_nothing:&lt;/code&gt;).&lt;/p&gt;
+&lt;h3 id="adding-a-new-test"&gt;Adding a New Test&lt;a class="headerlink" href="#adding-a-new-test" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Having added source code to the project, I added a test to address the new code.  To
+start, I added this simple test function to the &lt;code&gt;test_scenarios.py&lt;/code&gt; file:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;test_nothing&lt;/span&gt;&lt;span class="p"&gt;():&lt;/span&gt;
+    &lt;span class="k"&gt;pass&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;This change is just a stub for a test function, so the expected change is that the
+number of tests for that module increase and there is no change in coverage.  This
+effect is born out by the output:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;Test Results Summary
+--------------------
+
+Class Name            Total Tests   Failed Tests   Skipped Tests
+-------------------  ------------  -------------  --------------
+test.test_scenarios        2 (+1)              0               0
+---                       --                   -               -
+TOTALS                    44 (+1)              0               0
+
+Test Coverage Summary
+---------------------
+
+Type       Covered   Measured     Percentage
+--------  --------  ---------  -------------
+Lines     507 (+2)   511 (+4)  99.22 (-0.39)
+Branches  159 (+1)   166 (+2)  95.78 (-0.56)
+&lt;/pre&gt;&lt;/div&gt;
+&lt;h3 id="populating-the-test-function"&gt;Populating the Test Function&lt;a class="headerlink" href="#populating-the-test-function" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Now that a stub for the test is in place and registering, I added a real body to the
+test function as follows:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;test_nothing&lt;/span&gt;&lt;span class="p"&gt;():&lt;/span&gt;
+
+    &lt;span class="c1"&gt;# Arrange&lt;/span&gt;
+    &lt;span class="n"&gt;executor&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;MainlineExecutor&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+    &lt;span class="n"&gt;suppplied_arguments&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s2"&gt;"--nothing"&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+
+    &lt;span class="n"&gt;expected_output&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;"""noop&lt;/span&gt;
+&lt;span class="s2"&gt;"""&lt;/span&gt;
+    &lt;span class="n"&gt;expected_error&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;""&lt;/span&gt;
+    &lt;span class="n"&gt;expected_return_code&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
+
+    &lt;span class="c1"&gt;# Act&lt;/span&gt;
+    &lt;span class="n"&gt;execute_results&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;executor&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;invoke_main&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;arguments&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;suppplied_arguments&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;cwd&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="bp"&gt;None&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+    &lt;span class="c1"&gt;# Assert&lt;/span&gt;
+    &lt;span class="n"&gt;execute_results&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;assert_results&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+        &lt;span class="n"&gt;expected_output&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;expected_error&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;expected_return_code&lt;/span&gt;
+    &lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;The code that I added at the start of this section is triggered by the command line
+argument &lt;code&gt;--nothing&lt;/code&gt;, printing the simple response text &lt;code&gt;noop&lt;/code&gt;, and returning a return
+code of 1 .  This test code was crafted to trigger that code and to verify the expected
+output.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;Test Results Summary
+--------------------
+
+Class Name            Total Tests   Failed Tests   Skipped Tests
+-------------------  ------------  -------------  --------------
+test.test_scenarios        2 (+1)              0               0
+---                       --                   -               -
+TOTALS                    44 (+1)              0               0
+
+Test Coverage Summary
+---------------------
+
+Type       Covered   Measured     Percentage
+--------  --------  ---------  -------------
+Lines     509 (+4)   511 (+4)  99.61 ( 0.00)
+Branches  160 (+2)   166 (+2)  96.39 (+0.04)
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Based on the output from the test results summary, the test does verify that once
+triggered, the code is working as expected.  If there was any issue with the test,
+the summary would include the text &lt;code&gt;1 (+1)&lt;/code&gt; in the &lt;code&gt;Failed Tests&lt;/code&gt; column to denote
+the failure.  As that text is not present, it is safe to assume that both tests in
+the &lt;code&gt;test.test_scenarios&lt;/code&gt; module succeeded.  In addition, based on the output from the
+test coverage summary, the new code added 4 lines and 2 branches to the code base, and
+the new test code covered all of those changes.&lt;/p&gt;
+&lt;h3 id="establishing-a-new-baseline"&gt;Establishing a New Baseline&lt;a class="headerlink" href="#establishing-a-new-baseline" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;With the new source code and test code in place, I needed to publish the results and
+set a new baseline for the project.  To do this with the &lt;code&gt;ptest&lt;/code&gt; script, I invoked the
+following command line:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;ptest -p
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Within this &lt;code&gt;ptest&lt;/code&gt; script, the &lt;code&gt;-p&lt;/code&gt; option was translated into the following command:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;pipenv run python pyscan/main.py --publish
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;When executed, the &lt;code&gt;publish/coverage.json&lt;/code&gt; and &lt;code&gt;publish/test-results.json&lt;/code&gt; files were
+updated with the current summaries.  Following that point, when the script was run, it
+reverts back to the original output of:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;Test Results Summary
+--------------------
+
+Test results have not changed since last published test results.
+
+Test Coverage Summary
+---------------------
+
+Test coverage has not changed since last published test coverage.
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;This process can be repeated at any time to establish a solid baseline that any new
+changes can be measured against.&lt;/p&gt;
+&lt;h3 id="refactoring-code-my-refactoring-process"&gt;Refactoring Code - My Refactoring Process&lt;a class="headerlink" href="#refactoring-code-my-refactoring-process" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;In practice, I frequently do “cut-and-paste” development during my normal development
+process.  However, I do this with a strict rule that I follow: “2 times on the
+fence, 3 times refactor, clean up later”.  That rule break down as follows:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;if I cut-and-paste code once, I then have 2 copies, and I should consider refactoring unless I have a good reason to delay&lt;/li&gt;
+&lt;li&gt;if I cut-and-paste that code again, I then have 3 copies, and that third copy must be into a function that the other 2 copies get merged into&lt;/li&gt;
+&lt;li&gt;when I have solid tests in place and I am done with primary development, go back
+to all of the cases where I have 2 copies and condense them if beneficial&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;My rationale for this rule is as follows.&lt;/p&gt;
+&lt;p&gt;When you are creating code, you want the
+ideas to flow free and fast, completing a good attempt at meeting your current goal
+in the most efficient way possible.  While cut-and-paste as a long term strategy is not
+good, I find that in the short term, it helps me in creating a new function, even if
+that function is a copy of something done before.  To balance that, from experience, if
+I have pasted the same code twice (meeting the criteria for “3 times refactor”), there
+is a very good chance that I will use that code at least one more time, if not more.  At
+that point, it makes more sense to refactor the code to encapsulate the functionality
+properly before the block of code becomes to unwieldly.&lt;/p&gt;
+&lt;p&gt;Finally, once I have completed the creation of the new source code, I go back and
+actively look for cases where I cut-and-pasted code, and if it is worth it to refactor
+that code, with a decision to refactor if I am on the fence.  At the very least,
+refactoring code into a function almost always makes the code more readable and
+maintainable.  Basically, by following the above rule for refactoring, I almost always
+change the code in a positive manner.&lt;/p&gt;
+&lt;p&gt;The summaries provided to me from PyScan help me with this refactoring in a big way.
+Most of the time, the main idea with refactoring is to change the code on the “inside”
+of the program or script without changing the “outside” of the program or script.  If
+any changes are made to the “outside”, they are usually small changes with very
+predictable impacts.  The PyScan summaries assist me in ensuring that any changes to the
+outside of the script are kept small and manageable while also measuring the
+improvements made to the inside of the script.  Essentially, seeing both summaries
+helps me keep the code refactor of the script very crisp and on course.&lt;/p&gt;
+&lt;h3 id="refactoring-code-leveraging-the-summaries"&gt;Refactoring Code - Leveraging The Summaries&lt;a class="headerlink" href="#refactoring-code-leveraging-the-summaries" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;A good function set of functions for me to look at for clean-up refactoring were the
+&lt;code&gt;generate_test_report&lt;/code&gt; and &lt;code&gt;generate_coverage_report&lt;/code&gt; functions.  When I wrote those
+two functions, I wasn’t sure
+how much difference I was going to have between those two functions, so did an initial
+cut-and-paste (see “2 times on the fence”) and started making changes.  As those parts
+of PyScan are now solid and tested, I went back (see “clean up later”) and compared
+the two functions to see what was safe to refactor.&lt;/p&gt;
+&lt;p&gt;The first refactor I performed was to extract the xml loading logic into a new
+&lt;code&gt;__load_xml_docment&lt;/code&gt; function.  While I admit I didn’t get it right the first time, the
+tests kept me in
+check and made sure that, after a couple of tries, I got it right.  And when I say
+“tries”, I mean that I made a change, ran &lt;code&gt;ptest&lt;/code&gt;, got some information, and diagnosed
+it… all within about 30-60 seconds per iteration.  In the end, the summary looked like
+this:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;Test Results Summary
+--------------------
+
+Test results have not changed since last published test results.
+
+Test Coverage Summary
+---------------------
+
+Type        Covered   Measured     Percentage
+--------  ---------  ---------  -------------
+Lines     499 (-10)  501 (-10)  99.60 (-0.01)
+Branches  154 ( -6)  160 ( -6)  96.25 (-0.14)
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;As expected, the refactor eliminated both lines of code and branches, with the measured
+values noted in the summary.&lt;/p&gt;
+&lt;p&gt;The second refactor I made was to extract the summary file writing logic into a new
+&lt;code&gt;__save_summary_file&lt;/code&gt; function.  I followed a similar pattern to the refactor for
+&lt;code&gt;__load_xml_docment&lt;/code&gt;, but there was a small difference.  In this case, I observed that
+for a specific error case, one function specified &lt;code&gt;test coverage&lt;/code&gt; and the other function
+specified &lt;code&gt;test summary&lt;/code&gt;.  Seeing as consistent names in output is always beneficial,
+I decided to change the error messages to be consistent with each other.  The
+&lt;code&gt;test coverage&lt;/code&gt; name for the first function remained the same, but the &lt;code&gt;test summary&lt;/code&gt;
+name was changed to &lt;code&gt;test report&lt;/code&gt;, with the text &lt;code&gt;summary&lt;/code&gt; added in the refactored
+function.&lt;/p&gt;
+&lt;p&gt;At this point, I knew that one test for each of the test results scenarios and test
+coverage scenarios was going to fail, but I knew that it would fail in a very specific
+manner.  Based on the above changes, the text &lt;code&gt;Project test summary file&lt;/code&gt; for the
+results scenario test should change to &lt;code&gt;Project test report summary file&lt;/code&gt; and the text
+&lt;code&gt;Project test coverage file&lt;/code&gt; for the coverage scenario test should change to
+&lt;code&gt;Project test coverage summary file&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;When I ran the tests after these changes, there were indeed 2 errors, specifically
+in the tests I thought they would show up in.  Once those 2 tests were changed to
+reflect the new consistent text, the tests were ran again and produced the following
+output:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;Test Results Summary
+--------------------
+
+Test results have not changed since last published test results.
+
+Test Coverage Summary
+---------------------
+
+Type        Covered   Measured     Percentage
+--------  ---------  ---------  -------------
+Lines     491 (-18)  493 (-18)  99.59 (-0.01)
+Branches  152 ( -8)  158 ( -8)  96.20 (-0.18)
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Once again, the output matched my expectations.  While it wasn’t a large number of code
+or branches, an additional 8 lines and 2 branches were refactored.&lt;/p&gt;
+&lt;h3 id="determining-additive-test-function-coverage"&gt;Determining Additive Test Function Coverage&lt;a class="headerlink" href="#determining-additive-test-function-coverage" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;There are times after I have written a series of tests where I wonder how much actual
+coverage a given test contributes to the overall test coverage percentage. As test
+coverage is a collaborative effort of all of the tests, a single number that identifies
+the amount of code covered by a single test is not meaningful.  However, a meaningful
+piece of information is what unique coverage a given test contributes to the collection
+of tests as a whole.&lt;/p&gt;
+&lt;p&gt;To demonstrate how I do this, I picked one of the tests that addresses one of the error
+conditions, the &lt;code&gt;test_summarize_cobertura_report_with_bad_source&lt;/code&gt; function in the
+&lt;code&gt;test_coverage_scenarios.py&lt;/code&gt; file.  Before I
+changed anything, I made sure to publish the current state to use it as a baseline. To
+determine the additive coverage this test provides, I simply changed it’s name to
+&lt;code&gt;xtest_summarize_cobertura_report_with_bad_source&lt;/code&gt;.  As the &lt;code&gt;pytest&lt;/code&gt; program only
+matches on functions that start with &lt;code&gt;test_&lt;/code&gt;, the function was then excluded from the
+tests to be executed.&lt;/p&gt;
+&lt;p&gt;Upon running the &lt;code&gt;ptest&lt;/code&gt; script, I got the following output:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;Test Results Summary
+--------------------
+
+Class Name                     Total Tests   Failed Tests   Skipped Tests
+----------------------------  ------------  -------------  --------------
+test.test_coverage_scenarios       11 (-1)              0               0
+---                                --                   -               -
+TOTALS                             43 (-1)              0               0
+
+Test Coverage Summary
+---------------------
+
+Type       Covered   Measured     Percentage
+--------  --------  ---------  -------------
+Lines     507 (-2)        511  99.22 (-0.39)
+Branches  159 (-1)        166  95.78 (-0.60)
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Interpreting this output, given what I documented earlier in this article, was pretty
+easy.  As I “disabled”
+one of the coverage scenario tests in the &lt;code&gt;test_coverage_scenarios.py&lt;/code&gt; file, the summary
+reports one less test in &lt;code&gt;test.test_coverage_scenarios&lt;/code&gt; as expected.  That disabled
+test added 2 lines of coverage and 1 branch of coverage to overall effort, coverage
+that was now being reported as missing.  As this test was added specifically to test a
+single error case, this was expected.&lt;/p&gt;
+&lt;p&gt;If instead I disable the &lt;code&gt;xtest_junit_jacoco_profile&lt;/code&gt; test in the
+&lt;code&gt;test_coverage_profiles.py&lt;/code&gt; file, I get a different result:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;Test Results Summary
+--------------------
+
+Class Name                    Total Tests   Failed Tests   Skipped Tests
+---------------------------  ------------  -------------  --------------
+test.test_coverage_profiles        1 (-1)              0               0
+---                               --                   -               -
+TOTALS                            43 (-1)              0               0
+
+Test Coverage Summary
+---------------------
+
+Type       Covered   Measured     Percentage
+--------  --------  ---------  -------------
+Lines     501 (-8)        511  98.04 (-1.57)
+Branches  152 (-8)        166  91.57 (-4.82)
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Like the previous output, the disabled test is showing up as being removed, but there
+is a lot more coverage that was removed.  Strangely enough, this was also expected.  As
+I also use PyScan to summarize test results from Java projects I work on, I used all 6
+coverage measurements available from Jacoco &lt;sup id="fnref:jacoco"&gt;&lt;a class="footnote-ref" href="#fn:jacoco"&gt;1&lt;/a&gt;&lt;/sup&gt; as a baseline for the 2
+measurements generated by PyTest for Python coverage.  With a quick look at the
+&lt;code&gt;report/coverage/pyscan_model_py.html&lt;/code&gt; file, this was indeed the reason for the
+difference, with the test exercising 4 additional paths in each of the serialization
+and deserialization functions. Basically, four paths of one line each, times two (one
+for serialization and one for deserialization), and the 8 lines/branches covered is
+explained.&lt;/p&gt;
+&lt;h2 id="wrapping-up"&gt;Wrapping Up&lt;a class="headerlink" href="#wrapping-up" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;I believe that making my decision to talk about how I use my PyScan tool to summarize
+test results and test coverage was the right choice.  It is difficult for me to
+quantize exactly how much benefit PyScan has provided to my development process, but it
+is easily in the very positive to indispensable category.  By providing a quick summary
+on the test results file and the test coverage file, I can ensure that any changes I
+make are having the proper effects on those two files at each stage of the change that
+I am making.  I hope that by walking through this process and how it helps me, it will
+inspire others to adopt something similar in their development processes.&lt;/p&gt;
+&lt;div class="footnote"&gt;
+&lt;hr/&gt;
+&lt;ol&gt;
+&lt;li id="fn:jacoco"&gt;
+&lt;p&gt;For an example Jacoco HTML report that shows all 6 coverage measurements, check out &lt;a href="https://www.jacoco.org/jacoco/trunk/coverage/"&gt;the report trunk coverage for Jacoco&lt;/a&gt;. &lt;a class="footnote-backref" href="#fnref:jacoco" title="Jump back to footnote 1 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/div&gt;</content><category term="Software Quality"></category><category term="pytest"></category><category term="scenario testing"></category></entry><entry><title>Measuring Testing in Python Scripts</title><link href="https://jackdewinter.github.io/2020/01/13/measuring-testing-in-python-scripts/" rel="alternate"></link><published>2020-01-13T00:00:00-08:00</published><updated>2020-01-13T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-01-13:/2020/01/13/measuring-testing-in-python-scripts/</id><summary type="html">
 &lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;As part of the process of
 &lt;a href="https://jackdewinter.github.io/2019/12/08/markdown-linter-collecting-requirements/"&gt;creating a Markdown Linter&lt;/a&gt;
@@ -4141,327 +4598,4 @@ I believe I am in a good place.  So next, fine-tuning and selecting a theme!&lt;
 &lt;p&gt;Next, I need to clean up a couple of small things before selecting a theme for the website.
 Getting a solid choice for a theme is the last major task I have to complete before
 publishing the website itself.  Completing this last major task will be covered in the next
-post &lt;a href="https://jackdewinter.github.io/2019/09/08/static-websites-getting-ready-for-publishing-themes-and-minutiae/"&gt;Getting Ready For Publishing - Themes and Minutiae&lt;/a&gt;.&lt;/p&gt;</content><category term="Integrating Technology"></category><category term="static website generator"></category><category term="pelican website generator"></category><category term="building pelican website"></category><category term="pelican website workflow"></category><category term="python"></category></entry><entry><title>Static Websites: Setting Up the Pelican Static Site Generator</title><link href="https://jackdewinter.github.io/2019/08/25/static-websites-setting-up-the-pelican-static-site-generator/" rel="alternate"></link><published>2019-08-25T00:00:00-07:00</published><updated>2019-08-25T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2019-08-25:/2019/08/25/static-websites-setting-up-the-pelican-static-site-generator/</id><summary type="html">
-&lt;p&gt;This is the second article in a series about setting up my own website using a
-Static Site Generator.  For other articles in the series, click on the title of the article
-under the heading “Static Site Generators” on the right side of the webpage.&lt;/p&gt;
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;In the previous article …&lt;/p&gt;</summary><content type="html">
-&lt;p&gt;This is the second article in a series about setting up my own website using a
-Static Site Generator.  For other articles in the series, click on the title of the article
-under the heading “Static Site Generators” on the right side of the webpage.&lt;/p&gt;
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;In the previous article, I decided that the Pelican
-&lt;a href="https://jackdewinter.github.io/2019/08/18/static-websites-choosing-a-static-web-site-generator/#which-one-to-choose"&gt;Static Site Generator (SSG)&lt;/a&gt; was the right
-choice for me.  This article goes through the steps that I took in setting up Pelican
-on my system, providing a play-by-play for anyone thinking of doing the same thing.
-Feel free to use this as a guide for setting up your own website to experiment with.
-If you are not using this as a guide, I hope it provides you with any details that you
-require for regarding Pelican and it’s setup.&lt;/p&gt;
-&lt;p&gt;From my experience, it is more important for me to make a small step forward and lay a good
-foundation for what comes next than it is to take leaps and bounds and miss things.  Hence,
-I feel that focusing on the setup of Pelican is a good and properly scoped step.&lt;/p&gt;
-&lt;h3 id="why-another-pelican-how-to-guide"&gt;Why Another Pelican How-To-Guide?&lt;a class="headerlink" href="#why-another-pelican-how-to-guide" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;In looking around, there was a real mish-mash of articles out there:&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;a href="http://nafiulis.me/making-a-static-blog-with-pelican.html"&gt;Making a Static Blog with Pelican&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href="https://spapas.github.io/2013/10/07/pelican-static-windows/"&gt;Using pelican to generate static sites on windows&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href="http://seanazlin.com/creating-a-blog-on-GitHub-dot-io-with-Python.html"&gt;Creating a Blog on GitHub.io with Python&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href="http://chdoig.github.io/create-pelican-blog.html"&gt;Creating your blog with Pelican&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;&lt;a href="https://www.fullstackpython.com/blog/generating-static-websites-pelican-jinja2-markdown.html"&gt;How to Create Your First Static Site with Pelican and Jinja2&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;The first thing that was obvious to me was that all of the Pelican posts I found were written
-in 2017 or earlier.  This means that these articles refer to versions of Pelican before
-the current 4.0.1 release that I am running, so they are either out of date or inaccurate.&lt;/p&gt;
-&lt;p&gt;The second thing that was obvious was there were very few posts written about using Pelican
-on a Windows machine.  According to the site
-&lt;a href="https://www.netmarketshare.com/operating-system-market-share.aspx"&gt;NetMarketShare.com&lt;/a&gt;,
-Windows machines account for over 87% of the desktop machines surveyed.  While it is true
-(from experience) that developers prefer Macs over Windows, projects like
-&lt;a href="http://wsl-guide.org/en/latest/"&gt;WSL&lt;/a&gt; are starting to chip away at those reasons.  And it
-still remains that for a non-developer, Windows is by far the most common machine type.
-As it is my primary environment, I want to make sure it is represented.&lt;/p&gt;
-&lt;h3 id="component-versions"&gt;Component Versions&lt;a class="headerlink" href="#component-versions" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;If you are using this as a guide, you may try versions of any listed component other than
-those specified, but note that
-&lt;a href="https://www.urbandictionary.com/define.php?term=ymmv"&gt;Your Mileage May Vary&lt;/a&gt;.  This
-article was written from my detailed notes of how I set up my website, using the
-component versions listed.  As such, if you experience any issues, I would fall back to
-those versions as an established baseline.&lt;/p&gt;
-&lt;p&gt;If you would like to try other versions of components, I strongly encourage you to go
-to the baseline established in this article and commit it to your local repository
-(see &lt;a href="https://jackdewinter.github.io/2019/08/25/static-websites-setting-up-the-pelican-static-site-generator/#Step-5"&gt;Step 5: Committing the Changes&lt;/a&gt; below).  Once you
-have that point set and committed, you can then try and use other versions of the
-components, having a known state to return to.  Regardless, keep detailed notes about what
-you try, and if you find yourself in a bad state, fall back to one of your previous known
-states and try again.&lt;/p&gt;
-&lt;h3 id="operating-system-paths"&gt;Operating System Paths&lt;a class="headerlink" href="#operating-system-paths" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;From long experience as a developer, there is virtually no sematic difference
-between pathing that is meaningful.  Windows uses a format of &lt;strong&gt;C:\this\is\my\directory&lt;/strong&gt;
-and Linux systems use &lt;strong&gt;/my-mount/this/is/my/directory&lt;/strong&gt;.  I personally work on both types
-of systems equally and do not have any issues switching back and forth between them.  &lt;/p&gt;
-&lt;p&gt;One reason that I enjoy using Python over PowerShell, Bat/Cmd, and *Sh shells, is that I can
-properly obfuscate any such issues in my code.  Python scripts can easily be written that
-are platform agnostic, eliminating duplicated scripts to handle platform issues.  Add in to
-that additional support from editors such as VSCode and PyCharm, and it becomes a powerful
-scripting language with some real muscle behind it.&lt;/p&gt;
-&lt;p&gt;While I realize others may feel differently, I expect the reader to be able to perform the
-same translation task while reading, with practice if required.&lt;/p&gt;
-&lt;h2 id="step-1-install-pre-requisites"&gt;Step 1: Install Pre-requisites&lt;a class="headerlink" href="#step-1-install-pre-requisites" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;There is one pre-requisite for Pelican itself, and that is having Python 3.7 installed with
-a current version of Pip.  The information in this post was generated with
-&lt;a href="https://www.python.org/downloads/release/python-373/"&gt;Python 3.7.3&lt;/a&gt; and
-&lt;a href="https://pip.pypa.io/en/stable/#"&gt;Pip 19.1.1&lt;/a&gt;.  &lt;/p&gt;
-&lt;p&gt;As I have a great habit of
-&lt;a href="https://www.urbandictionary.com/define.php?term=fat-fingering"&gt;fat fingering&lt;/a&gt; commands,
-I prefer to keep most of my files in a version control system, specifically
-&lt;a href="https://git-scm.com/"&gt;Git&lt;/a&gt;.  While I use &lt;a href="https://www.sourcetreeapp.com/"&gt;Source Tree&lt;/a&gt; as a
-graphical interface to Git, I realize most people use the command line.  Therefore, for the
-purpose of any examples, I will use the Git command line interface, assuming that anyone
-reading this who uses a Git GUI can find the appropriate command in their GUI if needed.&lt;/p&gt;
-&lt;p&gt;The commands I will be using in this article are as follows:&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;a href="https://git-scm.com/docs/git-init"&gt;git init&lt;/a&gt; - Create an empty git repository.&lt;/li&gt;
-&lt;li&gt;&lt;a href="https://git-scm.com/docs/git-status"&gt;git status&lt;/a&gt; - Working tree status of the current
-  repository.&lt;/li&gt;
-&lt;li&gt;&lt;a href="https://git-scm.com/docs/git-add"&gt;git add&lt;/a&gt; - Add a new file to the working tree.&lt;/li&gt;
-&lt;li&gt;&lt;a href="https://git-scm.com/docs/git-commit"&gt;git commit&lt;/a&gt; - Commit any changes to the working tree
-  to the repository.&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;If you are new to Git or need a refresher, please go to the links about and do some searching
-online for examples.   These are some of the base concepts of Git, and should be understood
-before proceeding.&lt;/p&gt;
-&lt;p&gt;With respect to how to install Python and Git/SourceTree, there is plenty of information on how
-to install those programs for each platform.  Please google
-&lt;a href="https://www.google.com/search?q=python+install&amp;amp;oq=python+install"&gt;Python install&lt;/a&gt;,
-&lt;a href="https://www.google.com/search?q=git+install&amp;amp;oq=git+install"&gt;Git install&lt;/a&gt;, and
-&lt;a href="https://www.google.com/search?q=sourcetree+install&amp;amp;oq=sourcetree+install"&gt;SourceTree install&lt;/a&gt;
-for the best installation instructions for a given platform.  For the Windows system I am
-using, I simply downloaded the installations from the websites linked to in the previous 2
-paragraphs.&lt;/p&gt;
-&lt;p&gt;After installing Python on my system, the installation of required packages was very
-simple.  At the command prompt, I entered the following line:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;pip install pip==19.1.1 virtualenv==16.6.0
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;The two packages installed were the Pip Package Manager itself and the virtualenv package.
-The first installed package, pip, makes sure that Python’s own package manager is at the
-specified version.  While pip does not often change meaningfully and I am not planning on
-using any new features, it usually pays to keep things current.  &lt;/p&gt;
-&lt;p&gt;The second one is a virtual environment system for Python.
-&lt;a href="https://virtualenv.pypa.io/en/stable/"&gt;Virtualenv&lt;/a&gt; is a Python tool that allows you to
-isolate a given Python project.  While it is not portable between different systems, it does
-provide for a manner in which to isolate different versions of Python and different versions
-of Python packages from each other.  Using virtualenv will allow me to install a specific
-versions of Python and each package with no fear of any global changes affecting this project.&lt;/p&gt;
-&lt;p&gt;To verify that I have the correct version of pip and virtualenv installed, I executed
-each tool with the &lt;strong&gt;–version&lt;/strong&gt; parameter, expecting to see output similar to the following:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;XXX&amp;gt; pip --version
-pip 19.1.1 from XXX\lib\site-packages\pip (python 3.7)
-XXX&amp;gt; virtualenv --version
-16.6.0
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;After these pre-requisites were installed, I was ready to create a directory to host
-the content for the website.&lt;/p&gt;
-&lt;h2 id="step-2-create-a-project-directory-for-the-site"&gt;Step 2: Create a Project Directory For The Site&lt;a class="headerlink" href="#step-2-create-a-project-directory-for-the-site" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Before generating content, I needed to create a place to install Pelican that was
-isolated and self-contained.  As mentioned in the previous section, that is exactly the use
-case that the Virtualenv program was created for.  That is the first of the two tools that I
-needed to set up for the new directory.&lt;/p&gt;
-&lt;p&gt;The other tool is version control, to ensure I can replicate and version the website.  For
-this purpose, I use Git. The first thing this accomplishes is to ensure that if the computer
-hosting the website content gets destroyed, I still have the latest information about the
-website.  The other thing that this accomplishes is to ensure that if I make a change
-(or two, or three) to the website that I don’t like, I can always return back to previous
-versions of any of the documents.&lt;/p&gt;
-&lt;p&gt;That out of the way, I selected a directory as a location of the website.  In my case, I keep
-all of my local Git repositories in a directory &lt;strong&gt;c:\enlistments&lt;/strong&gt;, so I created the directory
-I wanted to keep the website in was &lt;strong&gt;c:\enlistments\blog-content&lt;/strong&gt;.  The location is totally
-arbitrary, so for the sake of clarity, if I refer to this directory indirectly, I will use the
-term &lt;strong&gt;base project directory&lt;/strong&gt;.  If I refer to this directory directly in a script, I will use
-the pattern %%%MY_DIRECTORY%%%.&lt;/p&gt;
-&lt;p&gt;To create the base project directory, I executed the following commands in order:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;mkdir %%%MY_DIRECTORY%%%
-cd %%%MY_DIRECTORY%%%
-git init
-virtualenv virtualenv
-virtualenv\scripts\activate.bat
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;In order of execution, the commands first create a directory and then changed the current
-directory to that directory.  Once the base project directory was created, &lt;strong&gt;git init&lt;/strong&gt;
-was used to create an empty Git repository with nothing in it, ready for the project to
-populate.  Next, &lt;strong&gt;virtualenv virtualenv&lt;/strong&gt; was used to create a virtual environment for the
-website, housing that environment in the &lt;strong&gt;virtualenv&lt;/strong&gt; directory of the project.&lt;/p&gt;
-&lt;p&gt;Finally, the activate script of &lt;strong&gt;virtualenv&lt;/strong&gt; was executed to enable the virtual environment.
-The script &lt;strong&gt;activate.bat&lt;/strong&gt; on my Windows platform (&lt;strong&gt;activate.sh&lt;/strong&gt; on Linux platforms)
-performs two simple tasks: change the shell’s path to use the virtual environment AND change
-the path to make sure that change is evident.  To be sure, I checked the &lt;strong&gt;PATH&lt;/strong&gt; environment
-variable to make sure it starts with the Python path of the project’s virtual environment
-and that the prompt started with &lt;strong&gt;(virtualenv)&lt;/strong&gt;.&lt;/p&gt;
-&lt;p&gt;Note that while I used &lt;strong&gt;git init&lt;/strong&gt; to create a local repository, I was still getting
-started with the project.  As such, I didn’t need to worry about ensuring that the local
-repository is reflected in a remote repository.  At that point, the purpose of having the
-local repository was to ensure that I could see what changed and revert back to previous
-versions if needed.&lt;/p&gt;
-&lt;p&gt;If you are using this as a guide, please note that from this point forward, any commands that
-I entered were entered in the virtual environment shell. If for some reason you close your
-shell and need to restore the shell to where you were, you will need to open a new shell and
-submit the following commands:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;cd %%%MY_DIRECTORY%%%
-virtualenv\scripts\activate.bat
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;I had a good directory ready to go, but I had one small issue to fix.  When I submitted the
-&lt;strong&gt;git status -s&lt;/strong&gt; command, I encounter the output:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;?? virtualenv/
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;As mentioned above, the virtual environment is specific to a given operating system and
-version of Python.  Because of this, committing the &lt;strong&gt;virtualenv&lt;/strong&gt; directory to Git didn’t
-make sense, as it contains system specific information.  Luckily, this issue was
-easily addressed by creating a file in the base directory called &lt;strong&gt;.gitignore&lt;/strong&gt; with the
-contents:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;virtualenv/
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;The format of &lt;a href="https://git-scm.com/docs/gitignore"&gt;.gitignore&lt;/a&gt; is pretty simple to understand.
-In my case, I only wanted to ignore the &lt;strong&gt;virtualenv&lt;/strong&gt; directory off the base project
-directory, so I just needed to add that directory to the .gitignore file.  Submitting the
-&lt;strong&gt;git status -s&lt;/strong&gt; command again, I then saw the output of:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;?? .gitignore
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;This showed me that Git is ignoring the entire &lt;strong&gt;virtualenv&lt;/strong&gt; directory, instead showing
-the &lt;strong&gt;.gitignore&lt;/strong&gt; file that I just created.  Since I have only done limited setup in the
-base project directory, having only the &lt;strong&gt;.gitignore&lt;/strong&gt; file showing up as untracked is what
-I expected. To be safe, I used the &lt;strong&gt;git add&lt;/strong&gt; and &lt;strong&gt;git commit&lt;/strong&gt; commands to save
-these changes as follows:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;git add .gitignore
-git commit -m "initial commit"
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;The directory was ready, time to focus on Pelican.&lt;/p&gt;
-&lt;h2 id="step-3-install-pelican"&gt;Step 3: Install Pelican&lt;a class="headerlink" href="#step-3-install-pelican" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Pelican itself is installed as a package using Python’s Pip program.  Based on information
-from &lt;a href="http://docs.getpelican.com/en/4.0.1/install.html#optional-packages"&gt;Pelican’s Installing page&lt;/a&gt;,
-both the &lt;strong&gt;markdown&lt;/strong&gt; and &lt;strong&gt;typogrify&lt;/strong&gt; package are useful, so I installed them as well.&lt;/p&gt;
-&lt;p&gt;The &lt;strong&gt;markdown&lt;/strong&gt; package allows for content authoring with Pelican using using Markdown.
-Using a simple text file, special annotations can be placed in the text that alter how it
-will look when rendered with a Markdown processor.  The full range of Markdown annotations
-and their effects are
-&lt;a href="https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet"&gt;shown here&lt;/a&gt;.  As this is
-one of the requirements I established in
-&lt;a href="https://jackdewinter.github.io/2019/08/18/static-websites-choosing-a-static-web-site-generator/#is-a-static-site-generator-the-right-choice-for-me"&gt;the previous page&lt;/a&gt;, this support was critical.&lt;/p&gt;
-&lt;p&gt;The &lt;a href="https://pypi.org/project/typogrify/"&gt;Typogrify package&lt;/a&gt; “cleans” up the text to make it
-look more professional.  It accomplishes this by wrapping certain blocks of text in HTML span
-tags to allow for CSS styling. In addition, it replaces certain sequences of characters with
-other sequences that add polish to the finished document.  While not required to get the site
-up and running, I figured it would be of use later.&lt;/p&gt;
-&lt;p&gt;To install these three packages, I submitted the command:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;pip install pelican==4.0.1 markdown==3.1.1 typogrify==2.0.7
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;This resulted in the installation of any dependent packages, is essence, going from the
-stock packages (displayed using &lt;strong&gt;pip list&lt;/strong&gt;) of:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;Package    Version
----------- -------
-pip        19.1.1
-setuptools 41.0.1
-wheel      0.33.4
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;to:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;Package         Version
---------------- -------
-blinker         1.4
-docutils        0.14
-feedgenerator   1.9
-Jinja2          2.10.1
-Markdown        3.1.1
-MarkupSafe      1.1.1
-pelican         4.0.1
-pip             19.1.1
-Pygments        2.4.2
-python-dateutil 2.8.0
-pytz            2019.1
-setuptools      41.0.1
-six             1.12.0
-smartypants     2.0.1
-typogrify       2.0.7
-Unidecode       1.0.23
-wheel           0.33.4
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;To make sure that I would be able to keep these libraries at their current versions in the
-future, I needed to take a snapshot and save it with the repository.  Thankfully, this is a scenario that the Pip contributors though of.  On the command line, I typed in:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;pip freeze &amp;gt; requirements.txt
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;This command produces a terse list of each package and it’s version, which I redirected into
-the file &lt;strong&gt;requirements.txt&lt;/strong&gt;.  The benefit to doing this is that, at any time, I can execute
-the following command to restore the packages and versions:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;pip install -r requirements.txt
-&lt;/pre&gt;&lt;/div&gt;
-&lt;h2 id="step-4-create-a-generic-web-site"&gt;Step 4: Create a Generic Web Site&lt;a class="headerlink" href="#step-4-create-a-generic-web-site" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Now that Pelican is installed and ready to go, I needed to enact the templating system of
-Pelican to form the basis of my website.  The authors of Pelican have kept this simple.
-All I needed to do is run the command:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;pelican-quickstart
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;During the installation, I was asked a number of questions:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&amp;gt; Where do you want to create your new website? [.] website
-&amp;gt; What will be the title of this website? Jack's Web Site
-&amp;gt; Who will be the author of this website? Jack De Winter
-&amp;gt; What will be the default language of this website? [English]
-&amp;gt; Do you want to specify a URL prefix? e.g., https://example.com   (Y/n) n
-&amp;gt; Do you want to enable article pagination? (Y/n)
-&amp;gt; How many articles per page do you want? [10]
-&amp;gt; What is your time zone? [Europe/Paris] America/Los Angeles
-&amp;gt; Do you want to generate a tasks.py/Makefile to automate generation and publishing? (Y/n) n
-Done. Your new project is available at %%%MY_DIRECTORY%%%\website
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;For a decent number of the questions, the defaults were sufficient.  The questions that I
-answered specifically were:&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;website directory&lt;/li&gt;
-&lt;li&gt;keep the website isolated in a subdirectory, for future use&lt;/li&gt;
-&lt;li&gt;title&lt;/li&gt;
-&lt;li&gt;something simple for now&lt;/li&gt;
-&lt;li&gt;author&lt;/li&gt;
-&lt;li&gt;my name here&lt;/li&gt;
-&lt;li&gt;url prefix&lt;/li&gt;
-&lt;li&gt;No, we can change this later&lt;/li&gt;
-&lt;li&gt;time zone&lt;/li&gt;
-&lt;li&gt;I didn’t know this, so I entered in something silly, and it gave me an URL to a web page
-    where I looked it up&lt;/li&gt;
-&lt;li&gt;generate&lt;/li&gt;
-&lt;li&gt;no, I will provide simple scripts for that&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;When this was completed, my base directory had a new directory &lt;strong&gt;website/&lt;/strong&gt; which
-contained 2 files and 2 directories.  The first file &lt;strong&gt;pelicanconf.py&lt;/strong&gt; had the settings that
-I entered using &lt;strong&gt;pelican-quickstart&lt;/strong&gt;.  The second file &lt;strong&gt;publishconf.py&lt;/strong&gt; has any
-remaining settings that Pelican will use when publishing.  If things change with the website,
-I just need to change the settings in these files, and the next time I publish, they will be
-in effect.&lt;/p&gt;
-&lt;p&gt;The 2 directories are the key here.   The &lt;strong&gt;content&lt;/strong&gt; directory was created to contain any
-files that are the source parts of the website.  During the publishing action (covered in a
-subsequent post), Pelican will translate that content into output and place it in the
-other directory that was created, &lt;strong&gt;output&lt;/strong&gt; directory.&lt;/p&gt;
-&lt;h2 id="step-5-committing-the-changes"&gt;Step 5: Committing the Changes&lt;a class="headerlink" href="#step-5-committing-the-changes" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;At this point, it was useful to use &lt;strong&gt;git add&lt;/strong&gt; and &lt;strong&gt;git commit&lt;/strong&gt; to commit what I did
-to the local Git repository, as there was useful progress.  Entering the
-&lt;strong&gt;git status -s&lt;/strong&gt; command, it reported that the only meaningful changes were that the
-&lt;strong&gt;website&lt;/strong&gt; directory and the &lt;strong&gt;requirements.txt&lt;/strong&gt; file were added.  As both of these objects
-are considered source and configuration, I added them as follows:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;git add requirements.txt
-git add website
-git commit -m "Base website"
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;If there was something that was added that was not part of source, configuration, or
-documentation for the website, I would have edited the &lt;strong&gt;.gitignore&lt;/strong&gt; file to include
-a pattern that cleanly removed those changes from Git’s preview.  When this comes up
-in future articles in this series, I will point out what I added and why.&lt;/p&gt;
-&lt;h2 id="what-was-accomplished"&gt;What Was Accomplished&lt;a class="headerlink" href="#what-was-accomplished" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Having decided that SSGs were the correct paradigm for my website, and Pelican the correct
-SSG for me to use, it was time to set it up.  I documented how I installed various
-components, as well as how I set up the base project directory for the website itself.
-Finally, I created a default website as a solid foundation for my purposes, and made
-sure that I committed the base project directory to Git for version control.&lt;/p&gt;
-&lt;p&gt;In my professional career, most of the time it is advantageous to build a foundation for
-your application, committing it to version control often.  Having provided that foundation
-in this article, I can now proceed with the actual building of the website.&lt;/p&gt;
-&lt;h2 id="whats-next"&gt;What’s Next?&lt;a class="headerlink" href="#whats-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Next, I will start with publishing a simple file to the website and make sure I check it
-online for any errors.  By providing realistic samples and getting experience with the
-publishing workflows, I will get invaluable information on using Pelican. This task will
-be covered in the next post &lt;a href="https://jackdewinter.github.io/2019/09/01/static-websites-posting-my-first-article/"&gt;Posting My First Article&lt;/a&gt;.&lt;/p&gt;</content><category term="Integrating Technology"></category><category term="static website generator"></category><category term="pelican website generator"></category><category term="python"></category><category term="virtualenv"></category></entry></feed>
+post &lt;a href="https://jackdewinter.github.io/2019/09/08/static-websites-getting-ready-for-publishing-themes-and-minutiae/"&gt;Getting Ready For Publishing - Themes and Minutiae&lt;/a&gt;.&lt;/p&gt;</content><category term="Integrating Technology"></category><category term="static website generator"></category><category term="pelican website generator"></category><category term="building pelican website"></category><category term="pelican website workflow"></category><category term="python"></category></entry></feed>
