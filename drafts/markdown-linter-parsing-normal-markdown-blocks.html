@@ -6,7 +6,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <meta name="author" content="Jack De Winter" />
 
-        <meta name="description" content="Introduction¶ issues in parsing the normal blocks
+        <meta name="description" content="Introduction¶ With the project requirements, the test framework, and the test strategy in place, it was time to start working on the most frequently used and easy-to-parse Markdown items. These Markdown blocks, referred to as Leaf Blocks in the GitHub Flavored Markdown (GFM) Specification, are the root of many Markdown …
 " />
         <meta property="og:type" content="article" />
         <meta name="twitter:card" content="summary">
@@ -15,12 +15,12 @@
 
 <meta property="og:title" content="Markdown Linter - Parsing Normal Markdown Blocks "/>
 <meta property="og:url" content="https://jackdewinter.github.io/drafts/markdown-linter-parsing-normal-markdown-blocks.html" />
-<meta property="og:description" content="Introduction¶ issues in parsing the normal blocks" />
+<meta property="og:description" content="Introduction¶ With the project requirements, the test framework, and the test strategy in place, it was time to start working on the most frequently used and easy-to-parse Markdown items. These Markdown blocks, referred to as Leaf Blocks in the GitHub Flavored Markdown (GFM) Specification, are the root of many Markdown …" />
 <meta property="og:site_name" content="Jack&#39;s Digital Workbench" />
 <meta property="og:article:author" content="Jack De Winter" />
 <meta property="og:article:published_time" content="2019-12-29T00:00:00-08:00" />
 <meta name="twitter:title" content="Markdown Linter - Parsing Normal Markdown Blocks ">
-<meta name="twitter:description" content="Introduction¶ issues in parsing the normal blocks">
+<meta name="twitter:description" content="Introduction¶ With the project requirements, the test framework, and the test strategy in place, it was time to start working on the most frequently used and easy-to-parse Markdown items. These Markdown blocks, referred to as Leaf Blocks in the GitHub Flavored Markdown (GFM) Specification, are the root of many Markdown …">
 
         <title>Markdown Linter - Parsing Normal Markdown Blocks  · Jack&#39;s Digital Workbench
 </title>
@@ -80,6 +80,20 @@
         <div class="toc">
 <ul>
 <li><a href="#introduction">Introduction</a></li>
+<li><a href="#moving-forward-with-implementation">Moving Forward With Implementation</a></li>
+<li><a href="#what-was-the-workflow">What Was the Workflow?</a></li>
+<li><a href="#how-did-things-progress">How Did Things Progress?</a><ul>
+<li><a href="#group-1-foundational-elements">Group 1: Foundational Elements</a><ul>
+<li><a href="#group-1-sidebar-tabs">Group 1 Sidebar: Tabs</a></li>
+</ul>
+</li>
+<li><a href="#group-2-headers">Group 2: Headers</a></li>
+<li><a href="#group-3-indented-and-fenced-code-blocks">Group 3: Indented and Fenced Code Blocks</a></li>
+<li><a href="#group-4-stopping-at-a-good-place">Group 4: Stopping At a Good Place</a></li>
+</ul>
+</li>
+<li><a href="#what-was-my-experience-so-far">What Was My Experience So Far?</a></li>
+<li><a href="#what-is-next">What is Next?</a></li>
 </ul>
 </div>
         </nav>
@@ -88,7 +102,283 @@
             
             
 <h2 id="introduction">Introduction<a class="headerlink" href="#introduction" title="Permanent link">¶</a></h2>
-<p>issues in parsing the normal blocks</p>
+<p>With the <a href="https://jackdewinter.github.io/2019/12/08/markdown-linter-collecting-requirements/">project requirements</a>,
+the <a href="https://jackdewinter.github.io/2019/12/16/markdown-linter-setting-up-parser-tests/">test framework</a>,
+and the <a href="https://jackdewinter.github.io/2019/12/22/markdown-linter-parser-testing-strategy/">test strategy</a> in place,
+it was time to start working on the most frequently used and easy-to-parse Markdown
+items.  These Markdown blocks, referred to as Leaf Blocks in the
+<a href="https://github.github.com/gfm/#leaf-blocks">GitHub Flavored Markdown (GFM) Specification</a>,
+are the root of many Markdown documents and have the virtue of being easy to parse.
+With small exceptions, each of the Leaf Blocks is self contained.  For the most part,
+those exceptions arise in how the Leaf Blocks interact with each other.
+In all cases, this interaction is small and does not require complicated logic to
+understand.</p>
+<p>The full record of the work detailed in this article is documented in the
+project’s GitHub repository in the commits that occurred between
+<a href="https://github.com/jackdewinter/pymarkdown/commit/4ad7ebd46d7651d20a8b470b4d287e49cebfff75">30 November 2019</a>
+and
+<a href="https://github.com/jackdewinter/pymarkdown/commit/7b6557f1f9d5d0c411f76c4fde6bca504e27c3e5">08 December 2019</a>.  This work includes creating the
+scenario tests for all of the Leaf Blocks as documented in the GFM specification
+and implementing the parsing to pass all of those tests except for the Link Reference
+Definitions, HTML Blocks, and Tables.</p>
+<p>While the documentation of what needed to be done (GFM Specification) and what was done
+(GitHub commits) is pretty straightforward, the “hows” and “whys” of what I implemented
+is worth talking about.  The process that I followed for the implementation of the Leaf
+Blocks did not uncover any development issues during implementation.  However, without
+giving too much away, the same process applied to other block types (to be talked about
+in future articles) did uncover issues that were not so easy to resolve.  As there were
+complications that arose with those feature implementations, I wanted to provide a
+consistent documentation of the process from the beginning, to provide a complete
+picture of how things progressed.   I firmly believe that it is always good to show the
+complete story of what happened, and not only one side of the story. So let’s go!</p>
+<h2 id="moving-forward-with-implementation">Moving Forward With Implementation<a class="headerlink" href="#moving-forward-with-implementation" title="Permanent link">¶</a></h2>
+<p>Even though the first commit for processing Markdown elements is on 30 November 2019, my
+work on implementing them started on 25 November 2019.  Based on the test framework and
+strategy documented in previous articles, the first thing to do was to write the
+scenario tests cases, even if most of those tests were initially disabled or skipped.
+This was easily done by annotating each test function with <code>@pytest.mark.skip</code>. Once
+I implemented the code to satisfy a given test, I removed that skip annotation for
+that specific test.  While I would made modifications on how I disabled tests later on,
+this was a good point for me to start off at.</p>
+<h2 id="what-was-the-workflow">What Was the Workflow?<a class="headerlink" href="#what-was-the-workflow" title="Permanent link">¶</a></h2>
+<p>From the outset, the basic implementation workflow was as follows:</p>
+<ol>
+<li>figure out the next section to work on</li>
+<li>figure out the next section-feature to implement</li>
+<li>enable the relevant tests for that section-feature</li>
+<li>add or change the code in <code>tokenized_markdown.py</code> to implement that feature</li>
+<li>execute all enabled tests, with special attention to the feature added in item 4.</li>
+<li>if there were any test errors; debug, fix and go back to <code>item 4.</code></li>
+<li>stage the changes in the project before</li>
+<li>if there are more features in the current section, go back to <code>item 2.</code></li>
+<li>verify each test case’s input and output against the specification</li>
+<li>if any verification errors are found; debug, fix and go back to <code>item 4.</code></li>
+<li>if there are any leaf block sections left to work on, go back to <code>item 1.</code></li>
+</ol>
+<p>It wasn’t really glamourous, but it worked well.  Looking closely at the list, it is
+easy for me to see why… I took an agile approach without really being aware of it.
+According to the Wikipedia article on
+<a href="https://en.wikipedia.org/wiki/Agile_software_development#Agile_software_development_practices">Agile Software Development</a>,
+there are a number of good practices that I was following.  Because I was doing testing
+as I went, the is a good argument to be made that I was practicing
+<a href="https://en.wikipedia.org/wiki/Agile_testing">Agile Testing</a> and
+<a href="https://en.wikipedia.org/wiki/Test-driven_development">Test Driven Development</a>.
+As the tests are also the acceptance criteria for this stage of the project,
+<a href="https://en.wikipedia.org/wiki/Acceptance_test-driven_development">Acceptance Test Driven Development</a>
+could also be tacked on to those two Agile practices.  Finally, as the workflow is
+iterative by it’s very nature, the workflow also qualifies as
+<a href="https://en.wikipedia.org/wiki/Iterative_and_incremental_development">Iterative and Incremental Development</a>.
+All in all, I see a number of solid agile patterns within the workflow.</p>
+<p>Agile aspirations aside, the real test of this workflow is that it works for me and
+works well.  I was able to stick to the process pretty easily. It very nicely
+compartmentalized my work into nice iterations that were easy for me to keep in my
+head. It was also simple enough that if I needed to refocus myself, I just had to
+figure out where I was in the workflow and where I was in the specification, and I
+was able to get back to work!  In addition, I feel that if I had performed this
+development as part of a team, the frequent commits and complete with enabled tests
+would enable me to share my progress with the rest of the team, and solicit their
+feedback in a quick and iterative manner.</p>
+<p>More importantly, at no point in the development practice did I feel that I bit off more
+than I could handle.  Of course there were times where I was wondering how long it was
+going to take me and how I would handle some features… I am only human!  But the agile
+nature of how the workflow is structured kept me grounded and focused on the feature
+that was in front of me.  I just reminded myself to keep that focus, and feature by
+feature, the foundations of the parser came together.</p>
+<p>In the end, this workflow wasn’t about being agile or taking easy to implement steps.
+It is about finding something that works well for the team… namely me.</p>
+<h2 id="how-did-things-progress">How Did Things Progress?<a class="headerlink" href="#how-did-things-progress" title="Permanent link">¶</a></h2>
+<p>The order in which things are tackled is important.  Doing the big
+stuff at the start of the project sometimes pays off, but it can often be demoralizing.
+Doing the small stuff first can lay some great foundations, but miss the larger target
+due to the smaller focus.  To accomplish this for the PyMarkdown project, I broke
+this part of the project down into 4 groups of Markdown elements.  Each group of
+Markdown elements that were handled added new information to the stream of tokens
+that were being generated by the parser, allowing for future examination.  It was
+very important to me to ensure that the token stream was kept working and moving
+forwards at all times.</p>
+<h3 id="group-1-foundational-elements">Group 1: Foundational Elements<a class="headerlink" href="#group-1-foundational-elements" title="Permanent link">¶</a></h3>
+<p>The first group that I worked on were the rudimentary elements of blank lines,
+paragraphs, and thematic breaks.  This was a good first
+group to work on, as these were all common Markdown elements that people use, and are
+foundational to the rest of the work.  As such, they were good confidence boosters for
+the tribulations that I expected that would occur later with the more complicated
+elements.</p>
+<p>The only real issue that I had with this first group was due to my lack of confidence
+about the Markdown specification itself.  From my days on the
+<a href="https://www.ietf.org/">Internet Engineering Task Force</a>,
+I am used to clear grammar specifications written in
+<a href="https://en.wikipedia.org/wiki/Backus%E2%80%93Naur_form">Backus-Naur form</a>.
+However, this specification has no such representation and is written mainly as a
+series of use cases and text to describe each use case.  It took me a while to see that
+what I perceived initially as a downfall was actually a bonus.  Instead of having to
+search for examples or to make them up myself, they were already provided.  Once I got
+used to that concept, my confidence increased and I started to implement each test more
+quickly than the last one.</p>
+<p>While it didn’t seem like much at the time, at this point the parser was capable of handling the following Markdown:</p>
+<div class="highlight"><pre><span></span><span class="n">This</span> <span class="k">is</span> <span class="n">captured</span> <span class="k">in</span> <span class="n">a</span> <span class="n">paragraph</span><span class="p">.</span>
+
+<span class="o">***</span>
+</pre></div>
+<h4 id="group-1-sidebar-tabs">Group 1 Sidebar: Tabs<a class="headerlink" href="#group-1-sidebar-tabs" title="Permanent link">¶</a></h4>
+<p>I started to tackle the GFM specification decision that any tab character is
+considered to be replaced with exactly 4 space characters.  For the most part, this had
+little bearing on the foundational elements, but the subject of
+<a href="https://www.bing.com/search?q=tabs+vs+spaces">tabs versus spaces</a> has ignited
+<a href="https://www.reddit.com/r/programming/comments/3xbyh6/the_software_development_holy_wars_part_i_the/">programming holy wars</a>
+that last to this day.  I thought it was useful and prudent to deal with it
+and get it out of the way early.</p>
+<p>Smartly, Markdown avoids these arguments with a strong statement that 1 tab character
+equals 4 space characters, and a decent argument to reinforce that the decision is the
+right one. With the exception of the indented code block, every Markdown element is
+only recognized if it starts with less than 4 spaces.  An indented code block line is
+only recognized if it starts with 4 spaces.  Therefore, a shortcut for any indented
+code block is to start the line with 1 tab character, due to it’s 1:4 mapping.  To be
+honest, I feel this is brilliant in it’s simplicity.</p>
+<h3 id="group-2-headers">Group 2: Headers<a class="headerlink" href="#group-2-headers" title="Permanent link">¶</a></h3>
+<p>The next group that I tackled were the header markers, referred to in the specification
+as the <code>setext</code> and <code>atx</code> elements.  Weird names though they are, they are the up to 6
+<code>#</code> characters at the start of the line, or the <code>-</code> or <code>=</code> characters underlining
+text from a previous paragraph.  While the <code>atx</code> elements (the <code>#</code> characters) was
+pretty straight forward, the ‘underlining’ aspect of the <code>setext</code> element made it
+interesting.  As that element essentially makes the last paragraph a heading, I had to
+search backwards in the list of generated tokens for the first time.</p>
+<p>It was also at this point that I decided to perform some refactoring to better
+handle string processing.  The simple truth about any parser is that it requires
+gratuitous amounts of “string fiddling” <sup id="fnref:stringFiddle"><a class="footnote-ref" href="#fn:stringFiddle">1</a></sup>.  Most efficient parsers work
+aggressively to parse their documents in a way that minimizes the number of actual
+strings created while parsing.  A good example of efficient “string fiddling” can be
+seen in the following example of parsing the sentence <code>I have a black dog</code>.  When
+parsing out the word <code>black</code>, the most optimal parsers will find the index of the <code>b</code>
+in <code>black</code>, then find the space character after the <code>k</code>, using the language’s
+<code>substring</code> function  and those two indexes to create a single string with <code>black</code> in
+it.  Less optimal parsers will find the <code>b</code>
+append it to the end of an empty string (creating a new string with <code>b</code>), then find
+the <code>l</code> character and appended it, etc.  This can easily cause 6 strings to be created
+during the parsing of the word <code>black</code>, when only 1 is needed.  As some of the
+Markdown documents that the parser will handle are large, it is important to remember
+optimizations like this as features are added.</p>
+<p>Keeping this in mind, I started looking for “string fiddling” patterns that looked ripe
+for refactoring.  The most obvious one was the
+<code>determine_whitespace_length</code> function that took care of any tabs in the input data.
+While I would rip this out later, opting instead to do a simple search-and-replace for
+tabs at the start of parsing, the <code>determine_whitespace_length</code> function kept things
+manageable for tabs characters.  There were also the <code>extract_whitespace*</code> functions for
+extracting whitespace and the <code>collect_while_character</code> function for collecting data
+for a string while the input was a given character.  Taking a couple of peeks ahead in
+the specification, it was easy to see that moving the code into those functions was going to pay off.</p>
+<p>When it comes down to it, there were no real issues that I experienced with the
+headers.  My confidence was still building from the foundational group above, but there
+was nothing weird or challenging that I did not handle with a bit of serious thought
+and planning.</p>
+<p>At this point, the parser was capable of handling the following Markdown elements:</p>
+<div class="highlight"><pre><span></span><span class="o">#</span> <span class="n">My</span> <span class="n">Markdown</span>
+
+<span class="n">This</span> <span class="k">is</span> <span class="n">captured</span> <span class="k">in</span> <span class="n">a</span> <span class="n">paragraph</span><span class="p">.</span>
+
+<span class="n">But</span> <span class="n">this</span> <span class="k">is</span> <span class="n">also</span> <span class="n">a</span> <span class="n">header</span>
+<span class="c1">-------------------</span>
+
+<span class="o">***</span>
+</pre></div>
+<h3 id="group-3-indented-and-fenced-code-blocks">Group 3: Indented and Fenced Code Blocks<a class="headerlink" href="#group-3-indented-and-fenced-code-blocks" title="Permanent link">¶</a></h3>
+<p>Marching right along, indented and fenced code blocks were next on the list.  Both are
+used to denote sections of text that are to be represented literally, but one is easier
+and one is more flexible.  The indented code blocks require 4 space characters (or a
+tab character) at the start of the line to denote the block, and text is presented
+plainly.  However, the fenced code blocks start and end with an equal number of <code>`</code>
+or <code>~</code> characters and include provisions for naming the type of text used within the
+code block.  This naming allows processors to specify a given style to apply to the
+code block, allowing processors and style sheets to ‘colorize’ the text according to
+the the specified type name.</p>
+<p>This grouping was pretty easy to process, adding the <code>extract_until_whitespace</code> function
+to the growing list of helper functions.  The interesting part to the code blocks was
+that I needed to add extra processing of normal text to handle the text within the code
+blocks.  Prior to these code blocks, any text that did not fall into one of the other
+categories was simply wrapped in a paragraph.  Both of these blocks have specific end
+conditions, and until those end conditions are met, the collection continues.  This
+meant adding extra code at the start of line parsing to determine if it was within one
+of the code blocks.  If the end condition was met, then the end block token was emitted,
+and if not, a text block would be emitted without further parsing.</p>
+<p>It was at this point that I started seeing the intertwining nature of some of the use
+cases.  An indented code block cannot interrupt a paragraph, but a fenced code block
+can.  So when looking for the indented code block, I had to explicitly disallow one
+from starting if the block currently being process was a paragraph.  While this was
+only a small case, it became very obvious to me from a quick scan over the specification
+that this type of pattern was going to repeat more than once.  As such, I started
+moving the start and stop logic into their own functions, whether they required it or
+not.  This improved the readability, and enabled me to get a better view on what was
+being handled and where.</p>
+<p>At this point, the parser was capable of handling the following Markdown elements:</p>
+<div class="highlight"><pre><span></span><span class="o">#</span> <span class="n">My</span> <span class="n">Markdown</span>
+
+<span class="n">This</span> <span class="k">is</span> <span class="n">captured</span> <span class="k">in</span> <span class="n">a</span> <span class="n">paragraph</span><span class="p">.</span>
+
+<span class="o">```</span><span class="n">Python</span>
+    <span class="n">rt</span> <span class="o">=</span> <span class="ss">"1:"</span> <span class="o">+</span> <span class="n">str</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="o">```</span>
+
+<span class="n">But</span> <span class="n">this</span> <span class="k">is</span> <span class="n">also</span> <span class="n">a</span> <span class="n">header</span>
+<span class="c1">-------------------</span>
+
+    <span class="n">code</span> <span class="n">block</span>
+
+<span class="o">***</span>
+</pre></div>
+<p>Please note that the fenced code block specifies <code>python</code> as it’s type, allowing the
+colorization of the text with the assumption that the code block is Python code.</p>
+<h3 id="group-4-stopping-at-a-good-place">Group 4: Stopping At a Good Place<a class="headerlink" href="#group-4-stopping-at-a-good-place" title="Permanent link">¶</a></h3>
+<p>Sometimes it makes sense to march forward without much attention to the surroundings,
+and sometimes it makes sense to stop at a good place along the way.  In taking a quick
+look at HTML blocks, I figured they were going to be tricky, and I had the same
+determination with the table element.  Taking a look at the link reference definitions,
+I noticed that they required inline expansion of text within the blocks, something that
+I wasn’t even remotely close to yet.  These three leaf blocks were in the final group:
+the To Be Done Later group.</p>
+<p>To ensure that I had a good place to come back to when I was ready for the each of these
+blocks, I made sure to go through and implement, verify, and then disable each
+test for every leaf block.</p>
+<p>Depending on the leaf block, I handled the disabling of the tests differently. To
+properly deal with the link reference definitions, I needed the inline processing
+capabilities that I knew were many weeks away.  As such, I kept those tests disabled
+in the previous documented way of using the <code>@pytest.mark.skip</code> annotation.  This was
+a big shout out to myself that these were going to need to be completed after almost
+everything else.</p>
+<p>In the case of any other of the leaf node tests, I captured the
+current tokens emitted for that case and placed them in the corresponding test.  While
+it might seem weird, my belief was that by testing each test case this way, I would
+increase overall coverage and possibly hit edge cases not currently documented in an
+use case.  It also meant that once I started implementing the HTML blocks and table
+blocks, those tests would just start failing in predictable fashion.</p>
+<h2 id="what-was-my-experience-so-far">What Was My Experience So Far?<a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link">¶</a></h2>
+<p>It is always easier to look back and see what worked and what did not work, than to
+observe it at the time.  With only a few issues, I personally felt like I dodged a
+lot of pain due to the specification and planning.  While BNF grammars are easy to
+implement, the general rule is to “be strict in what you generate and lenient in what
+you accept”.  As such, coming up with “valid” parse cases is a task that takes a long
+time to complete.  By having the acceptable test cases as part of the core
+specification, the time that I would normally spend in the development and testing phase
+was greatly reduced.  True, it took me a while to get used to it, but when I did, it
+just worked and worked well.</p>
+<p>One of the practices that I engaged in during the development of the parser is to
+liberally spread around <code>print</code> statements as I went.  As I was adding these statements,
+my dominant thought was to collect enough information to determine which pieces of
+information were the most relevant for log messages to be added later.  However,
+as I proceeded, that information also had the additional benefits of being immensely
+helpful to debug any parsing issues, and indispensable in the verification of the code
+itself.  While I know I need to remove those statements or convert them before the
+project is completed, their presence is indeed beneficial.</p>
+<p>All in all, I think I had a great start to an interesting project and learned a bit
+in the process… and learning is always good!</p>
+<h2 id="what-is-next">What is Next?<a class="headerlink" href="#what-is-next" title="Permanent link">¶</a></h2>
+<p>Next up on the list is adding block quote support to the parser.  Stay tuned!</p>
+<div class="footnote">
+<hr/>
+<ol>
+<li id="fn:stringFiddle">
+<p>I remember this term being used all the way back to my university days.  The closest I have been able to come to a definition is the Oxford dictionary’s definition: touch or fidget with something in a restless or nervous way.  Perhaps this is alluding to amount of work to get most string operations “just right”? <a class="footnote-backref" href="#fnref:stringFiddle" title="Jump back to footnote 1 in the text">↩</a></p>
+</li>
+</ol>
+</div>
 
 
              
@@ -105,9 +395,11 @@
             <hr/>
         </div>
         <section id="article-sidebar" class="span2">
+    <h4>Reading Time</h4>
+    <p>~13 min read</p>
             <h4>Published</h4>
             <time itemprop="dateCreated" datetime="2019-12-29T00:00:00-08:00">Dec 29, 2019</time>
-        <h4><built-in method index of str object at 0x04EE5228></h4>
+        <h4><built-in method index of str object at 0x055C6F48></h4>
     <ul class="multi-parts-list">
     </ul>
             <h4>Category</h4>
