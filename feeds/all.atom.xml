@@ -1016,7 +1016,293 @@ publish weekly posts on Mondays instead of Sundays, and see how that goes.&lt;/p
 &lt;p&gt;Safe travels …&lt;/p&gt;</summary><content type="html">&lt;p&gt;I just wanted to take a quick minute and wish everyone a  happy winter holiday season
 as 2019 winds to a close.  When I resume posts in the new year, I will be trying to
 publish weekly posts on Mondays instead of Sundays, and see how that goes.&lt;/p&gt;
-&lt;p&gt;Safe travels, and well wishes.&lt;/p&gt;</content><category term="Software Quality"></category></entry><entry><title>Markdown Linter - Parser Testing Strategy</title><link href="https://jackdewinter.github.io/2019/12/22/markdown-linter-parser-testing-strategy/" rel="alternate"></link><published>2019-12-22T00:00:00-08:00</published><updated>2019-12-22T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2019-12-22:/2019/12/22/markdown-linter-parser-testing-strategy/</id><summary type="html">
+&lt;p&gt;Safe travels, and well wishes.&lt;/p&gt;</content><category term="Software Quality"></category></entry><entry><title>Markdown Linter - Parsing Normal Markdown Blocks</title><link href="https://jackdewinter.github.io/2019/12/29/markdown-linter-parsing-normal-markdown-blocks/" rel="alternate"></link><published>2019-12-29T00:00:00-08:00</published><updated>2019-12-29T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2019-12-29:/2019/12/29/markdown-linter-parsing-normal-markdown-blocks/</id><summary type="html">
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;With the &lt;a href="https://jackdewinter.github.io/2019/12/08/markdown-linter-collecting-requirements/"&gt;project requirements&lt;/a&gt;,
+the &lt;a href="https://jackdewinter.github.io/2019/12/16/markdown-linter-setting-up-parser-tests/"&gt;test framework&lt;/a&gt;,
+and the &lt;a href="https://jackdewinter.github.io/2019/12/22/markdown-linter-parser-testing-strategy/"&gt;test strategy&lt;/a&gt; in place,
+it was time to start working on the most frequently used and easy-to-parse Markdown
+items.  These Markdown blocks, referred to as Leaf Blocks in the
+&lt;a href="https://github.github.com/gfm/#leaf-blocks"&gt;GitHub Flavored Markdown (GFM) Specification&lt;/a&gt;,
+are the root of many Markdown …&lt;/p&gt;</summary><content type="html">
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;With the &lt;a href="https://jackdewinter.github.io/2019/12/08/markdown-linter-collecting-requirements/"&gt;project requirements&lt;/a&gt;,
+the &lt;a href="https://jackdewinter.github.io/2019/12/16/markdown-linter-setting-up-parser-tests/"&gt;test framework&lt;/a&gt;,
+and the &lt;a href="https://jackdewinter.github.io/2019/12/22/markdown-linter-parser-testing-strategy/"&gt;test strategy&lt;/a&gt; in place,
+it was time to start working on the most frequently used and easy-to-parse Markdown
+items.  These Markdown blocks, referred to as Leaf Blocks in the
+&lt;a href="https://github.github.com/gfm/#leaf-blocks"&gt;GitHub Flavored Markdown (GFM) Specification&lt;/a&gt;,
+are the root of many Markdown documents and have the virtue of being easy to parse.
+With small exceptions, each of the Leaf Blocks is self contained.  For the most part,
+those exceptions arise in how the Leaf Blocks interact with each other.
+In all cases, this interaction is small and does not require complicated logic to
+understand.&lt;/p&gt;
+&lt;p&gt;The full record of the work detailed in this article is documented in the
+project’s GitHub repository in the commits that occurred between
+&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/4ad7ebd46d7651d20a8b470b4d287e49cebfff75"&gt;30 November 2019&lt;/a&gt;
+and
+&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/7b6557f1f9d5d0c411f76c4fde6bca504e27c3e5"&gt;08 December 2019&lt;/a&gt;.  This work includes creating the
+scenario tests for all of the Leaf Blocks as documented in the GFM specification
+and implementing the parsing to pass all of those tests except for the Link Reference
+Definitions, HTML Blocks, and Tables.&lt;/p&gt;
+&lt;p&gt;While the documentation of what needed to be done (GFM Specification) and what was done
+(GitHub commits) is pretty straightforward, the “hows” and “whys” of what I implemented
+is worth talking about.  The process that I followed for the implementation of the Leaf
+Blocks did not uncover any development issues during implementation.  However, without
+giving too much away, the same process applied to other block types (to be talked about
+in future articles) did uncover issues that were not so easy to resolve.  As there were
+complications that arose with those feature implementations, I wanted to provide a
+consistent documentation of the process from the beginning, to provide a complete
+picture of how things progressed.   I firmly believe that it is always good to show the
+complete story of what happened, and not only one side of the story. So let’s go!&lt;/p&gt;
+&lt;h2 id="moving-forward-with-implementation"&gt;Moving Forward With Implementation&lt;a class="headerlink" href="#moving-forward-with-implementation" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Even though the first commit for processing Markdown elements is on 30 November 2019, my
+work on implementing them started on 25 November 2019.  Based on the test framework and
+strategy documented in previous articles, the first thing to do was to write the
+scenario tests cases, even if most of those tests were initially disabled or skipped.
+This was easily done by annotating each test function with &lt;code&gt;@pytest.mark.skip&lt;/code&gt;. Once
+I implemented the code to satisfy a given test, I removed that skip annotation for
+that specific test.  While I would made modifications on how I disabled tests later on,
+this was a good point for me to start off at.&lt;/p&gt;
+&lt;h2 id="what-was-the-workflow"&gt;What Was the Workflow?&lt;a class="headerlink" href="#what-was-the-workflow" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;From the outset, the basic implementation workflow was as follows:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;figure out the next section to work on&lt;/li&gt;
+&lt;li&gt;figure out the next section-feature to implement&lt;/li&gt;
+&lt;li&gt;enable the relevant tests for that section-feature&lt;/li&gt;
+&lt;li&gt;add or change the code in &lt;code&gt;tokenized_markdown.py&lt;/code&gt; to implement that feature&lt;/li&gt;
+&lt;li&gt;execute all enabled tests, with special attention to the feature added in item 4.&lt;/li&gt;
+&lt;li&gt;if there were any test errors; debug, fix and go back to &lt;code&gt;item 4.&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;stage the changes in the project before&lt;/li&gt;
+&lt;li&gt;if there are more features in the current section, go back to &lt;code&gt;item 2.&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;verify each test case’s input and output against the specification&lt;/li&gt;
+&lt;li&gt;if any verification errors are found; debug, fix and go back to &lt;code&gt;item 4.&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;if there are any leaf block sections left to work on, go back to &lt;code&gt;item 1.&lt;/code&gt;&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;It wasn’t really glamourous, but it worked well.  Looking closely at the list, it is
+easy for me to see why… I took an agile approach without really being aware of it.
+According to the Wikipedia article on
+&lt;a href="https://en.wikipedia.org/wiki/Agile_software_development#Agile_software_development_practices"&gt;Agile Software Development&lt;/a&gt;,
+there are a number of good practices that I was following.  Because I was doing testing
+as I went, the is a good argument to be made that I was practicing
+&lt;a href="https://en.wikipedia.org/wiki/Agile_testing"&gt;Agile Testing&lt;/a&gt; and
+&lt;a href="https://en.wikipedia.org/wiki/Test-driven_development"&gt;Test Driven Development&lt;/a&gt;.
+As the tests are also the acceptance criteria for this stage of the project,
+&lt;a href="https://en.wikipedia.org/wiki/Acceptance_test-driven_development"&gt;Acceptance Test Driven Development&lt;/a&gt;
+could also be tacked on to those two Agile practices.  Finally, as the workflow is
+iterative by it’s very nature, the workflow also qualifies as
+&lt;a href="https://en.wikipedia.org/wiki/Iterative_and_incremental_development"&gt;Iterative and Incremental Development&lt;/a&gt;.
+All in all, I see a number of solid agile patterns within the workflow.&lt;/p&gt;
+&lt;p&gt;Agile aspirations aside, the real test of this workflow is that it works for me and
+works well.  I was able to stick to the process pretty easily. It very nicely
+compartmentalized my work into nice iterations that were easy for me to keep in my
+head. It was also simple enough that if I needed to refocus myself, I just had to
+figure out where I was in the workflow and where I was in the specification, and I
+was able to get back to work!  In addition, I feel that if I had performed this
+development as part of a team, the frequent commits and complete with enabled tests
+would enable me to share my progress with the rest of the team, and solicit their
+feedback in a quick and iterative manner.&lt;/p&gt;
+&lt;p&gt;More importantly, at no point in the development practice did I feel that I bit off more
+than I could handle.  Of course there were times where I was wondering how long it was
+going to take me and how I would handle some features… I am only human!  But the agile
+nature of how the workflow is structured kept me grounded and focused on the feature
+that was in front of me.  I just reminded myself to keep that focus, and feature by
+feature, the foundations of the parser came together.&lt;/p&gt;
+&lt;p&gt;In the end, this workflow wasn’t about being agile or taking easy to implement steps.
+It is about finding something that works well for the team… namely me.&lt;/p&gt;
+&lt;h2 id="how-did-things-progress"&gt;How Did Things Progress?&lt;a class="headerlink" href="#how-did-things-progress" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;The order in which things are tackled is important.  Doing the big
+stuff at the start of the project sometimes pays off, but it can often be demoralizing.
+Doing the small stuff first can lay some great foundations, but miss the larger target
+due to the smaller focus.  To accomplish this for the PyMarkdown project, I broke
+this part of the project down into 4 groups of Markdown elements.  Each group of
+Markdown elements that were handled added new information to the stream of tokens
+that were being generated by the parser, allowing for future examination.  It was
+very important to me to ensure that the token stream was kept working and moving
+forwards at all times.&lt;/p&gt;
+&lt;h3 id="group-1-foundational-elements"&gt;Group 1: Foundational Elements&lt;a class="headerlink" href="#group-1-foundational-elements" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;The first group that I worked on were the rudimentary elements of blank lines,
+paragraphs, and thematic breaks.  This was a good first
+group to work on, as these were all common Markdown elements that people use, and are
+foundational to the rest of the work.  As such, they were good confidence boosters for
+the tribulations that I expected that would occur later with the more complicated
+elements.&lt;/p&gt;
+&lt;p&gt;The only real issue that I had with this first group was due to my lack of confidence
+about the Markdown specification itself.  From my days on the
+&lt;a href="https://www.ietf.org/"&gt;Internet Engineering Task Force&lt;/a&gt;,
+I am used to clear grammar specifications written in
+&lt;a href="https://en.wikipedia.org/wiki/Backus%E2%80%93Naur_form"&gt;Backus-Naur form&lt;/a&gt;.
+However, this specification has no such representation and is written mainly as a
+series of use cases and text to describe each use case.  It took me a while to see that
+what I perceived initially as a downfall was actually a bonus.  Instead of having to
+search for examples or to make them up myself, they were already provided.  Once I got
+used to that concept, my confidence increased and I started to implement each test more
+quickly than the last one.&lt;/p&gt;
+&lt;p&gt;While it didn’t seem like much at the time, at this point the parser was capable of handling the following Markdown:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;This&lt;/span&gt; &lt;span class="k"&gt;is&lt;/span&gt; &lt;span class="n"&gt;captured&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt; &lt;span class="n"&gt;a&lt;/span&gt; &lt;span class="n"&gt;paragraph&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;
+
+&lt;span class="o"&gt;***&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;h4 id="group-1-sidebar-tabs"&gt;Group 1 Sidebar: Tabs&lt;a class="headerlink" href="#group-1-sidebar-tabs" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h4&gt;
+&lt;p&gt;I started to tackle the GFM specification decision that any tab character is
+considered to be replaced with exactly 4 space characters.  For the most part, this had
+little bearing on the foundational elements, but the subject of
+&lt;a href="https://www.bing.com/search?q=tabs+vs+spaces"&gt;tabs versus spaces&lt;/a&gt; has ignited
+&lt;a href="https://www.reddit.com/r/programming/comments/3xbyh6/the_software_development_holy_wars_part_i_the/"&gt;programming holy wars&lt;/a&gt;
+that last to this day.  I thought it was useful and prudent to deal with it
+and get it out of the way early.&lt;/p&gt;
+&lt;p&gt;Smartly, Markdown avoids these arguments with a strong statement that 1 tab character
+equals 4 space characters, and a decent argument to reinforce that the decision is the
+right one. With the exception of the indented code block, every Markdown element is
+only recognized if it starts with less than 4 spaces.  An indented code block line is
+only recognized if it starts with 4 spaces.  Therefore, a shortcut for any indented
+code block is to start the line with 1 tab character, due to it’s 1:4 mapping.  To be
+honest, I feel this is brilliant in it’s simplicity.&lt;/p&gt;
+&lt;h3 id="group-2-headers"&gt;Group 2: Headers&lt;a class="headerlink" href="#group-2-headers" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;The next group that I tackled were the header markers, referred to in the specification
+as the &lt;code&gt;setext&lt;/code&gt; and &lt;code&gt;atx&lt;/code&gt; elements.  Weird names though they are, they are the up to 6
+&lt;code&gt;#&lt;/code&gt; characters at the start of the line, or the &lt;code&gt;-&lt;/code&gt; or &lt;code&gt;=&lt;/code&gt; characters underlining
+text from a previous paragraph.  While the &lt;code&gt;atx&lt;/code&gt; elements (the &lt;code&gt;#&lt;/code&gt; characters) was
+pretty straight forward, the ‘underlining’ aspect of the &lt;code&gt;setext&lt;/code&gt; element made it
+interesting.  As that element essentially makes the last paragraph a heading, I had to
+search backwards in the list of generated tokens for the first time.&lt;/p&gt;
+&lt;p&gt;It was also at this point that I decided to perform some refactoring to better
+handle string processing.  The simple truth about any parser is that it requires
+gratuitous amounts of “string fiddling” &lt;sup id="fnref:stringFiddle"&gt;&lt;a class="footnote-ref" href="#fn:stringFiddle"&gt;1&lt;/a&gt;&lt;/sup&gt;.  Most efficient parsers work
+aggressively to parse their documents in a way that minimizes the number of actual
+strings created while parsing.  A good example of efficient “string fiddling” can be
+seen in the following example of parsing the sentence &lt;code&gt;I have a black dog&lt;/code&gt;.  When
+parsing out the word &lt;code&gt;black&lt;/code&gt;, the most optimal parsers will find the index of the &lt;code&gt;b&lt;/code&gt;
+in &lt;code&gt;black&lt;/code&gt;, then find the space character after the &lt;code&gt;k&lt;/code&gt;, using the language’s
+&lt;code&gt;substring&lt;/code&gt; function  and those two indexes to create a single string with &lt;code&gt;black&lt;/code&gt; in
+it.  Less optimal parsers will find the &lt;code&gt;b&lt;/code&gt;
+append it to the end of an empty string (creating a new string with &lt;code&gt;b&lt;/code&gt;), then find
+the &lt;code&gt;l&lt;/code&gt; character and appended it, etc.  This can easily cause 6 strings to be created
+during the parsing of the word &lt;code&gt;black&lt;/code&gt;, when only 1 is needed.  As some of the
+Markdown documents that the parser will handle are large, it is important to remember
+optimizations like this as features are added.&lt;/p&gt;
+&lt;p&gt;Keeping this in mind, I started looking for “string fiddling” patterns that looked ripe
+for refactoring.  The most obvious one was the
+&lt;code&gt;determine_whitespace_length&lt;/code&gt; function that took care of any tabs in the input data.
+While I would rip this out later, opting instead to do a simple search-and-replace for
+tabs at the start of parsing, the &lt;code&gt;determine_whitespace_length&lt;/code&gt; function kept things
+manageable for tabs characters.  There were also the &lt;code&gt;extract_whitespace*&lt;/code&gt; functions for
+extracting whitespace and the &lt;code&gt;collect_while_character&lt;/code&gt; function for collecting data
+for a string while the input was a given character.  Taking a couple of peeks ahead in
+the specification, it was easy to see that moving the code into those functions was going to pay off.&lt;/p&gt;
+&lt;p&gt;When it comes down to it, there were no real issues that I experienced with the
+headers.  My confidence was still building from the foundational group above, but there
+was nothing weird or challenging that I did not handle with a bit of serious thought
+and planning.&lt;/p&gt;
+&lt;p&gt;At this point, the parser was capable of handling the following Markdown elements:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;#&lt;/span&gt; &lt;span class="n"&gt;My&lt;/span&gt; &lt;span class="n"&gt;Markdown&lt;/span&gt;
+
+&lt;span class="n"&gt;This&lt;/span&gt; &lt;span class="k"&gt;is&lt;/span&gt; &lt;span class="n"&gt;captured&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt; &lt;span class="n"&gt;a&lt;/span&gt; &lt;span class="n"&gt;paragraph&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;
+
+&lt;span class="n"&gt;But&lt;/span&gt; &lt;span class="n"&gt;this&lt;/span&gt; &lt;span class="k"&gt;is&lt;/span&gt; &lt;span class="n"&gt;also&lt;/span&gt; &lt;span class="n"&gt;a&lt;/span&gt; &lt;span class="n"&gt;header&lt;/span&gt;
+&lt;span class="c1"&gt;-------------------&lt;/span&gt;
+
+&lt;span class="o"&gt;***&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;h3 id="group-3-indented-and-fenced-code-blocks"&gt;Group 3: Indented and Fenced Code Blocks&lt;a class="headerlink" href="#group-3-indented-and-fenced-code-blocks" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Marching right along, indented and fenced code blocks were next on the list.  Both are
+used to denote sections of text that are to be represented literally, but one is easier
+and one is more flexible.  The indented code blocks require 4 space characters (or a
+tab character) at the start of the line to denote the block, and text is presented
+plainly.  However, the fenced code blocks start and end with an equal number of &lt;code&gt;`&lt;/code&gt;
+or &lt;code&gt;~&lt;/code&gt; characters and include provisions for naming the type of text used within the
+code block.  This naming allows processors to specify a given style to apply to the
+code block, allowing processors and style sheets to ‘colorize’ the text according to
+the the specified type name.&lt;/p&gt;
+&lt;p&gt;This grouping was pretty easy to process, adding the &lt;code&gt;extract_until_whitespace&lt;/code&gt; function
+to the growing list of helper functions.  The interesting part to the code blocks was
+that I needed to add extra processing of normal text to handle the text within the code
+blocks.  Prior to these code blocks, any text that did not fall into one of the other
+categories was simply wrapped in a paragraph.  Both of these blocks have specific end
+conditions, and until those end conditions are met, the collection continues.  This
+meant adding extra code at the start of line parsing to determine if it was within one
+of the code blocks.  If the end condition was met, then the end block token was emitted,
+and if not, a text block would be emitted without further parsing.&lt;/p&gt;
+&lt;p&gt;It was at this point that I started seeing the intertwining nature of some of the use
+cases.  An indented code block cannot interrupt a paragraph, but a fenced code block
+can.  So when looking for the indented code block, I had to explicitly disallow one
+from starting if the block currently being process was a paragraph.  While this was
+only a small case, it became very obvious to me from a quick scan over the specification
+that this type of pattern was going to repeat more than once.  As such, I started
+moving the start and stop logic into their own functions, whether they required it or
+not.  This improved the readability, and enabled me to get a better view on what was
+being handled and where.&lt;/p&gt;
+&lt;p&gt;At this point, the parser was capable of handling the following Markdown elements:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;#&lt;/span&gt; &lt;span class="n"&gt;My&lt;/span&gt; &lt;span class="n"&gt;Markdown&lt;/span&gt;
+
+&lt;span class="n"&gt;This&lt;/span&gt; &lt;span class="k"&gt;is&lt;/span&gt; &lt;span class="n"&gt;captured&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt; &lt;span class="n"&gt;a&lt;/span&gt; &lt;span class="n"&gt;paragraph&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;
+
+&lt;span class="o"&gt;```&lt;/span&gt;&lt;span class="n"&gt;Python&lt;/span&gt;
+    &lt;span class="n"&gt;rt&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="ss"&gt;"1:"&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;str&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="o"&gt;```&lt;/span&gt;
+
+&lt;span class="n"&gt;But&lt;/span&gt; &lt;span class="n"&gt;this&lt;/span&gt; &lt;span class="k"&gt;is&lt;/span&gt; &lt;span class="n"&gt;also&lt;/span&gt; &lt;span class="n"&gt;a&lt;/span&gt; &lt;span class="n"&gt;header&lt;/span&gt;
+&lt;span class="c1"&gt;-------------------&lt;/span&gt;
+
+    &lt;span class="n"&gt;code&lt;/span&gt; &lt;span class="n"&gt;block&lt;/span&gt;
+
+&lt;span class="o"&gt;***&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Please note that the fenced code block specifies &lt;code&gt;python&lt;/code&gt; as it’s type, allowing the
+colorization of the text with the assumption that the code block is Python code.&lt;/p&gt;
+&lt;h3 id="group-4-stopping-at-a-good-place"&gt;Group 4: Stopping At a Good Place&lt;a class="headerlink" href="#group-4-stopping-at-a-good-place" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Sometimes it makes sense to march forward without much attention to the surroundings,
+and sometimes it makes sense to stop at a good place along the way.  In taking a quick
+look at HTML blocks, I figured they were going to be tricky, and I had the same
+determination with the table element.  Taking a look at the link reference definitions,
+I noticed that they required inline expansion of text within the blocks, something that
+I wasn’t even remotely close to yet.  These three leaf blocks were in the final group:
+the To Be Done Later group.&lt;/p&gt;
+&lt;p&gt;To ensure that I had a good place to come back to when I was ready for the each of these
+blocks, I made sure to go through and implement, verify, and then disable each
+test for every leaf block.&lt;/p&gt;
+&lt;p&gt;Depending on the leaf block, I handled the disabling of the tests differently. To
+properly deal with the link reference definitions, I needed the inline processing
+capabilities that I knew were many weeks away.  As such, I kept those tests disabled
+in the previous documented way of using the &lt;code&gt;@pytest.mark.skip&lt;/code&gt; annotation.  This was
+a big shout out to myself that these were going to need to be completed after almost
+everything else.&lt;/p&gt;
+&lt;p&gt;In the case of any other of the leaf node tests, I captured the
+current tokens emitted for that case and placed them in the corresponding test.  While
+it might seem weird, my belief was that by testing each test case this way, I would
+increase overall coverage and possibly hit edge cases not currently documented in an
+use case.  It also meant that once I started implementing the HTML blocks and table
+blocks, those tests would just start failing in predictable fashion.&lt;/p&gt;
+&lt;h2 id="what-was-my-experience-so-far"&gt;What Was My Experience So Far?&lt;a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;It is always easier to look back and see what worked and what did not work, than to
+observe it at the time.  With only a few issues, I personally felt like I dodged a
+lot of pain due to the specification and planning.  While BNF grammars are easy to
+implement, the general rule is to “be strict in what you generate and lenient in what
+you accept”.  As such, coming up with “valid” parse cases is a task that takes a long
+time to complete.  By having the acceptable test cases as part of the core
+specification, the time that I would normally spend in the development and testing phase
+was greatly reduced.  True, it took me a while to get used to it, but when I did, it
+just worked and worked well.&lt;/p&gt;
+&lt;p&gt;One of the practices that I engaged in during the development of the parser is to
+liberally spread around &lt;code&gt;print&lt;/code&gt; statements as I went.  As I was adding these statements,
+my dominant thought was to collect enough information to determine which pieces of
+information were the most relevant for log messages to be added later.  However,
+as I proceeded, that information also had the additional benefits of being immensely
+helpful to debug any parsing issues, and indispensable in the verification of the code
+itself.  While I know I need to remove those statements or convert them before the
+project is completed, their presence is indeed beneficial.&lt;/p&gt;
+&lt;p&gt;All in all, I think I had a great start to an interesting project and learned a bit
+in the process… and learning is always good!&lt;/p&gt;
+&lt;h2 id="what-is-next"&gt;What is Next?&lt;a class="headerlink" href="#what-is-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Next up on the list is adding block quote support to the parser.  Stay tuned!&lt;/p&gt;
+&lt;div class="footnote"&gt;
+&lt;hr/&gt;
+&lt;ol&gt;
+&lt;li id="fn:stringFiddle"&gt;
+&lt;p&gt;I remember this term being used all the way back to my university days.  The closest I have been able to come to a definition is the Oxford dictionary’s definition: touch or fidget with something in a restless or nervous way.  Perhaps this is alluding to amount of work to get most string operations “just right”? &lt;a class="footnote-backref" href="#fnref:stringFiddle" title="Jump back to footnote 1 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/div&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category></entry><entry><title>Markdown Linter - Parser Testing Strategy</title><link href="https://jackdewinter.github.io/2019/12/22/markdown-linter-parser-testing-strategy/" rel="alternate"></link><published>2019-12-22T00:00:00-08:00</published><updated>2019-12-22T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2019-12-22:/2019/12/22/markdown-linter-parser-testing-strategy/</id><summary type="html">
 &lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;In the previous articles in this series, I discussed the requirements for the Markdown
 linter that I am writing.  From a development point of view, the main requirement is
@@ -4304,298 +4590,4 @@ often it was updated, and what kind of support the repository offered for custom
 &lt;/li&gt;
 &lt;/ul&gt;
 &lt;/li&gt;
-&lt;/ul&gt;</content><category term="Integrating Technology"></category><category term="static website generator"></category><category term="pelican website generator"></category><category term="pelican fine tuning"></category><category term="pelican theme selection"></category><category term="python"></category></entry><entry><title>Static Websites: Posting My First Article</title><link href="https://jackdewinter.github.io/2019/09/01/static-websites-posting-my-first-article/" rel="alternate"></link><published>2019-09-01T00:00:00-07:00</published><updated>2019-09-01T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2019-09-01:/2019/09/01/static-websites-posting-my-first-article/</id><summary type="html">
-&lt;p&gt;This is the third article in a series about setting up my own website using a
-Static Site Generator.  For other articles in the series, click on the title of the article
-under the heading “Static Site Generators” on the right side of the webpage.&lt;/p&gt;
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;With Pelican installed, it …&lt;/p&gt;</summary><content type="html">
-&lt;p&gt;This is the third article in a series about setting up my own website using a
-Static Site Generator.  For other articles in the series, click on the title of the article
-under the heading “Static Site Generators” on the right side of the webpage.&lt;/p&gt;
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;With Pelican installed, it was time to start creating stuff.  The first I thing I wanted to do
-was to figure out if the base site was good by creating a default site and viewing it in a
-browser.  Then I wanted to come up with a very simple test article, publishing it and viewing
-it to verify my ability to publish and exercise that workflow.  Finally, I wanted to take
-some time to come up with a more representative test article and improve the publishing
-workflows.&lt;/p&gt;
-&lt;p&gt;Similar to the last article, this is not about leaping forward, but to take a decent
-step forward in understanding the tools and processes.&lt;/p&gt;
-&lt;h2 id="before-we-start"&gt;Before We Start&lt;a class="headerlink" href="#before-we-start" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Please read &lt;a href="https://jackdewinter.github.io/2019/08/25/static-websites-setting-up-the-pelican-static-site-generator/#operating-system-paths"&gt;Operating System Paths&lt;/a&gt; from the second article in
-this series for my view on operating system pathing. (i.e. /mount/my/path vs. c:\my\path).
-To understand the term &lt;strong&gt;base project directory&lt;/strong&gt; and the script text &lt;strong&gt;%%%MY_DIRECTORY%%%&lt;/strong&gt;,
-please read the explanation under
-&lt;a href="https://jackdewinter.github.io/2019/08/25/static-websites-setting-up-the-pelican-static-site-generator/#step-2-create-a-project-directory-for-the-site"&gt;Step 2: Create a Project Directory For The Site&lt;/a&gt;, also from the
-second article in this series.&lt;/p&gt;
-&lt;h2 id="step-1-verify-our-basic-web-site"&gt;Step 1: Verify Our Basic Web Site&lt;a class="headerlink" href="#step-1-verify-our-basic-web-site" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;The first thing I wanted to do is to make sure I didn’t mess anything up in the last article,
-&lt;a href="https://jackdewinter.github.io/2019/08/25/static-websites-setting-up-the-pelican-static-site-generator/"&gt;Setting Up the Pelican Static Site Generator&lt;/a&gt;.  Therefore,
-it made
-the most sense that I verify that my website was up and running before I added my first
-article.  After doing some research, it was evident that there are two phases that I need to
-take care of: building the content and viewing the content.&lt;/p&gt;
-&lt;h3 id="step-1a-building-the-web-site-content"&gt;Step 1a: Building The Web Site Content&lt;a class="headerlink" href="#step-1a-building-the-web-site-content" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;The first article’s section on
-&lt;a href="https://jackdewinter.github.io/2019/08/18/static-websites-choosing-a-static-web-site-generator/#what-are-static-site-generators"&gt;Static Site Generators (SSGs)&lt;/a&gt; hopefully made it clear that
-the focus of SSGs is to render the site content when updated.  In the second article,
-&lt;a href="https://jackdewinter.github.io/2019/08/25/static-websites-setting-up-the-pelican-static-site-generator/#step-4-create-a-generic-web-site"&gt;Setting Up the Pelican Static Site Generator&lt;/a&gt;, I created the
-base configuration for a generic website, but did nothing to build that content.
-To build that content, I needed to find out how take the empty content and generate
-the output files from it.&lt;/p&gt;
-&lt;p&gt;Looking at some articles, I was drawn to the output of the &lt;strong&gt;pelican-quickstart&lt;/strong&gt; command
-that generated the base configuration.  In particular, I noticed the prompt:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&amp;gt; Do you want to generate a tasks.py/Makefile to automate generation and publishing? (Y/n) n
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;I specifically answered &lt;em&gt;No&lt;/em&gt; because of my research.  If you answer &lt;em&gt;Yes&lt;/em&gt;, the template will
-ask a number of additional questions related to publishing, and it will place the &lt;strong&gt;Makefile&lt;/strong&gt;
-and &lt;strong&gt;tasks.py&lt;/strong&gt; in the &lt;strong&gt;website&lt;/strong&gt; directory.  As my primary machine is a Windows machine,
-these two files are mostly useless.  Their primary value would be to instruct me on what I
-needed to do to replicate their behavior on the command line or in Python.&lt;/p&gt;
-&lt;p&gt;Thankfully, between the command &lt;strong&gt;pelican –help&lt;/strong&gt;, using the &lt;strong&gt;Makefile&lt;/strong&gt; for reference,
-and experimentation, I was able to arrive that this command for building the website:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;pelican --debug --output website\output --settings website\pelicanconf.py website\content
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Nothing too fancy.  I started Pelican in debug mode to have more information about what was
-going on.  Using the above command, the output was placed in the &lt;strong&gt;website\output&lt;/strong&gt;
-directory, the settings were retrieved from the &lt;strong&gt;website\pelcianconf.py&lt;/strong&gt; file, and the
-content for the website is located in the &lt;strong&gt;website\content&lt;/strong&gt; directory.  I double checked
-to make sure these were all correct, and it ran once without issue.  To make sure that I
-didn’t lose this command, I created a simple script &lt;strong&gt;pelican-build.bat&lt;/strong&gt; in my base project
-directory, with the above command being the only line in that file.&lt;/p&gt;
-&lt;p&gt;Pelican generated a lot of output, but in the end, it looked like everything was okay.
-I was excited to check out the new website, so I used my web browser to
-open the file &lt;strong&gt;website\output\index.html&lt;/strong&gt; and got this result:&lt;/p&gt;
-&lt;p&gt;&lt;img alt="initial view" src="https://jackdewinter.github.io/images/static-3/local_html.png" title="Initial Web Page View"/&gt;&lt;/p&gt;
-&lt;p&gt;I must admit… it was kind of underwhelming.  And then I thought about it a bit.  A lot of
-the stuff that makes web pages powerful are other parts that included by the web page,
-and may not be loaded if the page is loaded directly from the file system.&lt;/p&gt;
-&lt;p&gt;To properly view the content, I was going to have to host it somewhere.&lt;/p&gt;
-&lt;h3 id="step-1b-viewing-the-web-site-content"&gt;Step 1b: Viewing The Web Site Content&lt;a class="headerlink" href="#step-1b-viewing-the-web-site-content" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;If you are like me, hearing or thinking the phrase “I need to install my own web server”
-fills me with read almost right away.  Even for a pared down web server, there are
-usually 3-6 directories to set up, ports to clear with firewalls, and other little
-things.  I must admit, when I started looking around, I was not exactly in a good mood.&lt;/p&gt;
-&lt;p&gt;However, the first 3 websites that talked about Pelican were from the Pelican project’s
-various versions.  Looking deeper into the documentation, I found the part of the documentation
-titled
-&lt;a href="http://docs.getpelican.com/en/3.6.3/quickstart.html#preview-your-site"&gt;Preview Your Site&lt;/a&gt;.
-Without taking too much away from the documentation, it specified that Python 3 includes a
-pared down web server that is available for simple uses, like I needed.&lt;/p&gt;
-&lt;p&gt;After a bit of experimentation and fiddling, and I came up with the following lines and placed
-them in &lt;strong&gt;pelican-server.bat&lt;/strong&gt;:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;pushd website\output
-python -m pelican.server
-popd
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Executing that script, I then saw the following output:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;XXX\python\python37-32\Lib\runpy.py:125: RuntimeWarning: 'pelican.server' found in sys.modules after import of package 'pelican', but prior to execution of 'pelican.server'; this may result in unpredictable behaviour
-  warn(RuntimeWarning(msg))
-WARNING: 'python -m pelican.server' is deprecated.
-  | The Pelican development server should be run via 'pelican --listen' or 'pelican -l'.
-  | This can be combined with regeneration as 'pelican -lr'.
-  | Rerun 'pelican-quickstart' to get new Makefile and tasks.py files.
--&amp;gt; Serving at port 8000, server .
-...
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;While this is what the official documentation suggests, it does look like it is out of date.
-Using the output from above, the installed &lt;strong&gt;Makefile&lt;/strong&gt; for guidance, and more
-experimentation, I replaced the contents of the &lt;strong&gt;pelican-server.bat&lt;/strong&gt; file with the following:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;pelican -l -p 8000 --debug --output website\output --settings website\pelicanconf.py website\content
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;This time, the output of the script was:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;DEBUG: Pelican version: 4.0.1
-DEBUG: Python version: 3.7.3
-DEBUG: Adding current directory to system path
-DEBUG: Temporarily adding PLUGIN_PATHS to system path
-DEBUG: Restoring system path
-WARNING: Docutils has no localization for 'english'. Using 'en' instead.
--&amp;gt; Serving at port 8000, server .
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;To me, it looked like the web pages were served up properly, or at least Pelican didn’t report
-any errors to the screen.  The only thing left was to actually see if it would allow me to
-load the generated website to my browser.  Instead of loading the file directly into the web
-browser as before, I entered “localhost:8000” in the address bar.   To be honest, I took a
-guess that &lt;strong&gt;server .&lt;/strong&gt; meant the localhost.&lt;/p&gt;
-&lt;p&gt;This time, I got the following result:&lt;/p&gt;
-&lt;p&gt;&lt;img alt="local host view" src="https://jackdewinter.github.io/images/static-3/localhost.png" title="Localhost Web Page View"/&gt;&lt;/p&gt;
-&lt;p&gt;Unstyled, no unique content, and only locally visible.  It’s not a great result… but
-it’s a start!&lt;/p&gt;
-&lt;h3 id="step-1c-commit-changes"&gt;Step 1c: Commit Changes&lt;a class="headerlink" href="#step-1c-commit-changes" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;Before I went forward, I wanted to save the current state of the website, so back to Git and
-the &lt;strong&gt;git status -s&lt;/strong&gt; command, whose output was now:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;?? pelican-build.bat
-?? pelican-server.bat
-?? website/__pycache__/
-?? website/output/
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;In my head, I compared these results to the changes I made:&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;I added 2 script files to help me build and serve the content&lt;/li&gt;
-&lt;li&gt;both file are detected, and I want them as source in my project&lt;/li&gt;
-&lt;li&gt;I built the website, placing the output into &lt;strong&gt;website/output&lt;/strong&gt;&lt;/li&gt;
-&lt;li&gt;the directory was detected, but I want to generate this output, and not persist it&lt;/li&gt;
-&lt;li&gt;from previous experience, the &lt;strong&gt;website/&lt;strong&gt;pycache&lt;/strong&gt;/&lt;/strong&gt; contains
-  &lt;a href="https://stackoverflow.com/questions/2998215/if-python-is-interpreted-what-are-pyc-files"&gt;pyc files&lt;/a&gt; that are built when the python scripts are interpreted&lt;/li&gt;
-&lt;li&gt;the directory containing these files was detected, but these should never be persisted&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;Using thought processes derived from what I documented in the section
-&lt;a href="https://jackdewinter.github.io/2019/08/25/static-websites-setting-up-the-pelican-static-site-generator/#step-5-committing-the-changes"&gt;Step 5: Committing the Changes&lt;/a&gt; from the previous article,
-it was clear that I needed to &lt;strong&gt;git add pelican-build.bat&lt;/strong&gt; and &lt;strong&gt;git add pelican-server.bat&lt;/strong&gt;
-to persist those changes.  However, the two items that I did not want to persist would require
-different tacks for each one.  &lt;/p&gt;
-&lt;p&gt;The first case, &lt;strong&gt;website/output/&lt;/strong&gt;, is a directory like the &lt;strong&gt;virtualenv&lt;/strong&gt; directory in
-the section &lt;a href="https://jackdewinter.github.io/2019/08/25/static-websites-setting-up-the-pelican-static-site-generator/#step-2-create-a-project-directory-for-the-site"&gt;# Step 2: Create a Project Directory For The Site&lt;/a&gt;
-from the previous article.  Therefore, I edited the &lt;strong&gt;.gitignore&lt;/strong&gt; file to include the
-directory by name.  That was the simple one.&lt;/p&gt;
-&lt;p&gt;The second case was more complex, the &lt;strong&gt;website/&lt;strong&gt;pycache&lt;/strong&gt;/&lt;/strong&gt; directory.  This directory only
-exists to contain compiled Python byte code designed to speed up execution on subsequent
-passes. If I add the directory, as with the first case, it only takes care of that one
-directory.  If I run any Python scripts from other locations, I will have to add those
-directories too.  This was not an efficient option, hence I edited the &lt;strong&gt;.gitignore&lt;/strong&gt; file to
-ignore the files themselves, by specifying &lt;strong&gt;&amp;amp;ast.pyc&lt;/strong&gt; as the pattern to ignore.&lt;/p&gt;
-&lt;p&gt;Therefore, following those changes, the &lt;strong&gt;.gitignore&lt;/strong&gt; file looked like:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;virtualenv/
-website/output/
-*.pyc
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Using &lt;strong&gt;git status -s&lt;/strong&gt;, I verified that only the 2 scripts were being added, as well as the
-&lt;strong&gt;.gitignore&lt;/strong&gt; file itself being changed.  Quickly adding &lt;strong&gt;git add .gitignore&lt;/strong&gt;, I then
-used &lt;strong&gt;git commit -m “my message”&lt;/strong&gt; to commit these changes to the repository.&lt;/p&gt;
-&lt;p&gt;So let’s take inventory.  We have a basic website up and running, we have tested it in
-our browser, and we have committed any changes to our local repository.  It’s definitely time
-to write our first article.&lt;/p&gt;
-&lt;h2 id="step-2-the-first-article"&gt;Step 2: The First Article&lt;a class="headerlink" href="#step-2-the-first-article" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Looking through the Pelican Documentation, I found another good section on
-&lt;a href="http://docs.getpelican.com/en/4.0.1/content.html#writing-content"&gt;Writing Content&lt;/a&gt;.
-From here, I learned that certain Markdown processors, such as the Python implementation,
-support metadata on files.&lt;/p&gt;
-&lt;p&gt;As a base example, they specify this as a sample post:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;---&lt;/span&gt;
-&lt;span class="nv"&gt;Title&lt;/span&gt;: &lt;span class="nv"&gt;My&lt;/span&gt; &lt;span class="nv"&gt;super&lt;/span&gt; &lt;span class="nv"&gt;title&lt;/span&gt;
-&lt;span class="nv"&gt;Date&lt;/span&gt;: &lt;span class="mi"&gt;2010&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;12&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;03&lt;/span&gt; &lt;span class="mi"&gt;10&lt;/span&gt;:&lt;span class="mi"&gt;20&lt;/span&gt;
-&lt;span class="nv"&gt;Modified&lt;/span&gt;: &lt;span class="mi"&gt;2010&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;12&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;05&lt;/span&gt; &lt;span class="mi"&gt;19&lt;/span&gt;:&lt;span class="mi"&gt;30&lt;/span&gt;
-&lt;span class="nv"&gt;Category&lt;/span&gt;: &lt;span class="nv"&gt;Python&lt;/span&gt;
-&lt;span class="nv"&gt;Tags&lt;/span&gt;: &lt;span class="nv"&gt;pelican&lt;/span&gt;, &lt;span class="nv"&gt;publishing&lt;/span&gt;
-&lt;span class="nv"&gt;Slug&lt;/span&gt;: &lt;span class="nv"&gt;my&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="nv"&gt;super&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="nv"&gt;post&lt;/span&gt;
-&lt;span class="nv"&gt;Authors&lt;/span&gt;: &lt;span class="nv"&gt;Alexis&lt;/span&gt; &lt;span class="nv"&gt;Metaireau&lt;/span&gt;, &lt;span class="nv"&gt;Conan&lt;/span&gt; &lt;span class="nv"&gt;Doyle&lt;/span&gt;
-&lt;span class="nv"&gt;Summary&lt;/span&gt;: &lt;span class="nv"&gt;Short&lt;/span&gt; &lt;span class="nv"&gt;version&lt;/span&gt; &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="nv"&gt;index&lt;/span&gt; &lt;span class="nv"&gt;and&lt;/span&gt; &lt;span class="nv"&gt;feeds&lt;/span&gt;
-&lt;span class="o"&gt;---&lt;/span&gt;
-
-&lt;span class="nv"&gt;This&lt;/span&gt; &lt;span class="nv"&gt;is&lt;/span&gt; &lt;span class="nv"&gt;the&lt;/span&gt; &lt;span class="nv"&gt;content&lt;/span&gt; &lt;span class="nv"&gt;of&lt;/span&gt; &lt;span class="nv"&gt;my&lt;/span&gt; &lt;span class="nv"&gt;super&lt;/span&gt; &lt;span class="nv"&gt;blog&lt;/span&gt; &lt;span class="nv"&gt;post&lt;/span&gt;.
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Reading further, a lot of the metadata fields have defaults, but the &lt;strong&gt;Title&lt;/strong&gt; metadata
-is required for the page to be picked up and processed by Pelican.  That got some wheels
-turning in my head, but I put it aside for a later article.  First I wanted to have a
-solid way of writing the articles before adding to that.&lt;/p&gt;
-&lt;p&gt;Taking the markdown content from above, I created a file in the &lt;strong&gt;website/content&lt;/strong&gt; directory
-called &lt;strong&gt;test.md&lt;/strong&gt; and placed the content in there and saved it.  Following the same pattern
-I used for the base content, I ran &lt;strong&gt;pelican-build.bat&lt;/strong&gt; and then &lt;strong&gt;pelican-server.bat&lt;/strong&gt; to
-view the content, providing the following:&lt;/p&gt;
-&lt;p&gt;&lt;img alt="first article view" src="https://jackdewinter.github.io/images/static-3/step-2-a-main.png" title="Bla blah"/&gt;&lt;/p&gt;
-&lt;p&gt;Granted, its a stock article, but I now had a way to publish my articles!  Along the
-way, I noticed a couple of things I noticed needing improvement.&lt;/p&gt;
-&lt;h3 id="step-3a-a-more-streamlined-buildpreview-workflow"&gt;Step 3a: A More Streamlined Build/Preview Workflow&lt;a class="headerlink" href="#step-3a-a-more-streamlined-buildpreview-workflow" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;In the previous section, the workflow I used took 4 actions to go from something I wrote to
-something I could see and validate: save the file, run &lt;strong&gt;pelican-build.bat&lt;/strong&gt;, run
-&lt;strong&gt;pelican-server.bat&lt;/strong&gt;, and refresh the web page.  Wondering if there was a more efficient
-way to do that, I checked back on the &lt;strong&gt;Makefile&lt;/strong&gt; that I used as the inspiration
-for the two scripts, and noticed a &lt;strong&gt;devserver&lt;/strong&gt; entry.&lt;/p&gt;
-&lt;p&gt;As the &lt;strong&gt;devserver&lt;/strong&gt; entry only differed from the &lt;strong&gt;server&lt;/strong&gt; entry by the introduction of
-the &lt;strong&gt;-r&lt;/strong&gt; flag, I quickly created a &lt;strong&gt;pelican-devserver.bat&lt;/strong&gt; with that simple change,
-and executed it.  Within seconds, I got the feedback:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;CRITICAL: TypeError: can't pickle generator objects
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Weird error, but understandable.  In Python, the default serialization of objects to be passed
-outside of executables is referred to as
-&lt;a href="https://docs.python.org/3.7/library/pickle.html"&gt;pickling&lt;/a&gt;.  If Pelican was already hosting
-the server and wanted to spawn a process to rebuild the website, it would make sense that it
-pass the current configuration to that new process.&lt;/p&gt;
-&lt;p&gt;Doing a bit more searching, I came across
-&lt;a href="https://github.com/getpelican/pelican/issues/2400"&gt;this issue&lt;/a&gt; logged against the Pelican
-project in GitHub.   There are a fair number of entries for this issue, offering various
-pieces of advice.  The low down for me is that due to the way pickling works, I cannot use it
-on my Windows machine with that given program.  Reading further in the comments for the issue,
-a number of people did mention that the &lt;strong&gt;-r&lt;/strong&gt; flag works fine when applied to the command I
-am using for building the pages, just not for building the pages from the server.&lt;/p&gt;
-&lt;p&gt;Trying it out, I renamed &lt;strong&gt;pelican-devserver.bat&lt;/strong&gt; to &lt;strong&gt;pelican-autobuild.bat&lt;/strong&gt;, and switched
-the file contents to:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;pelican -r --output website\output --settings website\pelicanconf.py website\content
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Based on what I read, this should have my desired effect, and a quick modification of the
-&lt;strong&gt;test.md&lt;/strong&gt; file confirmed it.  When I saved the file, the generator detected it and
-rebuilt the contents.  However, thinking through things a bit more, I wondered if the
-&lt;a href="https://ss64.com/nt/start.html"&gt;Windows start&lt;/a&gt; command would help build a better solution.&lt;/p&gt;
-&lt;p&gt;When I write a Windows batch file and I need to execute another batch file, I use the
-&lt;strong&gt;call&lt;/strong&gt; primitive.  This allows me to run the new batch file within the current batch file’s
-shell.  When that new batch file completes, I can check the return code from that script, and
-determine what action, if any, to do next.  By structuring batch files and scripts this way,
-I find that I assemble things together more quickly, keeping the batch files and scripts
-more readable and more maintainable.&lt;/p&gt;
-&lt;p&gt;The &lt;strong&gt;start&lt;/strong&gt; primitive is almost identical to the &lt;strong&gt;call&lt;/strong&gt; primitive, with one small
-exception: the new program is started in a newly created shell spawned from the current shell.
-As the current shell and the new shell are separate processes, by default, both shells operate
-independently of each other, unless the &lt;strong&gt;/wait&lt;/strong&gt; flag is specified.  While this is not ideal
-for composing batch files, this behavior seemed to fit what I was trying to achieve.&lt;/p&gt;
-&lt;p&gt;Creating a new version of the &lt;strong&gt;pelican-devserver.bat&lt;/strong&gt; file, I placed within it:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;@echo off
-start pelican-autobuild.bat
-start pelican-server.bat
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;And executed the batch file.  Two full size shell windows popped up, each one running one
-of the scripts, with the original shell window left alone.  A new modification to the
-&lt;strong&gt;test.md&lt;/strong&gt; file resulted in the rebuild happening in the window running
-&lt;strong&gt;pelican-autobuild.bat&lt;/strong&gt;.  A quick refresh of the browser page, and the newly changed article
-appeared in the browser.&lt;/p&gt;
-&lt;p&gt;I was mostly where I needed the script to be.  Further tweaking the contents of &lt;strong&gt;pelican-devserver.bat&lt;/strong&gt; to:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;@echo off
-start "Builder-Pelican" /min pelican-autobuild.bat
-start "Server-Pelican" /min pelican-server.bat
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;got me to where I wanted to be. To keep things clean, I wanted to specify a title for each
-shell window and I wanted to start them minimized.  Thus, by default both windows are out of
-the way, but if I need them, I can find them quickly.&lt;/p&gt;
-&lt;p&gt;Side Note: If you are using this as a guide, note that this only seems to be an issue on
-Windows machines.  In quick tests I did using an Ubuntu image running under Docker, I did
-not see this issue, and the served pages updated properly.&lt;/p&gt;
-&lt;h3 id="step-3b-a-more-representative-test-article"&gt;Step 3b: A More Representative Test Article&lt;a class="headerlink" href="#step-3b-a-more-representative-test-article" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;The first thing I noticed about my test article is that it was short.  Really short.  When
-I posted it, it was hard to notice where the test article was being summarized, and where
-it was just the article.  I needed to come up with a test article that would be a better
-representation of an actual article.  For that, I dug back into my testing experience.&lt;/p&gt;
-&lt;p&gt;When coming up with test information for test projects, I have used the site
-&lt;a href="https://www.lipsum.com/"&gt;Lorem Ipsum&lt;/a&gt; and sites like it for years. The site goes into more
-details, but by using this text it allows someone viewing the text to focus on what is around
-the text instead of the text itself.  This is also better than using random words, as someone
-viewing that random text may try and find patterns in the paragraphs, once again distracting
-from what is around the text.&lt;/p&gt;
-&lt;p&gt;After a couple of quick clicks on the site, and it generated 5 decent sized paragraphs of
-random text that started with:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc eget velit porta, efficitur justo at, sagittis nulla. Donec neque arcu, condimentum sed massa a, elementum rhoncus justo.
-...
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;I didn’t include all 5 paragraphs here, as it was randomly generated.  If you are using
-this as a guide, you can easily generate your own test paragraphs and insert them into
-your test message.  However, when the page was regenerated, this is what it looked like:&lt;/p&gt;
-&lt;p&gt;&lt;img alt="first article view" src="https://jackdewinter.github.io/images/static-3/test-lorem-ipsum.png" title="Bla blah"/&gt;&lt;/p&gt;
-&lt;p&gt;Also, to give a bit of contrast, I created a copy of the page, called it &lt;strong&gt;test-2.md&lt;/strong&gt;,
-changed the title a bit, and removed all except the first two paragraphs.  My reasoning
-behind this was to make sure I had a sample that was long and a sample that was short.&lt;/p&gt;
-&lt;h3 id="step-3c-commit-the-changes"&gt;Step 3c: Commit The Changes&lt;a class="headerlink" href="#step-3c-commit-the-changes" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;As always, before moving on, I needed to make sure I committed the changes.  This one
-was easy, simply performing the &lt;strong&gt;git add&lt;/strong&gt; action on the files &lt;strong&gt;test.md&lt;/strong&gt;,
-&lt;strong&gt;pelican-autobuild.bat&lt;/strong&gt;, and &lt;strong&gt;pelican-devserver.bat&lt;/strong&gt;, followed by a &lt;strong&gt;git commit&lt;/strong&gt;.&lt;/p&gt;
-&lt;h2 id="what-was-accomplished"&gt;What Was Accomplished&lt;a class="headerlink" href="#what-was-accomplished" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;At the beginning of this article, I only had the foundation for a basic website.  The first
-thing I did was to make sure I had a good workflow for generating the website and viewing
-it in a browser as a website.  After that, I added a sample article, and also improved the
-original build/preview workflow.  Finally, I created more realistic data for the test
-article, so I could see what a normal article would look like.&lt;/p&gt;
-&lt;p&gt;As for the goal of creating a test article that I could use to start fine-tuning the site,
-I believe I am in a good place.  So next, fine-tuning and selecting a theme!&lt;/p&gt;
-&lt;h2 id="whats-next"&gt;What’s Next?&lt;a class="headerlink" href="#whats-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Next, I need to clean up a couple of small things before selecting a theme for the website.
-Getting a solid choice for a theme is the last major task I have to complete before
-publishing the website itself.  Completing this last major task will be covered in the next
-post &lt;a href="https://jackdewinter.github.io/2019/09/08/static-websites-getting-ready-for-publishing-themes-and-minutiae/"&gt;Getting Ready For Publishing - Themes and Minutiae&lt;/a&gt;.&lt;/p&gt;</content><category term="Integrating Technology"></category><category term="static website generator"></category><category term="pelican website generator"></category><category term="building pelican website"></category><category term="pelican website workflow"></category><category term="python"></category></entry></feed>
+&lt;/ul&gt;</content><category term="Integrating Technology"></category><category term="static website generator"></category><category term="pelican website generator"></category><category term="pelican fine tuning"></category><category term="pelican theme selection"></category><category term="python"></category></entry></feed>
