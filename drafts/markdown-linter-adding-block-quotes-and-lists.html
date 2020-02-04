@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="author" content="Jack De Winter" />
+
+        <meta name="description" content="Introduction¶ Having the leaf blocks mostly in place, as documented in the last article, the next items on the implementation list were the list blocks and the block quote blocks. These Markdown blocks, referred to as Container Blocks in the GitHub Flavored Markdown (GFM) Specification, are the more complicated blocks …
+" />
+        <meta property="og:type" content="article" />
+        <meta name="twitter:card" content="summary">
+
+<meta name="keywords" content="markdown linter, Software Quality, " />
+
+<meta property="og:title" content="Markdown Linter - Adding Block Quotes and Lists "/>
+<meta property="og:url" content="https://jackdewinter.github.io/drafts/markdown-linter-adding-block-quotes-and-lists.html" />
+<meta property="og:description" content="Introduction¶ Having the leaf blocks mostly in place, as documented in the last article, the next items on the implementation list were the list blocks and the block quote blocks. These Markdown blocks, referred to as Container Blocks in the GitHub Flavored Markdown (GFM) Specification, are the more complicated blocks …" />
+<meta property="og:site_name" content="Jack&#39;s Digital Workbench" />
+<meta property="og:article:author" content="Jack De Winter" />
+<meta property="og:article:published_time" content="2020-02-03T00:00:00-08:00" />
+<meta name="twitter:title" content="Markdown Linter - Adding Block Quotes and Lists ">
+<meta name="twitter:description" content="Introduction¶ Having the leaf blocks mostly in place, as documented in the last article, the next items on the implementation list were the list blocks and the block quote blocks. These Markdown blocks, referred to as Container Blocks in the GitHub Flavored Markdown (GFM) Specification, are the more complicated blocks …">
+
+        <title>Markdown Linter - Adding Block Quotes and Lists  · Jack&#39;s Digital Workbench
+</title>
+        <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://jackdewinter.github.io/theme/css/style.min.css?bec7d543">
+
+        <link href="https://jackdewinter.github.io/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Jack&#39;s Digital Workbench - Full Atom Feed" />
+
+
+    </head>
+    <body>
+        <div id="content">
+            <div class="navbar navbar-static-top">
+                <div class="navbar-inner">
+                    <div class="container-fluid">
+                        <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                        </a>
+                        <a class="brand" href="https://jackdewinter.github.io/"><span class=site-name>Jack's Digital Workbench</span></a>
+                        <div class="nav-collapse collapse">
+                            <ul class="nav pull-right top-menu">
+                                <li >
+                                    <a href=
+                                       https://jackdewinter.github.io
+                                    >Home</a>
+                                </li>
+                                <li ><a href="https://jackdewinter.github.io/categories">Categories</a></li>
+                                <li ><a href="https://jackdewinter.github.io/tags">Tags</a></li>
+                                <li ><a href="https://jackdewinter.github.io/archives">Archives</a></li>
+                                <li><form class="navbar-search" action="https://jackdewinter.github.io/search.html" onsubmit="return validateForm(this.elements['q'].value);"> <input type="text" class="search-query" placeholder="Search" name="q" id="tipue_search_input"></form></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="container-fluid">
+                <div class="row-fluid">
+                    <div class="span1"></div>
+                    <div class="span10">
+<article itemscope>
+<div class="row-fluid">
+    <header class="page-header span10 offset2">
+        <h1>
+            <a href="https://jackdewinter.github.io/drafts/markdown-linter-adding-block-quotes-and-lists.html">
+                Markdown Linter - Adding Block Quotes and Lists
+            </a>
+        </h1>
+    </header>
+</div>
+
+<div class="row-fluid">
+    <div class="span2 table-of-content">
+        <nav>
+        <h4>Contents</h4>
+        <div class="toc">
+<ul>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#container-blocks-leaf-blocks-and-interactions-oh-my">Container Blocks, Leaf Blocks, and Interactions (Oh My!)</a></li>
+<li><a href="#enter-lazy-continuations">Enter Lazy Continuations</a></li>
+<li><a href="#getting-down-to-work-the-easy-scenarios">Getting Down to Work - The Easy Scenarios</a></li>
+<li><a href="#nested-and-mixed-containers">Nested and Mixed Containers</a></li>
+<li><a href="#why-rewrite-already">Why Rewrite Already?</a></li>
+<li><a href="#what-was-my-experience-so-far">What Was My Experience So Far?</a></li>
+<li><a href="#what-is-next">What is Next?</a></li>
+</ul>
+</div>
+        </nav>
+    </div>
+    <div class="span8 article-content">
+            
+            
+<h2 id="introduction">Introduction<a class="headerlink" href="#introduction" title="Permanent link">¶</a></h2>
+<p>Having the leaf blocks mostly in place, as documented
+<a href="https://jackdewinter.github.io/2020/01/27/markdown-linter-parsing-normal-markdown-blocks/">in the last article</a>, the next items
+on the implementation list were the list blocks and the block
+quote blocks.  These Markdown blocks, referred to as Container Blocks in the
+<a href="https://github.github.com/gfm/#container-blocks">GitHub Flavored Markdown (GFM) Specification</a>,
+are the more complicated blocks to deal with, as they are capable of containing other
+blocks.  As there are
+<a href="https://github.github.com/gfm/#phase-1-block-structure">specific suggestions</a>
+on how to parse these blocks, my confidence took a hit when I started looking at this
+section. My viewpoint: if the specification writers thought it was difficult to
+implement that they wrote suggestions on how to handle it, it must not be as easy as
+the leaf blocks!</p>
+<p>The full record of the work detailed in this article is documented in the
+project’s GitHub repository in the commits that occurred between
+<a href="https://github.com/jackdewinter/pymarkdown/commit/49407f86564479934ee92fb59597ba830a46fde8">08 December 2019</a>
+and
+<a href="https://github.com/jackdewinter/pymarkdown/commit/24fd972aef725bc55659ad3c2e7c1b93737a1874">20 December 2019</a>.  This work includes creating the
+scenario tests for all of the Container Blocks as documented in the GFM specification
+and implementing the parsing to pass most those tests except for the nested cases.</p>
+<h2 id="container-blocks-leaf-blocks-and-interactions-oh-my">Container Blocks, Leaf Blocks, and Interactions (Oh My!)<a class="headerlink" href="#container-blocks-leaf-blocks-and-interactions-oh-my" title="Permanent link">¶</a></h2>
+<p>Before container blocks, parsing was easy.  A block starts, and when the parser
+encounters the termination conditions, it ends.  There are a few rules about when
+blocks can start and end, such as
+<a href="https://github.github.com/gfm/#example-83">“An indented code block cannot interrupt a paragraph.”</a>,
+but for the most part, there is little interaction between the leaf blocks.  The leaf
+blocks are clean and tidy.  Not so much with container blocks.</p>
+<p>Container blocks, by their very definition, contain other blocks, namely leaf blocks and
+container blocks.  While this makes certain visual elements easier, this also means
+specific rules about what interactions are allowed between the blocks.  On top of that,
+as container blocks can contain other container blocks, testing is required to ensure
+that an arbitrary number of nested containers is properly supported.</p>
+<p>A great example of nesting container blocks is the Markdown implementation of sublists.
+A list containing a list containing a list is simple in Markdown:</p>
+<div class="highlight"><pre><span></span><span class="o">-</span> <span class="k">first</span> <span class="k">level</span>
+  <span class="o">-</span> <span class="k">second</span> <span class="k">level</span>
+    <span class="o">-</span> <span class="n">third</span> <span class="k">level</span>
+</pre></div>
+<p>That example is not a single list, but 3 separate lists.  The <code>first level</code> list is the
+first level list, containing the list <code>second level</code>, which contains the list
+<code>third level</code>.  And while sublists are a simple case of container blocks, more complex
+cases are possible, such as this one:</p>
+<div class="highlight"><pre><span></span><span class="o">-</span> <span class="k">first</span> <span class="k">level</span>
+  <span class="o">-</span> <span class="o">```</span><span class="nb">text</span>
+    <span class="n">my</span> <span class="nb">text</span>
+    <span class="o">```</span>
+</pre></div>
+<p>This list is similar to the first list, except it contains a fenced code block as the
+contained block.  Both of these examples are just a few of the possibilities of how
+container blocks can contain other blocks.  Looking through the specification, I
+quickly lost count of the number of combinations possible.</p>
+<h2 id="enter-lazy-continuations">Enter Lazy Continuations<a class="headerlink" href="#enter-lazy-continuations" title="Permanent link">¶</a></h2>
+<p>If the interactions between container blocks and the blocks they contain wasn’t a fun
+enough exercise in mental agility, enter lazy continuations.  From the GitHub Flavored
+Markdown (GFM) Specification’s
+<a href="https://github.github.com/gfm/#block-quotes">block quotes section</a>:</p>
+<blockquote>
+<p><strong>Laziness</strong>. If a string of lines Ls constitute a block quote with contents Bs, then the result of deleting the initial block quote marker from one or more lines in which the next non-whitespace character after the block quote marker is paragraph continuation text is a block quote with Bs as its content.</p>
+</blockquote>
+<p>and from the <a href="https://github.github.com/gfm/#list-items">list items section</a>:</p>
+<blockquote>
+<p><strong>Laziness</strong>. If a string of lines Ls constitute a list item with contents Bs, then the result of deleting some or all of the indentation from one or more lines in which the next non-whitespace character after the indentation is paragraph continuation text is a list item with the same contents and attributes.</p>
+</blockquote>
+<p>Basically, what they are both saying is that if a paragraph has been started with block
+quotes or within a list AND if a line is clearly a continuation of a paragraph, then it
+is valid to remove some or all of the container block markers.  For a more concrete
+example, <a href="https://github.github.com/gfm/#example-211">example 211</a> has the following
+Markdown:</p>
+<div class="highlight"><pre><span></span><span class="o">&gt;</span> <span class="n">bar</span>
+<span class="n">baz</span>
+<span class="o">&gt;</span> <span class="n">foo</span>
+</pre></div>
+<p>which is parsed the same as if the following Markdown was written as:</p>
+<div class="highlight"><pre><span></span><span class="o">&gt;</span> <span class="n">bar</span>
+<span class="o">&gt;</span> <span class="n">baz</span>
+<span class="o">&gt;</span> <span class="n">foo</span>
+</pre></div>
+<p>After reading those sections and letting them sink in, my confidence took a dip.  This
+was not going to be an easy concept to get right.  But the sooner I dealt with those
+scenarios, the sooner I could try and implement them the right way.  So I went forward
+with the implementation phase of the container blocks.</p>
+<h2 id="getting-down-to-work-the-easy-scenarios">Getting Down to Work - The Easy Scenarios<a class="headerlink" href="#getting-down-to-work-the-easy-scenarios" title="Permanent link">¶</a></h2>
+<p>I often recommend to friends and
+co-workers that taking a break and doing something unconnected to the “chore” helps
+your mind get things together.  As such, before getting started on this work, I
+decided to walk our dog for a while and let some of these concepts mull around in my
+head. I am not sure if it was the exercise or the change in scenery, but it helped to
+clear the cobwebs from my head and helped me to see things about the project more
+clearly.</p>
+<p>The big thing that it accomplished was to help me cleanly separate out the easy tasks
+from the more difficult tasks. The easy tasks? Simple block quotes and simple lists,
+including sub-lists.  The difficult tasks?  Lazy continuations and mixed container
+types.  I remember feeling that taking this time helped my confidence on the project,
+as I was taking simple steps to understand where the difficulties were most likely to
+show up.  This process also allowed me to think about those hard issues a bit while
+implementing the easier features.  While I wasn’t devoting any serious time to the
+more complicated features, it was good to just have my mind aware of which sections of
+code that I was going to need to keep flexible going forward.</p>
+<p>Keeping this in mind, I started with block quotes, adding the block quote test cases to
+<code>test_markdown_block_quotes.py</code>, disabling any tests that I figured were not in the
+easy category.  I then proceeded to implement the code, in the same way as detailed in
+the
+<a href="https://jackdewinter.github.io/2020/01/27/markdown-linter-parsing-normal-markdown-blocks/">prior article on leaf blocks</a>.
+Implementing the easy scenario tests for the block quotes was a decent sized task,
+mostly completed during two days on a weekend where I had some time.  This also included
+fixing scenario tests in 6 other test files that has block quotes in their scenarios.</p>
+<p>Working on the basic list items over the next week, by the middle of the next weekend
+they were completed, in a similar fashion to how the block quotes were completed: new
+scenario tests were added, the easy ones were then tested, enabled, and verified for
+completion, and the more difficult ones were disabled.  Similar to the block quotes,
+getting these right took roughly a week, and that work also had impact on scenario
+tests other than the ones I added.</p>
+<p>During this process, I believed I found the parsing of lists more difficult.  Thinking
+about the
+implementation in hindsight, I believe it was mostly due to their parsing requirements.
+The fact is that block quotes have a single character <code>&gt;</code> to consider for parsing,
+while the lists can be unordered and start with the <code>-</code> or <code>*</code> character or the
+lists can be ordered and start with a number and the <code>)</code> or <code>.</code> or character.  In
+addition, for ordered lists, there is also the parsing of the start number and how to
+interpret it.  Looking at the two blocks that way, block quote blocks seem a lot easier
+to me.</p>
+<p>However, now that I have had a bit of time since that code was written, I believe that
+those two features were more closer in difficulty that I initially thought.  Having
+implemented both block quotes and lists, I think that they both had something that was
+difficult that needed overcoming.  Since I have done a lot of parsers in my past, the
+number of variations in parsing the lists were immediately noticeable to me, while the
+block quotes were pretty easy to parse.  Balancing that out, once parsed the lists were
+easy to coordinate, while the block quotes took a bit more finessing to get right.
+In the end, I believe it was a pretty event effort to get both done properly.</p>
+<p>At least until nested mixed container blocks.</p>
+<h2 id="nested-and-mixed-containers">Nested and Mixed Containers<a class="headerlink" href="#nested-and-mixed-containers" title="Permanent link">¶</a></h2>
+<p>Nested container blocks, specifically mixed nested container blocks, is where things
+got messy.  To be 100% honest, I am pretty sure I didn’t get everything right with the
+implementation, and I already have plans to rewrite this logic. More on that later.</p>
+<p>I started implementing these features knowing that they probably made up the remaining
+10% of the scenarios. I also figured that to handle these specific scenarios properly
+would require as much time and effort as the prior 90% of the scenarios.  This was not
+really a surprise, as in software development getting a project to the 70-90% finished
+mark is almost always the easy part.</p>
+<p>Over the next week’s work, I reset my fork of the code back to it’s initial state 3 or 4
+times.  In each case, I just got to a point where I either hit a block in going forward,
+I wasn’t happy and confident about the solution, or both.  In one of those cases, the
+code was passing the scenario tests that I was trying to enable, but it just didn’t feel
+like I could extend it to the next scenario.  I needed to be honest with myself and
+make an honest determination of how good the code I just wrote was.</p>
+<p>In the end, I completed some of the sublists and nested block quotes, requiring only 4
+scenario tests to be disabled or skipped.  The ones that were disabled were the 10% of
+the 10%, the cases where there were 3 or more levels of block quotes and lists mixed
+together. I was not really happy with it, but after a week, I knew I needed to move on
+with the project.  Grudgingly, I acknowledged that I would need to rewrite this later.</p>
+<h2 id="why-rewrite-already">Why Rewrite Already?<a class="headerlink" href="#why-rewrite-already" title="Permanent link">¶</a></h2>
+<p>I am very confident that I coded the easy level cases correctly, as I have solid
+scenario tests, and a decent volume of them, to test the various use cases.  For the
+medium difficulty cases, such as a container within a container, I have a decent amount
+of confidence that the scenario tests are capturing most of the permutations.  It is
+the more complicated cases that I really am not confident about.  And when I say I am
+not confident, it is not that I am not sure if it is handling the test properly: that
+is a binary thing.  The test is passing, or the test is failing, and thus disabled.  I
+m not confident that all of those tests work for all use cases like that the scenario
+tests represent.</p>
+<p>Part of any project is learning what works and what doesn’t work.  As I started
+looking at implementing
+<a href="https://github.github.com/gfm/#example-237">example 237</a>, I read the
+following paragraph located right before the example:</p>
+<blockquote>
+<p>It is tempting to think of this in terms of columns: the continuation blocks must be indented at least to the column of the first non-whitespace character after the list marker. However, that is not quite right. The spaces after the list marker determine how much relative indentation is needed.</p>
+</blockquote>
+<p>It was then that I was pretty sure I had coded the container blocks in terms of columns
+instead of spaces.  Add that to the list of rewrites needed.</p>
+<p>The other category where my confidence is not high is with multiple levels of mixed
+container blocks.  Once I complete the rewrite above, I can properly evaluate how well
+I can nest the containers, but at the moment, that is not high.  At that point,
+example 237 will be a good scenario test to determine how well I have those set up.
+Having taken some time to really evaluate the code and the scenario tests, I just have
+a suspicion that there is at least 1-2 bugs in the code that I wrote.  For now, that is
+on my list of possible rewrites, with a medium to high probability of being needed.</p>
+<p>The saving grace for both of these scenarios that I believe need rewrites?  Their
+frequency.  The scenarios for blocks, leaf blocks and container blocks, comprise
+about half of the specification, ending with
+<a href="https://github.github.com/gfm/#example-306">example 306</a>.  According to my test failure
+report, only 4 of the list block tests had to be marked as skipped, hence they were not
+passing.  At approximately 1.3% of the total scenarios, it is not a big impact.  In
+writing this block, I have used lists frequently, block quotes sporadically, and block
+quotes with lists even less.  I am not sure if my writing is representative of
+everyone’s writing, but at least at the moment, </p>
+<h2 id="what-was-my-experience-so-far">What Was My Experience So Far?<a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link">¶</a></h2>
+<p>All of the leaf blocks were finished in about a week.  The easy and medium cases for
+the container blocks were finished about a week.  The hard cases for the container
+blocks… not finished after a week, but close.</p>
+<p>Was I disappointed?  Sure.  But in comparison to other issues I have had with projects,
+this was not even near the top 20 in terms of disappointment.  To be honest, in terms
+of how projects have gone for me over the years, this has been a decent project to
+work on.  Every project has it’s issues, and this was just the set of issues that
+happened to occur on this project.</p>
+<p>I know it may sound a bit silly, but me and my immediate family have a saying we like
+to repeat when things get tough: “Stuff<sup id="fnref:notStuff"><a class="footnote-ref" href="#fn:notStuff">1</a></sup> happens, pick yourself up, dust
+yourself off, and figure out what to do next.”  The disabled tests happened, so I took
+some time to find my focus, and came up with a plan to deal with it.  Not a great
+plan, but it meant I could go forward with the remaining scenarios and circle back
+once I accumulated more experience with the parser.</p>
+<p>Sure there already was some
+<a href="https://en.wikipedia.org/wiki/Technical_debt">technical debt</a>
+for this project, but other than that, I believe it is going well.  At this point it
+was just before Christmas, and I had a Markdown parser that was coming along pretty
+well.  My confidence in the implemented leaf blocks was high, as was my confidence in
+the easy 90% of the container block implementation.  The more difficult 10% of the
+container blocks was still undecided, but I had a plan to deal with it going forward.
+While not a sterling situation, it was definitely a good position for me to be in.</p>
+<h2 id="what-is-next">What is Next?<a class="headerlink" href="#what-is-next" title="Permanent link">¶</a></h2>
+<p>Before I took some time to improve my PyScan tool, I worked on adding HTML block
+support for the PyMarkdown project.  As HTML in Markdown has some funny logic associated
+with it, the next article will be devoted entirely to the HTML blocks.</p>
+<div class="footnote">
+<hr/>
+<ol>
+<li id="fn:notStuff">
+<p>When my kids were younger, I did indeed use the word “stuff”.  As my kids got older, we changed that word to another one that also starts with “s”.  The actual word that we now use should be easy to figure out! <a class="footnote-backref" href="#fnref:notStuff" title="Jump back to footnote 1 in the text">↩</a></p>
+</li>
+</ol>
+</div>
+
+
+             
+ 
+            
+            
+            
+
+
+
+
+
+
+            <hr/>
+        </div>
+        <section id="article-sidebar" class="span2">
+    <h4>Reading Time</h4>
+    <p>~11 min read</p>
+            <h4>Published</h4>
+            <time itemprop="dateCreated" datetime="2020-02-03T00:00:00-08:00">Feb 3, 2020</time>
+        <h4><built-in method index of str object at 0x03C91C50></h4>
+    <ul class="multi-parts-list">
+    </ul>
+            <h4>Category</h4>
+            <a class="category-link" href="https://jackdewinter.github.io/categories#software-quality-ref">Software Quality</a>
+            <h4>Tags</h4>
+            <ul class="list-of-tags tags-in-article">
+                <li><a href="https://jackdewinter.github.io/tags#markdown-linter-ref">markdown linter
+                    <span>4</span>
+</a></li>
+            </ul>
+<h4>Stay in Touch</h4>
+<div id="sidebar-social-link">
+    <a href="https://github.com/jackdewinter" title="github-alt" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="GitHub" role="img" viewBox="0 0 512 512"><rect width="512" height="512" rx="15%" fill="#1B1817"/><path fill="#fff" d="M335 499c14 0 12 17 12 17H165s-2-17 12-17c13 0 16-6 16-12l-1-50c-71 16-86-28-86-28-12-30-28-37-28-37-24-16 1-16 1-16 26 2 40 26 40 26 22 39 59 28 74 22 2-17 9-28 16-35-57-6-116-28-116-126 0-28 10-51 26-69-3-6-11-32 3-67 0 0 21-7 70 26 42-12 86-12 128 0 49-33 70-26 70-26 14 35 6 61 3 67 16 18 26 41 26 69 0 98-60 120-117 126 10 8 18 24 18 48l-1 70c0 6 3 12 16 12z"/></svg>
+    </a>
+    <a href="https://www.linkedin.com/in/jackdewinter/" title="linkedin" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="LinkedIn" role="img" viewBox="0 0 512 512" fill="#fff"><rect width="512" height="512" rx="15%" fill="#0077b5"/><circle cx="142" cy="138" r="37"/><path stroke="#fff" stroke-width="66" d="M244 194v198M142 194v198"/><path d="M276 282c0-20 13-40 36-40 24 0 33 18 33 45v105h66V279c0-61-32-89-76-89-34 0-51 19-59 32"/></svg>
+    </a>
+    <a href="https://jackdewinter.github.io/feeds/all.atom.xml" title="" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="RSS" role="img" viewBox="0 0 512 512"><rect width="512" height="512" rx="15%" fill="#f80"/><circle cx="145" cy="367" r="35" fill="#fff"/><path fill="none" stroke="#fff" stroke-width="60" d="M109 241c89 0 162 73 162 162M109 127c152 0 276 124 276 276"/></svg>
+    </a>
+</div>
+            
+
+
+
+
+
+            
+
+
+
+
+
+        </section>
+</div>
+</article>
+                    </div>
+                    <div class="span1"></div>
+                </div>
+            </div>
+        </div>
+<footer>
+    <div>
+        
+&copy; Copyright 2019 by Jack De Winter and licensed under a <a rel="license"
+  href="http://creativecommons.org/licenses/by/4.0/">
+  <img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/80x15.png" />
+  Creative Commons Attribution 4.0 International License</a>.
+
+    </div>
+
+
+
+
+    <div id="fpowered">
+        Powered by: <a href="http://getpelican.com/" title="Pelican Home Page" target="_blank" rel="nofollow noopener noreferrer">Pelican</a>
+        Theme: <a href="https://elegant.oncrashreboot.com/" title="Theme Elegant Home Page" target="_blank" rel="nofollow noopener noreferrer">Elegant</a>
+    </div>
+</footer>            <script src="//code.jquery.com/jquery.min.js"></script>
+        <script src="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>
+        <script>
+            function validateForm(query)
+            {
+                return (query.length > 0);
+            }
+        </script>
+
+    <script>
+    (function () {
+        if (window.location.hash.match(/^#comment-\d+$/)) {
+            $('#comment_thread').collapse('show');
+        }
+    })();
+    window.onhashchange=function(){
+        if (window.location.hash.match(/^#comment-\d+$/))
+            window.location.reload(true);
+    }
+    $('#comment_thread').on('shown', function () {
+        var link = document.getElementById('comment-accordion-toggle');
+        var old_innerHTML = link.innerHTML;
+        $(link).fadeOut(200, function() {
+            $(this).text('Click here to hide comments').fadeIn(200);
+        });
+        $('#comment_thread').on('hidden', function () {
+            $(link).fadeOut(200, function() {
+                $(this).text(old_innerHTML).fadeIn(200);
+            });
+        })
+    })
+</script>
+
+    </body>
+    <!-- Theme: Elegant built for Pelican
+        License : MIT -->
+</html>
