@@ -1,5 +1,286 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench - Software Quality</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/software-quality.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2020-02-03T00:00:00-08:00</updated><entry><title>Markdown Linter - Adding Block Quotes and Lists</title><link href="https://jackdewinter.github.io/2020/02/03/markdown-linter-adding-block-quotes-and-lists/" rel="alternate"></link><published>2020-02-03T00:00:00-08:00</published><updated>2020-02-03T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-02-03:/2020/02/03/markdown-linter-adding-block-quotes-and-lists/</id><summary type="html">
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench - Software Quality</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/software-quality.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2020-02-10T00:00:00-08:00</updated><entry><title>Markdown Linter - Adding HTML Blocks</title><link href="https://jackdewinter.github.io/2020/02/10/markdown-linter-adding-html-blocks/" rel="alternate"></link><published>2020-02-10T00:00:00-08:00</published><updated>2020-02-10T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-02-10:/2020/02/10/markdown-linter-adding-html-blocks/</id><summary type="html">
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Having completed most of the Markdown block elements, as documented
+in the last two articles on
+&lt;a href="https://jackdewinter.github.io/2020/01/27/markdown-linter-parsing-normal-markdown-blocks/"&gt;leaf blocks&lt;/a&gt; and
+&lt;a href="https://jackdewinter.github.io/2020/02/03/markdown-linter-adding-block-quotes-and-lists/"&gt;container blocks&lt;/a&gt;,
+I wanted to go back and revisit the HTML blocks that I deferred.  For anyone following
+this series, in the
+&lt;a href="https://jackdewinter.github.io/2020/01/27/markdown-linter-parsing-normal-markdown-blocks/#group-4-stopping-at-a-good-place"&gt;Stopping At A Good Place section&lt;/a&gt;
+of the …&lt;/p&gt;</summary><content type="html">
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Having completed most of the Markdown block elements, as documented
+in the last two articles on
+&lt;a href="https://jackdewinter.github.io/2020/01/27/markdown-linter-parsing-normal-markdown-blocks/"&gt;leaf blocks&lt;/a&gt; and
+&lt;a href="https://jackdewinter.github.io/2020/02/03/markdown-linter-adding-block-quotes-and-lists/"&gt;container blocks&lt;/a&gt;,
+I wanted to go back and revisit the HTML blocks that I deferred.  For anyone following
+this series, in the
+&lt;a href="https://jackdewinter.github.io/2020/01/27/markdown-linter-parsing-normal-markdown-blocks/#group-4-stopping-at-a-good-place"&gt;Stopping At A Good Place section&lt;/a&gt;
+of the “Parsing Normal Markdown Blocks” article, I determined that there were 3 types
+of leaf blocks that would be difficult to implement, so I deferred them.  Between
+my lack of use most of those deferred features and my distinct status as the first
+user of the parser, I thought this was a decent trade off in the short run.  With
+increased confidence from implementing the other block types, I thought it was
+a good time to deal with this block type.&lt;/p&gt;
+&lt;p&gt;Before continuing, I believe it is important for me to highlight some information about
+HTML blocks in Markdown.  I have never needed to use HTML
+blocks or raw HTML (covered in a later article) in any of my own Markdown documents.
+Quick research revealed that there are some interesting cases where injecting HTML
+blocks is a benefit.  However, that same research also noted that allowing either type
+of HTML in Markdown is a potential security issue, and as such, may be disabled for a
+given Markdown-to-HTML generator.  Regardless of my usage patterns or security patterns,
+I wanted to be sure to include it in the PyMarkdown project for completeness.&lt;/p&gt;
+&lt;p&gt;The full record of the work detailed in this article is documented in the
+project’s GitHub repository in the commit for
+&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/24fd972aef725bc55659ad3c2e7c1b93737a1874"&gt;20 December 2019&lt;/a&gt;.
+This work includes implementing the parsing logic for the HTML Blocks as documented in
+the GFM specification and implementing the parsing to pass all of the scenario tests
+for HTML blocks that were previous entered.&lt;/p&gt;
+&lt;h2 id="why-did-i-defer-html-blocks"&gt;Why Did I Defer HTML Blocks?&lt;a class="headerlink" href="#why-did-i-defer-html-blocks" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;The HTML blocks were one of those 3 deferred types because a quick reading of the
+specification lead me to believe the HTML block implementation would be tricky.&lt;/p&gt;
+&lt;p&gt;Why?  Take a minute and read or browse the
+&lt;a href="https://github.github.com/gfm/#html-blocks"&gt;HTML blocks section&lt;/a&gt; of the
+GitHub Flavored Markdown (GFM) Specification.  Don’t worry, I’ll wait while you do that.&lt;/p&gt;
+&lt;p&gt;Done?  What did you think?  My initial read of the specification made me think that it
+was going to be a complete mess to figure out properly.  After a walk to clear my head,
+I took another look at the section.  When I factored in the work I did to implement the
+container blocks, this section looked like it would be tedious, but not too bad.  After
+handling container blocks within container blocks, the straight parsing of a leaf block
+wouldn’t be too bad. Right?&lt;/p&gt;
+&lt;p&gt;I admit, it still looked kind of daunting to me.  From my observations, the 42 use
+cases for
+the HTML blocks was far more than the count for all of the other block groups
+&lt;sup id="fnref:countScenarios"&gt;&lt;a class="footnote-ref" href="#fn:countScenarios"&gt;1&lt;/a&gt;&lt;/sup&gt; except for the list items group, at 47 use cases. And yes, the count
+is mostly larger than the count for container blocks (with block quotes at 22 use
+cases) and one half of the use cases for list blocks (with lists at 25 use cases and
+list items at 47 use cases).  The data
+backed my daunting feeling up, which was a relief.  Thinking about how I got to that
+feeling, I realized that in reading the specification, I was telling myself a
+story about how hard it would be to implement based on the sheer number of use cases.
+So how was I going to change that narrative I was telling myself?&lt;/p&gt;
+&lt;h2 id="changing-the-narrative"&gt;Changing The Narrative&lt;a class="headerlink" href="#changing-the-narrative" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In &lt;a href="https://jackdewinter.github.io/2020/02/03/markdown-linter-adding-block-quotes-and-lists/#what-was-my-experience-so-far"&gt;the last article&lt;/a&gt;,
+I mentioned that one of my family’s favorite sayings is: “Stuff happens, pick yourself
+up, dust yourself off, and figure out what to do next.”  “Stuff happens” was the
+decision to defer the HTML blocks, “pick yourself up” was the decision to pick them up
+again, “dust yourself off” was figuring out why I deferred the blocks, leaving the
+“figure out what to do next” part.  One of my favorite tools to figure out what to do
+next is to see if I am able to change the narrative, or story, with whatever it is that
+I am doing.&lt;/p&gt;
+&lt;p&gt;Why is this important?&lt;/p&gt;
+&lt;p&gt;There are facts and opinions
+that are part of every story.  Did the main character go to the cantina before boarding
+the freighter with the smuggler?  That is a fact.  Whether or not the captain of that
+freighter is a smuggler can be an opinion, depending on supporting facts.  How much
+trust the main character had in that smuggler when boarding the freighter is mostly an
+opinion.  The closer something is to a fact, the harder it is to change. Opinions can
+be changed in many cases, if you can find the right story to tell.&lt;/p&gt;
+&lt;p&gt;The HTML blocks having 42 use cases to define it’s behavior is a fact, and facts do not
+change easily.  Taking a deeper look at the 7 categories at the
+start of the specification’s section on HTML blocks, I can make a good argument that
+there are 3 sets of HTML tags instead of the 7 presented:  the meta tags, the special
+tags, and everything else.  Furthermore, the first 20 use cases present general cases
+while the next 18 use cases, and the last 4 use cases talk about specific rules and why
+they were specified.&lt;/p&gt;
+&lt;p&gt;Given this information, I can change the story I am telling myself by breaking down
+the previous story into smaller stories, each with a specific focus.  Instead of one
+group of 42 use cases, I can
+have 3 smaller groups: 1 for general HTML blocks with 20 use cases, 1 for specific
+HTML blocks with 18 use cases, and finally a “wrap-up” group of 4 use cases that better
+explains why the specified rules are important.&lt;/p&gt;
+&lt;p&gt;Why is this better?&lt;/p&gt;
+&lt;p&gt;At 42 use cases for HTML blocks, it is the second biggest block
+of use cases, and is somewhat scary.  Breaking that group up into 2 groups of about 20
+use cases followed by a small group with 4 example use cases is something I can
+comprehend better, implement better, therefore removing my concerns about the large
+scope.&lt;/p&gt;
+&lt;p&gt;In addition, experience has taught me that when translating use cases to scenario tests,
+the last 2 to 3 translations are frequently show stoppers or require major reworking to
+properly translate and get working.
+With a big group of 42 use cases, I know I would be expecting that behavior to happen,
+with a large amount of rework to do when it happened.  After breaking down the problem
+into the 3 smaller groups, I was fairly confident that if the same situation occurs, the
+amount of rework will be limited to approximately 20 scenario tests.  For me, reducing
+that perceived effort helped me keep my confidence up instead of having it take a hit.
+Instead of “when it happens” with the 42 use cases, it became “if it happens” with the
+smaller groups of 20 use cases.&lt;/p&gt;
+&lt;h2 id="let-the-implementation-begin"&gt;Let The Implementation Begin!&lt;a class="headerlink" href="#let-the-implementation-begin" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;With a boost to my confidence in place, I was able to get a decent amount of work
+completed on the HTML blocks, wedged between shopping and work during the end of the
+holiday season.  Despite my initial concerns
+about the size and complexity of this feature, the development went pretty smoothly.
+Given how it went, I believe it lends support to my opinion that breaking down the use
+cases into the 3 groups was definitely the right thing to do.&lt;/p&gt;
+&lt;p&gt;For those not familiar with Markdown and HTML, there some basic rules for HTML blocks,
+and then the 3 categories of HTML blocks themselves: the meta tags, the special tags,
+and everything else.  The basic rules are pretty simple.  HTML blocks are always
+started with tags that start at the beginning of a new line, and once the start
+condition is met for one of the 7 block types, only the matching end condition finishes
+off the HTML block.  In some cases, the end conditions can be met on the same line, and
+in some cases, the end conditions make sense… and in some they don’t. At least not
+without understanding the rules!&lt;/p&gt;
+&lt;h3 id="meta-tags"&gt;Meta Tags&lt;a class="headerlink" href="#meta-tags" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Block type 1 contains what I refer to as the “meta tags”, because those tags usually
+contain information that is at a higher level than normal tags, such as script
+information or style information.  For anyone familiar with authoring HTML, the
+Markdown interpretation of these tags is almost the same as in a raw HTML document.
+The start
+condition is that one of the strings &lt;code&gt;&amp;lt;script&lt;/code&gt;, &lt;code&gt;&amp;lt;pre&lt;/code&gt;, or &lt;code&gt;&amp;lt;style&lt;/code&gt; are present,
+followed by whitespace, the string &lt;code&gt;&amp;gt;&lt;/code&gt; or the end of the line.  The end condition is
+that one of the strings &lt;code&gt;&amp;lt;/script&amp;gt;&lt;/code&gt;, &lt;code&gt;&amp;lt;/pre&amp;gt;&lt;/code&gt;, or &lt;code&gt;&amp;lt;/style&amp;gt;&lt;/code&gt; are present, though the
+tags specified in the start condition and end condition do not need to match each
+other.&lt;/p&gt;
+&lt;p&gt;As such, the following text is considered a complete HTML block:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nt"&gt;&amp;lt;style&lt;/span&gt; &lt;span class="na"&gt;type=&lt;/span&gt;&lt;span class="s"&gt;"text/css"&lt;/span&gt;&lt;span class="nt"&gt;&amp;gt;&lt;/span&gt;
+h1 { font-size: 140%; font-weight: bold; border-top: 1px solid gray; padding-top: 0.5em; }
+&lt;span class="nt"&gt;&amp;lt;/style&amp;gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;as is:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nt"&gt;&amp;lt;script&lt;/span&gt; &lt;span class="na"&gt;src=&lt;/span&gt;&lt;span class="s"&gt;"jquery.min.js"&lt;/span&gt;&lt;span class="nt"&gt;&amp;gt;&amp;lt;/script&amp;gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;and:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nt"&gt;&amp;lt;script&lt;/span&gt; &lt;span class="na"&gt;src=&lt;/span&gt;&lt;span class="s"&gt;"jquery.min.js"&lt;/span&gt;&lt;span class="nt"&gt;&amp;gt;&amp;lt;/pre&amp;gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Note that in the last example, while the Markdown specification considers it a complete
+HTML block, it is not a valid HTML snippet.  The Markdown specification does not
+specify any validation of the produced output, so beware of garbage-in, garbage-out.&lt;/p&gt;
+&lt;p&gt;This HTML block type was pretty easy to figure out, hence it was easy to implement.
+Pretty straight forward: Look for one of the start strings, capture everything until
+we find one of the end strings.  Quick and painless.&lt;/p&gt;
+&lt;h3 id="special-tags"&gt;Special Tags&lt;a class="headerlink" href="#special-tags" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Block types 2 to 5 are what I refer to as the special tags.  In order, the HTML
+specification refers to these as the comment tag, the processing instruction tag,
+the declaration tag, and the CDATA tag.  Each of these tags is authored exactly as
+would be expected in a normal HTML document, and has it’s own distinct purpose.  In
+each case, the start condition is a simple string, and the end condition is the
+inversion of that string.&lt;/p&gt;
+&lt;p&gt;While most of these tags have seldom used or esotetic purposes, the comment tag is used
+frequently in HTML code, and is common in HTML documents.  Similar to block type 1
+above, the following text is considered a complete HTML block:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="c"&gt;&amp;lt;!--&lt;/span&gt;
+&lt;span class="c"&gt;    style type="text/css"&amp;gt;&lt;/span&gt;
+&lt;span class="c"&gt;h1 { font-size: 140%; font-weight: bold; border-top: 1px solid gray; padding-top: 0.5em; }&lt;/span&gt;
+&lt;span class="c"&gt;&amp;lt;/style&amp;gt;&lt;/span&gt;
+&lt;span class="c"&gt;--&amp;gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;as is:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;&amp;lt;!&lt;/span&gt;&lt;span class="c1"&gt;-- this is a comment --&amp;gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Similar to the previous HTML block type, these HTML block types were also easy to
+figure out and implement.  Just like before: look for one of the start strings, capture
+everything until we find one of the end strings.  Just as quick and just as painless.&lt;/p&gt;
+&lt;h3 id="everything-else-tags"&gt;“Everything Else” Tags&lt;a class="headerlink" href="#everything-else-tags" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;With block types 1 to 5 out of the way, the work focused in on the remaining
+block types 6 and 7.  These two block types are different than the other blocks, with
+their most prominent difference being that their end condition is a simple blank line.
+Another difference is that there is a long list of tag names that are eligible for block
+type 6, while any other tag is relegated to block type 7.  This becomes important as the
+start conditions of block type 6 are the string &lt;code&gt;&amp;lt;&lt;/code&gt; or &lt;code&gt;&amp;lt;/&lt;/code&gt;, followed by the tag name,
+and then followed by whitespace, the string &lt;code&gt;&amp;gt;&lt;/code&gt;, the string &lt;code&gt;/&amp;gt;&lt;/code&gt; or the end of the line.
+In contrast, the start conditions for block type 7 are that the HTML must either be a
+complete open tag or a complete close tag, followed by optional whitespace and the end
+of the line.  As an additional requirement, a block type 7 HTML block cannot interrupt
+a paragraph.&lt;/p&gt;
+&lt;p&gt;To me, these rules are confusing to anyone authoring even a small piece of HTML in
+Markdown, adding to the reasons for me to suggest to people not to use HTML in Markdown.
+While this confusion is not evident in the examples for the block types 1 to 5,
+consider this sample:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nt"&gt;&amp;lt;canvas&lt;/span&gt;
+    &lt;span class="na"&gt;class=&lt;/span&gt;&lt;span class="s"&gt;"my-canvas"&lt;/span&gt;&lt;span class="nt"&gt;&amp;gt;&lt;/span&gt;
+&lt;span class="nt"&gt;&amp;lt;pre&amp;gt;&lt;/span&gt;
+**Hello**,
+
+_world_.
+&lt;span class="nt"&gt;&amp;lt;/pre&amp;gt;&lt;/span&gt;
+&lt;span class="nt"&gt;&amp;lt;/canvas&amp;gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;and this sample:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nt"&gt;&amp;lt;table&lt;/span&gt;
+    &lt;span class="na"&gt;class=&lt;/span&gt;&lt;span class="s"&gt;"column"&lt;/span&gt;&lt;span class="nt"&gt;&amp;gt;&amp;lt;tr&amp;gt;&amp;lt;td&amp;gt;&lt;/span&gt;
+&lt;span class="nt"&gt;&amp;lt;pre&amp;gt;&lt;/span&gt;
+**Hello**,
+
+_world_.
+&lt;span class="nt"&gt;&amp;lt;/pre&amp;gt;&lt;/span&gt;
+&lt;span class="nt"&gt;&amp;lt;/td&amp;gt;&amp;lt;/tr&amp;gt;&amp;lt;/table&amp;gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Without looking at the information in the specification, how easy is it to tell what the
+output of each sample is?  To be honest, I had to refer back to the
+&lt;a href="https://github.github.com/gfm/#html-blocks"&gt;HTML block definitions&lt;/a&gt; in the GFM
+specification twice when I was writing these samples and three times when I was
+verifying the samples before publishing this article.  That doesn’t bode well, does it?&lt;/p&gt;
+&lt;p&gt;For the first example, the &lt;code&gt;canvas&lt;/code&gt; tag name is not in the list for block type 6, and a
+block type 7 evaluation fails as the tag is neither a complete start tag nor a complete
+end tag.  As such, the &lt;code&gt;canvas&lt;/code&gt; start tag ends up being normal text, to be wrapped in a
+paragraph.  The next tag, the &lt;code&gt;pre&lt;/code&gt; start tag, gets identified as a block type 1 start,
+finishing at it’s own &lt;code&gt;pre&lt;/code&gt; end tag, with the remaining &lt;code&gt;canvas&lt;/code&gt; end tag going into it’s
+own paragraph.  I know that wasn’t what I expected at first glance.&lt;/p&gt;
+&lt;p&gt;The second example has different issues.  Because the &lt;code&gt;table&lt;/code&gt; tag name is in the block
+type 6 list of allowable tag names, the start conditions only state that it needs to
+start with the first part of a start tag or end tag, which the string &lt;code&gt;&amp;lt;table&lt;/code&gt;
+satisfies.  However, as the end condition for block type 6 HTML blocks is a blank
+line, the HTML block ends after &lt;code&gt;**Hello**,&lt;/code&gt; and before &lt;code&gt;_world_.&lt;/code&gt;.  At this point,
+the text &lt;code&gt;_world_.&lt;/code&gt; is parsed as normal text, and the text &lt;code&gt;&amp;lt;/pre&amp;gt;&lt;/code&gt; is interpreted as
+a complete end tag by the block type 7 rules, carrying a block type 7 HTML block to
+the end of the sample.  When reading a similar example as part of
+&lt;a href="https://github.github.com/gfm/#example-118"&gt;example 118&lt;/a&gt;, it did take several tries
+to figure out what was going on.&lt;/p&gt;
+&lt;p&gt;These block types provided a bit of complexity that was different than the previous
+blocks.  As such, I hit a couple of road blocks that I had to work through.  It wasn’t
+that the implementation was much more complicated than the previous HTML block types,
+they weren’t.  It’s
+almost the same process: find one of the start conditions, and capture everything
+until a blank line.  Sure, the start conditions were a bit more meaty, but other than
+that, it was relatively simple.  It was that they start conditions and end conditions
+were different for these 2 HTML block types that made me look back at the use cases and
+scenario tests with a couple of “huh”s until I that difference registered in my head.
+And that list separating HTML block type 6 from 7… sheesh.&lt;/p&gt;
+&lt;h2 id="my-recommendation"&gt;My Recommendation&lt;a class="headerlink" href="#my-recommendation" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;When it comes to HTML blocks, I implemented them as part of the parser because they
+are part of the specification.  But because of the complexity in understanding
+HTML blocks, I whole heartedly recommend avoiding using HTML blocks if at all possible.&lt;/p&gt;
+&lt;h2 id="what-was-my-experience-so-far"&gt;What Was My Experience So Far?&lt;a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;I took my time with the implementation for HTML blocks due to the complexities stated
+above.  For the most part, the code I implemented worked on the first or second try,
+with few cases where it took more tries and debugging than that.  I believe the key
+to the relatively easy implementation was breaking the groups and tasks down into
+multiple, smaller groups and smaller tasks.  In retrospect, I believe this enabled me to
+more readily get my mind around the task to accomplish, and not get overwhelmed by
+the size of the problem.&lt;/p&gt;
+&lt;p&gt;Implementing that thinking for the project, while not concrete, helped me see other
+things for the project in a better perspective. Most of the things I initially thought
+would be complex turned out to not be that complex.  The long list of tag names for
+block type 6?  Strings in a list object. The end conditions?  Either looking for a
+blank line or one of a set of strings in one of the following lines.  Getting the use
+cases right in the scenario tests?  Really simple.  I still contend that authoring HTML
+in Markdown is complex, but the implementation was pretty easy.&lt;/p&gt;
+&lt;p&gt;Another boost to my confidence was tackling the HTML blocks and getting them out of
+my “technical debt column”.  While I believe that I made the right decision to defer
+the HTML blocks for the right reasons, it still felt good to get them dealt with.
+Similar to my experience with translating the last 2-3 uses cases into scenario
+tests, thinking about revisiting any technical debt also triggers similar expectations
+of the reworking of existing code, if that revisiting is actually possible at all.
+Taking something out of technical debt and being able to remove that uncertainty
+definitely helped my confidence towards the completion of the parser for this project.&lt;/p&gt;
+&lt;p&gt;All in all, I believe things are still headed in the right direction!&lt;/p&gt;
+&lt;h2 id="what-is-next"&gt;What is Next?&lt;a class="headerlink" href="#what-is-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;During the implementation of the PyMarkdown parser, I have been using my PyScan script
+to great benefit.  As such, I decided to take the time to polish it up a bit and
+document it in
+&lt;a href="https://jackdewinter.github.io/2020/01/13/measuring-testing-in-python-scripts/"&gt;this article&lt;/a&gt; on Software Quality.
+While doing that, I took some time to refactor the PyMarkdown code to make it easier to
+work with, preparing it for the inline processing that was to come next.  The
+next article will go over the refactoring that I did, and how it helped the project.&lt;/p&gt;
+&lt;div class="footnote"&gt;
+&lt;hr/&gt;
+&lt;ol&gt;
+&lt;li id="fn:countScenarios"&gt;
+&lt;p&gt;The totals are as follows: paragraphs (9), tabs (11), indented code blocks (15), atx headings (18), thematic breaks (19), block quotes (22), lists (25),setext headings (27), and fenced code blocks (29). &lt;a class="footnote-backref" href="#fnref:countScenarios" title="Jump back to footnote 1 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/div&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category></entry><entry><title>Markdown Linter - Adding Block Quotes and Lists</title><link href="https://jackdewinter.github.io/2020/02/03/markdown-linter-adding-block-quotes-and-lists/" rel="alternate"></link><published>2020-02-03T00:00:00-08:00</published><updated>2020-02-03T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-02-03:/2020/02/03/markdown-linter-adding-block-quotes-and-lists/</id><summary type="html">
 &lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;Having the leaf blocks mostly in place, as documented
 &lt;a href="https://jackdewinter.github.io/2020/01/27/markdown-linter-parsing-normal-markdown-blocks/"&gt;in the last article&lt;/a&gt;, the next items
@@ -24,7 +305,7 @@ the leaf blocks!&lt;/p&gt;
 project’s GitHub repository in the commits that occurred between
 &lt;a href="https://github.com/jackdewinter/pymarkdown/commit/49407f86564479934ee92fb59597ba830a46fde8"&gt;08 December 2019&lt;/a&gt;
 and
-&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/24fd972aef725bc55659ad3c2e7c1b93737a1874"&gt;20 December 2019&lt;/a&gt;.  This work includes creating the
+&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/00bbef09eba4fd5d7c663ca6e991b48e5b96c60e"&gt;15 December 2019&lt;/a&gt;.  This work includes creating the
 scenario tests for all of the Container Blocks as documented in the GFM specification
 and implementing the parsing to pass most those tests except for the nested cases.&lt;/p&gt;
 &lt;h2 id="container-blocks-leaf-blocks-and-interactions-oh-my"&gt;Container Blocks, Leaf Blocks, and Interactions (Oh My!)&lt;a class="headerlink" href="#container-blocks-leaf-blocks-and-interactions-oh-my" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
