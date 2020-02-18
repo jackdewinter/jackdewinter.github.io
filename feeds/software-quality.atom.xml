@@ -1,5 +1,298 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench - Software Quality</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/software-quality.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2020-02-10T00:00:00-08:00</updated><entry><title>Markdown Linter - Adding HTML Blocks</title><link href="https://jackdewinter.github.io/2020/02/10/markdown-linter-adding-html-blocks/" rel="alternate"></link><published>2020-02-10T00:00:00-08:00</published><updated>2020-02-10T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-02-10:/2020/02/10/markdown-linter-adding-html-blocks/</id><summary type="html">
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench - Software Quality</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/software-quality.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2020-02-17T00:00:00-08:00</updated><entry><title>Markdown Linter - Taking Time to Refactor -- Post-Block Implementation</title><link href="https://jackdewinter.github.io/2020/02/17/markdown-linter-taking-time-to-refactor-post-block-implementation/" rel="alternate"></link><published>2020-02-17T00:00:00-08:00</published><updated>2020-02-17T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-02-17:/2020/02/17/markdown-linter-taking-time-to-refactor-post-block-implementation/</id><summary type="html">
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;The title of the article is not very glamorous, but it describes the changes I made to
+the project after the block processing and before the inline processing.  From a project
+completeness viewpoint, all of the block elements were done except for table blocks and
+link reference definitions, and …&lt;/p&gt;</summary><content type="html">
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;The title of the article is not very glamorous, but it describes the changes I made to
+the project after the block processing and before the inline processing.  From a project
+completeness viewpoint, all of the block elements were done except for table blocks and
+link reference definitions, and those were temporarily shelved.  The big decision before
+me was whether or not to plow ahead with inline processing or take some time to clean
+things up before continuing.&lt;/p&gt;
+&lt;p&gt;After weighing the options in my head for a while, I decided to take some time to tidy
+up my work on my PyScan script and document it in
+&lt;a href="https://jackdewinter.github.io/2020/01/13/measuring-testing-in-python-scripts/"&gt;this article&lt;/a&gt;.
+Part of that decision was based on the time of year (it was the holiday season) and the
+other part of the decision was based on timing for the PyMarkdown project.  At this
+point, the blocks were mostly finished and the inline processing was the next feature
+to be implemented.  To me, it just made good sense to clean up the PyScan tool, write
+an article or two on it, and refactor some of the PyMarkdown project before moving
+forward with inline processing.&lt;/p&gt;
+&lt;p&gt;The full record of the work detailed in this article is documented in the
+project’s GitHub repository in the commits between
+&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/98b479816d74d04715a1f2c23c6941836ad1a70c"&gt;20 December 2019&lt;/a&gt; and
+&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/eebbf07d72836f14fb3b20ef2d3c1e0139e942a2"&gt;31 January 2020&lt;/a&gt;.&lt;/p&gt;
+&lt;h2 id="refactor-1-extracting-function-groups"&gt;Refactor #1: Extracting Function Groups&lt;a class="headerlink" href="#refactor-1-extracting-function-groups" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;The first things that I wanted to refactor were the generic helper functions used for
+parsing and the helper functions used for dealing with HTML.  While the parsing helper
+functions were already at the end of the &lt;code&gt;tokenized_markdown.py&lt;/code&gt; file, it made sense to
+move the HTML helper functions down to the same location at the end of the file.  Once
+that was accomplished, it took me about 2 milliseconds to figure out that they should
+be in their own modules.  Hence, the parsing helper functions were moved out into the
+&lt;code&gt;parser_helper.py&lt;/code&gt; file and the HTML helper functions were moved out into the
+&lt;code&gt;html_helper.py&lt;/code&gt; file.&lt;/p&gt;
+&lt;p&gt;Along the way, proper unit tests were added for these functions.  As part of the normal
+process of parsing the Markdown document, they had been battle tested by their usage,
+but having their own dedicated unit tests was the right thing to do.  The unit tests
+for the parsing helper functions were all added with filenames that are the string
+&lt;code&gt;test_&lt;/code&gt; followed by the name of the distinct function that they test.  As the HTML
+helper functions more tightly coupled that the parser functions, I kept their unit
+tests coupled by added all of them to the &lt;code&gt;test_html_tags.py&lt;/code&gt; file.&lt;/p&gt;
+&lt;p&gt;This refactoring was performed to reduce the complexity and maintenance of the main
+module.  By moving these functions to well-defined modules of their own, I instantly
+found that it was easy to find functions in either module, instead of search for them
+at the end of the main file.  For me, that feedback is always a good sign that the
+refactor was the right thing to do.&lt;/p&gt;
+&lt;h2 id="refactor-2-reducing-complexity-with-is_character_at_index_one_of"&gt;Refactor #2: Reducing Complexity with &lt;code&gt;is_character_at_index_one_of&lt;/code&gt;&lt;a class="headerlink" href="#refactor-2-reducing-complexity-with-is_character_at_index_one_of" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;As I was looking through the code for the previous refactoring, I noticed that there
+were a number of functions that were “too big”.  From experience, I find that these
+type of functions usually have more than one responsibility, and reducing those
+responsibilities reduces their complexity.  The first example of this that I found was
+the &lt;code&gt;is_fenced_code_block&lt;/code&gt; function, which included the following series of lines:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
+            &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;extracted_whitespace&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;=&lt;/span&gt; &lt;span class="mi"&gt;3&lt;/span&gt; &lt;span class="ow"&gt;or&lt;/span&gt; &lt;span class="n"&gt;skip_whitespace_check&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+            &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="n"&gt;start_index&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;line_to_parse&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+            &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;line_to_parse&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;start_index&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="s2"&gt;"~"&lt;/span&gt; &lt;span class="ow"&gt;or&lt;/span&gt; &lt;span class="n"&gt;line_to_parse&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;start_index&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="s2"&gt;"`"&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="p"&gt;):&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;While the first two lines were specific to the function, the last two lines followed a
+pattern that happened again and again in that module.  Because those last two lines are
+really checking to see if the next character is one of the two values, I extracted
+that logic into a new &lt;code&gt;is_character_at_index_one_of&lt;/code&gt; function for the &lt;code&gt;ParserHelper&lt;/code&gt;
+module, and added tests into &lt;code&gt;test_is_character_at_index.py&lt;/code&gt; module.&lt;/p&gt;
+&lt;p&gt;This refactoring had a noticeable impact on the complexity of each of the modules that
+used the new function.  This impact was a reduction in the number of branches in each
+function, with each count decreasing by one for each character to look for.  As an
+example, the &lt;code&gt;is_fenced_code_block&lt;/code&gt; code above went from the snippet above to the
+following:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
+            &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;extracted_whitespace&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;=&lt;/span&gt; &lt;span class="mi"&gt;3&lt;/span&gt; &lt;span class="ow"&gt;or&lt;/span&gt; &lt;span class="n"&gt;skip_whitespace_check&lt;/span&gt;
+        &lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="n"&gt;ParserHelper&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_character_at_index_one_of&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+            &lt;span class="n"&gt;line_to_parse&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;start_index&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;fenced_code_block_start_characters&lt;/span&gt;
+        &lt;span class="p"&gt;):&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;That is a reduction from 5 branches down to 3 branches, making that function and that
+module less complex in the process.  In addition, instead of reading those two lines
+and trying to figure out what they are doing, the function call to the
+&lt;code&gt;is_character_at_index_one_of&lt;/code&gt; function eliminates the “what is it doing” step, making
+it easier for someone reading the code to understand those lines.&lt;/p&gt;
+&lt;h2 id="refactor-3-simplifying-the-close_open_blocks-function"&gt;Refactor #3: Simplifying The &lt;code&gt;close_open_blocks&lt;/code&gt; Function&lt;a class="headerlink" href="#refactor-3-simplifying-the-close_open_blocks-function" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;This refactoring was a simple one, but for me it had a noticeable impact on helping
+me get a clearer understanding of the function.  Prior to the change, the
+&lt;code&gt;close_open_blocks&lt;/code&gt; function had 2 distinct responsibilities: determine if the element
+on the top of the stack needed to be closed, and if so, remove that element from the
+top and close the block. While I was able to read the function and use it properly,
+I often had a little question in my head about whether or not I was using the
+function properly.&lt;/p&gt;
+&lt;p&gt;After the refactoring, the code containing the first responsibility remained in the
+&lt;code&gt;close_open_blocks&lt;/code&gt; function and the code for the second responsibility was placed in
+the new &lt;code&gt;remove_top_element_from_stack&lt;/code&gt; function.  When I looked at those two functions
+during the writing of this article, I was able to see a very clear picture of what each
+function is doing, with clear delineations of those responsibilities.  The
+&lt;code&gt;close_open_blocks&lt;/code&gt; implements a while loop with 4 distinct ways to exit out of the
+loop, and the &lt;code&gt;remove_top_element_from_stack&lt;/code&gt; function remove the top element, adding
+the appropriate tokens to the document’s token stream.  Clear and concise, hence easy
+to read.&lt;/p&gt;
+&lt;p&gt;This function is core to the processing of the blocks, and making it clearer was
+important to me.  While it was a small refactor, it increased my confidence that the
+function, and any functions that called it, were operating properly.  I believe that my
+confidence increased because it went from one “messy” function to two separate
+functions with very clear intentions.  By rewriting the code into two functions and
+keeping each function simple, the messiness vanished.&lt;/p&gt;
+&lt;h2 id="refactor-4-cleaning-up-the-determine_html_block_type-function"&gt;Refactor #4: Cleaning Up the &lt;code&gt;determine_html_block_type&lt;/code&gt; Function&lt;a class="headerlink" href="#refactor-4-cleaning-up-the-determine_html_block_type-function" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;I’ll admit, the next candidate, the &lt;code&gt;determine_html_block_type&lt;/code&gt; function was a mess.
+At 88 lines long and 24 branches, it was definitely a function with too many
+responsibilities.  Similar to the work documented in the previous section, I started to
+take a look at this function and try and figure out what it was doing.  When I finished,
+I came away with three responsibilities that the function was performing:
+handling the special case (html block types 1 to 5), handling the normal cases (html
+block types 6 and 7), and some cleaning up of the results for html block type 7.  That
+was two responsibilities too many.&lt;/p&gt;
+&lt;p&gt;Similar in essence to the work above, the &lt;code&gt;determine_html_block_type&lt;/code&gt; function was
+broken up along the identified lines of responsibility.  The
+&lt;code&gt;check_for_special_html_blocks&lt;/code&gt; function was created to handle the special cases, the
+&lt;code&gt;check_for_normal_html_blocks&lt;/code&gt; function was created to handle the normal cases, and the
+&lt;code&gt;determine_html_block_type&lt;/code&gt; function contained orchestration logic for calling those
+two functions, plus the special cleaning up for the html block type 7 logic.&lt;/p&gt;
+&lt;p&gt;While this function isn’t as core to the parser as the &lt;code&gt;close_open_blocks&lt;/code&gt; function,
+its refactoring had a similar effect.  Each of the added functions contained a single
+responsibility, this making the usage of all three functions together easy to determine.
+For me, that was good progress.&lt;/p&gt;
+&lt;h2 id="refactor-4-clearing-pylint-warnings"&gt;Refactor #4: Clearing PyLint warnings&lt;a class="headerlink" href="#refactor-4-clearing-pylint-warnings" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;During the writing of this article, the first thought that came to mind when writing
+this section was that I should be ashamed that it took me until this point to address
+the PyLint warnings on the project.  Taking a bit of a deeper look into how I
+felt about this, I believe it had to do with where I draw the line between
+“just playing around” and “real code”.  For me, I believe this transition is when a
+project moves from a Proof-Of-Concept project to a Real™ project.  I am not 100%
+sure, but I believe that it was at this point, give or take a couple of days, that I
+felt that this was a real project.  While it is hard to pin down why, I believe that
+having the block section of the specification done helped my mind crystalize that
+the project is going to happen.  It was as if someone had whispered “This is going
+to happen” in my ear, and that I needed to tidy things up.  Once I figured that out,
+it just felt like a natural transition, nothing to be ashamed about.&lt;/p&gt;
+&lt;p&gt;Now that this was a Real™ project, I needed to ensure that any PyLint
+warnings were addressed or suppressed.  While I prefer to address these issues, some of
+the warnings, such as the &lt;code&gt;too-many-arguments&lt;/code&gt; warning, occupy one of my grey areas.
+Especially
+with parsers, a lot of state information needs to be passed around, to ensure the
+parsing is performed properly.  This often results in functions that take too many
+arguments.  At this stage of the project, I decided to suppress those warnings, with a
+number of &lt;code&gt;too-many-locals&lt;/code&gt; warnings until later in the project, when I have a better
+sense of how to optimize those function calls for this parser.&lt;/p&gt;
+&lt;p&gt;This refactoring helped me remember an old adage a friend taught me about software:
+“It isn’t if there is a problem with your code, it is a question of how often the
+problems within your code occur.”  More of a realist than a pessimist, he figured that
+each line of code brought a new set of issues and bugs with it, and it was our job to
+discover and handle those issues that our users would find before they found them.
+For me, it was a good refresher in humility when developing software.&lt;/p&gt;
+&lt;h2 id="refactor-5-reducing-complexity-with-the-92at_index92-functions"&gt;Refactor #5: Reducing Complexity with the \&lt;em&gt;at_index\&lt;/em&gt; Functions&lt;a class="headerlink" href="#refactor-5-reducing-complexity-with-the-92at_index92-functions" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Ever since the section above on
+&lt;a href="https://jackdewinter.github.io/2020/02/17/markdown-linter-taking-time-to-refactor-post-block-implementation/#bob"&gt;parser functions&lt;/a&gt;,
+I had been slowly searching for other patterns that I could refactor.  In the process, I
+found a group of patterns that weren’t complex, but would benefit from a small
+refactor.  Basically, a refactoring of that pattern wouldn’t make a lot of
+difference in reducing the number of branches, but it would reduce the complexity of
+the functions by making them easier to read.&lt;/p&gt;
+&lt;p&gt;The group of patterns that I found all centered around finding out whether or not a
+character or a string was at a given location in the string.  Specifically, the parser
+contained three of these patterns that I felt were worth extracting into their own
+functions: &lt;code&gt;is_character_at_index&lt;/code&gt;, &lt;code&gt;are_characters_at_index&lt;/code&gt;, and
+&lt;code&gt;is_character_at_index_not&lt;/code&gt;.  None of these functions would facilitate a large
+improvement, but the change from the following text:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
+            &lt;span class="n"&gt;start_index&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;line_to_parse&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+            &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
+                &lt;span class="n"&gt;line_to_parse&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;start_index&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;=&lt;/span&gt; &lt;span class="s2"&gt;"0"&lt;/span&gt; &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="n"&gt;line_to_parse&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;start_index&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;=&lt;/span&gt; &lt;span class="s2"&gt;"9"&lt;/span&gt;
+            &lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="p"&gt;):&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;to this text:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
+            &lt;span class="n"&gt;ParserHelper&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_character_at_index_one_of&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+                &lt;span class="n"&gt;line_to_parse&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;start_index&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;string&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;digits&lt;/span&gt;
+        &lt;span class="p"&gt;):&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;produces more readable code by simply stating the intent of those lines, instead of
+leaving the reader to interpret them.&lt;/p&gt;
+&lt;p&gt;While I admit that it wasn’t a big change, to me this refactoring provided some extra
+confidence that the project was getting to a cleaner place.  Sometimes refactoring
+produces big, measurable impacts, and sometimes they produce little ripples that are
+barely noticeable.  However, sometimes those little ripples can mean a lot, and worth
+a lot.&lt;/p&gt;
+&lt;h2 id="refactor-6-increasing-code-coverage"&gt;Refactor #6: Increasing Code Coverage&lt;a class="headerlink" href="#refactor-6-increasing-code-coverage" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;After a number of refactors to do with parsing, I noticed that the PyScan numbers
+for code coverage were in the high nineties, which is very good for a number of
+projects.  However, in a project that was designed from the ground up for high
+code coverage numbers, such as the PyMarkdown project, there is almost always room
+to do a bit better.&lt;/p&gt;
+&lt;p&gt;In the case of the implementation of the HTML blocks, I implemented defensive
+programming to try to ensure that edge cases were protected against.  In re-reading
+the HTML block specification a couple of times, the focus of the specification seemed
+to be focused on the main use cases, not the edge cases.  As such,
+the code coverage report gave me good input on how to add 4 new use cases that helped
+ensure that the edge cases for HTML blocks were fully covered.&lt;/p&gt;
+&lt;p&gt;This type of refactoring is a difficult one for me to justify to some people, but I
+feel strongly about it.  The justification centers around what level of code coverage
+is considered “good enough”.  For myself, there are 2 main factors that weigh into my
+decision on what is good enough with code quality: was the project designed with
+testing in mind and what is the effort required to address the next issue.  In this
+case, as minimal effort was required to add the 4 simple scenario tests to address the
+issue, I would easily argue that it wasn’t good enough.  From my point of view, the
+small cost easily justified the benefit.&lt;/p&gt;
+&lt;h2 id="refactor-7-translating-token-strings-to-actual-tokens"&gt;Refactor #7: Translating Token Strings to Actual Tokens&lt;a class="headerlink" href="#refactor-7-translating-token-strings-to-actual-tokens" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Having made the jump in my head from a Proof-of-Concept project to a Real™
+project, I decided it was time to change the stack tokens and Markdown tokens from
+simple text strings to actual token objects.  Up to this point, I was more concerned
+that the tokens looked right in the output stream, and there were only a relatively few
+number of cases where that output needed to be interrogated later.  With inline
+processing on the horizon, which would heavily make use of token content, it made sense
+to me to undergo this change before the inline processing started.&lt;/p&gt;
+&lt;p&gt;The two places where I had made this tradeoff were the stack tokens and the Markdown
+document tokens.  The stack tokens denote where in the processing the parser is and
+the Markdown document tokens denote what was found during the processing.  In both
+cases, it was more important to me to see the right patterns being parsed than to tie
+them down to a given structure.  Based on experience, I wanted to do the least possible
+work to get to this point, and then have the structure for each object emerge.&lt;/p&gt;
+&lt;p&gt;For the &lt;code&gt;StackToken&lt;/code&gt; object, the structure that emerged was pretty simple.  Each class
+is responsible for any of it’s own variables, but also for providing a read-only, text
+version of these variables, assigned to the base class’s &lt;code&gt;extra_data&lt;/code&gt; variable.  In this
+way, the base class can include a number of the useful functions without requiring any
+knowledge about the child classes.  By implementing the &lt;code&gt;__str__&lt;/code&gt;, &lt;code&gt;__repr__&lt;/code&gt;, &lt;code&gt;__eq__&lt;/code&gt;,
+and &lt;code&gt;generate_close_token&lt;/code&gt; in this way, each child class was kept very simple and
+straightforward.  In addition, instead of using Python’s &lt;code&gt;isinstance&lt;/code&gt; function to figure
+out the type of token, I added &lt;code&gt;is_*&lt;/code&gt; methods for each token type to make the code
+referencing the tokens more readable.&lt;/p&gt;
+&lt;p&gt;The refactoring for the &lt;code&gt;MarkdownToken&lt;/code&gt; object was almost the same as for the
+&lt;code&gt;StackToken&lt;/code&gt; object, but with a couple
+of key differences.  With the &lt;code&gt;StackToken&lt;/code&gt;, the token itself was the main focus of the
+object, whereas with the &lt;code&gt;MarkdownToken&lt;/code&gt;, it is the data contained within the token
+that is key.  The other big difference is that &lt;code&gt;MarkdownToken&lt;/code&gt; objects are the artifacts
+that will be consumed and analyzed by the PyMarkdown project, not just an internal
+representation.  As I had a lot of positive success with the design and use of the
+&lt;code&gt;StackToken&lt;/code&gt; class, I modelled the &lt;code&gt;MarkdownToken&lt;/code&gt; class in a similar fashion, keeping
+in mind the differences and altering the design to properly accommodate them.  From a
+design point of view, things didn’t change things that much, but I needed to make sure
+those objects look and function right, as they are very visible.&lt;/p&gt;
+&lt;p&gt;This refactor was a long time coming, but I felt that it was the right time to do it.
+As I mentioned in previous sections, the project felt more like a Real™ project
+and not a proof of concept.  With a good bulk of the parsing completed, and with a
+solid opinion of how I was going to orchestrate the remaining pieces, it was the right
+time to nail down how those tokens would look to users of the project.  While I could
+have done that earlier in the project, I believe that I wouldn’t have been able to
+do so with the same confidence that I made the right choice.  For this project, I
+believe that leaving the tokens in the raw form to this point was the best move
+possible.&lt;/p&gt;
+&lt;h2 id="refactor-8-consolidating-text-blocks"&gt;Refactor #8: Consolidating Text Blocks&lt;a class="headerlink" href="#refactor-8-consolidating-text-blocks" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Of all the refactors that I have talked about in this article, this refactor was the
+one that I really needed to do.  Inline processing addresses the group of features that
+expand on Markdown text within the blocks, and a lot of those processes assume that the
+text within their blocks is one long string to process.  Currently, the text tokens
+were distinct and disjoint, each one added in the order they were processed.  To get
+ready for inline processing, those text tokens needed to be consolidated.&lt;/p&gt;
+&lt;p&gt;There were two possible paths to take to accomplish this:  deal with the processing as
+the text tokens were added or deal with them in a subsequent processing step.  As I want
+to keep the processing logic as simple as possible, I decided that a follow-up step to
+consolidate those tokens was the best course of action.  To accommodate this change, I
+added the &lt;code&gt;coalesce_text_blocks&lt;/code&gt; function to simply go through the document tokens,
+look for 2 text tokens beside each other, and append the second token’s text to the
+first token.  Then, in the &lt;code&gt;transform&lt;/code&gt; function, instead of just returning the results
+from the &lt;code&gt;parse_blocks_pass&lt;/code&gt; function, those results were passed to the
+&lt;code&gt;coalesce_text_blocks&lt;/code&gt; and those were returned.&lt;/p&gt;
+&lt;p&gt;While this change was a relatively small change, it impacted the token output for a lot
+of the test cases.  In a meaningful way, that impact increased my confidence that
+tackling it was the right choice to complete before inline processing started.  The
+impact of the change on the test cases validated that it was a far reaching change,
+one that was better to have happen before the next stage of processing.&lt;/p&gt;
+&lt;h2 id="what-was-my-experience-so-far"&gt;What Was My Experience So Far?&lt;a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Unlike the other articles in this series, this article was about how I took a bit
+of a breather and focused on improving the quality of the PyMarkdown project.  As
+the next set of features involves inline processing of text blocks, I believe
+whole heartedly that taking that break to focus on refactoring increased my confidence
+that I was on the right track with the parser.  &lt;/p&gt;
+&lt;p&gt;Why do I feel that way?&lt;/p&gt;
+&lt;p&gt;Looking into the near future, I know that inline processing will increase the
+complexity to the project, and any effort to reduce the project’s complexity ahead of
+that will directly help reduce the complexity of the inline processing.  Further into
+the future, there are extensions to
+Markdown that I will need to add that will also increase the complexity of the
+project.  Add to that my plans to comply with other Markdown specifications, such as
+the CommonMark specification, which will also increase the complexity.&lt;/p&gt;
+&lt;p&gt;Why refactor? I want to keep the project simple and uncomplicated.  From a software
+quality point of view, each refactor makes the project more simple and more
+uncomplicated.  While some of the changes didn’t move the needle on the software
+quality meter much, each change helps.&lt;/p&gt;
+&lt;p&gt;In the end, I refactor projects to keep them simple.  As Einstein said:&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Make everything as simple as possible, but not simpler.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h2 id="what-is-next"&gt;What is Next?&lt;a class="headerlink" href="#what-is-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Having teased the addition of inline processing to the project for most of this
+article, the next article will be on the implementation of the first 3 aspects of
+inline processing that I tackled.&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category></entry><entry><title>Markdown Linter - Adding HTML Blocks</title><link href="https://jackdewinter.github.io/2020/02/10/markdown-linter-adding-html-blocks/" rel="alternate"></link><published>2020-02-10T00:00:00-08:00</published><updated>2020-02-10T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-02-10:/2020/02/10/markdown-linter-adding-html-blocks/</id><summary type="html">
 &lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;Having completed most of the Markdown block elements, as documented
 in the last two articles on
