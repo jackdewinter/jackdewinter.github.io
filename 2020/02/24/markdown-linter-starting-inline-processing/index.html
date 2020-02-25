@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="author" content="Jack De Winter" />
+
+        <meta name="description" content="Introduction¶ Maybe it’s just me, but I love the feeling of completing a good round of refactoring where I really get to focus on making sure that the foundations of the project are stable. If it helps any readers, I imagine it as a spa day for your project …
+" />
+        <meta property="og:type" content="article" />
+        <meta name="twitter:card" content="summary">
+
+<meta name="keywords" content="markdown linter, Software Quality, " />
+
+<meta property="og:title" content="Markdown Linter - Starting Inline Processing "/>
+<meta property="og:url" content="https://jackdewinter.github.io/2020/02/24/markdown-linter-starting-inline-processing/" />
+<meta property="og:description" content="Introduction¶ Maybe it’s just me, but I love the feeling of completing a good round of refactoring where I really get to focus on making sure that the foundations of the project are stable. If it helps any readers, I imagine it as a spa day for your project …" />
+<meta property="og:site_name" content="Jack&#39;s Digital Workbench" />
+<meta property="og:article:author" content="Jack De Winter" />
+<meta property="og:article:published_time" content="2020-02-24T00:00:00-08:00" />
+<meta name="twitter:title" content="Markdown Linter - Starting Inline Processing ">
+<meta name="twitter:description" content="Introduction¶ Maybe it’s just me, but I love the feeling of completing a good round of refactoring where I really get to focus on making sure that the foundations of the project are stable. If it helps any readers, I imagine it as a spa day for your project …">
+
+        <title>Markdown Linter - Starting Inline Processing  · Jack&#39;s Digital Workbench
+</title>
+        <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://jackdewinter.github.io/theme/css/style.min.css?bec7d543">
+
+        <link href="https://jackdewinter.github.io/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Jack&#39;s Digital Workbench - Full Atom Feed" />
+
+
+    </head>
+    <body>
+        <div id="content">
+            <div class="navbar navbar-static-top">
+                <div class="navbar-inner">
+                    <div class="container-fluid">
+                        <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                        </a>
+                        <a class="brand" href="https://jackdewinter.github.io/"><span class=site-name>Jack's Digital Workbench</span></a>
+                        <div class="nav-collapse collapse">
+                            <ul class="nav pull-right top-menu">
+                                <li >
+                                    <a href=
+                                       https://jackdewinter.github.io
+                                    >Home</a>
+                                </li>
+                                <li ><a href="https://jackdewinter.github.io/categories">Categories</a></li>
+                                <li ><a href="https://jackdewinter.github.io/tags">Tags</a></li>
+                                <li ><a href="https://jackdewinter.github.io/archives">Archives</a></li>
+                                <li><form class="navbar-search" action="https://jackdewinter.github.io/search.html" onsubmit="return validateForm(this.elements['q'].value);"> <input type="text" class="search-query" placeholder="Search" name="q" id="tipue_search_input"></form></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="container-fluid">
+                <div class="row-fluid">
+                    <div class="span1"></div>
+                    <div class="span10">
+<article itemscope>
+<div class="row-fluid">
+    <header class="page-header span10 offset2">
+        <h1>
+            <a href="https://jackdewinter.github.io/2020/02/24/markdown-linter-starting-inline-processing/">
+                Markdown Linter - Starting Inline Processing
+            </a>
+        </h1>
+    </header>
+</div>
+
+<div class="row-fluid">
+    <div class="span2 table-of-content">
+        <nav>
+        <h4>Contents</h4>
+        <div class="toc">
+<ul>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#inline-processing">Inline Processing</a><ul>
+<li><a href="#backslash-escapes">Backslash Escapes</a></li>
+<li><a href="#character-references">Character References</a></li>
+<li><a href="#code-spans">Code Spans</a></li>
+</ul>
+</li>
+<li><a href="#what-was-my-experience-so-far">What Was My Experience So Far?</a></li>
+<li><a href="#what-is-next">What is Next?</a></li>
+</ul>
+</div>
+        </nav>
+    </div>
+    <div class="span8 article-content">
+            
+            
+<h2 id="introduction">Introduction<a class="headerlink" href="#introduction" title="Permanent link">¶</a></h2>
+<p>Maybe it’s just me, but I love the feeling of completing a good round of refactoring
+where I really get to focus on making sure that the foundations of the project are
+stable.  If it helps any readers, I imagine it as a spa day for your project where the
+project just gets some personalized attention and cleaning up.  While the project isn’t
+in a perfectly clean state, I know that I performed a decent amount of tidying up in
+that direction, work that will help the project as it grows.</p>
+<p>With the project cleaned up, and with the new changes to make the text blocks
+continuous, it was time to start on
+the inline processing.  The first three inline elements to be implemented were the
+first three elements in the
+<a href="https://github.github.com/gfm/">GitHub Flavored Markdown (GFM) Specification</a>:
+backslashes, character references, and code spans.  These elements allow Markdown to
+escape certain characters, replace a text sequence with a single Unicode character,
+or indicate that some text is literal code.  Each of these elements has it’s own
+special use, and are used very frequently when writing Markdown documents.  And if those
+reasons weren’t good enough, they just happen to be the first three sections in the
+specification’s inline processing section.</p>
+<p>The full record of the work detailed in this article is documented in the
+project’s GitHub repository in the commits between
+<a href="https://github.com/jackdewinter/pymarkdown/commit/5c175f68fbe182d052a83d43061443921aae7bc9">08 February 2020</a> and
+<a href="https://github.com/jackdewinter/pymarkdown/commit/235c0c63f6ee5cb41e1f8e71fa4081b36ba1beef">14 February 2020</a>.</p>
+<h2 id="inline-processing">Inline Processing<a class="headerlink" href="#inline-processing" title="Permanent link">¶</a></h2>
+<p>In Markdown processing, there are two main types of processing that occur: processing
+to sort the text into blocks and the processing of the contents for those blocks.
+Courtesy of
+<a href="https://github.github.com/gfm/#blocks-and-inlines">the specification</a>,
+another good explanation is as follows:</p>
+<blockquote>
+<p>We can think of a document as a sequence of blocks — structural elements like paragraphs, block quotations, lists, headings, rules, and code blocks. Some blocks (like block quotes and list items) contain other blocks; others (like headings and paragraphs) contain inline content — text, links, emphasized text, images, code spans, and so on.</p>
+</blockquote>
+<p>While it was not readily apparent on my first read of the specification, inline
+processing occurs only on the content of leaf blocks that do not strictly govern their
+content.  As code blocks contain the literal content for their output and HTML blocks
+contain the literal HTML content for their output, inline processing is not applied to
+those blocks.  Inline processing is applied to the content of the remaining blocks, the
+headings blocks and the paragraph blocks, which just happen to be the most frequently
+used blocks in most Markdown documents.</p>
+<h3 id="backslash-escapes">Backslash Escapes<a class="headerlink" href="#backslash-escapes" title="Permanent link">¶</a></h3>
+<p>Having completed most of the processing required for the leaf blocks and container
+blocks, it was
+time to move on to the inline processing of the content within those blocks.
+The first of the inline processes to be worked on: the backslash escapes.</p>
+<p>For readers familiar with backslashes in modern programming languages, Markdown’s
+usage of backslashes are similar, but with a twist.  In modern programming languages,
+a backslash character is used in strings to escape the character following the
+backslash, using that next character to denote a special character. For each special
+character to be represented, a distinct backslash escape sequence is used to represent
+it.  For example, most languages include the escape sequence <code>\n</code> for a line feed or
+end-of-line character.  This backslash escape is used so often that many programmers
+use the terms “slash-en” or “backslash-en” instead of referring to the <code>\n</code> character
+sequence as the new-line character it represents.</p>
+<p>The twist that I mentioned earlier is that Markdown, unlike programming languages,
+uses backslash escapes to only escape the following ASCII punctuation characters with
+themselves:</p>
+<div class="highlight"><pre><span></span>!"#$%&amp;'()*+,-./:;&lt;=&gt;?@[\]^_`{|}~
+</pre></div>
+<p>For example, the string <code>\!</code> will emit the sequence ‘!’, but the string <code>\a</code> will emit
+the sequence <code>\a</code>.  Coming from a programming background, this took a bit of getting
+used to, but it makes sense.  As Markdown is used to create a human readable document,
+authors should not be concerning themselves with control characters, but with how the
+content is organized.  From that point of view, escaping the punctuation characters
+used to denote organization makes a lot of sense.</p>
+<p>It then follows that each processing character is included in that string of
+characters, and that the most prominent use of backslash escapes in Markdown is to
+avoid block and inline processing.  Because a backslash escaped character is emitted as
+part of the backslash processing in the parser, any other processing of that character
+by the parser is effectively short-circuited. This simply allows the punctuation
+character to be represented without the parser mistaking it for any kind of processing
+instruction.</p>
+<p>For
+example, to include the text <code>&amp;amp;</code> in your document the sequence <code>\&amp;amp;</code> can be
+used to escape the ‘&amp;‘ character.<sup id="fnref:escapingAmp"><a class="footnote-ref" href="#fn:escapingAmp">1</a></sup>  Another example is that the
+following text:</p>
+<div class="highlight"><pre><span></span><span class="err">\</span><span class="o">-</span> <span class="n">this</span> <span class="k">is</span> <span class="n">a</span> <span class="n">paragraph</span>
+</pre></div>
+<p>will generate the text <code>- this is a paragraph</code> as part of a paragraph, instead of
+creating a list item containing the paragraph <code>this is a paragraph</code>.  In both cases,
+the backslash escapes are used to tell the parser to just treat the escaped character
+as itself and not to perform any further processing.  As useful as that
+is, backslashes escapes cannot be used in code blocks, which have been covered
+previously, code spans, which are covered later in this article, or autolinks and raw
+HTML, which are covered in a future article.</p>
+<p>Implementing support for backslash escapes was pretty easy, as it just required a
+change in how the characters were interpreted.  As the text was still contained within
+a single text block, it was just a matter of making sure the right characters were
+emitted.  This was relatively easy as the processing was easy:</p>
+<ul>
+<li>is the next character a backslash?</li>
+<li>if not, emit a backslash and resume normal processing</li>
+<li>if so, check to see what character follows<ul>
+<li>if that character is not in the escape list above, emit a backslash and resume normal processing</li>
+<li>if so, consume that character and emit that character</li>
+</ul>
+</li>
+</ul>
+<p>Basically, if there is a valid backslash sequence, emit the second character and consume
+it, otherwise, emit first character (the backslash character) and continue.  The limits
+on where backslashes can be used was pretty easy to implement, as there were only a few
+places where they were not allowed.</p>
+<h3 id="character-references">Character References<a class="headerlink" href="#character-references" title="Permanent link">¶</a></h3>
+<p>Character references are an important part of HTML, and as such, Markdown has solid
+support for them built in.  Character references allow for the
+inclusion of special characters into the document, without the need to rely on the
+file editor to support Unicode characters.  In addition, the document’s writability and
+readability is often enhanced by presenting the reader with the text <code>&amp;copy;</code> instead
+of the symbol ‘©‘.</p>
+<p>Think about it this way. As a document author, you want to add the copyright symbol to
+your document. Where do you find it on your keyboard?  If it is not there,
+what is the clearest and easiest way to add it to the document that is not tied to a
+specific editor?  Markdown addresses this issue by reusing the HTML5 method of
+specifying character references.</p>
+<p>For each character reference, it starts with the ‘&amp;‘ character
+and ends with the ‘;’ character, with characters between to denote the type of
+character to reference and what the actual reference is.  Named character entity
+references are the easiest to
+read, as they contain some form of the name of the character they represent, such as
+<code>&amp;copy;</code> for the copyright symbol.  The full list of
+named character references that are supported is at the
+<a href="https://html.spec.whatwg.org/multipage/entities.json">HTML5 entity names document</a>. <sup id="fnref:namedEntities"><a class="footnote-ref" href="#fn:namedEntities">2</a></sup>
+As an alternative to the <code>&amp;copy;</code> named reference, the equivalent numeric references
+<code>&amp;#169;</code> or <code>&amp;#x00A9</code> may be used instead.  While the end result on the rendered page
+is the same, I feel that the named references are more readable than the numeric
+references.
+However, in cases where there is no named reference for a given Unicode character, the
+numeric references are very handy.</p>
+<p>Similar to the way in which backslash escapes are
+handled, there are certain blocks that the character references cannot be used in.  In
+particular, they are not recognized in code blocks and code spans, but are recognized
+in most other locations.  For example<sup id="fnref:refExample"><a class="footnote-ref" href="#fn:refExample">3</a></sup>, given the following Markdown text:</p>
+<div class="highlight"><pre><span></span><span class="o">```</span> <span class="n">f</span><span class="o">&amp;</span><span class="n">ouml</span><span class="p">;</span><span class="o">&amp;</span><span class="n">ouml</span><span class="p">;</span>
+<span class="n">f</span><span class="o">&amp;</span><span class="n">ouml</span><span class="p">;</span><span class="o">&amp;</span><span class="n">ouml</span><span class="p">;</span>
+<span class="o">```</span>
+</pre></div>
+<p>the character references in the fenced blocks’s info string are recognized, but the
+character references within the code block are not recognized.  As such, after
+translating this Markdown into HTML, the following HTML is expected:</p>
+<div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">pre</span><span class="p">&gt;&lt;</span><span class="nt">code</span> <span class="na">class</span><span class="o">=</span><span class="s">"language-föö"</span><span class="p">&gt;</span>f<span class="ni">&amp;ouml;&amp;ouml;</span>
+<span class="p">&lt;/</span><span class="nt">code</span><span class="p">&gt;&lt;/</span><span class="nt">pre</span><span class="p">&gt;</span>
+</pre></div>
+<p>In the example, as expected, the character references that feed the <code>class</code> attribute
+for the <code>code</code> tag were translated, while the character references within the bounds of
+the <code>code</code> tag, which are used to denote a code block, are left alone.</p>
+<p>Similar to my experience in processing the backslashes, the implementation for all
+three character references were processed in roughly the same manner.  Instead of a
+single character to look for with backslash escapes, character references have a
+set of allowable character sequences, but otherwise the processing is the same.  Once
+again, the processing was really simple, just follow simple rules.</p>
+<p>However, while it was not particularly difficult in itself, determining the proper
+handling of the <code>entities.json</code> file used as a reference for HTML named entities took a
+bit of thinking to get right.  The main decision was whether or not to download it
+each time, cache it somewhere once downloaded, or just do a “one-time” include of it
+into the project as a resource.  In the end, I
+decided to take the later path, placing the file in the <code>pymarkdown/resources/</code>
+directory.  My assumption is that file does not change that often, perhaps once a month
+at it’s worst.  As I added the file exactly as it was downloaded from the source at
+<a href="https://html.spec.whatwg.org/entities.json">the HTML5 home page</a>, I believe I can check
+on it from time to time, updating the file when required.  With that decision made, I
+just needed to do some research on the best way to include resources into a project,
+and the rest was once again just following well documented instructions.</p>
+<h3 id="code-spans">Code Spans<a class="headerlink" href="#code-spans" title="Permanent link">¶</a></h3>
+<p>Code spans are similar to code blocks, in that they both protect the characters that are
+within their confines.  However, while code blocks are designed to protect multiple
+lines of text, such as source code examples, code spans are designed to protect text
+within a single paragraph.  To create
+a code span, the text to be protected is simply surrounded by one or more backtick (‘`’)
+characters on each side, making sure that the number of starting backticks and closing
+backticks are the same.</p>
+<p>As a simple example, the Markdown <code>`foo`</code> produces the text <code>foo</code> within a special
+HTML tag that has special styling associated within it. Similar to how code blocks
+protect blocks of text that are already formatted in a specific way,  these code spans
+use that styling  are used to specify targeted text that
+already has meaning attached to it.  In my articles, as with other blog authors that
+I have read, I use code spans to indicate that certain strings have literal meaning to
+them, such as the literal text to type in at a keyboard.</p>
+<p>One good example of this from the previous section are the examples of the various
+Markdown sequences needed to produce the copyright symbol.  If I had simply added
+the text <code>&amp;copy;</code> to the Markdown document, it will be interpreted as a character
+sequence, and the ‘©‘ symbol will be generated.  By placing backticks around
+that text, such as <code>`&amp;copy;`</code>, those characters are contained within a code span
+and the text is preserved literally.  And for that last sentence where I needed to
+include the literal text including backticks, I just made sure to include more
+backticks around the text than were contained within the text,
+such as <code>`` `&amp;copy;` ``</code>.<sup id="fnref:doubleBacktick"><a class="footnote-ref" href="#fn:doubleBacktick">4</a></sup></p>
+<p>I knew that the parsing and rendering of the tokens was about to get more complex in
+order to properly implement the code span processing.  To keep the code span, the
+text before it, and the text after it in the right order, I changed the inline parsing
+to allow for a markdown token to be emitted.  When the new code span Markdown token is
+emitted, the surrounding code first adds a new text block containing any text
+collected up until that point, emits the new token, and then resets the
+collected text back to the empty string.  This correctly ordered the tokens, and
+is generic enough to hopefully future-proof similar parsing in the future.</p>
+<p>There were only a small number of issues with the existing scenarios that needed to be
+addressed, now that code spans were handled properly.  Fixing those tests was simple
+and just required resampling the parser’s output.  But during that testing, I realized
+I had made a mistake with the handling of one of the header blocks.  When I wrote the
+original code for the Atx Header blocks, as documented in the article on
+<a href="https://jackdewinter.github.io/2020/01/27/markdown-linter-parsing-normal-markdown-blocks/#group-2-headers">Parsing Normal Markdown Blocks</a>,
+I hadn’t thought about code spans or other more complex inline elements as part of an
+Atx header.  As such, I therefore I wrote a simple implementation that represented the
+header text as a simple string within the token.</p>
+<p>Double checking the specification, I verified that there were no restrictions on using
+code spans within a SetExt or Atx header block.  As such, I needed to rewrite the
+parsing code to support having Atx header blocks contain text blocks, instead of
+simply including the enclosed text in the Atx Markdown token.  Instead of tackling
+that as part of this group of code, I decided to look to see if there were any other
+“little” things that I missed, and I found a number of them.</p>
+<p>Basically, of the issues that I found, most of them were small variations of the
+scenarios, things that just got lost in the shuffle or lost in the translation.  As
+such, I thought it would be best to take some time, try and note them all down, and
+then tackle them together before continuing.  As the only scenario test that was
+affected was example 339, I believe that temporarily skipping that test and taking the
+time to fix those issues was the right call.  It would mean that I would have to
+wait a bit before I could say that code spans were done, but when they were done, I
+would know that I did them the right way.  That was, and still is, important to me.</p>
+<h2 id="what-was-my-experience-so-far">What Was My Experience So Far?<a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link">¶</a></h2>
+<p>I usually read a specification thoroughly and identify most of the edge cases on my
+first pass.  However, I must admit that I dropped the ball with that on this project.
+And to be totally honest, I don’t expect that it will be the last time either.  It’s
+a big specification, and there are going to be hits and misses along the way.  What
+matters to me is not whether I make the mistakes, but that I don’t have enough use
+cases, scenarios, and tests to help me identify any mistakes.  With 673 scenarios
+already identified in the specification, I know the coverage for scenario will be good,
+but there will be gaps that I will still need to address.  So whether it is my dropping
+the ball or the specification dropping the ball, the work on the these three inline
+elements has improved my confidence that I am prepared to deal with any such issues
+that come up.</p>
+<p>A good example of this is my reading of the specification around the use of Atx headers.
+I know I missed the part where the specification, in the preamble to
+<a href="https://github.github.com/gfm/#example-36">example 36</a> says:</p>
+<blockquote>
+<p>Contents are parsed as inlines:</p>
+</blockquote>
+<p>In retrospect, not only is this one of the few times inlines with Atx headers was
+mentioned, but there is also only one scenario that covers them, example 36. So, from
+one point of view, the specification could have more scenarios dealing with inlines
+and Atx headers.  From an additional point of view, it was mentioned and I just
+missed it.  From my personal point of view, it doesn’t matter either way.  What matters
+is that I had sufficient process and tools in place to catch it.  And once I saw that
+issue, it helped me take a deeper look at some of the other tests, finding small issues
+with the output from those tests.</p>
+<p>From a quality point of view, my confidence was actually holding steady or increasing.
+As I mentioned a couple of paragraph ago, I don’t expect to be perfect, I just hope
+to have the right tools and processes in place to help me figure out when I miss
+something or get something wrong.  Sure, I realized that taking some time to work on
+fixing these issues was going to put my work on the linter on hold for another week.
+But my confidence that the linter was on solid footing actually increased because I
+found some issues.</p>
+<p>For me, quality is not about being perfect, it’s about movement in the right direction.
+And finding those issues, was a step in that right direction.</p>
+<h2 id="what-is-next">What is Next?<a class="headerlink" href="#what-is-next" title="Permanent link">¶</a></h2>
+<p>After documenting those issues at the end of the <code>test_markdown_list.py</code> file, I
+thought it was best to do a quality pass and resolve those issues before moving on to
+other inline processes.  As such, the next article focuses on what bugs I found in the
+scenario tests, and how I addressed them.</p>
+<div class="footnote">
+<hr/>
+<ol>
+<li id="fn:escapingAmp">
+<p>Just to be complete, the character escapes in the next section also provide a way to include the ‘&amp;‘ sequence in Markdown.  Using character references, this is by using the text <code>&amp;amp;amp;</code> instead of <code>\&amp;amp;</code>.  While both produce identical output, I prefer the first for it’s clarity.  Your mileage may vary. <a class="footnote-backref" href="#fnref:escapingAmp" title="Jump back to footnote 1 in the text">↩</a></p>
+</li>
+<li id="fn:namedEntities">
+<p>To keep things simple for parsers, this file is maintained as a JSON file that is easily interpreted with a small amount of code in most current languages. <a class="footnote-backref" href="#fnref:namedEntities" title="Jump back to footnote 2 in the text">↩</a></p>
+</li>
+<li id="fn:refExample">
+<p>Note that this example is a slightly modified version of <a href="https://github.github.com/gfm/#example-330">example 330</a> from the GFM specification. <a class="footnote-backref" href="#fnref:refExample" title="Jump back to footnote 3 in the text">↩</a></p>
+</li>
+<li id="fn:doubleBacktick">
+<p>For a good example of this, see <a href="https://github.github.com/gfm/#example-339">example 339</a> in the GFM specification. <a class="footnote-backref" href="#fnref:doubleBacktick" title="Jump back to footnote 4 in the text">↩</a></p>
+</li>
+</ol>
+</div>
+
+
+             
+ 
+                <p id="post-share-links">
+    Like this post? Share on:
+    <a href="https://twitter.com/intent/tweet?text=Markdown%20Linter%20-%20Starting%20Inline%20Processing&url=https%3A//jackdewinter.github.io/2020/02/24/markdown-linter-starting-inline-processing/&hashtags=markdown-linter" target="_blank" rel="nofollow noopener noreferrer" title="Share on Twitter">Twitter</a>
+    ❄
+    <a href="https://www.facebook.com/sharer/sharer.php?u=https%3A//jackdewinter.github.io/2020/02/24/markdown-linter-starting-inline-processing/" target="_blank" rel="nofollow noopener noreferrer" title="Share on Facebook">Facebook</a>
+    ❄
+    <a href="mailto:?subject=Markdown%20Linter%20-%20Starting%20Inline%20Processing&amp;body=https%3A//jackdewinter.github.io/2020/02/24/markdown-linter-starting-inline-processing/" target="_blank" rel="nofollow noopener noreferrer" title="Share via Email">Email</a>
+    </p>
+
+            
+            
+
+
+
+
+
+
+<section>
+    <h6 style="display:none;">Comments</h6>
+    <p id="comment-message">So what do you think? Did I miss something? Is any part unclear? Leave your comments below. </p>
+
+    <div class="accordion" id="accordion2">
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                <a class="accordion-toggle disqus-comment-count comment-count"
+                   data-toggle="collapse"
+                   data-parent="#accordion2"
+                   href="https://jackdewinter.github.io/2020/02/24/markdown-linter-starting-inline-processing/#comment_thread"
+                   id="comment-accordion-toggle">
+                    Comments
+                </a>
+            </div>
+            <div id="comment_thread" class="accordion-body collapse">
+                <div class="accordion-inner">
+                    <div class="comments">
+
+                        <script src="https://utteranc.es/client.js"
+        data-repo="jackdewinter/jackdewinter.github.io"
+        data-issue-term="markdown-linter-starting-inline-processing"
+        data-label="Comments"
+        data-theme="github-light"
+        crossorigin="anonymous"
+        async>
+</script>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+            <hr/>
+            <aside>
+            <nav>
+            <ul class="articles-timeline">
+                <li class="previous-article">« <a href="https://jackdewinter.github.io/2020/02/17/markdown-linter-taking-time-to-refactor-post-block-implementation/" title="Previous: Markdown Linter - Taking Time to Refactor -- Post-Block Implementation">Markdown Linter - Taking Time to Refactor -- Post-Block Implementation</a></li>
+            </ul>
+            </nav>
+            </aside>
+        </div>
+        <section id="article-sidebar" class="span2">
+    <h4>Reading Time</h4>
+    <p>~12 min read</p>
+            <h4>Published</h4>
+            <time itemprop="dateCreated" datetime="2020-02-24T00:00:00-08:00">Feb 24, 2020</time>
+        <h4>Markdown Linter</h4>
+    <ul class="multi-parts-list">
+            <li >
+            <a href="https://jackdewinter.github.io/2019/12/08/markdown-linter-collecting-requirements/" title="Markdown Linter - Collecting Requirements">Part 1: Markdown Linter - Collecting Requirements</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2019/12/16/markdown-linter-setting-up-parser-tests/" title="Markdown Linter - Setting Up Parser Tests">Part 2: Markdown Linter - Setting Up Parser Tests</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2019/12/22/markdown-linter-parser-testing-strategy/" title="Markdown Linter - Parser Testing Strategy">Part 3: Markdown Linter - Parser Testing Strategy</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/01/27/markdown-linter-parsing-normal-markdown-blocks/" title="Markdown Linter - Parsing Normal Markdown Blocks">Part 4: Markdown Linter - Parsing Normal Markdown Blocks</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/02/03/markdown-linter-adding-block-quotes-and-lists/" title="Markdown Linter - Adding Block Quotes and Lists">Part 5: Markdown Linter - Adding Block Quotes and Lists</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/02/10/markdown-linter-adding-html-blocks/" title="Markdown Linter - Adding HTML Blocks">Part 6: Markdown Linter - Adding HTML Blocks</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/02/17/markdown-linter-taking-time-to-refactor-post-block-implementation/" title="Markdown Linter - Taking Time to Refactor -- Post-Block Implementation">Part 7: Markdown Linter - Taking Time to Refactor -- Post-Block Implementation</a>
+            </li>
+            <li  class="active-part">
+            Part 8: Markdown Linter - Starting Inline Processing
+            </li>
+    </ul>
+            <h4>Category</h4>
+            <a class="category-link" href="https://jackdewinter.github.io/categories#software-quality-ref">Software Quality</a>
+            <h4>Tags</h4>
+            <ul class="list-of-tags tags-in-article">
+                <li><a href="https://jackdewinter.github.io/tags#markdown-linter-ref">markdown linter
+                    <span>8</span>
+</a></li>
+            </ul>
+<h4>Stay in Touch</h4>
+<div id="sidebar-social-link">
+    <a href="https://github.com/jackdewinter" title="github-alt" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="GitHub" role="img" viewBox="0 0 512 512"><rect width="512" height="512" rx="15%" fill="#1B1817"/><path fill="#fff" d="M335 499c14 0 12 17 12 17H165s-2-17 12-17c13 0 16-6 16-12l-1-50c-71 16-86-28-86-28-12-30-28-37-28-37-24-16 1-16 1-16 26 2 40 26 40 26 22 39 59 28 74 22 2-17 9-28 16-35-57-6-116-28-116-126 0-28 10-51 26-69-3-6-11-32 3-67 0 0 21-7 70 26 42-12 86-12 128 0 49-33 70-26 70-26 14 35 6 61 3 67 16 18 26 41 26 69 0 98-60 120-117 126 10 8 18 24 18 48l-1 70c0 6 3 12 16 12z"/></svg>
+    </a>
+    <a href="https://www.linkedin.com/in/jackdewinter/" title="linkedin" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="LinkedIn" role="img" viewBox="0 0 512 512" fill="#fff"><rect width="512" height="512" rx="15%" fill="#0077b5"/><circle cx="142" cy="138" r="37"/><path stroke="#fff" stroke-width="66" d="M244 194v198M142 194v198"/><path d="M276 282c0-20 13-40 36-40 24 0 33 18 33 45v105h66V279c0-61-32-89-76-89-34 0-51 19-59 32"/></svg>
+    </a>
+    <a href="https://jackdewinter.github.io/feeds/all.atom.xml" title="" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="RSS" role="img" viewBox="0 0 512 512"><rect width="512" height="512" rx="15%" fill="#f80"/><circle cx="145" cy="367" r="35" fill="#fff"/><path fill="none" stroke="#fff" stroke-width="60" d="M109 241c89 0 162 73 162 162M109 127c152 0 276 124 276 276"/></svg>
+    </a>
+</div>
+            
+
+
+
+
+
+            
+
+
+
+
+
+        </section>
+</div>
+</article>
+                    </div>
+                    <div class="span1"></div>
+                </div>
+            </div>
+        </div>
+<footer>
+    <div>
+        
+&copy; Copyright 2019 by Jack De Winter and licensed under a <a rel="license"
+  href="http://creativecommons.org/licenses/by/4.0/">
+  <img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/80x15.png" />
+  Creative Commons Attribution 4.0 International License</a>.
+
+    </div>
+
+
+
+
+    <div id="fpowered">
+        Powered by: <a href="http://getpelican.com/" title="Pelican Home Page" target="_blank" rel="nofollow noopener noreferrer">Pelican</a>
+        Theme: <a href="https://elegant.oncrashreboot.com/" title="Theme Elegant Home Page" target="_blank" rel="nofollow noopener noreferrer">Elegant</a>
+    </div>
+</footer>            <script src="//code.jquery.com/jquery.min.js"></script>
+        <script src="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>
+        <script>
+            function validateForm(query)
+            {
+                return (query.length > 0);
+            }
+        </script>
+
+    <script>
+    (function () {
+        if (window.location.hash.match(/^#comment-\d+$/)) {
+            $('#comment_thread').collapse('show');
+        }
+    })();
+    window.onhashchange=function(){
+        if (window.location.hash.match(/^#comment-\d+$/))
+            window.location.reload(true);
+    }
+    $('#comment_thread').on('shown', function () {
+        var link = document.getElementById('comment-accordion-toggle');
+        var old_innerHTML = link.innerHTML;
+        $(link).fadeOut(200, function() {
+            $(this).text('Click here to hide comments').fadeIn(200);
+        });
+        $('#comment_thread').on('hidden', function () {
+            $(link).fadeOut(200, function() {
+                $(this).text(old_innerHTML).fadeIn(200);
+            });
+        })
+    })
+</script>
+
+    </body>
+    <!-- Theme: Elegant built for Pelican
+        License : MIT -->
+</html>
