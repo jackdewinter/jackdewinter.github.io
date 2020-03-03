@@ -1,5 +1,393 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/all.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2020-02-24T00:00:00-08:00</updated><entry><title>Markdown Linter - Starting Inline Processing</title><link href="https://jackdewinter.github.io/2020/02/24/markdown-linter-starting-inline-processing/" rel="alternate"></link><published>2020-02-24T00:00:00-08:00</published><updated>2020-02-24T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-02-24:/2020/02/24/markdown-linter-starting-inline-processing/</id><summary type="html">
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/all.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2020-03-02T00:00:00-08:00</updated><entry><title>Markdown Linter - Taking Time to Refactor -- Post-Easy Inlines</title><link href="https://jackdewinter.github.io/2020/03/02/markdown-linter-taking-time-to-refactor-post-easy-inlines/" rel="alternate"></link><published>2020-03-02T00:00:00-08:00</published><updated>2020-03-02T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-03-02:/2020/03/02/markdown-linter-taking-time-to-refactor-post-easy-inlines/</id><summary type="html">
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;When I was working on implementing the
+&lt;a href="https://jackdewinter.github.io/2020/02/24/markdown-linter-starting-inline-processing/#code-spans"&gt;inline code spans&lt;/a&gt;,
+as detailed in the last article,
+I performed
+a thorough scan of the scenario tests and their source data, noting down any issues I
+found.  I knew that I had missed the mark on how to internally represent Atx …&lt;/p&gt;</summary><content type="html">
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;When I was working on implementing the
+&lt;a href="https://jackdewinter.github.io/2020/02/24/markdown-linter-starting-inline-processing/#code-spans"&gt;inline code spans&lt;/a&gt;,
+as detailed in the last article,
+I performed
+a thorough scan of the scenario tests and their source data, noting down any issues I
+found.  I knew that I had missed the mark on how to internally represent Atx Headers,
+and I was curious about how many other things I had missed.  Having found a
+decent handful of issues to fix,  I decided to spend some time to address those issues
+before adding more of the inline processing.  In my mind, it was
+better to take a week and try and keep the issue count low than to continue forward,
+possibly compounding the cost of fixing those issues.  As I am in a somewhat ideal
+scenario, with nobody pressuring me for features or issue fixes, I figured it was best
+if I took advantage of that to the best of my abilities and “do it right”.&lt;/p&gt;
+&lt;p&gt;The full record of the work detailed in this article is documented in the
+project’s GitHub repository in the commits between
+&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/5102bfd8a3b2616eb6c3147f9416e3d7b308e523"&gt;14 February 2020&lt;/a&gt; and
+&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/62127eb46d5b03a781ba85fbcf3a397221716eb2"&gt;20 February 2020&lt;/a&gt;.&lt;/p&gt;
+&lt;h2 id="why-refactor-now"&gt;Why Refactor Now?&lt;a class="headerlink" href="#why-refactor-now" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;As the owner and sole developer on the project, my decision to stop and refactor was
+any easy one to make.  It also didn’t escape my attention that making a decision like
+that isn’t always that simple for larger projects.  If this was a work project
+or a team project, the group working on the project would have to meet to figure things
+out. The team itself usually plays a critical role in assessing the cost and benefit of
+each task, but
+in the end it is a balancing act for managers and directors to figure out which tasks
+are the best ones to focus on at any given time. As it’s only me on the PyMarkdown
+project, I get to conveniently shortcut those conversations in favor of simple
+decisions based on my own experience.&lt;/p&gt;
+&lt;p&gt;From my years of experience, I find that there are usually two driving forces that make
+me support a decision to refactor a project.  The first driving force is the cost of
+any applicable technical
+debt on product code.  As I consider tests integral to a project’s quality, my
+definition of the term “product code” includes all source code and resources required
+to execute the project normally and to perform testing used to certify that same
+project as shippable.  With almost 700 scenario tests for
+PyMarkdown’s parser, even a small change can generate large ripples through the
+code base, especially the scenario tests.  As the scenarios for a feature are only added
+when that feature itself is added, each feature added therefore adds a significant
+amount of product code for any change to ripple through.  It also follows that each
+extra test impacted by an issue means an increased cost to fix that issue before
+proceeding.  Therefore, if the goal is to keep overall costs down, refactoring more
+frequently during development seems logical.&lt;/p&gt;
+&lt;p&gt;The second driving force is less quantifiable, but equally important to any type of
+project.  That force is the flow of the team working on the project.  Based on past
+projects, I know that I work more efficiently if
+I focus on a group of similar things for a while, then shift to another group when done.
+The larger the difference is in the skill sets between the two groups of work, the more
+relaxed I feel about the work.  This sense of relaxation allows me to get into a better
+flow.  As this project is being
+written by me in the evenings and on the weekends, keeping a good flow for the project
+keeps me focused and energized about the project.  As I am the sole developer on the
+project at the time, keeping myself motivated in a necessity!&lt;/p&gt;
+&lt;p&gt;While one force is more empirical and the other is more feelings based, both of these
+forces worked together to convince me that it was yet again time to refactor the
+PyMarkdown project.&lt;/p&gt;
+&lt;h2 id="issue-1-setext-headers-paragraphs-and-block-quotes"&gt;Issue 1:  SetExt Headers, Paragraphs, and Block Quotes&lt;a class="headerlink" href="#issue-1-setext-headers-paragraphs-and-block-quotes" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;I needed one of the smaller issues to get me warmed up, so after looking over the list
+of possible issues to work on, I decided on
+this one.  During the review of active scenario tests, I noticed that the text &lt;code&gt;===&lt;/code&gt;
+was in the paragraph tags for the specification’s example, but the tokens that the
+parser were omitting had them outside of the paragraph.  It seemed simple enough,
+but looks were deceiving.&lt;/p&gt;
+&lt;p&gt;It took me a bit of digging to find two possible reasons for the string &lt;code&gt;===&lt;/code&gt; to be kept
+inside of the paragraph: laziness and non-interrupts.  Working backwards, the
+concept of laziness with block quotes and list items is that you can omit any of
+the leading characters if the next non-whitespace character after the omitted
+characters is text that continues the paragraph.  In essence:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;this&lt;/span&gt; &lt;span class="k"&gt;is&lt;/span&gt;
+&lt;span class="n"&gt;a&lt;/span&gt; &lt;span class="n"&gt;block&lt;/span&gt; &lt;span class="n"&gt;quote&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;is equivalent to&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;this&lt;/span&gt; &lt;span class="k"&gt;is&lt;/span&gt;
+&lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;a&lt;/span&gt; &lt;span class="n"&gt;block&lt;/span&gt; &lt;span class="n"&gt;quote&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;That got me halfway there, but there was still the question of how the &lt;code&gt;===&lt;/code&gt; would be
+kept as part of the paragraph and not as an SetExt header indicator.  I read the
+section on SetExt a couple of times before the following lines clicked:&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;However, it cannot interrupt a paragraph, so when a setext heading comes after a paragraph, a blank line is needed between them.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;Bingo!  I wish it didn’t take multiple reads through that part of the specification,
+but specifications are sometimes like that.  Based on those discoveries, I temporary
+rewrote the scenario for scenario 63 to:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;foo&lt;/span&gt;
+&lt;span class="n"&gt;bar&lt;/span&gt;
+&lt;span class="o"&gt;===&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;The goal of this was to remove the laziness out of the equation while working on the
+interrupt issue.  When I reran scenario test 63, I correctly got a single paragraph
+with 3 lines in it.  So whatever the issue was, it was not just simple parsing of
+paragraphs.  Taking a step forward, I added the block quotes back into the picture,
+changing that scenario text to:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;foo&lt;/span&gt;
+&lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;bar&lt;/span&gt;
+&lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="o"&gt;===&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;It was at this point that the scenario broke, apparently thinking that the third line
+was a
+SetExt header, and should close off the paragraph.  Issue reproduced!  To be sure, I
+applied the laziness concept to the block quote, reverting the scenario back to
+its original text of:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;foo&lt;/span&gt;
+&lt;span class="n"&gt;bar&lt;/span&gt;
+&lt;span class="o"&gt;===&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;and validated that the behavior was the same.&lt;/p&gt;
+&lt;p&gt;Armed with a good reproduction case for the issue, good debug output, and a general
+area in the source code for the cause of the issue, the issue was identified and
+fixed in quick order.  This issue was very specific, so only the one scenario test
+was impacted, which was a good thing.  The problem was that during the development
+of block quotes, something made me think that anything looking like a
+SetExt header should close off a paragraph, hence I added code to do just that. I
+checked the code a couple of times, and that was the only scenario test referencing
+that code, so I just deleted it.&lt;/p&gt;
+&lt;p&gt;While the research on the issue was
+a bit more effort than I originally thought, fixing this issue was a great warm up
+to the next couple of issues.  One issue, one scenario test impacted, and I was
+refactoring.&lt;/p&gt;
+&lt;h2 id="issue-2-python-markdown-and-line-continuation-characters"&gt;Issue 2: Python, Markdown, and Line Continuation Characters&lt;a class="headerlink" href="#issue-2-python-markdown-and-line-continuation-characters" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;The next issue for me to work on was a subtle copy-and-paste error, one that flew
+under my radar until I took a solid look at it.  This issue didn’t show any indications
+of failure until I started my scan of the scenario tests.  In essence, the only
+reason I found this one was that I went looking for any error, not something specific.&lt;/p&gt;
+&lt;p&gt;In Markdown, the &lt;code&gt;\&lt;/code&gt; character at the end of the line is used to denote a hard line
+break, not yet to be implemented in the PyMarkdown project.  In Python, the &lt;code&gt;\&lt;/code&gt;
+character at the end of the line is used as a line continuation character, telling the
+Python interpreter to treat the text before the character and the text after the
+character as a single line.  Hopefully any readers see where I am going with this.&lt;/p&gt;
+&lt;p&gt;When I added the scenario test for
+&lt;a href="https://github.github.com/gfm/#example-60"&gt;scenario 60&lt;/a&gt;,
+I did a copy-and-paste on the Markdown input to the new scenario test, a process I
+have done for 99% of the scenario tests in the project.  To accomplish this, I pasted
+the following Markdown text between the &lt;code&gt;"""&lt;/code&gt; characters denoting the Markdown to use
+as input:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;Foo&lt;/span&gt;&lt;span class="err"&gt;\&lt;/span&gt;
+&lt;span class="c1"&gt;----&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;resulting in the Python code:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="n"&gt;source_markdown&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;"""Foo&lt;/span&gt;&lt;span class="se"&gt;\&lt;/span&gt;
+&lt;span class="s2"&gt;----"""&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;After pasting each scenario’s Markdown into the scenario test, I try to ensure that
+I replace every instance of the &lt;code&gt;\&lt;/code&gt; character with the &lt;code&gt;\\&lt;/code&gt; characters to properly
+represent the backslash character in a Python string.  As I am
+only human, there are times that I forget to do this.  Luckily for me, if a &lt;code&gt;\&lt;/code&gt;
+character is not paired up with a valid character to escape, the Python interpreter
+will generate a warning similar to the following:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;======================================================== warnings summary ========================================================
+test\test_markdown_setext_headings.py:346
+  C:\old\enlistments\pymarkdown\test\test_markdown_setext_headings.py:346: DeprecationWarning: invalid escape sequence \&amp;gt;
+    expected_gfm = """&amp;lt;h2\&amp;gt;Foo\\&amp;lt;/h2&amp;gt;"""
+
+-- Docs: https://docs.pytest.org/en/latest/warnings.html
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;As the backslash character in Markdown is used with punctuation characters and the
+backslash character in Python is used with alphabetic characters, this is usually a
+very solid detection scheme for finding copy-and-paste misses.  In this case, that
+check failed.&lt;/p&gt;
+&lt;p&gt;The good news here is two-fold: an easy fix and a very localized fix.  This fix was
+easy as I just had to apply the missed substitution.  It was localized mainly because
+I had not yet implemented hard line breaks.  And yes, it meant that when I did implement
+hard line breaks, I triple checked my line endings to avoid this issue showing up again.&lt;/p&gt;
+&lt;p&gt;Momentum was increasing, so it was time to step things up!&lt;/p&gt;
+&lt;h2 id="issue-3-code-blocks-indenting-and-blank-lines"&gt;Issue 3: Code Blocks, Indenting, and Blank Lines&lt;a class="headerlink" href="#issue-3-code-blocks-indenting-and-blank-lines" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Having resolved a couple of warm-up issues, I felt it was time to tackle some larger
+issues.  Each issue in
+this group either deals with vertical space issues or leading space issues within a code
+block.  The vertical space issue was that blank lines were not being folded into the
+text blocks properly, causing foreseeable issues with  parsing complete blocks of text
+in the near future.  Given some Markdown text, such as:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;```&lt;/span&gt;
+&lt;span class="n"&gt;abc&lt;/span&gt;
+
+&lt;span class="n"&gt;def&lt;/span&gt;
+&lt;span class="o"&gt;```&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;I expected that the output tokens would include a fenced code block with a single text
+block inside of it with three lines present.  Instead, there were three tokens present,
+the first and last were text tokens with strings and the token in the middle was a blank
+line token.  While the token representation was technically correct, parsing it would
+be awkward.  For the specific case of blank lines within a code block, it made sense to
+merge the blank line tokens into the surrounding text tokens.&lt;/p&gt;
+&lt;p&gt;The leading space issue was a bit more subtle but equally simple.  To properly parse
+text blocks within a code block, an appropriate amount of whitespace may need to be
+removed from each line as it is combined together.  As always, it is the details that
+matter, and it is easy to gloss over them.  In the opening part of the indented code
+block section of the specification, the following line is present:&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;The contents of the code block are the literal contents of the lines, including trailing line endings, minus four spaces of indentation.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;The similar line for fenced code blocks reads:&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;If the leading code fence is indented N spaces, then up to N spaces of indentation are removed from each line of the content (if present).&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;Basically, this means that the following indented code block:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="n"&gt;fred&lt;/span&gt;
+     &lt;span class="n"&gt;frank&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;should produce a code block with the text &lt;code&gt;fred&lt;/code&gt; on the first line and the text
+&lt;code&gt;&amp;lt;space&amp;gt;frank&lt;/code&gt;&lt;sup id="fnref:Space"&gt;&lt;a class="footnote-ref" href="#fn:Space"&gt;1&lt;/a&gt;&lt;/sup&gt; on the second line, having had the first 4 spaces removed.  The fenced
+code blocks are
+a bit more nuanced, in that:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;```&lt;/span&gt;
+  &lt;span class="n"&gt;fred&lt;/span&gt;
+&lt;span class="o"&gt;```&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;is parsed as &lt;code&gt;&amp;lt;space&amp;gt;&amp;lt;space&amp;gt;fred&lt;/code&gt;&lt;sup id="fnref2:Space"&gt;&lt;a class="footnote-ref" href="#fn:Space"&gt;1&lt;/a&gt;&lt;/sup&gt; and:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;  &lt;span class="o"&gt;```&lt;/span&gt;
+  &lt;span class="n"&gt;fred&lt;/span&gt;
+&lt;span class="o"&gt;```&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;is parsed as &lt;code&gt;fred&lt;/code&gt;, based on the extra indenting of the fenced code block start.
+While the line containing the text &lt;code&gt;fred&lt;/code&gt; is the same in both cases, the number of
+leading spaces before the fenced code block are different, resulting in the different
+outputs.&lt;/p&gt;
+&lt;p&gt;Prior to fixing this issue, text lines were combined in a simple manner and no
+whitespace was removed from the start of any lines within code blocks.  To properly
+address this issue, not only did these two rules need to be followed, but the existing
+code to properly remove leading spaces for each line within a normal paragraph needed
+to be preserved.  It took a bit to get it right, but with a good number of scenario
+tests to keep things honest, it was easy to get it right quickly.&lt;/p&gt;
+&lt;p&gt;My original estimates for the impact of this issue was 15-20 tests, and it thankfully
+remained within that range.  While the initial number of scenarios covered by these
+issues was 15, I expected other scenarios to use code blocks to show how their feature
+worked with code blocks, adding another 3-7 scenario tests in the process.  Looking
+back, I think I got off pretty nicely with the scope of these changes.&lt;/p&gt;
+&lt;h2 id="issue-4-paragraphs-and-indenting"&gt;Issue 4: Paragraphs and Indenting&lt;a class="headerlink" href="#issue-4-paragraphs-and-indenting" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Feeling energized from fixing the issues documented in the previous sections, I decided
+to keep with the theme and attack the issue with leading spaces in normal paragraphs.
+Similar in essence to the prior issue, the rule for normal paragraphs is that all
+leading whitespace is
+removed as the text for the paragraph is pasted together.  While it is hard to point
+to an exact quote from the specification for this rule&lt;sup id="fnref:Missing"&gt;&lt;a class="footnote-ref" href="#fn:Missing"&gt;2&lt;/a&gt;&lt;/sup&gt;,
+&lt;a href="https://github.github.com/gfm/#example-192"&gt;example 192&lt;/a&gt; clearly shows this as the
+Markdown:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;  &lt;span class="n"&gt;aaa&lt;/span&gt;
+ &lt;span class="n"&gt;bbb&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;is translated into the HTML text:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;aaa
+bbb&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;The fix for this was similar to the change made for the code blocks issue, but instead
+of specifying a fixed number of whitespace to remove, the &lt;code&gt;combine&lt;/code&gt; function was
+changed to accept a value that indicates the removal of all whitespace.  The original 9
+cases were quickly tested with the fix, and things looked solid.&lt;/p&gt;
+&lt;p&gt;Originally, it looked like the changes would be confined to the original 9 cases, but
+I suspected that the number would at least be double that, as this fix would affect any
+scenario involving a paragraph with multiple lines. While an number of the cases were
+simple cases, when all was said and done, there were 59 changes to scenario
+tests in the commit for this issue.  Even so, those changes were quickly made and the
+scenario tests were re-verified.&lt;/p&gt;
+&lt;p&gt;While this took a lot of work to get right, it felt good to get this one resolved.  It
+was hard for me to quantify this to myself, but the parsing of the paragraphs always
+looked like they had too many spaces.  It was nice to finally figure out why!&lt;/p&gt;
+&lt;h2 id="issue-5-trailing-spaces-in-scenarios"&gt;Issue 5: Trailing Spaces in Scenarios&lt;a class="headerlink" href="#issue-5-trailing-spaces-in-scenarios" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;During the early development phase of the project, I wanted to get going with the
+scenarios as quickly
+as possible, so I copied each scenario’s Markdown text from the GFM specification
+exactly as-is.  This wasn’t a
+problem, except that in a small number of cases, there were lines in the scenarios that
+ended in one or more whitespaces.  These trailing whitespaces raised the
+&lt;code&gt;trailing-whitespace&lt;/code&gt; warning when I ran the PyLint program over the project’s
+code base, as I do with each set of changes. Determined to deal with the issue later,
+I added a number of comments like this:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="c1"&gt;# pylint: disable=trailing-whitespace&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;to disable the Pylint warnings that occurred, knowing I would have to fix
+them later.  At this point in the project, it seemed like a good time to deal with this.&lt;/p&gt;
+&lt;p&gt;As this issue was largely out of sight, everything was fine.   That is, everything was
+fine until I hit a
+number of problems in a row that did involve these scenarios.  Instead of immediately
+noticing the trailing whitespace and the comment, I started debugging each issue
+without noticing either the comment or the whitespace, and was dumfounded by why the
+parsing was not as was suggested
+by the Markdown text that was clearly visible.
+When I took a step back to really read the scenario tests, I then noticed
+the comment at the top of each of the problem test functions, and then it clicked.  But
+it took a lot longer than it should have.  Instead of “just dealing with it”, I decided
+that refactoring was a better solution.&lt;/p&gt;
+&lt;p&gt;The fix was an easy one too, something I should have thought of earlier.  The ASCII BELL
+character is represented by &lt;code&gt;\a&lt;/code&gt; in Python strings, and to the best of my knowledge is
+seldom used in most Python programs or Markdown text.  As it has a very low probability
+of being used in any scenarios, I replaced the
+terminating whitespace characters with &lt;code&gt;\a&lt;/code&gt; characters, then added &lt;code&gt;.replace("\a", " ")&lt;/code&gt;
+at the end of the sample string.  It was then a simple matter of going through the
+other 6 scenarios with trailing whitespaces and repeating this fix.&lt;/p&gt;
+&lt;p&gt;While issues like this may seem small, having to disable a PyLint warning didn’t feel
+right, even if it helped me maintain momentum at the time.  It just felt really good
+to solve this issue properly.&lt;/p&gt;
+&lt;h2 id="issue-6-getting-atx-headers-right"&gt;Issue 6: Getting Atx Headers Right&lt;a class="headerlink" href="#issue-6-getting-atx-headers-right" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In the last article, I started looking for issues after wondering if a code span
+could work within an Atx Header, realizing that the specification allowed it but
+my current implementation did not allow it. As stated in the preamble for
+&lt;a href="https://github.github.com/gfm/#example-36"&gt;scenario 36&lt;/a&gt;:&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;The raw contents of the heading are stripped of leading and trailing spaces before being parsed as inline content.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;Basically, my decision was based on my usage patterns, not the specification.
+In my experience, I have only ever done Atx Headers in the form:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;###&lt;/span&gt; &lt;span class="n"&gt;This&lt;/span&gt; &lt;span class="k"&gt;is&lt;/span&gt; &lt;span class="n"&gt;my&lt;/span&gt; &lt;span class="n"&gt;header&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;so when I read the specification, I glossed over that section, only thinking
+of Atx Headers as containers for normal text.  However, based on the specification,
+the following text is also allowed:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="c1"&gt;### This *is* `my` header&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;As a result, instead of the header text &lt;code&gt;This is my header&lt;/code&gt; being generated by the
+first sample, I can use the second sample to generate the header text of
+&lt;code&gt;This &amp;lt;em&amp;gt;is&amp;lt;/em&amp;gt; &amp;lt;code&amp;gt;my&amp;lt;/code&amp;gt; header&lt;/code&gt;.  Neat!&lt;/p&gt;
+&lt;p&gt;The change itself was pretty simple, and confined to the &lt;code&gt;parse_atx_headings&lt;/code&gt; function.
+As it was a simple change, the accompanying change in each test was also pretty
+simple:  take a single Atx Header token with text, replace it with an Atx Header token
+without the text, a Text token with the text, and an End token for the Atx Header.&lt;/p&gt;
+&lt;p&gt;While I was concerned that the fix for this issue was going to be more widespread,
+it was confined to 22 scenario tests, and was really easy to verify.&lt;/p&gt;
+&lt;h2 id="issue-7-bringing-the-tabs-back"&gt;Issue 7:  Bringing The Tabs Back&lt;a class="headerlink" href="#issue-7-bringing-the-tabs-back" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Looking for something to finish the refactoring session with, I decided to tackle one
+of the longstanding fixes that I had some reservations about: the bulk conversion
+of tabs to spaces.  While it was a good fix at the time, I suspected that there
+might be problems with the code blocks where all text is supposed to be preserved
+literally, including tab characters.&lt;/p&gt;
+&lt;p&gt;In a stroke of luck, all of the affected scenario tests are in the
+&lt;code&gt;test_markdown_tabs.py&lt;/code&gt; file
+and the places where tabs are important can be grouped into 2 distinct groups.
+In the Markdown specification, there is a distinction between whether there is enough
+whitespace for an indented code block with 4 spaces, or not with less then 4 spaces.
+To address those cases, I simply added the &lt;code&gt;is_length_greater_than_or_equal_to&lt;/code&gt; and
+&lt;code&gt;is_length_less_than_or_equal_to&lt;/code&gt; functions.  While I could have simply used a &lt;code&gt;not&lt;/code&gt;
+modifier to get the same effect, I thought it was more readable to simply spell it
+out.  For cases where the actual length was needed, the &lt;code&gt;calculate_length&lt;/code&gt; function
+determines the length of the string, allowing for the length of a tab to be 4
+characters while every other character is assigned a length of 1.&lt;/p&gt;
+&lt;p&gt;While this wasn’t a very technical issue to fix, it helped me return things to a known
+good state, with confidence that tabs were being treated properly.  Before this fix,
+I was always concerned that the bulk translation of tab characters to spaces would
+introduce a hard to diagnose issue.  With that translation removed, that concern went
+away.&lt;/p&gt;
+&lt;h2 id="what-was-my-experience-so-far"&gt;What Was My Experience So Far?&lt;a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;At various points in the development of PyMarkdown, I have wondered if my thinking
+should be more realistic with a “two steps forward, one step back” feel to it.  Maybe
+it’s just who I am, but with a few exceptions, I see almost all of this development as
+stepping forward with quality, and hence, all positive.  I actually like the fact that
+I am implementing some new features, then doing some refactoring, and repeating.  It
+gives me a solid perception that the project is on stable footing at every stage,
+accumulating little technical debt along the way.&lt;/p&gt;
+&lt;p&gt;Something that struck me at this point was how easily I seemed to fall into a rhythm
+that works well for me and the project:  implementing a couple of features, noting down
+any issues as I implement, and then fixing a couple of the more pressing issues before
+repeating the pattern.  I am not sure if that kind of a pattern that everyone else
+works well with, but it seems to work well for me.  To a certain extent, it also helps
+me write these articles, as writing about quality software is very different than
+the development of that software.  For me, I find that they compliment each other
+very well.&lt;/p&gt;
+&lt;p&gt;In terms of energy, keeping that rhythm going and writing these articles is
+helping to keep me charged up about the project.  While I have written my share of
+parsers in my career, they have almost always been for work projects with a specific
+goal and deadline to achieve.  Being freed from those restrictions does come with
+it’s benefits, but not having someone looking over your shoulder means that you have
+to take on that role yourself.  These articles, while initially created to talk about
+my approach in creating quality software, also server the purpose of keeping me
+honest and responsible to any readers.  Call it a backup plan, but it seems to be
+working well!&lt;/p&gt;
+&lt;h2 id="what-is-next"&gt;What is Next?&lt;a class="headerlink" href="#what-is-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Going back to the specification for features to implement, I decided to start at the
+end and get the line breaks, autolinks, and raw html inline processing taken care of.
+While I don’t use them frequently myself, they are interesting aspects to the
+GFM specification, and perhaps learning about them will increase my use of them in
+my everyday Markdown usage.&lt;/p&gt;
+&lt;div class="footnote"&gt;
+&lt;hr/&gt;
+&lt;ol&gt;
+&lt;li id="fn:Space"&gt;
+&lt;p&gt;The string &lt;code&gt;&amp;lt;space&amp;gt;&lt;/code&gt; represents a space character, which by it’s very nature, is invisible. &lt;a class="footnote-backref" href="#fnref:Space" title="Jump back to footnote 1 in the text"&gt;↩&lt;/a&gt;&lt;a class="footnote-backref" href="#fnref2:Space" title="Jump back to footnote 1 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li id="fn:Missing"&gt;
+&lt;p&gt;The specification states “The paragraph’s raw content is formed by concatenating the lines and removing initial and final whitespace.”  This is the closest reference that I could find to removing whitespace.  Perhaps initial means per line? &lt;a class="footnote-backref" href="#fnref:Missing" title="Jump back to footnote 2 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/div&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category></entry><entry><title>Markdown Linter - Starting Inline Processing</title><link href="https://jackdewinter.github.io/2020/02/24/markdown-linter-starting-inline-processing/" rel="alternate"></link><published>2020-02-24T00:00:00-08:00</published><updated>2020-02-24T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-02-24:/2020/02/24/markdown-linter-starting-inline-processing/</id><summary type="html">
 &lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;Maybe it’s just me, but I love the feeling of completing a good round of refactoring
 where I really get to focus on making sure that the foundations of the project are
@@ -4296,82 +4684,4 @@ in different states of readiness.  This article started by looking at the docume
 and how it works for Pelican, and then moving on to how to set a new default for a
 Pelican-based website.  Finally, a note was added to Pelican’s own documentation on
 document status to help any readers avoid “losing” any published articles if the default
-document status is changed.&lt;/p&gt;</content><category term="Website"></category><category term="pelican website generator"></category><category term="pelican fine tuning"></category><category term="python"></category><category term="pelican document status"></category></entry><entry><title>Fine Tuning Pelican: Article And Page Settings</title><link href="https://jackdewinter.github.io/2019/10/02/fine-tuning-pelican-article-and-page-settings/" rel="alternate"></link><published>2019-10-02T00:00:00-07:00</published><updated>2019-10-02T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2019-10-02:/2019/10/02/fine-tuning-pelican-article-and-page-settings/</id><summary type="html">
-&lt;h2 id="preface"&gt;Preface&lt;a class="headerlink" href="#preface" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;This is one of the articles in a series about how I fine tuned my Pelican+Elegant web
-site to make it “more mine”.  For other articles in the series, click on the title of
-the article under the heading “Fine Tuning Pelican” on the right side of the …&lt;/p&gt;</summary><content type="html">
-&lt;h2 id="preface"&gt;Preface&lt;a class="headerlink" href="#preface" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;This is one of the articles in a series about how I fine tuned my Pelican+Elegant web
-site to make it “more mine”.  For other articles in the series, click on the title of
-the article under the heading “Fine Tuning Pelican” on the right side of the webpage.&lt;/p&gt;
-&lt;p&gt;Unlike my series on &lt;a href="https://jackdewinter.github.io/2019/08/18/static-websites-choosing-a-static-web-site-generator/"&gt;Choosing and Setting Up Pelican&lt;/a&gt;,
-these articles are intended to be byte sized, addressing specific fine tunings I made to
-my own website. As such, the first article in this series contains a
-&lt;a href="https://jackdewinter.github.io/2019/09/29/fine-tuning-pelican-setting-up-the-landing-page/#disclaimer"&gt;Disclaimer section&lt;/a&gt; with generic information
-for each of the articles in the series.&lt;/p&gt;
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;When creating content for a website, it is important to be able to create the content in
-a way that works for you, changing the configuration to suit your needs.  For different
-reasons, when you publish that content, control of how that content is displayed is
-important to the character of your website.  These settings control these aspects of
-the content publishing for the website.  This article goes over some of the more useful
-settings for pages and articles and how they affect the website.&lt;/p&gt;
-&lt;h2 id="where-is-the-content-located"&gt;Where Is the Content Located?&lt;a class="headerlink" href="#where-is-the-content-located" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;I prefer to keep different forms of content in different locations, just to make it
-easier to keep where things are in my head.  As such, I have separate content
-directories for each type of content:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;ARTICLE_PATHS&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;'articles'&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
-&lt;span class="n"&gt;PAGE_PATHS&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;'pages'&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
-&lt;span class="n"&gt;STATIC_PATHS&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;'images'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;'theme/images'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;'extra/robots.txt'&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;In my website’s content directory, I have 4 main directories: articles, pages, images,
-and extra.  The first two are easy to explain, and I set the Pelican configuration
-values  &lt;code&gt;ARTICLE_PATHS&lt;/code&gt; and &lt;code&gt;PAGE_PATHS&lt;/code&gt; to point to those directories.&lt;/p&gt;
-&lt;p&gt;The static paths specified by the Pelican configuration values for &lt;code&gt;STATIC_PATHS&lt;/code&gt; are
-for folders containing anything that does not need transformation but is part of the
-website.  The most important directories
-in that category are any images that either I provide or are provided by the theme.  The
-&lt;code&gt;robots.txt&lt;/code&gt; file will be covered in a future article, but provides guidance for any
-robots that are crawling the website.&lt;/p&gt;
-&lt;p&gt;As I intend to keep publishing to this blog for a long time, it was important to me to make
-sure that I have an organization that can scale with me.  By keeping each type of content
-separate from each other, it allows me to find articles quickly.  I take this a step
-further and create a directory for any series that I am writing, keeping both the draft
-articles and published articles in that directory.  An advantage of this is it allows me to
-ensure a group of articles has a consistent look and feel within that group with little
-effort.&lt;/p&gt;
-&lt;h2 id="how-is-the-content-published"&gt;How is the Content Published?&lt;a class="headerlink" href="#how-is-the-content-published" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;For the publishing of website pages, there are very few options for controlling their
-location, as Pelican assumes that the collection of pages is pretty constant, while the
-collection of articles will change frequently.&lt;/p&gt;
-&lt;p&gt;As such, there are two main configuration values that control where the article is
-published.  By default, both of these values are set to the same value &lt;code&gt;{slug}.html&lt;/code&gt;,
-publishing all articles in the root output directory.  That didn’t seem right to
-me, so I changed these values to the following:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;ARTICLE_URL&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s1"&gt;'{date:%Y}/{date:%m}/{date:&lt;/span&gt;&lt;span class="si"&gt;%d&lt;/span&gt;&lt;span class="s1"&gt;}/{slug}/'&lt;/span&gt;
-&lt;span class="n"&gt;ARTICLE_SAVE_AS&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s1"&gt;'{date:%Y}/{date:%m}/{date:&lt;/span&gt;&lt;span class="si"&gt;%d&lt;/span&gt;&lt;span class="s1"&gt;}/{slug}/index.html'&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;When the article is published, it will be published to a directory mostly dictated by the
-publish date of the article, with the article itself written as an &lt;code&gt;index.html&lt;/code&gt; file
-within that directory.  For my tastes, this organizes the articles on the website in a
-manner in which I can quickly see what I published and when.  The default values for
-&lt;code&gt;ARTICLE_URL&lt;/code&gt; and &lt;code&gt;ARTICLE_SAVE_AS&lt;/code&gt; just published everything in the root output directory,
-and that just seemed to cluttered for me.&lt;/p&gt;
-&lt;h2 id="how-many-articles-to-show-for-lists"&gt;How Many Articles To Show For Lists?&lt;a class="headerlink" href="#how-many-articles-to-show-for-lists" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;One of the other Pelican configuration values that I needed to set was the
-&lt;code&gt;DEFAULT_PAGINATION&lt;/code&gt; value.  On the main page, where the list of the most recent
-articles is displayed, I want to show a decent number of articles, but I don’t want them
-to fall off the bottom too much.  As such, I set the following configuration value to
-provide a default pagination of 10 items:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;DEFAULT_PAGINATION&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;10&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;I am not sure if this is the right value to start with, but it seems like a decent place to
-start.  I expect to make changes to this as I get more feedback from readers, so just
-giving it a decent starting value was enough.&lt;/p&gt;
-&lt;h2 id="what-was-accomplished"&gt;What Was Accomplished&lt;a class="headerlink" href="#what-was-accomplished" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;When writing content for a website, it is important to be able to create the content and
-display content in a manner that works for you, the content author.  I described the
-settings that I have for my website which control where the content is stored as well as
-where the rendered content is published.  In addition, I cover a configuration value that
-dictates the default for the maximum number of articles to show in a list.&lt;/p&gt;</content><category term="Website"></category><category term="pelican website generator"></category><category term="pelican fine tuning"></category><category term="python"></category><category term="website landing page"></category><category term="pelican article settings"></category><category term="pelican page settings"></category></entry></feed>
+document status is changed.&lt;/p&gt;</content><category term="Website"></category><category term="pelican website generator"></category><category term="pelican fine tuning"></category><category term="python"></category><category term="pelican document status"></category></entry></feed>

@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="author" content="Jack De Winter" />
+
+        <meta name="description" content="Introduction¶ When I was working on implementing the inline code spans, as detailed in the last article, I performed a thorough scan of the scenario tests and their source data, noting down any issues I found. I knew that I had missed the mark on how to internally represent Atx …
+" />
+        <meta property="og:type" content="article" />
+        <meta name="twitter:card" content="summary">
+
+<meta name="keywords" content="markdown linter, Software Quality, " />
+
+<meta property="og:title" content="Markdown Linter - Taking Time to Refactor -- Post-Easy Inlines "/>
+<meta property="og:url" content="https://jackdewinter.github.io/2020/03/02/markdown-linter-taking-time-to-refactor-post-easy-inlines/" />
+<meta property="og:description" content="Introduction¶ When I was working on implementing the inline code spans, as detailed in the last article, I performed a thorough scan of the scenario tests and their source data, noting down any issues I found. I knew that I had missed the mark on how to internally represent Atx …" />
+<meta property="og:site_name" content="Jack&#39;s Digital Workbench" />
+<meta property="og:article:author" content="Jack De Winter" />
+<meta property="og:article:published_time" content="2020-03-02T00:00:00-08:00" />
+<meta name="twitter:title" content="Markdown Linter - Taking Time to Refactor -- Post-Easy Inlines ">
+<meta name="twitter:description" content="Introduction¶ When I was working on implementing the inline code spans, as detailed in the last article, I performed a thorough scan of the scenario tests and their source data, noting down any issues I found. I knew that I had missed the mark on how to internally represent Atx …">
+
+        <title>Markdown Linter - Taking Time to Refactor -- Post-Easy Inlines  · Jack&#39;s Digital Workbench
+</title>
+        <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://jackdewinter.github.io/theme/css/style.min.css?bec7d543">
+
+        <link href="https://jackdewinter.github.io/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Jack&#39;s Digital Workbench - Full Atom Feed" />
+
+
+    </head>
+    <body>
+        <div id="content">
+            <div class="navbar navbar-static-top">
+                <div class="navbar-inner">
+                    <div class="container-fluid">
+                        <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                        </a>
+                        <a class="brand" href="https://jackdewinter.github.io/"><span class=site-name>Jack's Digital Workbench</span></a>
+                        <div class="nav-collapse collapse">
+                            <ul class="nav pull-right top-menu">
+                                <li >
+                                    <a href=
+                                       https://jackdewinter.github.io
+                                    >Home</a>
+                                </li>
+                                <li ><a href="https://jackdewinter.github.io/categories">Categories</a></li>
+                                <li ><a href="https://jackdewinter.github.io/tags">Tags</a></li>
+                                <li ><a href="https://jackdewinter.github.io/archives">Archives</a></li>
+                                <li><form class="navbar-search" action="https://jackdewinter.github.io/search.html" onsubmit="return validateForm(this.elements['q'].value);"> <input type="text" class="search-query" placeholder="Search" name="q" id="tipue_search_input"></form></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="container-fluid">
+                <div class="row-fluid">
+                    <div class="span1"></div>
+                    <div class="span10">
+<article itemscope>
+<div class="row-fluid">
+    <header class="page-header span10 offset2">
+        <h1>
+            <a href="https://jackdewinter.github.io/2020/03/02/markdown-linter-taking-time-to-refactor-post-easy-inlines/">
+                Markdown Linter - Taking Time to Refactor -- Post-Easy Inlines
+            </a>
+        </h1>
+    </header>
+</div>
+
+<div class="row-fluid">
+    <div class="span2 table-of-content">
+        <nav>
+        <h4>Contents</h4>
+        <div class="toc">
+<ul>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#why-refactor-now">Why Refactor Now?</a></li>
+<li><a href="#issue-1-setext-headers-paragraphs-and-block-quotes">Issue 1:  SetExt Headers, Paragraphs, and Block Quotes</a></li>
+<li><a href="#issue-2-python-markdown-and-line-continuation-characters">Issue 2: Python, Markdown, and Line Continuation Characters</a></li>
+<li><a href="#issue-3-code-blocks-indenting-and-blank-lines">Issue 3: Code Blocks, Indenting, and Blank Lines</a></li>
+<li><a href="#issue-4-paragraphs-and-indenting">Issue 4: Paragraphs and Indenting</a></li>
+<li><a href="#issue-5-trailing-spaces-in-scenarios">Issue 5: Trailing Spaces in Scenarios</a></li>
+<li><a href="#issue-6-getting-atx-headers-right">Issue 6: Getting Atx Headers Right</a></li>
+<li><a href="#issue-7-bringing-the-tabs-back">Issue 7:  Bringing The Tabs Back</a></li>
+<li><a href="#what-was-my-experience-so-far">What Was My Experience So Far?</a></li>
+<li><a href="#what-is-next">What is Next?</a></li>
+</ul>
+</div>
+        </nav>
+    </div>
+    <div class="span8 article-content">
+            
+            
+<h2 id="introduction">Introduction<a class="headerlink" href="#introduction" title="Permanent link">¶</a></h2>
+<p>When I was working on implementing the
+<a href="https://jackdewinter.github.io/2020/02/24/markdown-linter-starting-inline-processing/#code-spans">inline code spans</a>,
+as detailed in the last article,
+I performed
+a thorough scan of the scenario tests and their source data, noting down any issues I
+found.  I knew that I had missed the mark on how to internally represent Atx Headers,
+and I was curious about how many other things I had missed.  Having found a
+decent handful of issues to fix,  I decided to spend some time to address those issues
+before adding more of the inline processing.  In my mind, it was
+better to take a week and try and keep the issue count low than to continue forward,
+possibly compounding the cost of fixing those issues.  As I am in a somewhat ideal
+scenario, with nobody pressuring me for features or issue fixes, I figured it was best
+if I took advantage of that to the best of my abilities and “do it right”.</p>
+<p>The full record of the work detailed in this article is documented in the
+project’s GitHub repository in the commits between
+<a href="https://github.com/jackdewinter/pymarkdown/commit/5102bfd8a3b2616eb6c3147f9416e3d7b308e523">14 February 2020</a> and
+<a href="https://github.com/jackdewinter/pymarkdown/commit/62127eb46d5b03a781ba85fbcf3a397221716eb2">20 February 2020</a>.</p>
+<h2 id="why-refactor-now">Why Refactor Now?<a class="headerlink" href="#why-refactor-now" title="Permanent link">¶</a></h2>
+<p>As the owner and sole developer on the project, my decision to stop and refactor was
+any easy one to make.  It also didn’t escape my attention that making a decision like
+that isn’t always that simple for larger projects.  If this was a work project
+or a team project, the group working on the project would have to meet to figure things
+out. The team itself usually plays a critical role in assessing the cost and benefit of
+each task, but
+in the end it is a balancing act for managers and directors to figure out which tasks
+are the best ones to focus on at any given time. As it’s only me on the PyMarkdown
+project, I get to conveniently shortcut those conversations in favor of simple
+decisions based on my own experience.</p>
+<p>From my years of experience, I find that there are usually two driving forces that make
+me support a decision to refactor a project.  The first driving force is the cost of
+any applicable technical
+debt on product code.  As I consider tests integral to a project’s quality, my
+definition of the term “product code” includes all source code and resources required
+to execute the project normally and to perform testing used to certify that same
+project as shippable.  With almost 700 scenario tests for
+PyMarkdown’s parser, even a small change can generate large ripples through the
+code base, especially the scenario tests.  As the scenarios for a feature are only added
+when that feature itself is added, each feature added therefore adds a significant
+amount of product code for any change to ripple through.  It also follows that each
+extra test impacted by an issue means an increased cost to fix that issue before
+proceeding.  Therefore, if the goal is to keep overall costs down, refactoring more
+frequently during development seems logical.</p>
+<p>The second driving force is less quantifiable, but equally important to any type of
+project.  That force is the flow of the team working on the project.  Based on past
+projects, I know that I work more efficiently if
+I focus on a group of similar things for a while, then shift to another group when done.
+The larger the difference is in the skill sets between the two groups of work, the more
+relaxed I feel about the work.  This sense of relaxation allows me to get into a better
+flow.  As this project is being
+written by me in the evenings and on the weekends, keeping a good flow for the project
+keeps me focused and energized about the project.  As I am the sole developer on the
+project at the time, keeping myself motivated in a necessity!</p>
+<p>While one force is more empirical and the other is more feelings based, both of these
+forces worked together to convince me that it was yet again time to refactor the
+PyMarkdown project.</p>
+<h2 id="issue-1-setext-headers-paragraphs-and-block-quotes">Issue 1:  SetExt Headers, Paragraphs, and Block Quotes<a class="headerlink" href="#issue-1-setext-headers-paragraphs-and-block-quotes" title="Permanent link">¶</a></h2>
+<p>I needed one of the smaller issues to get me warmed up, so after looking over the list
+of possible issues to work on, I decided on
+this one.  During the review of active scenario tests, I noticed that the text <code>===</code>
+was in the paragraph tags for the specification’s example, but the tokens that the
+parser were omitting had them outside of the paragraph.  It seemed simple enough,
+but looks were deceiving.</p>
+<p>It took me a bit of digging to find two possible reasons for the string <code>===</code> to be kept
+inside of the paragraph: laziness and non-interrupts.  Working backwards, the
+concept of laziness with block quotes and list items is that you can omit any of
+the leading characters if the next non-whitespace character after the omitted
+characters is text that continues the paragraph.  In essence:</p>
+<div class="highlight"><pre><span></span><span class="o">&gt;</span> <span class="n">this</span> <span class="k">is</span>
+<span class="n">a</span> <span class="n">block</span> <span class="n">quote</span>
+</pre></div>
+<p>is equivalent to</p>
+<div class="highlight"><pre><span></span><span class="o">&gt;</span> <span class="n">this</span> <span class="k">is</span>
+<span class="o">&gt;</span> <span class="n">a</span> <span class="n">block</span> <span class="n">quote</span>
+</pre></div>
+<p>That got me halfway there, but there was still the question of how the <code>===</code> would be
+kept as part of the paragraph and not as an SetExt header indicator.  I read the
+section on SetExt a couple of times before the following lines clicked:</p>
+<blockquote>
+<p>However, it cannot interrupt a paragraph, so when a setext heading comes after a paragraph, a blank line is needed between them.</p>
+</blockquote>
+<p>Bingo!  I wish it didn’t take multiple reads through that part of the specification,
+but specifications are sometimes like that.  Based on those discoveries, I temporary
+rewrote the scenario for scenario 63 to:</p>
+<div class="highlight"><pre><span></span><span class="n">foo</span>
+<span class="n">bar</span>
+<span class="o">===</span>
+</pre></div>
+<p>The goal of this was to remove the laziness out of the equation while working on the
+interrupt issue.  When I reran scenario test 63, I correctly got a single paragraph
+with 3 lines in it.  So whatever the issue was, it was not just simple parsing of
+paragraphs.  Taking a step forward, I added the block quotes back into the picture,
+changing that scenario text to:</p>
+<div class="highlight"><pre><span></span><span class="o">&gt;</span> <span class="n">foo</span>
+<span class="o">&gt;</span> <span class="n">bar</span>
+<span class="o">&gt;</span> <span class="o">===</span>
+</pre></div>
+<p>It was at this point that the scenario broke, apparently thinking that the third line
+was a
+SetExt header, and should close off the paragraph.  Issue reproduced!  To be sure, I
+applied the laziness concept to the block quote, reverting the scenario back to
+its original text of:</p>
+<div class="highlight"><pre><span></span><span class="o">&gt;</span> <span class="n">foo</span>
+<span class="n">bar</span>
+<span class="o">===</span>
+</pre></div>
+<p>and validated that the behavior was the same.</p>
+<p>Armed with a good reproduction case for the issue, good debug output, and a general
+area in the source code for the cause of the issue, the issue was identified and
+fixed in quick order.  This issue was very specific, so only the one scenario test
+was impacted, which was a good thing.  The problem was that during the development
+of block quotes, something made me think that anything looking like a
+SetExt header should close off a paragraph, hence I added code to do just that. I
+checked the code a couple of times, and that was the only scenario test referencing
+that code, so I just deleted it.</p>
+<p>While the research on the issue was
+a bit more effort than I originally thought, fixing this issue was a great warm up
+to the next couple of issues.  One issue, one scenario test impacted, and I was
+refactoring.</p>
+<h2 id="issue-2-python-markdown-and-line-continuation-characters">Issue 2: Python, Markdown, and Line Continuation Characters<a class="headerlink" href="#issue-2-python-markdown-and-line-continuation-characters" title="Permanent link">¶</a></h2>
+<p>The next issue for me to work on was a subtle copy-and-paste error, one that flew
+under my radar until I took a solid look at it.  This issue didn’t show any indications
+of failure until I started my scan of the scenario tests.  In essence, the only
+reason I found this one was that I went looking for any error, not something specific.</p>
+<p>In Markdown, the <code>\</code> character at the end of the line is used to denote a hard line
+break, not yet to be implemented in the PyMarkdown project.  In Python, the <code>\</code>
+character at the end of the line is used as a line continuation character, telling the
+Python interpreter to treat the text before the character and the text after the
+character as a single line.  Hopefully any readers see where I am going with this.</p>
+<p>When I added the scenario test for
+<a href="https://github.github.com/gfm/#example-60">scenario 60</a>,
+I did a copy-and-paste on the Markdown input to the new scenario test, a process I
+have done for 99% of the scenario tests in the project.  To accomplish this, I pasted
+the following Markdown text between the <code>"""</code> characters denoting the Markdown to use
+as input:</p>
+<div class="highlight"><pre><span></span><span class="n">Foo</span><span class="err">\</span>
+<span class="c1">----</span>
+</pre></div>
+<p>resulting in the Python code:</p>
+<div class="highlight"><pre><span></span>    <span class="n">source_markdown</span> <span class="o">=</span> <span class="s2">"""Foo</span><span class="se">\</span>
+<span class="s2">----"""</span>
+</pre></div>
+<p>After pasting each scenario’s Markdown into the scenario test, I try to ensure that
+I replace every instance of the <code>\</code> character with the <code>\\</code> characters to properly
+represent the backslash character in a Python string.  As I am
+only human, there are times that I forget to do this.  Luckily for me, if a <code>\</code>
+character is not paired up with a valid character to escape, the Python interpreter
+will generate a warning similar to the following:</p>
+<div class="highlight"><pre><span></span>======================================================== warnings summary ========================================================
+test\test_markdown_setext_headings.py:346
+  C:\old\enlistments\pymarkdown\test\test_markdown_setext_headings.py:346: DeprecationWarning: invalid escape sequence \&gt;
+    expected_gfm = """&lt;h2\&gt;Foo\\&lt;/h2&gt;"""
+
+-- Docs: https://docs.pytest.org/en/latest/warnings.html
+</pre></div>
+<p>As the backslash character in Markdown is used with punctuation characters and the
+backslash character in Python is used with alphabetic characters, this is usually a
+very solid detection scheme for finding copy-and-paste misses.  In this case, that
+check failed.</p>
+<p>The good news here is two-fold: an easy fix and a very localized fix.  This fix was
+easy as I just had to apply the missed substitution.  It was localized mainly because
+I had not yet implemented hard line breaks.  And yes, it meant that when I did implement
+hard line breaks, I triple checked my line endings to avoid this issue showing up again.</p>
+<p>Momentum was increasing, so it was time to step things up!</p>
+<h2 id="issue-3-code-blocks-indenting-and-blank-lines">Issue 3: Code Blocks, Indenting, and Blank Lines<a class="headerlink" href="#issue-3-code-blocks-indenting-and-blank-lines" title="Permanent link">¶</a></h2>
+<p>Having resolved a couple of warm-up issues, I felt it was time to tackle some larger
+issues.  Each issue in
+this group either deals with vertical space issues or leading space issues within a code
+block.  The vertical space issue was that blank lines were not being folded into the
+text blocks properly, causing foreseeable issues with  parsing complete blocks of text
+in the near future.  Given some Markdown text, such as:</p>
+<div class="highlight"><pre><span></span><span class="o">```</span>
+<span class="n">abc</span>
+
+<span class="n">def</span>
+<span class="o">```</span>
+</pre></div>
+<p>I expected that the output tokens would include a fenced code block with a single text
+block inside of it with three lines present.  Instead, there were three tokens present,
+the first and last were text tokens with strings and the token in the middle was a blank
+line token.  While the token representation was technically correct, parsing it would
+be awkward.  For the specific case of blank lines within a code block, it made sense to
+merge the blank line tokens into the surrounding text tokens.</p>
+<p>The leading space issue was a bit more subtle but equally simple.  To properly parse
+text blocks within a code block, an appropriate amount of whitespace may need to be
+removed from each line as it is combined together.  As always, it is the details that
+matter, and it is easy to gloss over them.  In the opening part of the indented code
+block section of the specification, the following line is present:</p>
+<blockquote>
+<p>The contents of the code block are the literal contents of the lines, including trailing line endings, minus four spaces of indentation.</p>
+</blockquote>
+<p>The similar line for fenced code blocks reads:</p>
+<blockquote>
+<p>If the leading code fence is indented N spaces, then up to N spaces of indentation are removed from each line of the content (if present).</p>
+</blockquote>
+<p>Basically, this means that the following indented code block:</p>
+<div class="highlight"><pre><span></span>    <span class="n">fred</span>
+     <span class="n">frank</span>
+</pre></div>
+<p>should produce a code block with the text <code>fred</code> on the first line and the text
+<code>&lt;space&gt;frank</code><sup id="fnref:Space"><a class="footnote-ref" href="#fn:Space">1</a></sup> on the second line, having had the first 4 spaces removed.  The fenced
+code blocks are
+a bit more nuanced, in that:</p>
+<div class="highlight"><pre><span></span><span class="o">```</span>
+  <span class="n">fred</span>
+<span class="o">```</span>
+</pre></div>
+<p>is parsed as <code>&lt;space&gt;&lt;space&gt;fred</code><sup id="fnref2:Space"><a class="footnote-ref" href="#fn:Space">1</a></sup> and:</p>
+<div class="highlight"><pre><span></span>  <span class="o">```</span>
+  <span class="n">fred</span>
+<span class="o">```</span>
+</pre></div>
+<p>is parsed as <code>fred</code>, based on the extra indenting of the fenced code block start.
+While the line containing the text <code>fred</code> is the same in both cases, the number of
+leading spaces before the fenced code block are different, resulting in the different
+outputs.</p>
+<p>Prior to fixing this issue, text lines were combined in a simple manner and no
+whitespace was removed from the start of any lines within code blocks.  To properly
+address this issue, not only did these two rules need to be followed, but the existing
+code to properly remove leading spaces for each line within a normal paragraph needed
+to be preserved.  It took a bit to get it right, but with a good number of scenario
+tests to keep things honest, it was easy to get it right quickly.</p>
+<p>My original estimates for the impact of this issue was 15-20 tests, and it thankfully
+remained within that range.  While the initial number of scenarios covered by these
+issues was 15, I expected other scenarios to use code blocks to show how their feature
+worked with code blocks, adding another 3-7 scenario tests in the process.  Looking
+back, I think I got off pretty nicely with the scope of these changes.</p>
+<h2 id="issue-4-paragraphs-and-indenting">Issue 4: Paragraphs and Indenting<a class="headerlink" href="#issue-4-paragraphs-and-indenting" title="Permanent link">¶</a></h2>
+<p>Feeling energized from fixing the issues documented in the previous sections, I decided
+to keep with the theme and attack the issue with leading spaces in normal paragraphs.
+Similar in essence to the prior issue, the rule for normal paragraphs is that all
+leading whitespace is
+removed as the text for the paragraph is pasted together.  While it is hard to point
+to an exact quote from the specification for this rule<sup id="fnref:Missing"><a class="footnote-ref" href="#fn:Missing">2</a></sup>,
+<a href="https://github.github.com/gfm/#example-192">example 192</a> clearly shows this as the
+Markdown:</p>
+<div class="highlight"><pre><span></span>  <span class="n">aaa</span>
+ <span class="n">bbb</span>
+</pre></div>
+<p>is translated into the HTML text:</p>
+<div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">p</span><span class="p">&gt;</span>aaa
+bbb<span class="p">&lt;/</span><span class="nt">p</span><span class="p">&gt;</span>
+</pre></div>
+<p>The fix for this was similar to the change made for the code blocks issue, but instead
+of specifying a fixed number of whitespace to remove, the <code>combine</code> function was
+changed to accept a value that indicates the removal of all whitespace.  The original 9
+cases were quickly tested with the fix, and things looked solid.</p>
+<p>Originally, it looked like the changes would be confined to the original 9 cases, but
+I suspected that the number would at least be double that, as this fix would affect any
+scenario involving a paragraph with multiple lines. While an number of the cases were
+simple cases, when all was said and done, there were 59 changes to scenario
+tests in the commit for this issue.  Even so, those changes were quickly made and the
+scenario tests were re-verified.</p>
+<p>While this took a lot of work to get right, it felt good to get this one resolved.  It
+was hard for me to quantify this to myself, but the parsing of the paragraphs always
+looked like they had too many spaces.  It was nice to finally figure out why!</p>
+<h2 id="issue-5-trailing-spaces-in-scenarios">Issue 5: Trailing Spaces in Scenarios<a class="headerlink" href="#issue-5-trailing-spaces-in-scenarios" title="Permanent link">¶</a></h2>
+<p>During the early development phase of the project, I wanted to get going with the
+scenarios as quickly
+as possible, so I copied each scenario’s Markdown text from the GFM specification
+exactly as-is.  This wasn’t a
+problem, except that in a small number of cases, there were lines in the scenarios that
+ended in one or more whitespaces.  These trailing whitespaces raised the
+<code>trailing-whitespace</code> warning when I ran the PyLint program over the project’s
+code base, as I do with each set of changes. Determined to deal with the issue later,
+I added a number of comments like this:</p>
+<div class="highlight"><pre><span></span><span class="c1"># pylint: disable=trailing-whitespace</span>
+</pre></div>
+<p>to disable the Pylint warnings that occurred, knowing I would have to fix
+them later.  At this point in the project, it seemed like a good time to deal with this.</p>
+<p>As this issue was largely out of sight, everything was fine.   That is, everything was
+fine until I hit a
+number of problems in a row that did involve these scenarios.  Instead of immediately
+noticing the trailing whitespace and the comment, I started debugging each issue
+without noticing either the comment or the whitespace, and was dumfounded by why the
+parsing was not as was suggested
+by the Markdown text that was clearly visible.
+When I took a step back to really read the scenario tests, I then noticed
+the comment at the top of each of the problem test functions, and then it clicked.  But
+it took a lot longer than it should have.  Instead of “just dealing with it”, I decided
+that refactoring was a better solution.</p>
+<p>The fix was an easy one too, something I should have thought of earlier.  The ASCII BELL
+character is represented by <code>\a</code> in Python strings, and to the best of my knowledge is
+seldom used in most Python programs or Markdown text.  As it has a very low probability
+of being used in any scenarios, I replaced the
+terminating whitespace characters with <code>\a</code> characters, then added <code>.replace("\a", " ")</code>
+at the end of the sample string.  It was then a simple matter of going through the
+other 6 scenarios with trailing whitespaces and repeating this fix.</p>
+<p>While issues like this may seem small, having to disable a PyLint warning didn’t feel
+right, even if it helped me maintain momentum at the time.  It just felt really good
+to solve this issue properly.</p>
+<h2 id="issue-6-getting-atx-headers-right">Issue 6: Getting Atx Headers Right<a class="headerlink" href="#issue-6-getting-atx-headers-right" title="Permanent link">¶</a></h2>
+<p>In the last article, I started looking for issues after wondering if a code span
+could work within an Atx Header, realizing that the specification allowed it but
+my current implementation did not allow it. As stated in the preamble for
+<a href="https://github.github.com/gfm/#example-36">scenario 36</a>:</p>
+<blockquote>
+<p>The raw contents of the heading are stripped of leading and trailing spaces before being parsed as inline content.</p>
+</blockquote>
+<p>Basically, my decision was based on my usage patterns, not the specification.
+In my experience, I have only ever done Atx Headers in the form:</p>
+<div class="highlight"><pre><span></span><span class="o">###</span> <span class="n">This</span> <span class="k">is</span> <span class="n">my</span> <span class="n">header</span>
+</pre></div>
+<p>so when I read the specification, I glossed over that section, only thinking
+of Atx Headers as containers for normal text.  However, based on the specification,
+the following text is also allowed:</p>
+<div class="highlight"><pre><span></span><span class="c1">### This *is* `my` header</span>
+</pre></div>
+<p>As a result, instead of the header text <code>This is my header</code> being generated by the
+first sample, I can use the second sample to generate the header text of
+<code>This &lt;em&gt;is&lt;/em&gt; &lt;code&gt;my&lt;/code&gt; header</code>.  Neat!</p>
+<p>The change itself was pretty simple, and confined to the <code>parse_atx_headings</code> function.
+As it was a simple change, the accompanying change in each test was also pretty
+simple:  take a single Atx Header token with text, replace it with an Atx Header token
+without the text, a Text token with the text, and an End token for the Atx Header.</p>
+<p>While I was concerned that the fix for this issue was going to be more widespread,
+it was confined to 22 scenario tests, and was really easy to verify.</p>
+<h2 id="issue-7-bringing-the-tabs-back">Issue 7:  Bringing The Tabs Back<a class="headerlink" href="#issue-7-bringing-the-tabs-back" title="Permanent link">¶</a></h2>
+<p>Looking for something to finish the refactoring session with, I decided to tackle one
+of the longstanding fixes that I had some reservations about: the bulk conversion
+of tabs to spaces.  While it was a good fix at the time, I suspected that there
+might be problems with the code blocks where all text is supposed to be preserved
+literally, including tab characters.</p>
+<p>In a stroke of luck, all of the affected scenario tests are in the
+<code>test_markdown_tabs.py</code> file
+and the places where tabs are important can be grouped into 2 distinct groups.
+In the Markdown specification, there is a distinction between whether there is enough
+whitespace for an indented code block with 4 spaces, or not with less then 4 spaces.
+To address those cases, I simply added the <code>is_length_greater_than_or_equal_to</code> and
+<code>is_length_less_than_or_equal_to</code> functions.  While I could have simply used a <code>not</code>
+modifier to get the same effect, I thought it was more readable to simply spell it
+out.  For cases where the actual length was needed, the <code>calculate_length</code> function
+determines the length of the string, allowing for the length of a tab to be 4
+characters while every other character is assigned a length of 1.</p>
+<p>While this wasn’t a very technical issue to fix, it helped me return things to a known
+good state, with confidence that tabs were being treated properly.  Before this fix,
+I was always concerned that the bulk translation of tab characters to spaces would
+introduce a hard to diagnose issue.  With that translation removed, that concern went
+away.</p>
+<h2 id="what-was-my-experience-so-far">What Was My Experience So Far?<a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link">¶</a></h2>
+<p>At various points in the development of PyMarkdown, I have wondered if my thinking
+should be more realistic with a “two steps forward, one step back” feel to it.  Maybe
+it’s just who I am, but with a few exceptions, I see almost all of this development as
+stepping forward with quality, and hence, all positive.  I actually like the fact that
+I am implementing some new features, then doing some refactoring, and repeating.  It
+gives me a solid perception that the project is on stable footing at every stage,
+accumulating little technical debt along the way.</p>
+<p>Something that struck me at this point was how easily I seemed to fall into a rhythm
+that works well for me and the project:  implementing a couple of features, noting down
+any issues as I implement, and then fixing a couple of the more pressing issues before
+repeating the pattern.  I am not sure if that kind of a pattern that everyone else
+works well with, but it seems to work well for me.  To a certain extent, it also helps
+me write these articles, as writing about quality software is very different than
+the development of that software.  For me, I find that they compliment each other
+very well.</p>
+<p>In terms of energy, keeping that rhythm going and writing these articles is
+helping to keep me charged up about the project.  While I have written my share of
+parsers in my career, they have almost always been for work projects with a specific
+goal and deadline to achieve.  Being freed from those restrictions does come with
+it’s benefits, but not having someone looking over your shoulder means that you have
+to take on that role yourself.  These articles, while initially created to talk about
+my approach in creating quality software, also server the purpose of keeping me
+honest and responsible to any readers.  Call it a backup plan, but it seems to be
+working well!</p>
+<h2 id="what-is-next">What is Next?<a class="headerlink" href="#what-is-next" title="Permanent link">¶</a></h2>
+<p>Going back to the specification for features to implement, I decided to start at the
+end and get the line breaks, autolinks, and raw html inline processing taken care of.
+While I don’t use them frequently myself, they are interesting aspects to the
+GFM specification, and perhaps learning about them will increase my use of them in
+my everyday Markdown usage.</p>
+<div class="footnote">
+<hr/>
+<ol>
+<li id="fn:Space">
+<p>The string <code>&lt;space&gt;</code> represents a space character, which by it’s very nature, is invisible. <a class="footnote-backref" href="#fnref:Space" title="Jump back to footnote 1 in the text">↩</a><a class="footnote-backref" href="#fnref2:Space" title="Jump back to footnote 1 in the text">↩</a></p>
+</li>
+<li id="fn:Missing">
+<p>The specification states “The paragraph’s raw content is formed by concatenating the lines and removing initial and final whitespace.”  This is the closest reference that I could find to removing whitespace.  Perhaps initial means per line? <a class="footnote-backref" href="#fnref:Missing" title="Jump back to footnote 2 in the text">↩</a></p>
+</li>
+</ol>
+</div>
+
+
+             
+ 
+                <p id="post-share-links">
+    Like this post? Share on:
+    <a href="https://twitter.com/intent/tweet?text=Markdown%20Linter%20-%20Taking%20Time%20to%20Refactor%20--%20Post-Easy%20Inlines&url=https%3A//jackdewinter.github.io/2020/03/02/markdown-linter-taking-time-to-refactor-post-easy-inlines/&hashtags=markdown-linter" target="_blank" rel="nofollow noopener noreferrer" title="Share on Twitter">Twitter</a>
+    ❄
+    <a href="https://www.facebook.com/sharer/sharer.php?u=https%3A//jackdewinter.github.io/2020/03/02/markdown-linter-taking-time-to-refactor-post-easy-inlines/" target="_blank" rel="nofollow noopener noreferrer" title="Share on Facebook">Facebook</a>
+    ❄
+    <a href="mailto:?subject=Markdown%20Linter%20-%20Taking%20Time%20to%20Refactor%20--%20Post-Easy%20Inlines&amp;body=https%3A//jackdewinter.github.io/2020/03/02/markdown-linter-taking-time-to-refactor-post-easy-inlines/" target="_blank" rel="nofollow noopener noreferrer" title="Share via Email">Email</a>
+    </p>
+
+            
+            
+
+
+
+
+
+
+<section>
+    <h6 style="display:none;">Comments</h6>
+    <p id="comment-message">So what do you think? Did I miss something? Is any part unclear? Leave your comments below. </p>
+
+    <div class="accordion" id="accordion2">
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                <a class="accordion-toggle disqus-comment-count comment-count"
+                   data-toggle="collapse"
+                   data-parent="#accordion2"
+                   href="https://jackdewinter.github.io/2020/03/02/markdown-linter-taking-time-to-refactor-post-easy-inlines/#comment_thread"
+                   id="comment-accordion-toggle">
+                    Comments
+                </a>
+            </div>
+            <div id="comment_thread" class="accordion-body collapse">
+                <div class="accordion-inner">
+                    <div class="comments">
+
+                        <script src="https://utteranc.es/client.js"
+        data-repo="jackdewinter/jackdewinter.github.io"
+        data-issue-term="markdown-linter-taking-time-to-refactor--post-easy-inlines"
+        data-label="Comments"
+        data-theme="github-light"
+        crossorigin="anonymous"
+        async>
+</script>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+            <hr/>
+            <aside>
+            <nav>
+            <ul class="articles-timeline">
+                <li class="previous-article">« <a href="https://jackdewinter.github.io/2020/02/24/markdown-linter-starting-inline-processing/" title="Previous: Markdown Linter - Starting Inline Processing">Markdown Linter - Starting Inline Processing</a></li>
+            </ul>
+            </nav>
+            </aside>
+        </div>
+        <section id="article-sidebar" class="span2">
+    <h4>Reading Time</h4>
+    <p>~16 min read</p>
+            <h4>Published</h4>
+            <time itemprop="dateCreated" datetime="2020-03-02T00:00:00-08:00">Mar 2, 2020</time>
+        <h4>Markdown Linter</h4>
+    <ul class="multi-parts-list">
+            <li >
+            <a href="https://jackdewinter.github.io/2019/12/08/markdown-linter-collecting-requirements/" title="Markdown Linter - Collecting Requirements">Part 1: Markdown Linter - Collecting Requirements</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2019/12/16/markdown-linter-setting-up-parser-tests/" title="Markdown Linter - Setting Up Parser Tests">Part 2: Markdown Linter - Setting Up Parser Tests</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2019/12/22/markdown-linter-parser-testing-strategy/" title="Markdown Linter - Parser Testing Strategy">Part 3: Markdown Linter - Parser Testing Strategy</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/01/27/markdown-linter-parsing-normal-markdown-blocks/" title="Markdown Linter - Parsing Normal Markdown Blocks">Part 4: Markdown Linter - Parsing Normal Markdown Blocks</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/02/03/markdown-linter-adding-block-quotes-and-lists/" title="Markdown Linter - Adding Block Quotes and Lists">Part 5: Markdown Linter - Adding Block Quotes and Lists</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/02/10/markdown-linter-adding-html-blocks/" title="Markdown Linter - Adding HTML Blocks">Part 6: Markdown Linter - Adding HTML Blocks</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/02/17/markdown-linter-taking-time-to-refactor-post-block-implementation/" title="Markdown Linter - Taking Time to Refactor -- Post-Block Implementation">Part 7: Markdown Linter - Taking Time to Refactor -- Post-Block Implementation</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/02/24/markdown-linter-starting-inline-processing/" title="Markdown Linter - Starting Inline Processing">Part 8: Markdown Linter - Starting Inline Processing</a>
+            </li>
+            <li  class="active-part">
+            Part 9: Markdown Linter - Taking Time to Refactor -- Post-Easy Inlines
+            </li>
+    </ul>
+            <h4>Category</h4>
+            <a class="category-link" href="https://jackdewinter.github.io/categories#software-quality-ref">Software Quality</a>
+            <h4>Tags</h4>
+            <ul class="list-of-tags tags-in-article">
+                <li><a href="https://jackdewinter.github.io/tags#markdown-linter-ref">markdown linter
+                    <span>9</span>
+</a></li>
+            </ul>
+<h4>Stay in Touch</h4>
+<div id="sidebar-social-link">
+    <a href="https://github.com/jackdewinter" title="github-alt" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="GitHub" role="img" viewBox="0 0 512 512"><rect width="512" height="512" rx="15%" fill="#1B1817"/><path fill="#fff" d="M335 499c14 0 12 17 12 17H165s-2-17 12-17c13 0 16-6 16-12l-1-50c-71 16-86-28-86-28-12-30-28-37-28-37-24-16 1-16 1-16 26 2 40 26 40 26 22 39 59 28 74 22 2-17 9-28 16-35-57-6-116-28-116-126 0-28 10-51 26-69-3-6-11-32 3-67 0 0 21-7 70 26 42-12 86-12 128 0 49-33 70-26 70-26 14 35 6 61 3 67 16 18 26 41 26 69 0 98-60 120-117 126 10 8 18 24 18 48l-1 70c0 6 3 12 16 12z"/></svg>
+    </a>
+    <a href="https://www.linkedin.com/in/jackdewinter/" title="linkedin" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="LinkedIn" role="img" viewBox="0 0 512 512" fill="#fff"><rect width="512" height="512" rx="15%" fill="#0077b5"/><circle cx="142" cy="138" r="37"/><path stroke="#fff" stroke-width="66" d="M244 194v198M142 194v198"/><path d="M276 282c0-20 13-40 36-40 24 0 33 18 33 45v105h66V279c0-61-32-89-76-89-34 0-51 19-59 32"/></svg>
+    </a>
+    <a href="https://jackdewinter.github.io/feeds/all.atom.xml" title="" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="RSS" role="img" viewBox="0 0 512 512"><rect width="512" height="512" rx="15%" fill="#f80"/><circle cx="145" cy="367" r="35" fill="#fff"/><path fill="none" stroke="#fff" stroke-width="60" d="M109 241c89 0 162 73 162 162M109 127c152 0 276 124 276 276"/></svg>
+    </a>
+</div>
+            
+
+
+
+
+
+            
+
+
+
+
+
+        </section>
+</div>
+</article>
+                    </div>
+                    <div class="span1"></div>
+                </div>
+            </div>
+        </div>
+<footer>
+    <div>
+        
+&copy; Copyright 2019 by Jack De Winter and licensed under a <a rel="license"
+  href="http://creativecommons.org/licenses/by/4.0/">
+  <img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/80x15.png" />
+  Creative Commons Attribution 4.0 International License</a>.
+
+    </div>
+
+
+
+
+    <div id="fpowered">
+        Powered by: <a href="http://getpelican.com/" title="Pelican Home Page" target="_blank" rel="nofollow noopener noreferrer">Pelican</a>
+        Theme: <a href="https://elegant.oncrashreboot.com/" title="Theme Elegant Home Page" target="_blank" rel="nofollow noopener noreferrer">Elegant</a>
+    </div>
+</footer>            <script src="//code.jquery.com/jquery.min.js"></script>
+        <script src="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>
+        <script>
+            function validateForm(query)
+            {
+                return (query.length > 0);
+            }
+        </script>
+
+    <script>
+    (function () {
+        if (window.location.hash.match(/^#comment-\d+$/)) {
+            $('#comment_thread').collapse('show');
+        }
+    })();
+    window.onhashchange=function(){
+        if (window.location.hash.match(/^#comment-\d+$/))
+            window.location.reload(true);
+    }
+    $('#comment_thread').on('shown', function () {
+        var link = document.getElementById('comment-accordion-toggle');
+        var old_innerHTML = link.innerHTML;
+        $(link).fadeOut(200, function() {
+            $(this).text('Click here to hide comments').fadeIn(200);
+        });
+        $('#comment_thread').on('hidden', function () {
+            $(link).fadeOut(200, function() {
+                $(this).text(old_innerHTML).fadeIn(200);
+            });
+        })
+    })
+</script>
+
+    </body>
+    <!-- Theme: Elegant built for Pelican
+        License : MIT -->
+</html>
