@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="author" content="Jack De Winter" />
+
+        <meta name="description" content="Introduction¶ Having completed another refactoring session, I have confidence that the PyMarkdown project code has been returned back to what I feel is a healthy amount of technical debt. After taking a deep breath and a good look at the features left to implement, I realized that the list is …
+" />
+        <meta property="og:type" content="article" />
+        <meta name="twitter:card" content="summary">
+
+<meta name="keywords" content="markdown linter, Software Quality, " />
+
+<meta property="og:title" content="Markdown Linter - Autolinks, Raw HTML, and Line Breaks "/>
+<meta property="og:url" content="https://jackdewinter.github.io/drafts/markdown-linter-autolinks-raw-html-and-line-breaks.html" />
+<meta property="og:description" content="Introduction¶ Having completed another refactoring session, I have confidence that the PyMarkdown project code has been returned back to what I feel is a healthy amount of technical debt. After taking a deep breath and a good look at the features left to implement, I realized that the list is …" />
+<meta property="og:site_name" content="Jack&#39;s Digital Workbench" />
+<meta property="og:article:author" content="Jack De Winter" />
+<meta property="og:article:published_time" content="2020-03-09T00:00:00-07:00" />
+<meta name="twitter:title" content="Markdown Linter - Autolinks, Raw HTML, and Line Breaks ">
+<meta name="twitter:description" content="Introduction¶ Having completed another refactoring session, I have confidence that the PyMarkdown project code has been returned back to what I feel is a healthy amount of technical debt. After taking a deep breath and a good look at the features left to implement, I realized that the list is …">
+
+        <title>Markdown Linter - Autolinks, Raw HTML, and Line Breaks  · Jack&#39;s Digital Workbench
+</title>
+        <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://jackdewinter.github.io/theme/css/style.min.css?bec7d543">
+
+        <link href="https://jackdewinter.github.io/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Jack&#39;s Digital Workbench - Full Atom Feed" />
+
+
+    </head>
+    <body>
+        <div id="content">
+            <div class="navbar navbar-static-top">
+                <div class="navbar-inner">
+                    <div class="container-fluid">
+                        <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                        </a>
+                        <a class="brand" href="https://jackdewinter.github.io/"><span class=site-name>Jack's Digital Workbench</span></a>
+                        <div class="nav-collapse collapse">
+                            <ul class="nav pull-right top-menu">
+                                <li >
+                                    <a href=
+                                       https://jackdewinter.github.io
+                                    >Home</a>
+                                </li>
+                                <li ><a href="https://jackdewinter.github.io/categories">Categories</a></li>
+                                <li ><a href="https://jackdewinter.github.io/tags">Tags</a></li>
+                                <li ><a href="https://jackdewinter.github.io/archives">Archives</a></li>
+                                <li><form class="navbar-search" action="https://jackdewinter.github.io/search.html" onsubmit="return validateForm(this.elements['q'].value);"> <input type="text" class="search-query" placeholder="Search" name="q" id="tipue_search_input"></form></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="container-fluid">
+                <div class="row-fluid">
+                    <div class="span1"></div>
+                    <div class="span10">
+<article itemscope>
+<div class="row-fluid">
+    <header class="page-header span10 offset2">
+        <h1>
+            <a href="https://jackdewinter.github.io/drafts/markdown-linter-autolinks-raw-html-and-line-breaks.html">
+                Markdown Linter - Autolinks, Raw HTML, and Line Breaks
+            </a>
+        </h1>
+    </header>
+</div>
+
+<div class="row-fluid">
+    <div class="span2 table-of-content">
+        <nav>
+        <h4>Contents</h4>
+        <div class="toc">
+<ul>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#my-take-on-html-in-markdown">My Take On HTML in Markdown</a></li>
+<li><a href="#raw-html">Raw Html</a></li>
+<li><a href="#autolinks">Autolinks</a></li>
+<li><a href="#line-breaks">Line Breaks</a></li>
+<li><a href="#what-was-my-experience-so-far">What Was My Experience So Far?</a></li>
+<li><a href="#what-is-next">What is Next?</a></li>
+</ul>
+</div>
+        </nav>
+    </div>
+    <div class="span8 article-content">
+            
+            
+<h2 id="introduction">Introduction<a class="headerlink" href="#introduction" title="Permanent link">¶</a></h2>
+<p>Having completed another refactoring session, I have confidence that the PyMarkdown
+project code has been
+returned back to what I feel is a healthy amount of technical debt.  After taking
+a deep breath and a good look at the features left to implement, I realized that the
+list is now
+pretty short: emphasis, links, autolinks, raw HTML, and line breaks.  Rechecking the
+section on
+<a href="https://github.github.com/gfm/#phase-2-inline-structure">inline structure</a>
+in the GitHub Flavored Markdown (GFM) specification, it is hard to miss the fact that
+the emphasis and link elements have their own “here is a suggested approach to
+implementation” section while the implementation for parsing the
+other elements are left up to the reader.  Deciding that the authors of the GFM
+were trying to tell me something, I decided to focus on autolinks, raw HTML, and line
+breaks first, leaving the emphasis and links for the last chunk of features.</p>
+<p>The full record of the work detailed in this article is documented in the
+project’s GitHub repository in the commits between
+<a href="https://github.com/jackdewinter/pymarkdown/commit/6ea7929d95468e28170671dc19214bd09507f04c">22 February 2020</a> and
+<a href="https://github.com/jackdewinter/pymarkdown/commit/dffd948cf8e4066121dbb11ae68c385370a20877">27 February 2020</a>.</p>
+<h2 id="my-take-on-html-in-markdown">My Take On HTML in Markdown<a class="headerlink" href="#my-take-on-html-in-markdown" title="Permanent link">¶</a></h2>
+<p>Back in the article
+<a href="https://jackdewinter.github.io/2020/02/10/markdown-linter-adding-html-blocks/">Markdown Linter - Adding HTML Blocks</a>,
+I provided
+<a href="https://jackdewinter.github.io/2020/02/10/markdown-linter-adding-html-blocks/#my-recommendation">a recommendation</a>
+as follows:</p>
+<blockquote>
+<p>When it comes to HTML blocks, I implemented them as part of the parser because they are part of the specification. But because of the complexity in understanding HTML blocks, I whole heartedly recommend avoiding using HTML blocks if at all possible.</p>
+</blockquote>
+<p>The big problem I have with HTML blocks is that there are 7 types of HTML blocks, and
+each one has a different ending condition.  As an author that heavily uses Markdown,
+I want any documents that I create to be simple and easy to read.  In my opinion,
+without a lot of memorization, HTML blocks are not simple at all.  </p>
+<p>Raw HTML elements are on the complete other end of the spectrum.  If I had my way
+with the GFM specification, I would demote and remove HTML blocks entirely and replace
+them with raw HTML.  Raw HTML is exactly as it sounds: what you type is what you get.
+The good news is that if you follow a couple of easy to memorize rules, you can do this:</p>
+<ul>
+<li>NEVER start a line with a HTML tag</li>
+<li>Markdown is an authoring language, and should only use HTML sparingly</li>
+</ul>
+<p>In support the first rule, my reading of the start conditions of each of the
+<a href="https://github.github.com/gfm/#html-blocks">HTML block types</a>
+in the GFM concludes with the observation that all start conditions begin with the text
+“line begins…”.  Thus, I created the first rule to ensure that I never inadvertently
+trigger a HTML block.  Any non-whitespace text and then any HTML is fine, just not
+by itself at the start of the line.</p>
+<p>My second rule may seem like my own opinion, but I believe it is a solid rule.  While
+it is useful to read the GFM section on
+<a href="https://github.github.com/gfm/#what-is-markdown-">What is Markdown?</a>,
+that section boils down to this one quote from that section by John Gruber:</p>
+<blockquote>
+<p>The overriding design goal for Markdown’s formatting syntax is to make it as readable as possible. The idea is that a Markdown-formatted document should be publishable as-is, as plain text, without looking like it’s been marked up with tags or formatting instructions.</p>
+</blockquote>
+<p>There is little question that having the ability to add a HTML tag where needed is a
+good feature of Markdown.  However, I would contend that any HTML tags that are added
+are contrary to Gruber’s stated goal for a document to not be marked up with tags. As
+such, unless Gruber’s readability goal is dismissed, anything more than sparing use of
+HTML in a Markdown document is harmful.</p>
+<p>Don’t get me wrong, but there are good use cases for HTML, but they are rare.  In the
+5-6 years that I have been authoring documents in Markdown, there are only two times
+I have ever used HTML tags in Markdown documents.  The first time is in the writing of
+these articles on the Markdown parser for the PyMarkdown project and the other time was
+for a project that used the <code>&lt;ul&gt;</code> and <code>&lt;/ul&gt;</code> tags to satisfy a legal documentation
+requirement for text underlining.  From talking with other developers using Markdown
+parsers that underling text is a popular request along with a blanket request to
+disable all HTML tag support in Markdown, mostly for security reasons.</p>
+<p>So, for what it is worth, that is my take on HTML in Markdown, and my reasons for that
+opinion.  Your mileage may vary.</p>
+<h2 id="raw-html">Raw Html<a class="headerlink" href="#raw-html" title="Permanent link">¶</a></h2>
+<p>Unlike the rules that an author needs to memorize to properly use HTML blocks, using raw
+HTML in Markdown is very simple: it’s either a legal HTML tag or it gets interpreted
+as normal text.  No “if it’s a blah tag, then…” rules.  Just valid or invalid.  No
+ending conditions as raw HTML is inline processing of text.  Simple. Easy. Clean.</p>
+<p>The reason that I can be comfortable in saying that raw HTML is simple is the following
+block of Markdown text:</p>
+<div class="highlight"><pre><span></span><span class="nv">Start</span> <span class="nv">and</span> <span class="k">End</span> <span class="nv">Tags</span> <span class="o">-</span> <span class="o">&lt;</span><span class="nv">a</span> <span class="nv">href</span><span class="o">=</span><span class="s2">"</span><span class="s">link</span><span class="s2">"</span><span class="o">&gt;</span><span class="nv">link</span> <span class="nv">text</span><span class="o">&lt;/</span><span class="nv">a</span><span class="o">&gt;</span>  \
+<span class="nv">Self</span><span class="o">-</span><span class="nv">Closing</span> <span class="nv">Start</span> <span class="nv">Tag</span>  <span class="o">-</span> <span class="o">&lt;</span><span class="nv">br</span> <span class="o">/&gt;</span>  \
+<span class="nv">Alternate</span> <span class="nv">Parameter</span> <span class="nv">Enclosing</span> <span class="o">-</span> <span class="o">&lt;</span><span class="nv">b2</span> <span class="nv">data</span><span class="o">=</span><span class="s1">'</span><span class="s">foo</span><span class="s1">'</span><span class="o">&gt;</span>  \
+<span class="nv">Simple</span> <span class="nv">Alternate</span> <span class="nv">Parameter</span> <span class="o">-</span> <span class="o">&lt;</span><span class="nv">c3</span> <span class="nv">foo</span><span class="o">=</span><span class="nv">bar</span> <span class="o">/&gt;</span>  \
+<span class="nv">Gratuitous</span> <span class="nv">Parameter</span> <span class="nv">Example</span> <span class="o">-</span> <span class="o">&lt;</span><span class="nv">d4</span> <span class="nv">foo</span><span class="o">=</span><span class="s2">"</span><span class="s">bar</span><span class="s2">"</span> <span class="nv">bam</span> <span class="o">=</span> <span class="s1">'</span><span class="s">baz &lt;em&gt;"&lt;/em&gt;</span><span class="s1">'</span> <span class="nv">_boolean</span> <span class="nv">zoop</span>:<span class="mi">33</span><span class="o">=</span><span class="nv">zoop</span>:<span class="mi">33</span> <span class="o">/&gt;</span>
+</pre></div>
+<p>While the grammar is broken down in the
+<a href="https://github.github.com/gfm/#raw-html">Raw HTML</a> section of the GFM specification,
+it follows the
+<a href="https://www.w3.org/TR/html52/syntax.html#writing-html-documents-elements">HTML 5</a>
+specification for how to construct the tag and which tag formats are valid.  From
+a document author point of view, this is simple.  When adding HTML to a Markdown
+document, the author either knows how to author a web page in HTML or has a person
+or web page that tells the author what HTML to insert into the document.  In either
+case, assuming that those tags are valid, those tags are emitted exactly as added,
+with no extra baggage added during the translation.</p>
+<p>In adding these HTML samples to the above Markdown example, I am also following my own
+rules: never start a line with a tag and use it sparingly.  None of the lines start
+with a tag, ensuring that none of the text is parsed as a HTML block.  And while
+I went a bit overboard with the HTML specifically as it is an example, I can honestly
+say it is one of the less-than-5 times I have used HTML in Markdown.  I think that
+qualifies as sparingly.</p>
+<p>The raw HTML inline processing was very easy to add, as the rules are very simple:
+it’s either a valid HTML tag, or not.  Not much to add.</p>
+<h2 id="autolinks">Autolinks<a class="headerlink" href="#autolinks" title="Permanent link">¶</a></h2>
+<p>Until I started reading the specification, I had no idea that Markdown was capable of
+a lot of things.  In this case, I wasn’t aware that it can make a decent attempt at
+creating links with very little effort.  As far as using them in my articles and
+documents, I am not sure about them yet, but at the very least they are an interesting
+concept for Markdown to include.</p>
+<p>The concept is simple.  An URI contained within the <code>&lt;</code> and <code>&gt;</code> characters is
+interpreted as a link to that URI, with both the link and the link text being set to
+that value.  There is also a variation of autolinks that uses any email address that
+matches the email address
+<a href="https://html.spec.whatwg.org/multipage/forms.html#e-mail-state-(type=email)">regular expression in the HTML5 specification</a>.  For email address autolinks, the link is set
+to a <code>mailto</code> scheme for the link and the email address for the link text.</p>
+<p>Real simple examples of these autolinks are contained within the following Markdown:</p>
+<div class="highlight"><pre><span></span><span class="n">My</span><span class="w"> </span><span class="nl">website</span><span class="p">:</span><span class="w"> </span><span class="o">&lt;</span><span class="nl">http</span><span class="p">:</span><span class="o">//</span><span class="n">example</span><span class="p">.</span><span class="n">com</span><span class="o">&gt;</span><span class="w"></span>
+
+<span class="n">My</span><span class="w"> </span><span class="nl">email</span><span class="p">:</span><span class="w"> </span><span class="o">&lt;</span><span class="n">head</span><span class="p">.</span><span class="n">honcho</span><span class="nv">@example</span><span class="p">.</span><span class="n">com</span><span class="o">&gt;</span><span class="w"></span>
+</pre></div>
+<p>which generates the following HTML:</p>
+<div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">p</span><span class="p">&gt;</span>My website: <span class="p">&lt;</span><span class="nt">a</span> <span class="na">href</span><span class="o">=</span><span class="s">"http://example.com"</span><span class="p">&gt;</span>http://example.com<span class="p">&lt;/</span><span class="nt">a</span><span class="p">&gt;&lt;/</span><span class="nt">p</span><span class="p">&gt;</span>
+<span class="p">&lt;</span><span class="nt">p</span><span class="p">&gt;</span>My email: <span class="p">&lt;</span><span class="nt">a</span> <span class="na">href</span><span class="o">=</span><span class="s">"mailto:head.honcho@example.com"</span><span class="p">&gt;</span>head.honcho@example.com<span class="p">&lt;/</span><span class="nt">a</span><span class="p">&gt;&lt;/</span><span class="nt">p</span><span class="p">&gt;</span>
+</pre></div>
+<p>To make sure they are not interpreted as HTML blocks, they are prefaced with text,
+according to the rules I established in the last section.  While a properly
+created autolink should not be interpreted as either of the HTML elements, I prefer to
+keep things simple.  “NEVER start a line with a HTML tag unless it is a validly formed
+autolink” just seemed to much.  As mentioned before, your mileage may vary.</p>
+<p>The actual HTML output is simple, as denoted in the second paragraph of this section.
+In looking at autolinks a couple of times for this article, my feeling about autolinks
+as a document author is that there is not enough control of the output.  Unless
+I am missing something, the following Markdown is equivalent to the above HTML, and
+it gives me more control of the document:</p>
+<div class="highlight"><pre><span></span><span class="n">My</span><span class="w"> </span><span class="nl">website</span><span class="p">:</span><span class="w"> </span><span class="o">[</span><span class="n">http://example.com</span><span class="o">]</span><span class="p">(</span><span class="nl">http</span><span class="p">:</span><span class="o">//</span><span class="n">example</span><span class="p">.</span><span class="n">com</span><span class="p">)</span><span class="w"></span>
+
+<span class="n">My</span><span class="w"> </span><span class="nl">email</span><span class="p">:</span><span class="w"> </span><span class="o">[</span><span class="n">head.honcho@example.com</span><span class="o">]</span><span class="p">(</span><span class="nl">mailto</span><span class="p">:</span><span class="n">head</span><span class="p">.</span><span class="n">honcho</span><span class="nv">@example</span><span class="p">.</span><span class="n">com</span><span class="p">)</span><span class="w"></span>
+</pre></div>
+<p>In the end, while autolinks were as trivial to add as raw HTML, I think I’ll stick
+with my explicit links.</p>
+<h2 id="line-breaks">Line Breaks<a class="headerlink" href="#line-breaks" title="Permanent link">¶</a></h2>
+<p>Wrapping things up for this group of features are the line breaks: hard breaks and soft
+breaks. At 14 examples for
+hard line breaks and 2 examples for soft line breaks, only the indented code
+blocks (11), the tabs (11), and the paragraphs (8) are in the same ball park for the
+low number of examples needed to adequately demonstrate that given structural element
+of Markdown.  In addition, if you really look at the 14 examples for hard line breaks,
+there is a good argument to be made that there is large amount of replication between
+the two character sequences, reducing the “actual” number of examples down
+into the same 8-11 examples range.</p>
+<p>As indicated by the number of examples, line breaks in Markdown are really simple to
+use, inheriting it’s line break rules from HTML.  In both languages,
+if the author wants to specifically break a line after some text, they must use an
+element that forces a line break before it’s content, use an element that preserves line
+breaks within it’s content, or specify a hard line break itself.</p>
+<p>A good example of the first case are the grouping of Markdown lines into a paragraph by
+separating them with a blank line.  This is best shown in the following Markdown from
+<a href="https://github.github.com/gfm/#example-190">example 190</a>:</p>
+<div class="highlight"><pre><span></span><span class="n">aaa</span>
+<span class="n">bbb</span>
+
+<span class="n">ccc</span>
+<span class="n">ddd</span>
+</pre></div>
+<p>which generates the following HTML:</p>
+<div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">p</span><span class="p">&gt;</span>aaa
+bbb<span class="p">&lt;/</span><span class="nt">p</span><span class="p">&gt;</span>
+<span class="p">&lt;</span><span class="nt">p</span><span class="p">&gt;</span>ccc
+ddd<span class="p">&lt;/</span><span class="nt">p</span><span class="p">&gt;</span>
+</pre></div>
+<p>and is displayed as the following:</p>
+<hr/>
+<p><p>aaa
+bbb</p>
+<p>ccc
+ddd</p></p>
+<hr/>
+<p>In this example, the (soft) line break that occurs in the Markdown between <code>aaa</code> and
+<code>bbb</code>, and then again between the <code>ccc</code> and <code>ddd</code>, is kept as it is translated into
+HTML.  However, when the HTML is rendered, that line break is not displayed.  When
+displayed, the first pair of characters are displayed, followed by a line break, and
+then the second set of characters.  As a general default rule, Markdown blocks
+force a hard line break before displaying their contents, to ensure that the content is
+understood to be different.</p>
+<p>For the second case, a good example of it is a slightly modified version of the
+Markdown from <a href="https://github.github.com/gfm/#example-110">example 110</a>:</p>
+<div class="highlight"><pre><span></span><span class="n">foo</span>
+<span class="o">```</span>
+<span class="n">bar</span>
+<span class="n">bam</span>
+<span class="o">```</span>
+<span class="n">baz</span>
+</pre></div>
+<p>which generates the following HTML:</p>
+<div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">p</span><span class="p">&gt;</span>foo<span class="p">&lt;/</span><span class="nt">p</span><span class="p">&gt;</span>
+<span class="p">&lt;</span><span class="nt">pre</span><span class="p">&gt;&lt;</span><span class="nt">code</span><span class="p">&gt;</span>bar
+bam
+<span class="p">&lt;/</span><span class="nt">code</span><span class="p">&gt;&lt;/</span><span class="nt">pre</span><span class="p">&gt;</span>
+<span class="p">&lt;</span><span class="nt">p</span><span class="p">&gt;</span>baz<span class="p">&lt;/</span><span class="nt">p</span><span class="p">&gt;</span>
+</pre></div>
+<p>and is displayed as the following:</p>
+<hr/>
+<p><p>foo</p>
+<pre><code>bar
+bam</code></pre>
+<p>baz</p></p>
+<hr/>
+<p>The first thing to notice is that, as described in the last example, when a new
+Markdown block is started, the default rule for displaying HTML forces a hard line
+break to be rendered, keeping it’s content distinct from the previous content.  As such,
+in this example both the <code>&lt;pre&gt;</code> tag and the <code>&lt;p&gt;</code> tag are displayed with a line break
+before them.  While this behavior can sometimes be overridden with styles and style
+sheets, it tends to make things more confusing and is mostly avoided by HTML authors.  </p>
+<p>The second thing to notice is that the line breaks within the code block are
+preserved as-is.  Both code blocks and HTML blocks maintain a very tight control on
+how their data is translated and displayed, being the only two block elements that
+preserves any line breaks within it’s content.  In terms of other elements, it should
+be no surprise that code spans and raw HTML are the only two inline elements that also
+preserve line breaks within their content.</p>
+<p>That leaves the final use case, where a Markdown author wants to force a hard line
+break outside of any of the previously mentioned constructs.  But, how does an author
+do that?</p>
+<p>The often used and not-so-visible option is to end a
+line with 2 or more spaces that is also not at the end of a block.  Merging examples
+<a href="https://github.github.com/gfm/#example-657">657</a> and
+<a href="https://github.github.com/gfm/#example-666">666</a> together produces the following
+Markdown:</p>
+<div class="highlight"><pre><span></span><span class="n">foo</span><span class="o">&lt;</span><span class="k">space</span><span class="o">&gt;&lt;</span><span class="k">space</span><span class="o">&gt;</span>
+<span class="o">&lt;</span><span class="k">space</span><span class="o">&gt;&lt;</span><span class="k">space</span><span class="o">&gt;&lt;</span><span class="k">space</span><span class="o">&gt;&lt;</span><span class="k">space</span><span class="o">&gt;&lt;</span><span class="k">space</span><span class="o">&gt;</span><span class="n">bar</span>
+<span class="n">foo</span><span class="o">&lt;</span><span class="k">space</span><span class="o">&gt;&lt;</span><span class="k">space</span><span class="o">&gt;</span>
+</pre></div>
+<p>generating the following HTML:</p>
+<div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">p</span><span class="p">&gt;</span>foo<span class="p">&lt;</span><span class="nt">br</span> <span class="p">/&gt;</span>
+bar
+foo<span class="p">&lt;/</span><span class="nt">p</span><span class="p">&gt;</span>
+</pre></div>
+<p>and is displayed as the following:</p>
+<hr/>
+<p><p>foo<br/>
+bar
+foo</p></p>
+<hr/>
+<p>Note that for the sake of clarity with this example, the string <code>&lt;space&gt;</code> is used in
+place of the actual
+space character itself.  The two spaces at the end of the first line cause the HTML
+hard break tag <code>&lt;br /&gt;</code> to be inserted into the data, generating a line break not only
+in the generated HTML, but also in the displayed HTML.  In contrast, since the two
+spaces at the end of the third line closes off the paragraph block, they are simply
+stripped away and not replaced with a hard break.  This was a smart move as any Markdown
+following that paragraph will be in a new block, the starting of the new block will,
+by default, force a hard break in the display of that block, as noted above.</p>
+<p>In contrast, the second way to force a hard line break is to end the line with the
+<code>\</code> character, as shown in the following Markdown:</p>
+<div class="highlight"><pre><span></span><span class="n">foo</span><span class="err">\</span>
+     <span class="n">bar</span>
+<span class="n">foo</span><span class="err">\</span>
+</pre></div>
+<p>While there are changes in the Markdown from the previous example, the generated HTML
+remains the same.  After my initial confusion between Python’s <code>\</code> line continuation
+character and the Markdown’s <code>\</code> hard line break character (as
+<a href="https://jackdewinter.github.io/2020/03/02/markdown-linter-taking-time-to-refactor-post-easy-inlines/#issue-2-python-markdown-and-line-continuation-characters">documented here</a> ),
+the explicit hard line break character grew on me.  </p>
+<h2 id="what-was-my-experience-so-far">What Was My Experience So Far?<a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link">¶</a></h2>
+<p>If I am being honest with myself, I was not sure at the beginning of the project if
+I would ever get to this point.  With only 2 inline elements left to process, not
+including the link definitions deferred from before, the parser is getting pretty close
+to being able to handle a full and rich Markdown document.  As the GRM specification
+contains over 673 scenarios, there were times that I thought I would just give up
+or use a “mostly” complete parser… something that was just barely good enough.  But
+getting to this point, close to having a solid parser completed feels great!</p>
+<p>Sure, there have been cases where it took me a day or two to figure out how to do
+something properly, such as list blocks and block quotes.  Those were tough.  And
+as I am writing this article at a 2-3 week delay from when I made the actual changes
+to the project, I know that there are some more bumps in the row yet to come.
+(No Spoilers!)  But
+the important thing is that while those things are hard, I face them with the mentality
+that I talk about in my article on
+<a href="https://jackdewinter.github.io/2019/08/18/embracing-something-hard/">Embracing Something Hard</a>.
+Maybe
+it’s just how I am, but for me part of the challenge is to embrace something hard
+and work my way though it.</p>
+<p>It was when I was thinking about some of hard stuff that I had tackled previously
+and how easy this block of features was that I started wondering.  Looking back
+in the project at anything written before
+<a href="https://github.com/jackdewinter/pymarkdown/commit/dffd948cf8e4066121dbb11ae68c385370a20877">this commit on 27 February 2020</a>,
+it is hard to find any test that compares the output to HTML, though all of scenario
+test output from the GFM specification is written as HTML.  What’s with that?</p>
+<p>Going back to my article on
+<a href="linter-1.md#what-are-the-requirements">Collecting Requirements</a>,
+I determined that to properly write a Markdown linter, I needed to be able to take
+the output from a parser as a set of tokens, not output as HTML.  The entire reason
+that I have taken steps to write this Markdown parser is that there are no current
+parsers that do not output interpreted Markdown as HTML.  Furthermore, the previous
+section on
+<a href="https://jackdewinter.github.io/drafts/markdown-linter-autolinks-raw-html-and-line-breaks.html#autolinks">autolinks</a>
+is proof of that need.  Producing a simple link
+to a web page, I can generated it using an autolink, a raw HTML tag, and a HTML block.
+Tokenizing the output before that translation to HTML is the only way to ensure that I
+am linting the Markdown properly.</p>
+<p>To get me this far, testing against the tokenized output of the parser was the right
+thing to do.  The linter is going to observe and consume the tokens from the parser,
+so they are the right thing to test.  But the questions of whether or not I was
+generating the correct tokens started to bounce around my mind…</p>
+<h2 id="what-is-next">What is Next?<a class="headerlink" href="#what-is-next" title="Permanent link">¶</a></h2>
+<p>As I mentioned in the last section, I had some concerns about whether or not the
+tokenization of the Markdown was correct, so I decided to go all out for the next
+section and add the remaining scenario tests from the GFM specification.  To close
+the loop on the testing, I also went through all of the existing tests and added
+a new class that transforms the PyMarkdown tokens into HTML, comparing that output
+directly against the GFM specification.  Stay tuned!</p>
+
+
+             
+ 
+            
+            
+            
+
+
+
+
+
+
+            <hr/>
+        </div>
+        <section id="article-sidebar" class="span2">
+    <h4>Reading Time</h4>
+    <p>~12 min read</p>
+            <h4>Published</h4>
+            <time itemprop="dateCreated" datetime="2020-03-09T00:00:00-07:00">Mar 9, 2020</time>
+        <h4><built-in method index of str object at 0x0558D548></h4>
+    <ul class="multi-parts-list">
+    </ul>
+            <h4>Category</h4>
+            <a class="category-link" href="https://jackdewinter.github.io/categories#software-quality-ref">Software Quality</a>
+            <h4>Tags</h4>
+            <ul class="list-of-tags tags-in-article">
+                <li><a href="https://jackdewinter.github.io/tags#markdown-linter-ref">markdown linter
+                    <span>9</span>
+</a></li>
+            </ul>
+<h4>Stay in Touch</h4>
+<div id="sidebar-social-link">
+    <a href="https://github.com/jackdewinter" title="github-alt" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="GitHub" role="img" viewBox="0 0 512 512"><rect width="512" height="512" rx="15%" fill="#1B1817"/><path fill="#fff" d="M335 499c14 0 12 17 12 17H165s-2-17 12-17c13 0 16-6 16-12l-1-50c-71 16-86-28-86-28-12-30-28-37-28-37-24-16 1-16 1-16 26 2 40 26 40 26 22 39 59 28 74 22 2-17 9-28 16-35-57-6-116-28-116-126 0-28 10-51 26-69-3-6-11-32 3-67 0 0 21-7 70 26 42-12 86-12 128 0 49-33 70-26 70-26 14 35 6 61 3 67 16 18 26 41 26 69 0 98-60 120-117 126 10 8 18 24 18 48l-1 70c0 6 3 12 16 12z"/></svg>
+    </a>
+    <a href="https://www.linkedin.com/in/jackdewinter/" title="linkedin" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="LinkedIn" role="img" viewBox="0 0 512 512" fill="#fff"><rect width="512" height="512" rx="15%" fill="#0077b5"/><circle cx="142" cy="138" r="37"/><path stroke="#fff" stroke-width="66" d="M244 194v198M142 194v198"/><path d="M276 282c0-20 13-40 36-40 24 0 33 18 33 45v105h66V279c0-61-32-89-76-89-34 0-51 19-59 32"/></svg>
+    </a>
+    <a href="https://jackdewinter.github.io/feeds/all.atom.xml" title="" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="RSS" role="img" viewBox="0 0 512 512"><rect width="512" height="512" rx="15%" fill="#f80"/><circle cx="145" cy="367" r="35" fill="#fff"/><path fill="none" stroke="#fff" stroke-width="60" d="M109 241c89 0 162 73 162 162M109 127c152 0 276 124 276 276"/></svg>
+    </a>
+</div>
+            
+
+
+
+
+
+            
+
+
+
+
+
+        </section>
+</div>
+</article>
+                    </div>
+                    <div class="span1"></div>
+                </div>
+            </div>
+        </div>
+<footer>
+    <div>
+        
+&copy; Copyright 2019 by Jack De Winter and licensed under a <a rel="license"
+  href="http://creativecommons.org/licenses/by/4.0/">
+  <img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/80x15.png" />
+  Creative Commons Attribution 4.0 International License</a>.
+
+    </div>
+
+
+
+
+    <div id="fpowered">
+        Powered by: <a href="http://getpelican.com/" title="Pelican Home Page" target="_blank" rel="nofollow noopener noreferrer">Pelican</a>
+        Theme: <a href="https://elegant.oncrashreboot.com/" title="Theme Elegant Home Page" target="_blank" rel="nofollow noopener noreferrer">Elegant</a>
+    </div>
+</footer>            <script src="//code.jquery.com/jquery.min.js"></script>
+        <script src="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>
+        <script>
+            function validateForm(query)
+            {
+                return (query.length > 0);
+            }
+        </script>
+
+    <script>
+    (function () {
+        if (window.location.hash.match(/^#comment-\d+$/)) {
+            $('#comment_thread').collapse('show');
+        }
+    })();
+    window.onhashchange=function(){
+        if (window.location.hash.match(/^#comment-\d+$/))
+            window.location.reload(true);
+    }
+    $('#comment_thread').on('shown', function () {
+        var link = document.getElementById('comment-accordion-toggle');
+        var old_innerHTML = link.innerHTML;
+        $(link).fadeOut(200, function() {
+            $(this).text('Click here to hide comments').fadeIn(200);
+        });
+        $('#comment_thread').on('hidden', function () {
+            $(link).fadeOut(200, function() {
+                $(this).text(old_innerHTML).fadeIn(200);
+            });
+        })
+    })
+</script>
+
+    </body>
+    <!-- Theme: Elegant built for Pelican
+        License : MIT -->
+</html>
