@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="author" content="Jack De Winter" />
+
+        <meta name="description" content="Introduction¶ In the wrap up for my last article, I provided extra information on my decision to write a Markdown parser as part of the PyMarkdown project. My belief is that the writing of an effective Markdown linter requires a parser that emits an intermediate set of tokens instead of …
+" />
+        <meta property="og:type" content="article" />
+        <meta name="twitter:card" content="summary">
+
+<meta name="keywords" content="markdown linter, Software Quality, " />
+
+<meta property="og:title" content="Markdown Linter - Verifying Base Scenarios "/>
+<meta property="og:url" content="https://jackdewinter.github.io/2020/03/16/markdown-linter-verifying-base-scenarios/" />
+<meta property="og:description" content="Introduction¶ In the wrap up for my last article, I provided extra information on my decision to write a Markdown parser as part of the PyMarkdown project. My belief is that the writing of an effective Markdown linter requires a parser that emits an intermediate set of tokens instead of …" />
+<meta property="og:site_name" content="Jack&#39;s Digital Workbench" />
+<meta property="og:article:author" content="Jack De Winter" />
+<meta property="og:article:published_time" content="2020-03-16T00:00:00-07:00" />
+<meta name="twitter:title" content="Markdown Linter - Verifying Base Scenarios ">
+<meta name="twitter:description" content="Introduction¶ In the wrap up for my last article, I provided extra information on my decision to write a Markdown parser as part of the PyMarkdown project. My belief is that the writing of an effective Markdown linter requires a parser that emits an intermediate set of tokens instead of …">
+
+        <title>Markdown Linter - Verifying Base Scenarios  · Jack&#39;s Digital Workbench
+</title>
+        <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://jackdewinter.github.io/theme/css/style.min.css?bec7d543">
+
+        <link href="https://jackdewinter.github.io/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Jack&#39;s Digital Workbench - Full Atom Feed" />
+
+
+    </head>
+    <body>
+        <div id="content">
+            <div class="navbar navbar-static-top">
+                <div class="navbar-inner">
+                    <div class="container-fluid">
+                        <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                        </a>
+                        <a class="brand" href="https://jackdewinter.github.io/"><span class=site-name>Jack's Digital Workbench</span></a>
+                        <div class="nav-collapse collapse">
+                            <ul class="nav pull-right top-menu">
+                                <li >
+                                    <a href=
+                                       https://jackdewinter.github.io
+                                    >Home</a>
+                                </li>
+                                <li ><a href="https://jackdewinter.github.io/categories">Categories</a></li>
+                                <li ><a href="https://jackdewinter.github.io/tags">Tags</a></li>
+                                <li ><a href="https://jackdewinter.github.io/archives">Archives</a></li>
+                                <li><form class="navbar-search" action="https://jackdewinter.github.io/search.html" onsubmit="return validateForm(this.elements['q'].value);"> <input type="text" class="search-query" placeholder="Search" name="q" id="tipue_search_input"></form></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="container-fluid">
+                <div class="row-fluid">
+                    <div class="span1"></div>
+                    <div class="span10">
+<article itemscope>
+<div class="row-fluid">
+    <header class="page-header span10 offset2">
+        <h1>
+            <a href="https://jackdewinter.github.io/2020/03/16/markdown-linter-verifying-base-scenarios/">
+                Markdown Linter - Verifying Base Scenarios
+            </a>
+        </h1>
+    </header>
+</div>
+
+<div class="row-fluid">
+    <div class="span2 table-of-content">
+        <nav>
+        <h4>Contents</h4>
+        <div class="toc">
+<ul>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#finishing-up-the-scenario-tests">Finishing Up The Scenario Tests</a></li>
+<li><a href="#adding-test-grouping">Adding Test Grouping</a></li>
+<li><a href="#adding-translating-into-html">Adding Translating into HTML</a></li>
+<li><a href="#translating-the-leaf-blocks">Translating the Leaf Blocks</a></li>
+<li><a href="#translating-the-container-blocks">Translating the Container Blocks</a></li>
+<li><a href="#translating-inlines-backslash-escapes-character-references-and-code-spans">Translating Inlines - Backslash Escapes, Character References, and Code Spans</a></li>
+<li><a href="#translating-inlines-raw-html-autolinks-and-line-breaks">Translating Inlines - Raw Html, Autolinks, and Line Breaks</a></li>
+<li><a href="#what-was-my-experience-so-far">What Was My Experience So Far?</a></li>
+<li><a href="#what-is-next">What is Next?</a></li>
+</ul>
+</div>
+        </nav>
+    </div>
+    <div class="span8 article-content">
+            
+            
+<h2 id="introduction">Introduction<a class="headerlink" href="#introduction" title="Permanent link">¶</a></h2>
+<p>In the wrap up for
+<a href="https://jackdewinter.github.io/2020/02/10/markdown-linter-adding-html-blocks/#what-was-my-experience-so-far">my last article</a>,
+I provided extra information on my decision to write a Markdown parser as part of
+the PyMarkdown project.  My belief
+is that the writing of an effective Markdown linter requires a parser that emits an
+intermediate set of tokens instead of the usual HTML output. Accordingly, from the
+start of the project, all of the scenario tests for the parser have dealt with those
+generated tokens and not the usual HTML output.  Based on my experience to date,
+both the belief in a non-HTML parser and the decision to test the tokens have proven to
+be the right choices.  During the project development to date, I have not
+observed a specific case where I believe that there would have been a substantial
+benefit in comparing the output to HTML instead of the intermediate tokens. However,
+even with that in mind, the lack of a direct comparison between the output specified in
+the
+<a href="https://github.github.com/gfm">GFM specification</a>
+and the output of the parser started to erode my confidence, even if just fractionally.</p>
+<p>The questions that came to mind were simple ones.  Did I keep the right information
+when parsing the Markdown to enable a HTML transformation of the tokens?  Did I pick
+the right token to represent a Markdown element in the token stream?  Do the tokens
+contain enough information in them to allow me to write linting rules off of them?  For
+me, these questions are relevant given the nature of the project.</p>
+<p>Taking a look at those three questions, I quickly realized that answering that last
+question was impossible until I start writing the linting rules.  Sure I could take
+a guess, but that is all it would be.  However, I realized that I could probably
+answer the first two questions and that there was significant benefit to be gained
+from doing so.  If I am able to write a token-to-HTML translator and apply it to that
+token stream, when the HTML output for all scenarios match, I have answered the first
+question.  And while I can’t answer the second question completely, if the translation
+to HTML is simple enough, I will have proven that I am headed in the right direction
+with respect to making good choices for the representative tokens. While I cannot prove
+that those choices are not perfect choices until the rules are written, I can at least
+prove to myself that my token choices are in the right direction.</p>
+<p>The full record of the work detailed in this article is documented in the
+project’s GitHub repository in the commits between
+<a href="https://github.com/jackdewinter/pymarkdown/commit/f9a0e31d0abb8bb22ae071250986f0925f2b7bcb">29 February 2020</a> and
+<a href="https://github.com/jackdewinter/pymarkdown/commit/256432757e9a9b2ceca423cf228c5cb362ea61bc">06 March 2020</a>.</p>
+<h2 id="finishing-up-the-scenario-tests">Finishing Up The Scenario Tests<a class="headerlink" href="#finishing-up-the-scenario-tests" title="Permanent link">¶</a></h2>
+<p>For me, this task was essentially a bookkeeping issue.  As the remaining features were
+the emphasis elements and the link elements, it felt like the
+right time to march through the remaining scenarios and implement them as scenario
+tests.</p>
+<p>These scenario tests fell into two categories.  In the first category,
+if the scenario needed to test a failure using already implemented features, I copied
+over an existing test, changed the Markdown input, executed the new test, and copied
+the tokens from the newly executed test output in that test, manually verifying the
+tokens as I copied them.
+Basically, I figured that if the scenario test is failing in a manner that will not
+change even when the owning feature is implemented, then completing the test was the
+best choice for the project.
+In the second category, I did the same thing except I stopped before the execution step,
+instead adding a <code>@skip</code> tag to the test’s definition.  In this way, I was able
+to add the bulk of the remaining tests without having tests that would obviously fail
+getting in the way.</p>
+<p>While this may have seemed like busy work, it was meant to give me a realistic picture
+of how close I was to finishing the parser, and it worked.  By executing
+<code>pipenv run pytest</code>, I executed every test and was able to look for entire modules
+with skipped tests, getting a good indication of what features and testing was left.
+From a wholistic point of view, it was good to see that out of the
+875+ tests in the project so far, there were only just over 100 tests left to go before
+the parser would be completed.  Being able to see how close I was to finishing the
+parser was definitely a boost! Definitely worthwhile.</p>
+<h2 id="adding-test-grouping">Adding Test Grouping<a class="headerlink" href="#adding-test-grouping" title="Permanent link">¶</a></h2>
+<p>I knew from the start that this would be the monotonous part, so I tried to make sure
+that I could stage the changes as I brought more scenario tests online.  The first
+thing I did was to add a new marker for PyTest to the project by adding this line to
+the <code>setup.cfg</code> file for the project:</p>
+<div class="highlight"><pre><span></span>markers=gfm
+</pre></div>
+<p>This change allowed me to use one of PyTest’s grouping features:
+<a href="https://docs.pytest.org/en/latest/mark.html">marking</a>.  By changing
+a scenario test’s definition from:</p>
+<div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">test_atx_headings_032</span><span class="p">():</span>
+    <span class="o">...</span>
+</pre></div>
+<p>to:</p>
+<div class="highlight"><pre><span></span><span class="nd">@pytest.mark.gfm</span>
+<span class="k">def</span> <span class="nf">test_atx_headings_032</span><span class="p">():</span>
+    <span class="o">...</span>
+</pre></div>
+<p>I included that test into the <code>gfm</code> group.  While I can still execute that test by
+itself by entering <code>pipenv run pytest -k 032</code>, I could now execute all tests in
+the <code>gfm</code> group by entering <code>pipenv run pytest -m gfm</code>.</p>
+<p>This command was invaluable during development of the parser.  After adding HTML
+translation support to a scenario test, I ensured that it was added to this group,
+thereby staging the scenario test with it’s owning feature.
+After completing the change to make the test pass, I then executed
+all of the tests in the <code>gfm</code> group to ensure that I didn’t break anything else in the
+process.  While it caused me some issues from time to time, it was an extra watch over the
+completed work, one that I appreciated.</p>
+<h2 id="adding-translating-into-html">Adding Translating into HTML<a class="headerlink" href="#adding-translating-into-html" title="Permanent link">¶</a></h2>
+<p>Translating any stream into something requires a loop to process through each element
+in the stream, with some mix of emitting data and altering state.
+I created the <code>TransformToGfm</code> class to handle that translation, with the <code>transform</code>
+entry point to facilitate the transformation.  At this point in the implementation,
+this class was very simple.  As each token was seen in the loop, it’s data was emitted
+with only minor additional processing required.</p>
+<p>Adding this support into existing tests was pretty easy, just monotonous.  Using the
+same test 32 that was used in the prior example, that test changed from:</p>
+<div class="highlight"><pre><span></span><span class="nd">@pytest.mark.gfm</span>
+<span class="k">def</span> <span class="nf">test_atx_headings_032</span><span class="p">():</span>
+    <span class="sd">"""</span>
+<span class="sd">    Test case 032:  Simple headings</span>
+<span class="sd">    """</span>
+
+    <span class="c1"># Arrange</span>
+    <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">TokenizedMarkdown</span><span class="p">()</span>
+    <span class="n">source_markdown</span> <span class="o">=</span> <span class="s2">"""some markdown"""</span>
+    <span class="n">expected_tokens</span> <span class="o">=</span> <span class="p">[</span><span class="o">...</span><span class="p">]</span>
+
+    <span class="c1"># Act</span>
+    <span class="n">actual_tokens</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">source_markdown</span><span class="p">)</span>
+
+    <span class="c1"># Assert</span>
+    <span class="n">assert_if_lists_different</span><span class="p">(</span><span class="n">expected_tokens</span><span class="p">,</span> <span class="n">actual_tokens</span><span class="p">)</span>
+</pre></div>
+<p>to:</p>
+<div class="highlight"><pre><span></span><span class="nd">@pytest.mark.gfm</span>
+<span class="k">def</span> <span class="nf">test_atx_headings_032</span><span class="p">():</span>
+    <span class="sd">"""</span>
+<span class="sd">    Test case 032:  Simple headings</span>
+<span class="sd">    """</span>
+
+    <span class="c1"># Arrange</span>
+    <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">TokenizedMarkdown</span><span class="p">()</span>
+    <span class="n">transformer</span> <span class="o">=</span> <span class="n">TransformToGfm</span><span class="p">()</span>
+    <span class="n">source_markdown</span> <span class="o">=</span> <span class="s2">"""some markdown"""</span>
+    <span class="n">expected_tokens</span> <span class="o">=</span> <span class="p">[</span><span class="o">...</span><span class="p">]</span>
+    <span class="n">expected_gfm</span> <span class="o">=</span> <span class="s2">"""&lt;p&gt;some markdown&lt;/p&gt;"""</span>
+
+    <span class="c1"># Act</span>
+    <span class="n">actual_tokens</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">source_markdown</span><span class="p">)</span>
+    <span class="n">actual_gfm</span> <span class="o">=</span> <span class="n">transformer</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">actual_tokens</span><span class="p">)</span>
+
+    <span class="c1"># Assert</span>
+    <span class="n">assert_if_lists_different</span><span class="p">(</span><span class="n">expected_tokens</span><span class="p">,</span> <span class="n">actual_tokens</span><span class="p">)</span>
+    <span class="n">assert_if_strings_different</span><span class="p">(</span><span class="n">expected_gfm</span><span class="p">,</span> <span class="n">actual_gfm</span><span class="p">)</span>
+</pre></div>
+<p>In order of appearance, an instance of the <code>TransformToGfm</code> class was added, the
+<code>expected_gfm</code> variable was set to the expected HTML, the <code>transform</code> function was
+called, and then the contents of the <code>expected_gfm</code> variable were compared against
+the output from the <code>transform</code> function.  Except for the expected changes to the
+<code>expected_gfm</code> variable for each test, this transformation was repeated for each test
+as support for the feature it enabled was added.</p>
+<h2 id="translating-the-leaf-blocks">Translating the Leaf Blocks<a class="headerlink" href="#translating-the-leaf-blocks" title="Permanent link">¶</a></h2>
+<p>Translating the leaf block tokens added in
+<a href="https://jackdewinter.github.io/2020/01/27/markdown-linter-parsing-normal-markdown-blocks/">this article</a> and
+<a href="https://jackdewinter.github.io/2020/02/10/markdown-linter-adding-html-blocks/">this article</a>
+proceeded quickly, encountering only a few unexpected issues.  These issues
+fell into two categories: the handling of HTML blocks and code blocks, and the handling
+of newlines in the HTML output.</p>
+<p>Most of the issues that were uncovered for leaf blocks dealt with the processing of
+HTML blocks and code blocks. As mentioned in previous articles,
+these two leaf blocks are special in that they maintain firm control over the formatting
+of their content.  To accommodate these two leaf block types, the handling of the
+<code>TextMarkdownToken</code> was changed to accommodate the more strict output requirements of
+those blocks, mostly ensuring that whitespace was preserved.  Other than that, the only
+other changes needed for processing was to change most of the tokens to expose
+certain fields, allowing the translator to access the token’s attributes cleanly.</p>
+<p>From a rendering viewpoint, I had guessed that any newlines in the HTML output were
+going to be a problem from the start and I was right.
+While the GFM is purposefully vague on when to add newlines in the
+translation from Markdown to HTML, it was a vagueness that I couldn’t avoid.  As the
+main push for this article’s work was to add proper comparisons of the GFM’s HTML
+output for each example, I had a hard choice to make.  Either I make modifications to
+each of the the 673 scenarios as I copied their HTML output into the scenario tests,
+or I needed to ensure that the translation replicated the HTML <em>exactly</em>.</p>
+<p>After a lot of thinking, I decided to go with the exact HTML output path, hopefully
+removing any possible errors that may have occurred during the translation of the
+HTML output for each scenario test.
+When I thought about both options, I just felt that I would almost instantly regret
+making any changes to the HTML output, as it would no longer be synchronized to the
+GFM specification. In light of that, I figured it was better
+to be consistent and do a bit more work on the project than to
+start changing the scenarios.</p>
+<p>My current focus was on enabling the HTML comparisons, and I knew it was going to take
+more effort and time to get them right. As such, I decided to add a fair number of “if
+this look like” conditions to add or not add newlines, with plans to later refactor the
+code to look for better groupings down the road.  I don’t like adding technical debt
+just for the sake of expediency, but I just felt it was the right decision at the time.
+I figured by adjusting the translator with little tweaks here and there would give
+me a more complete picture on what needed done for a proper refactor later.  It wasn’t
+a perfect decision, but it was one that I felt I could live with.</p>
+<p>When all of the leaf blocks were completed, I did notice a decent boost in my
+confidence.  Except for some issues with getting newlines right, the translation of
+leaf blocks was pretty straightforward.  Knowing that I had made good decisions
+so far gave me that boost… something that I would need sooner rather than later.</p>
+<h2 id="translating-the-container-blocks">Translating the Container Blocks<a class="headerlink" href="#translating-the-container-blocks" title="Permanent link">¶</a></h2>
+<p>While the translation of the leaf blocks went smoothly, I hit a number of issues dealing
+with the container blocks added in
+<a href="https://jackdewinter.github.io/2020/02/03/markdown-linter-adding-block-quotes-and-lists/">this article</a>.
+While the block quotes themselves were not
+really an issue, the list blocks that caused me a lot of trouble.</p>
+<p>In implementing the list block support in the translator, I was able to quickly get
+to a point where the tags themselves were being emitted properly, but the whitespace
+around the tags were off, especially with the newlines.  That was frustrating, but with
+some helpful observations and experimentation, I was able to get that taken care of
+relatively quickly.</p>
+<p>Following that triumph, I spent a number of aggravating
+days trying to figure out why some list items contained <code>&lt;p&gt;</code> tags and why some list
+items didn’t contain <code>&lt;p&gt;</code> tags.  I tried a number of approaches based on
+the surrounding tags and tokens, but each of them failed.  It wasn’t until I was looking
+at the specification again, when I took another look at the lists section and noticed
+the following paragraph in the
+<a href="https://github.github.com/gfm/#lists">lists section</a>:</p>
+<blockquote>
+<p>A list is loose if any of its constituent list items are separated by blank lines, or if any of its constituent list items directly contain two block-level elements with a blank line between them. Otherwise a list is tight. (The difference in HTML output is that paragraphs in a loose list are wrapped in <code>&lt;p&gt;</code> tags, while paragraphs in a tight list are not.)</p>
+</blockquote>
+<p>That was the information I was searching for!  While the actual implementation is a bit
+more complicated than just that, that is the essence of when I needed to add the
+paragraph tags.</p>
+<p>The complications in implementation arose as the examples became more complex.  For
+example, based on the above description, it is easy to see that this modified
+<a href="https://github.github.com/gfm/#example-294">example 294</a>
+is a strict list:</p>
+<div class="highlight"><pre><span></span><span class="o">-</span> <span class="n">a</span>
+<span class="o">-</span> <span class="n">b</span>
+<span class="o">-</span> <span class="k">c</span>
+</pre></div>
+<p>and this unmodified
+<a href="https://github.github.com/gfm/#example-294">example 294</a> is a loose list:</p>
+<div class="highlight"><pre><span></span><span class="o">-</span> <span class="n">a</span>
+<span class="o">-</span> <span class="n">b</span>
+
+<span class="o">-</span> <span class="k">c</span>
+</pre></div>
+<p>From the above lists section quote, since there is a blank line that separates
+two of the list elements, it is a loose list.  Pretty easy and straight forward.
+Implementing this aspect of looseness was decently easy, but did require some
+non-trivial extra code. Basically, go back to the start of the current list, then go
+through each list element in the list, looking to see if the Markdown element before it
+is a blank line.  If so, mark the entire list as loose and apply that throughout the
+list.</p>
+<p>However, when dealing with lists and sublists, it wasn’t so simple.  For example,
+consider the Markdown from
+<a href="https://github.github.com/gfm/#example-299">example 299</a>:</p>
+<div class="highlight"><pre><span></span><span class="o">-</span> <span class="n">a</span>
+  <span class="o">-</span> <span class="n">b</span>
+
+    <span class="k">c</span>
+<span class="o">-</span> <span class="n">d</span>
+</pre></div>
+<p>Understanding the Markdown list blocks can be nested and following the guidance from
+the above quote, you can deduce that the outer list is tight and the sublist is loose.
+To make the leap from handling the previous 2 examples to this example would mean that
+I needed to find a way to add scoping to the translation. Without scoping, when the
+translator processed the above example, it saw 3 items in the same list, with the
+second element making the entire list loose.  Scoping was required to allow the
+translator to determine that the <code>a</code> and <code>d</code> items were in one list and the <code>b/c</code> item
+was in it’s own list, therefore determining the correct looseness for both lists.</p>
+<p>The code itself to handle scoping was fairly simple, but the tradeoff was that the
+translator was slowly becoming more complicated, something that I was not happy
+about.  It wasn’t in dangerous territory yet, but it was something to keep a watch out
+for.  In addition, while the difference between a list being lose or strict is pretty
+obvious in hindsight, at the time it was very annoying.  It took me the better part of
+4 days to do something that was pretty obvious.  Even better than obvious was the fact
+that it was plainly spelled out in the specification.  But as I had to do a number of
+other times during this project, I picked myself up, dusted myself off, an continued on
+with the inline translations.</p>
+<h2 id="translating-inlines-backslash-escapes-character-references-and-code-spans">Translating Inlines - Backslash Escapes, Character References, and Code Spans<a class="headerlink" href="#translating-inlines-backslash-escapes-character-references-and-code-spans" title="Permanent link">¶</a></h2>
+<p>During this translation process, first I hit a high, then I hit a low, and then I saw
+the payoff of both with the translation of these inline elements into HTML.  These
+elements consist of
+the backslash escapes, character references, and code spans elements, and were added in
+<a href="https://jackdewinter.github.io/2020/02/24/markdown-linter-starting-inline-processing/">this article</a>. With the exception of
+a couple of typos and the code spans, adding support for these features flew past
+quickly. The backslash escapes and character references were already being processed
+along with the
+text tokens, which in turn were already tested with the leaf blocks.  The only new
+code needed was for code spans, but those additions were quickly made by copying the
+work done for code blocks and simplifying it a bit.  Other than a couple of typos that
+I also needed to correct, the entire body of this work was completed in just under 3
+hours.  And to be honest, that included me grabbing some well deserved dinner.</p>
+<p>Based on the days of trying to figure out list blocks and paragraph tags from the
+last section, it was nice to get a real easy set of changes.  It wasn’t anything
+challenging, just… nice.</p>
+<h2 id="translating-inlines-raw-html-autolinks-and-line-breaks">Translating Inlines - Raw Html, Autolinks, and Line Breaks<a class="headerlink" href="#translating-inlines-raw-html-autolinks-and-line-breaks" title="Permanent link">¶</a></h2>
+<p>Rounding out the series of translations were the tests for raw html, autolinks, and
+line breaks.  With features just added in the
+<a href="https://jackdewinter.github.io/2020/03/09/markdown-linter-autolinks-raw-html-and-line-breaks/">last article</a>,
+the tests for these features were added with only a couple of issues, similar in
+severity to the issues from the leaf blocks.</p>
+<p>The largest group of issues encountered were issues with character encodings in
+the autolinks feature.  Some of those issues were due to Unicode characters being
+present in the Markdown, but needing to be properly encoded and escaped when present
+in URIs.  Some of the issues were because the characters present in the URIs are
+special characters, and had to be escaped to prevent them from being encoded twice.</p>
+<p>However, the most annoying issues were differences in the language libraries that
+caused the translator to URI-encode a different set of characters than in the
+GFM specification.  Specifically, it looks like the Commonmark parser uses the
+Javascript libraries to encode URIs, while the PyMarkdown project uses the Python
+libraries.  I wasn’t too concerned with these issues at the current time, so I made
+sure to add some notes to address these concerns later, and kept on marching forward.</p>
+<p>The big catch with these changes was with the scenario test for the GFM specification’s
+<a href="https://github.github.com/gfm/#example-641">example 641</a>:</p>
+<div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="n">a</span> <span class="n">href</span><span class="o">=</span><span class="s1">'bar'</span><span class="n">title</span><span class="o">=</span><span class="n">title</span><span class="o">&gt;</span>
+</pre></div>
+<p>While it might seem like a small difference when looking at a web page, the
+PyMarkdown parser emitted a HTML block and a tag as content instead of
+emitting a simple paragraph containing text, as follows:</p>
+<div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">p</span><span class="p">&gt;</span><span class="ni">&amp;lt;</span>a href='bar'title=title<span class="ni">&amp;gt;</span><span class="p">&lt;/</span><span class="nt">p</span><span class="p">&gt;</span>
+</pre></div>
+<p>Taking a look at the HTML output in the example, it is very clear that it should be a
+paragraph containing text,
+but somewhere in the copy-and-paste process I had accepted the wrongs tokens as
+correct.  Digging into this issue, I quickly found out that a single omission in one of
+the functions of the <code>HtmlHelper</code> module was not checking for whitespace between the
+tag’s attributes, therefore thinking that it was a valid tag when it wasn’t.  Within 5
+minutes, I had a fix implemented, and the test corrected, and the last scenario test
+that was currently implemented was now complete!</p>
+<p>As a strange aside, I may not have the only parser that has made this mistake. When
+I was writing this article in VSCode, as usual, I had to check the example’s Markdown
+a number of times.  The Markdown in the above section was generated with the following
+fenced code block:</p>
+<div class="highlight"><pre><span></span><span class="o">```</span><span class="n">Markdown</span>
+<span class="o">&lt;</span><span class="n">a</span> <span class="n">href</span><span class="o">=</span><span class="s1">'bar'</span><span class="n">title</span><span class="o">=</span><span class="n">title</span><span class="o">&gt;</span>
+<span class="o">```</span>
+</pre></div>
+<p>It’s a pretty simple example, and I typed it in as I usually do.  Create the fenced
+block, add in the text from it’s source, verify it a couple of times, and then add in
+the language specifier.  As soon as I typed in <code>Markdown</code>, a strange thing happened.
+The <code>a</code> for the tag name turned into a deep blue, as expected.  But then both of the
+attribute names, <code>href</code> and <code>title</code>, turned light blue while the attribute values,
+<code>`bar`</code> and <code>title</code> turned red.  I added a space before <code>title</code> and then deleted
+it, repeating
+this experiment a couple of times, looking for color changes.  There were none.  For
+whatever reasons, the coloring library that VSCode is using to color Markdown text
+seems to believe that example 641 contains valid Markdown.  Weird!</p>
+<h2 id="what-was-my-experience-so-far">What Was My Experience So Far?<a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link">¶</a></h2>
+<p>In writing automation tests as part of my professional job, I have a clear distinction
+in my responsibility to my team.  I am not there to break their code or to find flaws
+in it, I am there to help them find issues before they become problems.  If at all
+possible, I stress automated tests over manual tests, and I also stress being able to
+adopt consistent processes to shine a very focused light on anything that is different.</p>
+<p>The mere fact that I found a number of small issues with the parser, even at this
+late stage of the project is fine with me.  I am helping my team (me) find these issues
+before the code is released and impacts other people and their processes.  While it was
+a large pain to go through, I felt that I closed part of the testing the loop by
+consistently adding HTML output verification to each parser scenario test.  The mere
+fact that the issues were found proves its own worth.  In addition, there was a small
+efficiency and confidence boost because I don’t have to guess anymore as to whether or
+not I chose the right tokens.  The HTML output from the examples proved that I made the
+right choices.</p>
+<p>In the end, what it boils down to for me is that while adding the HTML output
+verification to each test was painfully monotonous at times, it paid off.  While
+only a handful of issues were uncovered, it did find at least one issue, which itself
+boosted my confidence in the project.
+Regardless of whether any issues were actually found, knowing that the tokens that
+the parser was generating were being properly translated into the GFM specification’s
+HTML output was worth it.  No more questioning whether or not the tokens would
+translate into the proper HTML… I now had proof they did!</p>
+<h2 id="what-is-next">What is Next?<a class="headerlink" href="#what-is-next" title="Permanent link">¶</a></h2>
+<p>Whenever a protocol specification states something similar to “and here is a suggested
+way of…”, it usually means that at least 2-3 groups of people implementing the
+protocol specification had issues.  So it was with a bit of dread and a bit of
+confidence that I started looking at dealing with inline emphasis, the topic of the
+next article.</p>
+
+
+             
+ 
+                <p id="post-share-links">
+    Like this post? Share on:
+    <a href="https://twitter.com/intent/tweet?text=Markdown%20Linter%20-%20Verifying%20Base%20Scenarios&url=https%3A//jackdewinter.github.io/2020/03/16/markdown-linter-verifying-base-scenarios/&hashtags=markdown-linter" target="_blank" rel="nofollow noopener noreferrer" title="Share on Twitter">Twitter</a>
+    ❄
+    <a href="https://www.facebook.com/sharer/sharer.php?u=https%3A//jackdewinter.github.io/2020/03/16/markdown-linter-verifying-base-scenarios/" target="_blank" rel="nofollow noopener noreferrer" title="Share on Facebook">Facebook</a>
+    ❄
+    <a href="mailto:?subject=Markdown%20Linter%20-%20Verifying%20Base%20Scenarios&amp;body=https%3A//jackdewinter.github.io/2020/03/16/markdown-linter-verifying-base-scenarios/" target="_blank" rel="nofollow noopener noreferrer" title="Share via Email">Email</a>
+    </p>
+
+            
+            
+
+
+
+
+
+
+<section>
+    <h6 style="display:none;">Comments</h6>
+    <p id="comment-message">So what do you think? Did I miss something? Is any part unclear? Leave your comments below. </p>
+
+    <div class="accordion" id="accordion2">
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                <a class="accordion-toggle disqus-comment-count comment-count"
+                   data-toggle="collapse"
+                   data-parent="#accordion2"
+                   href="https://jackdewinter.github.io/2020/03/16/markdown-linter-verifying-base-scenarios/#comment_thread"
+                   id="comment-accordion-toggle">
+                    Comments
+                </a>
+            </div>
+            <div id="comment_thread" class="accordion-body collapse">
+                <div class="accordion-inner">
+                    <div class="comments">
+
+                        <script src="https://utteranc.es/client.js"
+        data-repo="jackdewinter/jackdewinter.github.io"
+        data-issue-term="markdown-linter-verifying-base-scenarios"
+        data-label="Comments"
+        data-theme="github-light"
+        crossorigin="anonymous"
+        async>
+</script>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+            <hr/>
+            <aside>
+            <nav>
+            <ul class="articles-timeline">
+                <li class="previous-article">« <a href="https://jackdewinter.github.io/2020/03/09/markdown-linter-autolinks-raw-html-and-line-breaks/" title="Previous: Markdown Linter - Autolinks, Raw HTML, and Line Breaks">Markdown Linter - Autolinks, Raw HTML, and Line Breaks</a></li>
+            </ul>
+            </nav>
+            </aside>
+        </div>
+        <section id="article-sidebar" class="span2">
+    <h4>Reading Time</h4>
+    <p>~15 min read</p>
+            <h4>Published</h4>
+            <time itemprop="dateCreated" datetime="2020-03-16T00:00:00-07:00">Mar 16, 2020</time>
+        <h4>Markdown Linter</h4>
+    <ul class="multi-parts-list">
+            <li >
+            <a href="https://jackdewinter.github.io/2019/12/08/markdown-linter-collecting-requirements/" title="Markdown Linter - Collecting Requirements">Part 1: Markdown Linter - Collecting Requirements</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2019/12/16/markdown-linter-setting-up-parser-tests/" title="Markdown Linter - Setting Up Parser Tests">Part 2: Markdown Linter - Setting Up Parser Tests</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2019/12/22/markdown-linter-parser-testing-strategy/" title="Markdown Linter - Parser Testing Strategy">Part 3: Markdown Linter - Parser Testing Strategy</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/01/27/markdown-linter-parsing-normal-markdown-blocks/" title="Markdown Linter - Parsing Normal Markdown Blocks">Part 4: Markdown Linter - Parsing Normal Markdown Blocks</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/02/03/markdown-linter-adding-block-quotes-and-lists/" title="Markdown Linter - Adding Block Quotes and Lists">Part 5: Markdown Linter - Adding Block Quotes and Lists</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/02/10/markdown-linter-adding-html-blocks/" title="Markdown Linter - Adding HTML Blocks">Part 6: Markdown Linter - Adding HTML Blocks</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/02/17/markdown-linter-taking-time-to-refactor-post-block-implementation/" title="Markdown Linter - Taking Time to Refactor -- Post-Block Implementation">Part 7: Markdown Linter - Taking Time to Refactor -- Post-Block Implementation</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/02/24/markdown-linter-starting-inline-processing/" title="Markdown Linter - Starting Inline Processing">Part 8: Markdown Linter - Starting Inline Processing</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/03/02/markdown-linter-taking-time-to-refactor-post-easy-inlines/" title="Markdown Linter - Taking Time to Refactor -- Post-Easy Inlines">Part 9: Markdown Linter - Taking Time to Refactor -- Post-Easy Inlines</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/03/09/markdown-linter-autolinks-raw-html-and-line-breaks/" title="Markdown Linter - Autolinks, Raw HTML, and Line Breaks">Part 10: Markdown Linter - Autolinks, Raw HTML, and Line Breaks</a>
+            </li>
+            <li  class="active-part">
+            Part 11: Markdown Linter - Verifying Base Scenarios
+            </li>
+    </ul>
+            <h4>Category</h4>
+            <a class="category-link" href="https://jackdewinter.github.io/categories#software-quality-ref">Software Quality</a>
+            <h4>Tags</h4>
+            <ul class="list-of-tags tags-in-article">
+                <li><a href="https://jackdewinter.github.io/tags#markdown-linter-ref">markdown linter
+                    <span>11</span>
+</a></li>
+            </ul>
+<h4>Stay in Touch</h4>
+<div id="sidebar-social-link">
+    <a href="https://github.com/jackdewinter" title="github-alt" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="GitHub" role="img" viewBox="0 0 512 512"><rect width="512" height="512" rx="15%" fill="#1B1817"/><path fill="#fff" d="M335 499c14 0 12 17 12 17H165s-2-17 12-17c13 0 16-6 16-12l-1-50c-71 16-86-28-86-28-12-30-28-37-28-37-24-16 1-16 1-16 26 2 40 26 40 26 22 39 59 28 74 22 2-17 9-28 16-35-57-6-116-28-116-126 0-28 10-51 26-69-3-6-11-32 3-67 0 0 21-7 70 26 42-12 86-12 128 0 49-33 70-26 70-26 14 35 6 61 3 67 16 18 26 41 26 69 0 98-60 120-117 126 10 8 18 24 18 48l-1 70c0 6 3 12 16 12z"/></svg>
+    </a>
+    <a href="https://www.linkedin.com/in/jackdewinter/" title="linkedin" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="LinkedIn" role="img" viewBox="0 0 512 512" fill="#fff"><rect width="512" height="512" rx="15%" fill="#0077b5"/><circle cx="142" cy="138" r="37"/><path stroke="#fff" stroke-width="66" d="M244 194v198M142 194v198"/><path d="M276 282c0-20 13-40 36-40 24 0 33 18 33 45v105h66V279c0-61-32-89-76-89-34 0-51 19-59 32"/></svg>
+    </a>
+    <a href="https://jackdewinter.github.io/feeds/all.atom.xml" title="" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="RSS" role="img" viewBox="0 0 512 512"><rect width="512" height="512" rx="15%" fill="#f80"/><circle cx="145" cy="367" r="35" fill="#fff"/><path fill="none" stroke="#fff" stroke-width="60" d="M109 241c89 0 162 73 162 162M109 127c152 0 276 124 276 276"/></svg>
+    </a>
+</div>
+            
+
+
+
+
+
+            
+
+
+
+
+
+        </section>
+</div>
+</article>
+                    </div>
+                    <div class="span1"></div>
+                </div>
+            </div>
+        </div>
+<footer>
+    <div>
+        
+&copy; Copyright 2019 by Jack De Winter and licensed under a <a rel="license"
+  href="http://creativecommons.org/licenses/by/4.0/">
+  <img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/80x15.png" />
+  Creative Commons Attribution 4.0 International License</a>.
+
+    </div>
+
+
+
+
+    <div id="fpowered">
+        Powered by: <a href="http://getpelican.com/" title="Pelican Home Page" target="_blank" rel="nofollow noopener noreferrer">Pelican</a>
+        Theme: <a href="https://elegant.oncrashreboot.com/" title="Theme Elegant Home Page" target="_blank" rel="nofollow noopener noreferrer">Elegant</a>
+    </div>
+</footer>            <script src="//code.jquery.com/jquery.min.js"></script>
+        <script src="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>
+        <script>
+            function validateForm(query)
+            {
+                return (query.length > 0);
+            }
+        </script>
+
+    <script>
+    (function () {
+        if (window.location.hash.match(/^#comment-\d+$/)) {
+            $('#comment_thread').collapse('show');
+        }
+    })();
+    window.onhashchange=function(){
+        if (window.location.hash.match(/^#comment-\d+$/))
+            window.location.reload(true);
+    }
+    $('#comment_thread').on('shown', function () {
+        var link = document.getElementById('comment-accordion-toggle');
+        var old_innerHTML = link.innerHTML;
+        $(link).fadeOut(200, function() {
+            $(this).text('Click here to hide comments').fadeIn(200);
+        });
+        $('#comment_thread').on('hidden', function () {
+            $(link).fadeOut(200, function() {
+                $(this).text(old_innerHTML).fadeIn(200);
+            });
+        })
+    })
+</script>
+
+    </body>
+    <!-- Theme: Elegant built for Pelican
+        License : MIT -->
+</html>
