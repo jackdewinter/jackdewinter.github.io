@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="author" content="Jack De Winter" />
+
+        <meta name="description" content="Introduction¶ I have been reading and implementing specifications for a long time. I truly believed that I had seen with and dealt with every situation presented in any specification. I was therefore surprised when I started reading the GFM specification and I noticed an entry in the table of contents …
+" />
+        <meta property="og:type" content="article" />
+        <meta name="twitter:card" content="summary">
+
+<meta name="keywords" content="markdown linter, Software Quality, " />
+
+<meta property="og:title" content="Markdown Linter - Adding Inline Emphasis "/>
+<meta property="og:url" content="https://jackdewinter.github.io/2020/03/23/markdown-linter-adding-inline-emphasis/" />
+<meta property="og:description" content="Introduction¶ I have been reading and implementing specifications for a long time. I truly believed that I had seen with and dealt with every situation presented in any specification. I was therefore surprised when I started reading the GFM specification and I noticed an entry in the table of contents …" />
+<meta property="og:site_name" content="Jack&#39;s Digital Workbench" />
+<meta property="og:article:author" content="Jack De Winter" />
+<meta property="og:article:published_time" content="2020-03-23T00:00:00-07:00" />
+<meta name="twitter:title" content="Markdown Linter - Adding Inline Emphasis ">
+<meta name="twitter:description" content="Introduction¶ I have been reading and implementing specifications for a long time. I truly believed that I had seen with and dealt with every situation presented in any specification. I was therefore surprised when I started reading the GFM specification and I noticed an entry in the table of contents …">
+
+        <title>Markdown Linter - Adding Inline Emphasis  · Jack&#39;s Digital Workbench
+</title>
+        <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://jackdewinter.github.io/theme/css/style.min.css?bec7d543">
+
+        <link href="https://jackdewinter.github.io/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Jack&#39;s Digital Workbench - Full Atom Feed" />
+
+
+    </head>
+    <body>
+        <div id="content">
+            <div class="navbar navbar-static-top">
+                <div class="navbar-inner">
+                    <div class="container-fluid">
+                        <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                        </a>
+                        <a class="brand" href="https://jackdewinter.github.io/"><span class=site-name>Jack's Digital Workbench</span></a>
+                        <div class="nav-collapse collapse">
+                            <ul class="nav pull-right top-menu">
+                                <li >
+                                    <a href=
+                                       https://jackdewinter.github.io
+                                    >Home</a>
+                                </li>
+                                <li ><a href="https://jackdewinter.github.io/categories">Categories</a></li>
+                                <li ><a href="https://jackdewinter.github.io/tags">Tags</a></li>
+                                <li ><a href="https://jackdewinter.github.io/archives">Archives</a></li>
+                                <li><form class="navbar-search" action="https://jackdewinter.github.io/search.html" onsubmit="return validateForm(this.elements['q'].value);"> <input type="text" class="search-query" placeholder="Search" name="q" id="tipue_search_input"></form></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="container-fluid">
+                <div class="row-fluid">
+                    <div class="span1"></div>
+                    <div class="span10">
+<article itemscope>
+<div class="row-fluid">
+    <header class="page-header span10 offset2">
+        <h1>
+            <a href="https://jackdewinter.github.io/2020/03/23/markdown-linter-adding-inline-emphasis/">
+                Markdown Linter - Adding Inline Emphasis
+            </a>
+        </h1>
+    </header>
+</div>
+
+<div class="row-fluid">
+    <div class="span2 table-of-content">
+        <nav>
+        <h4>Contents</h4>
+        <div class="toc">
+<ul>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#emphasis-is-hard-and-not-always-consistent">Emphasis is Hard and not always Consistent</a></li>
+<li><a href="#utilizing-the-wisdom-of-others">Utilizing the Wisdom of Others</a></li>
+<li><a href="#building-the-delimiter-stack">Building The Delimiter Stack</a></li>
+<li><a href="#resolving-the-delimiter-stack">Resolving the Delimiter Stack</a></li>
+<li><a href="#emphasis-the-base-cases">Emphasis - The Base Cases</a></li>
+<li><a href="#emphasis-resolving-the-ambiguity-of-complex-cases">Emphasis - Resolving the Ambiguity of Complex Cases</a></li>
+<li><a href="#emphasis-rule-summary">Emphasis - Rule Summary</a></li>
+<li><a href="#what-were-the-bumps-on-the-road">What were the bumps on the road?</a></li>
+<li><a href="#what-was-my-experience-so-far">What Was My Experience So Far?</a></li>
+<li><a href="#what-is-next">What is Next?</a></li>
+</ul>
+</div>
+        </nav>
+    </div>
+    <div class="span8 article-content">
+            
+            
+<h2 id="introduction">Introduction<a class="headerlink" href="#introduction" title="Permanent link">¶</a></h2>
+<p>I have been reading and implementing specifications for a long time.  I truly
+believed that I had seen with and dealt with every situation presented in any
+specification. I was therefore surprised when I started reading the
+<a href="https://github.github.com/gfm">GFM specification</a>
+and I noticed an entry in the table of contents labelled
+<a href="https://github.github.com/gfm/#phase-2-inline-structure">Phase 2: inline structure</a>.
+Thinking “if it is in the table of contents as a separate entry, it must be important”,
+I started reading that section, waiting for some big revelation to appear.</p>
+<p>That Phase 2 section starts with an example which is an extension of the example used
+in the preceding section in the document.  After a bit of comparison with the
+previous example, it should be obvious that the string <code>\n</code> was changed to <code>softbreak</code>
+and the string <code>"Qui *quodsi iracundia*"</code> was changed to
+<code>str "Qui " emph str "quodsi iracundia"</code>.  Going back to my article on
+<a href="https://jackdewinter.github.io/2020/03/09/markdown-linter-autolinks-raw-html-and-line-breaks/">Autolinks, Raw HTML, and Line Breaks</a>,
+the translation from <code>\n</code> to the soft line break (or soft-break) is easy to see,
+the inline parser code to perform that translation having just been implemented.  And
+looking at the provided example, emphasis looked like it was going to be easy.  So why
+include implementation notes on it if it was so easy?</p>
+<p>On the surface, the translation of emphasis markers to emphasis would seem to be easy
+to understand, if not for the start of the next section of Phase 2:</p>
+<blockquote>
+<p>By far the trickiest part of inline parsing is handling emphasis, strong emphasis, links, and images. This is done using the following algorithm.</p>
+</blockquote>
+<p>I was kind of skeptical, but I continued reading… and reading… and reading.
+After a couple of thorough reads of the section in the GFM specification on
+<a href="https://github.github.com/gfm/#emphasis-and-strong-emphasis">Emphasis and strong emphasis</a>,
+I started to understand why emphasis is not as easy as it seems. At it’s root it is
+pretty simple: use one <code>*</code> for emphasis and <code>**</code> for strong emphasis.  No problems
+there.  If you need a subtle change in the emphasis rules, primarily around intra-word
+use and use around punctuation, use <code>_</code> instead of <code>*</code>. Okay…why do I need so many
+rules?</p>
+<p>Isn’t it <em>as easy</em> as <strong>this</strong>?</p>
+<div class="highlight"><pre><span></span><span class="n">Isn</span><span class="err">'</span><span class="n">t</span> <span class="n">it</span> <span class="o">*</span><span class="k">as</span> <span class="n">easy</span><span class="o">*</span> <span class="k">as</span> <span class="o">**</span><span class="n">this</span><span class="o">**?</span>
+</pre></div>
+<p>It took a bit more reading, but for me, it was when the finally some questions from
+the specification that made me understand.  The big revelation finally hit me in
+the form of those questions and the ambiguity that they raised.</p>
+<p>How are the following cases from the specification of strong emphasis interpreted?</p>
+<div class="highlight"><pre><span></span>***strong emph***
+***strong** in emph*
+***emph* in strong**
+**in strong *emph***
+*in emph **strong***
+</pre></div>
+<p>How about the following cases of nested emphasis?</p>
+<div class="highlight"><pre><span></span>*emph *with emph* in it*
+**strong **with strong** in it**
+</pre></div>
+<p>And finally, how about intra-word emphasis?</p>
+<div class="highlight"><pre><span></span>internal emphasis: foo*bar*baz
+no emphasis: foo_bar_baz
+</pre></div>
+<p>For most of those examples, I could come up with at least 2-3 different ways that
+they could be parsed.  As such, it is probably a good idea that there are 17 rules to
+help out with emphasis.  But before I could work on the implementation, I needed to
+do some more research.</p>
+<p>The full record of the work detailed in this article is documented in the
+project’s GitHub repository in the commits between
+<a href="https://github.com/jackdewinter/pymarkdown/commit/ad66340685ba128fa522a6d275ae55348951c96c">10 March 2020</a> and
+<a href="https://github.com/jackdewinter/pymarkdown/commit/23e77f98d9ab4a7a8d05285cbc11293a96c9ed11">13 March 2020</a>.</p>
+<h2 id="emphasis-is-hard-and-not-always-consistent">Emphasis is Hard and not always Consistent<a class="headerlink" href="#emphasis-is-hard-and-not-always-consistent" title="Permanent link">¶</a></h2>
+<p>For any readers that have been following this series, it might be apparent that I have
+veered away from my usual habits.  Usually I label all of my Markdown code blocks
+properly to allow my
+<a href="https://jackdewinter.github.io/2019/08/25/static-websites-setting-up-the-pelican-static-site-generator/">static site generator</a>
+to take care of the proper coloring. However, for the above examples, I just marked
+them as normal text blocks without any language specified.  This
+was not a mistake, it was a conscious decision.</p>
+<p>When I started entering the fenced code
+block for the text, everything looked normal. However, once I added the <code>Markdown</code>
+language tag at the start of the block, that all changed.  What I saw in my VSCode
+editor was the following:</p>
+<p><img alt="python logo" src="https://jackdewinter.github.io/images/linter-12/vscode.png"/></p>
+<p>Publishing the page and looking there, I saw that same text rendered as:</p>
+<p><img alt="python logo" src="https://jackdewinter.github.io/images/linter-12/chrome.png"/></p>
+<p>And finally, running it through my favorite GFM test link, the following was generated:</p>
+<p><em><strong>strong emph</strong></em><br/>
+<em><strong>strong</strong> in emph</em><br/>
+<strong><em>emph</em> in strong</strong><br/>
+<strong>in strong <em>emph</em></strong><br/>
+<em>in emph <strong>strong</strong></em><br/></p>
+<p>Three different platforms and three different ways to interpret the emphasis.
+To me, it was then that it was really apparent why a consistent way to implement
+emphasis was needed in order to produce consistent results.</p>
+<h2 id="utilizing-the-wisdom-of-others">Utilizing the Wisdom of Others<a class="headerlink" href="#utilizing-the-wisdom-of-others" title="Permanent link">¶</a></h2>
+<p>Instead of trying to figure everything out myself, tempting as that can be sometimes,
+I decided to implement the algorithm as stated in the GFM specification with one small
+change: no links for now. To accomplish this, I kept to the algorithm’s recipe as
+described, but I left the implementation of the <code>look for link or image</code> section for
+later.  My plan was to focus on the emphasis itself before moving on to
+links, which I still believe was a very good decision on my part.</p>
+<p>In looking at the algorithm through a bit of a sideways lens, I observed that there were
+two main tasks that the algorithm accomplishes: building the delimiter stack and
+resolving that same delimiter stack.  Without taking a two phase approach to the
+algorithm, I determined that I would be multitasking two separate objectives, and not
+doing either of them very well.  I just felt strongly that it was better to split the
+task in two and focus on each one until it’s completion.  In the end, I was going to
+finish both part of the algorithm, so as long as both tasks were done, emphasis would
+be implemented.</p>
+<p>The first task: building the delimiter stack.</p>
+<h2 id="building-the-delimiter-stack">Building The Delimiter Stack<a class="headerlink" href="#building-the-delimiter-stack" title="Permanent link">¶</a></h2>
+<p>Taking a high level look at the algorithm, I came up with the following two
+observations. In cases where a delimiter is not used in a special way, it needs to be
+represented by a simple text node.  Where it is used in a special way, it may need to
+be removed and properly replaced with the tokens that the delimiters represent. The
+“may” part of that last statement is there as, after looking at some of those examples,
+it may be possible to have a case where the parser only uses some of the emphasis
+delimiters, but not all of them.  Once such example is the string <code>this **is* my text</code>.</p>
+<p>To accomplish this, I created a new class <code>SpecialTextMarkdownToken</code> that is a child
+of the <code>TextMarkdownToken</code> class.  In cases where the delimiter is not completely
+consumed, this allows the new token to be easily consumed by existing code, without
+any modifications needed.  Supporting the additional parsing requirements, the new
+<code>SpecialTextMarkdownToken</code> tokens adds the <code>repeat_count</code>, <code>active</code>, <code>preceding_two</code>,
+and <code>following_two</code> fields, enabling the algorithm to be implemented properly.
+Finally, but most importantly, to ensure the algorithm works properly, that new token
+is added to the delimiter stack.</p>
+<p>To properly test that I had produced the correct tokens and delimiter stack,
+I started by enabling one of the emphasis tests and examining the resulting tokens.
+I compared those tokens against the tokens that were there before, looking for
+changes that I expected to be induced by the presence of the emphasis delimiters.  As I
+was only building the delimiter stack at this point in the process, this was easy to
+verify.</p>
+<p>A solid example of this is the emphasis test for
+<a href="https://github.github.com/gfm/#example-364">example 364</a>,
+which is the example that I selected as my initial test.  That example contains the
+string <code>foo*bar*</code> to test against and is a pretty easy example. Before the delimiter
+stack was built, I verified that the string was represented by a single
+<code>TextMarkdownToken</code> token containing the string <code>foo*bar*</code>.  After the delimiter stack
+was built, that same string was represented by 4 tokens:</p>
+<ul>
+<li>a <code>TextMarkdownToken</code> token with the string <code>foo</code></li>
+<li>a <code>SpecialTextMarkdownToken</code> token with the string <code>*</code></li>
+<li>a <code>TextMarkdownToken</code> token with the string <code>bar</code></li>
+<li>a <code>SpecialTextMarkdownToken</code> token with the string <code>*</code></li>
+</ul>
+<p>In addition, the delimiter stack contained both of the <code>SpecialTextMarkdownToken</code>
+tokens in the order that they appear.  At this point in the process, that was the
+expected token output, and I was happy to see it work so well.</p>
+<p>As one good test wasn’t solid proof to me, I continued to make sure that I had decent
+results after building the delimiter stack by repeating this examination with 5-6
+other tests.  While there were a couple of small issues along the way, I was able to
+quickly get to the part where I had a high degree of confidence that the delimiter
+stack was correct.  Now it was on to the resolution of that stack.</p>
+<h2 id="resolving-the-delimiter-stack">Resolving the Delimiter Stack<a class="headerlink" href="#resolving-the-delimiter-stack" title="Permanent link">¶</a></h2>
+<p>Skipping past the <code>look for link or image</code> section of the GFM specification, I sat down
+with my headphones on and poured over the section on <code>process emphasis</code> a couple of
+times, taking notes as I went.  I then went back to the
+<a href="https://github.github.com/gfm/#emphasis-and-strong-emphasis">emphasis scetion</a>
+of the GFM and started pairing each of the 17 rules to each note that I made and was
+happy to find a 1-to-1 mapping between the two lists.</p>
+<p>And yes, that’s right… 17 rules.  It did take a while, but I validated each step
+in the specification against each of the rules, making detailed notes as I went.  While
+it was slow to emerge, by the time I reached the last rule I had a plan to follow.
+To implement each rule, I would implement the tests in order of the rules that they
+support, with a slightly irregular start order.  Basically, instead of starting with a
+“1 2 3 4” order, I started with a “3 1 4 2” order.  The reason for this weird ordering
+is because the algorithm starts by identifying eligible closing emphasis, then trying
+to locate a matching start emphasis.  To accommodate that, I decided to start with the
+close and start pair for the normal emphasis (<code>*</code> character) following that same pattern
+with the strong emphasis (<code>_</code> character).</p>
+<p>While I was thankful for the examples in the GFM specification before implementing
+emphasis, having the emphasis examples, rules, and examples-by-rule-groups made me
+even more thankful.   Starting with rules 3 and 1, I was able to get solid code written
+to implement what was needed to support those rules.  The next two rules, rules 4
+and 2, were added using the first two rules as a building block.  For the remaining
+13 rules, I just felt that each rule and the examples to support it just naturally
+flowed, each one adding another small piece of the puzzle.  While it did take some
+time to get all 17 rules implemented and the tests for all 130 examples passing, it
+all felt like just another step.  It was a nice feeling.</p>
+<h2 id="emphasis-the-base-cases">Emphasis - The Base Cases<a class="headerlink" href="#emphasis-the-base-cases" title="Permanent link">¶</a></h2>
+<p>As I progressed with the rules, it was nice to see the natural progressing in the
+sequences that I was enabling for the parser.  This progression was so natural
+and straightforward, I want to take the time to show how things progressed over
+the course of the 17 rules.  The honest truth is that when I was finished, it felt
+more like 4-5 rules than 17 rules.</p>
+<p>In order of enablement, first there were
+the simple sequences enabled in rules 1 to 4:</p>
+<div class="highlight"><pre><span></span>This is *my* emphasis.
+</pre></div>
+<div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">p</span><span class="p">&gt;</span>This is <span class="p">&lt;</span><span class="nt">em</span><span class="p">&gt;</span>my<span class="p">&lt;/</span><span class="nt">em</span><span class="p">&gt;</span> emphasis.<span class="p">&lt;/</span><span class="nt">p</span><span class="p">&gt;</span>
+</pre></div>
+<p>This is <em>my</em> emphasis.</p>
+<p>Rules 5 to 8 added strong emphasis:</p>
+<div class="highlight"><pre><span></span>This is *my* **strong** emphasis.
+</pre></div>
+<div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">p</span><span class="p">&gt;</span>This is <span class="p">&lt;</span><span class="nt">em</span><span class="p">&gt;</span>my<span class="p">&lt;/</span><span class="nt">em</span><span class="p">&gt;</span> <span class="p">&lt;</span><span class="nt">strong</span><span class="p">&gt;</span>strong<span class="p">&lt;/</span><span class="nt">strong</span><span class="p">&gt;</span> emphasis.<span class="p">&lt;/</span><span class="nt">p</span><span class="p">&gt;</span>
+</pre></div>
+<p>This is <em>my</em> <strong>strong</strong> emphasis.</p>
+<p>Rules 9 and 10 added clarity on how to handle nested emphasis:</p>
+<div class="highlight"><pre><span></span>*foo**bar**baz*
+</pre></div>
+<div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">p</span><span class="p">&gt;&lt;</span><span class="nt">em</span><span class="p">&gt;</span>foo<span class="p">&lt;</span><span class="nt">strong</span><span class="p">&gt;</span>bar<span class="p">&lt;/</span><span class="nt">strong</span><span class="p">&gt;</span>baz<span class="p">&lt;/</span><span class="nt">em</span><span class="p">&gt;&lt;/</span><span class="nt">p</span><span class="p">&gt;</span>
+</pre></div>
+<p><em>foo<strong>bar</strong>baz</em></p>
+<p>Rules 11 and 12 add clarity on escaping delimiters and how excess delimiters are
+handled:</p>
+<div class="highlight"><pre><span></span>***foo**
+</pre></div>
+<div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">p</span><span class="p">&gt;</span>*<span class="p">&lt;</span><span class="nt">strong</span><span class="p">&gt;</span>foo<span class="p">&lt;/</span><span class="nt">strong</span><span class="p">&gt;&lt;/</span><span class="nt">p</span><span class="p">&gt;</span>
+</pre></div>
+<p>*<strong>foo</strong></p>
+<h2 id="emphasis-resolving-the-ambiguity-of-complex-cases">Emphasis - Resolving the Ambiguity of Complex Cases<a class="headerlink" href="#emphasis-resolving-the-ambiguity-of-complex-cases" title="Permanent link">¶</a></h2>
+<p>Using just the prior rules, there were a number of representations that could be
+inconsistent from parser to parser.  These rules are used to resolve that ambiguity.
+As these rules resolve ambiguity, I am only showing the HTML output in a code block
+instead of showing the HTML output in a code block and the actual HTML itself.</p>
+<p>Rule 13 adds the concept that one <code>&lt;strong&gt;</code> is preferred to <code>&lt;em&gt;&lt;em&gt;</code>:</p>
+<div class="highlight"><pre><span></span>******foo******
+</pre></div>
+<div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">p</span><span class="p">&gt;&lt;</span><span class="nt">strong</span><span class="p">&gt;&lt;</span><span class="nt">strong</span><span class="p">&gt;&lt;</span><span class="nt">strong</span><span class="p">&gt;</span>foo<span class="p">&lt;/</span><span class="nt">strong</span><span class="p">&gt;&lt;/</span><span class="nt">strong</span><span class="p">&gt;&lt;/</span><span class="nt">strong</span><span class="p">&gt;&lt;/</span><span class="nt">p</span><span class="p">&gt;</span>
+</pre></div>
+<p>Rule 14 adds the concept that the <code>&lt;strong&gt;</code> tags should always deeper than the <code>&lt;em&gt;</code>
+tags, if used together:</p>
+<div class="highlight"><pre><span></span>***foo***
+</pre></div>
+<div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">p</span><span class="p">&gt;&lt;</span><span class="nt">em</span><span class="p">&gt;&lt;</span><span class="nt">strong</span><span class="p">&gt;</span>foo<span class="p">&lt;/</span><span class="nt">strong</span><span class="p">&gt;&lt;/</span><span class="nt">em</span><span class="p">&gt;&lt;/</span><span class="nt">p</span><span class="p">&gt;</span>
+</pre></div>
+<p>Rule 15 adds the concept that in a case of overlapping emphasis spans, the emphasis
+span that ends first overrides the interpretation of the second possible emphasis
+span as an actual emphasis span.</p>
+<div class="highlight"><pre><span></span>*foo _bar* baz_
+</pre></div>
+<div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">p</span><span class="p">&gt;&lt;</span><span class="nt">em</span><span class="p">&gt;</span>foo _bar<span class="p">&lt;/</span><span class="nt">em</span><span class="p">&gt;</span> baz_<span class="p">&lt;/</span><span class="nt">p</span><span class="p">&gt;</span>
+</pre></div>
+<p>Rule 16 adds the concept that if two emphasis spans have the same closing delimiter,
+the shorter of those two emphasis spans is interpreted as an actual emphasis span.</p>
+<div class="highlight"><pre><span></span>**foo **bar baz**
+</pre></div>
+<div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">p</span><span class="p">&gt;</span>**foo <span class="p">&lt;</span><span class="nt">strong</span><span class="p">&gt;</span>bar baz<span class="p">&lt;/</span><span class="nt">strong</span><span class="p">&gt;&lt;/</span><span class="nt">p</span><span class="p">&gt;</span>
+</pre></div>
+<p>Rule 17 adds a clarification that number of inline elements are more tightly grouped
+that emphasis spans, meaning that the parsing of those inline elements takes precedence
+over the parsing of the emphasis spans.</p>
+<div class="highlight"><pre><span></span>*a `*`*
+</pre></div>
+<div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">p</span><span class="p">&gt;&lt;</span><span class="nt">em</span><span class="p">&gt;</span>a <span class="p">&lt;</span><span class="nt">code</span><span class="p">&gt;</span>*<span class="p">&lt;/</span><span class="nt">code</span><span class="p">&gt;&lt;/</span><span class="nt">em</span><span class="p">&gt;&lt;/</span><span class="nt">p</span><span class="p">&gt;</span>
+</pre></div>
+<h2 id="emphasis-rule-summary">Emphasis - Rule Summary<a class="headerlink" href="#emphasis-rule-summary" title="Permanent link">¶</a></h2>
+<p>Without actually implementing a Markdown parser, it might be hard to appreciate how
+natural the process of building the emphasis support into the parser was.  But please
+believe me, it was a thing of beauty.  The best way to describe it was that as I
+was implementing each section, I jotted down notes for myself that usually started
+with “what about…”.  It was usually within a rule or two that I scratched off that
+note as it was no longer an issue.  By the time I got to the end of the emphasis
+implementation, all of the notes were scratched off.  That kind of progression when
+implementing a specification are rare, and it was just really wonderful to witness.</p>
+<h2 id="what-were-the-bumps-on-the-road">What were the bumps on the road?<a class="headerlink" href="#what-were-the-bumps-on-the-road" title="Permanent link">¶</a></h2>
+<p>During the implementation to support inline emphasis, other than “fat man finger”
+typing errors, there were only a couple of issues that impeded it’s addition to the
+parser.  The first was because I got impatient and tried to implement one of the rules
+ahead of time and the second was caused by a subtle change I made to the algorithm
+and the side effects that I needed to abate. Other than those two issues, the
+development just flowed easily from the rules and their examples.</p>
+<p>The impatience issue occurred when I was trying to take care of a side-effect of rule
+11, but I was trying to take care of it when implementing rule 1.  It side tracked me
+for a couple of hours without any resolution.  It wasn’t until I double checked that it
+was indeed part of rule 11 that I abandoned it until later.  The “funny” thing is that
+when I did get to implementing rule 11 in the proper order, it was implemented with
+almost no friction in less than 5 minutes. Because of the way the rules build on
+each other, in hindsight it makes perfect sense that I ran into issues trying to
+implement part of rule 11 at the beginning.</p>
+<p>The change issue was caused by a subtle change that I made to the algorithm to better
+deal with Python’s data structures.  To simplify the implementation in Python, the
+references in the
+delimiter stack were made with indices (or “indexes” for Americans) instead of pointers.
+In the “if one is found” section of the algorithm there are two cases where the
+algorithm calls for the removal of nodes from the delimiter stack.  Instead of removing
+the elements of the delimiter stack and recomputing the indices, I just altered the
+algorithm to work better with the <code>active</code> field.  While this did cause a number of
+small issues that needed to be resolved, in the end I believe it still was a better
+course of development to take.</p>
+<h2 id="what-was-my-experience-so-far">What Was My Experience So Far?<a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link">¶</a></h2>
+<p>Having taken time to do my research and to have a solid plan emerge, it was nice to see
+that the plan paying off after the code for the first couple of rules were
+implemented.  Often when you plan an approach for a project, in your head you always
+think things like “I’ll have to switch to plan B if I see…”.  In this case, while
+I still thought that, I was able to stick with my first plan the entire way through.
+That was nice and gratifying.</p>
+<p>I also cannot stress how impressed I am with the authors of the GFM specification and
+the effort they took to specify the emphasis elements.  Not only did they work hard
+to resolve any ambiguity with 17 rules, but they provided a solid road map for
+implementers to follow with a suggested approach.  For me, the beauty of those two
+part of the specification is how they weave together, each one reinforcing the other
+one.  In it’s simplest form, they took something that I was sure was going to be
+a headache and made it very easy to implement correctly.</p>
+<p>Basically, I started this part of the parser with a feeling of dread, thinking that
+I would plan an approach and have to switch to plan B, or even up to plan F.  But
+with some good planning on the behalf of the authors of the GFM specification, it
+went off without any major issues.  It was cool to see that happen.</p>
+<h2 id="what-is-next">What is Next?<a class="headerlink" href="#what-is-next" title="Permanent link">¶</a></h2>
+<p>Having had a really smooth time implementing emphasis, it was very tempting to just dive
+in and tackle all of the link support at the same time.  However, in looking at the
+different types of links in the specification, I decided that inline links would be
+a good place to start.  That is where I will pick up in my next article!</p>
+
+
+             
+ 
+                <p id="post-share-links">
+    Like this post? Share on:
+    <a href="https://twitter.com/intent/tweet?text=Markdown%20Linter%20-%20Adding%20Inline%20Emphasis&url=https%3A//jackdewinter.github.io/2020/03/23/markdown-linter-adding-inline-emphasis/&hashtags=markdown-linter" target="_blank" rel="nofollow noopener noreferrer" title="Share on Twitter">Twitter</a>
+    ❄
+    <a href="https://www.facebook.com/sharer/sharer.php?u=https%3A//jackdewinter.github.io/2020/03/23/markdown-linter-adding-inline-emphasis/" target="_blank" rel="nofollow noopener noreferrer" title="Share on Facebook">Facebook</a>
+    ❄
+    <a href="mailto:?subject=Markdown%20Linter%20-%20Adding%20Inline%20Emphasis&amp;body=https%3A//jackdewinter.github.io/2020/03/23/markdown-linter-adding-inline-emphasis/" target="_blank" rel="nofollow noopener noreferrer" title="Share via Email">Email</a>
+    </p>
+
+            
+            
+
+
+
+
+
+
+<section>
+    <h6 style="display:none;">Comments</h6>
+    <p id="comment-message">So what do you think? Did I miss something? Is any part unclear? Leave your comments below. </p>
+
+    <div class="accordion" id="accordion2">
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                <a class="accordion-toggle disqus-comment-count comment-count"
+                   data-toggle="collapse"
+                   data-parent="#accordion2"
+                   href="https://jackdewinter.github.io/2020/03/23/markdown-linter-adding-inline-emphasis/#comment_thread"
+                   id="comment-accordion-toggle">
+                    Comments
+                </a>
+            </div>
+            <div id="comment_thread" class="accordion-body collapse">
+                <div class="accordion-inner">
+                    <div class="comments">
+
+                        <script src="https://utteranc.es/client.js"
+        data-repo="jackdewinter/jackdewinter.github.io"
+        data-issue-term="markdown-linter-adding-inline-emphasis"
+        data-label="Comments"
+        data-theme="github-light"
+        crossorigin="anonymous"
+        async>
+</script>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+            <hr/>
+            <aside>
+            <nav>
+            <ul class="articles-timeline">
+                <li class="previous-article">« <a href="https://jackdewinter.github.io/2020/03/16/markdown-linter-verifying-base-scenarios/" title="Previous: Markdown Linter - Verifying Base Scenarios">Markdown Linter - Verifying Base Scenarios</a></li>
+            </ul>
+            </nav>
+            </aside>
+        </div>
+        <section id="article-sidebar" class="span2">
+    <h4>Reading Time</h4>
+    <p>~12 min read</p>
+            <h4>Published</h4>
+            <time itemprop="dateCreated" datetime="2020-03-23T00:00:00-07:00">Mar 23, 2020</time>
+        <h4>Markdown Linter</h4>
+    <ul class="multi-parts-list">
+            <li >
+            <a href="https://jackdewinter.github.io/2019/12/08/markdown-linter-collecting-requirements/" title="Markdown Linter - Collecting Requirements">Part 1: Markdown Linter - Collecting Requirements</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2019/12/16/markdown-linter-setting-up-parser-tests/" title="Markdown Linter - Setting Up Parser Tests">Part 2: Markdown Linter - Setting Up Parser Tests</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2019/12/22/markdown-linter-parser-testing-strategy/" title="Markdown Linter - Parser Testing Strategy">Part 3: Markdown Linter - Parser Testing Strategy</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/01/27/markdown-linter-parsing-normal-markdown-blocks/" title="Markdown Linter - Parsing Normal Markdown Blocks">Part 4: Markdown Linter - Parsing Normal Markdown Blocks</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/02/03/markdown-linter-adding-block-quotes-and-lists/" title="Markdown Linter - Adding Block Quotes and Lists">Part 5: Markdown Linter - Adding Block Quotes and Lists</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/02/10/markdown-linter-adding-html-blocks/" title="Markdown Linter - Adding HTML Blocks">Part 6: Markdown Linter - Adding HTML Blocks</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/02/17/markdown-linter-taking-time-to-refactor-post-block-implementation/" title="Markdown Linter - Taking Time to Refactor -- Post-Block Implementation">Part 7: Markdown Linter - Taking Time to Refactor -- Post-Block Implementation</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/02/24/markdown-linter-starting-inline-processing/" title="Markdown Linter - Starting Inline Processing">Part 8: Markdown Linter - Starting Inline Processing</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/03/02/markdown-linter-taking-time-to-refactor-post-easy-inlines/" title="Markdown Linter - Taking Time to Refactor -- Post-Easy Inlines">Part 9: Markdown Linter - Taking Time to Refactor -- Post-Easy Inlines</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/03/09/markdown-linter-autolinks-raw-html-and-line-breaks/" title="Markdown Linter - Autolinks, Raw HTML, and Line Breaks">Part 10: Markdown Linter - Autolinks, Raw HTML, and Line Breaks</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/03/16/markdown-linter-verifying-base-scenarios/" title="Markdown Linter - Verifying Base Scenarios">Part 11: Markdown Linter - Verifying Base Scenarios</a>
+            </li>
+            <li  class="active-part">
+            Part 12: Markdown Linter - Adding Inline Emphasis
+            </li>
+    </ul>
+            <h4>Category</h4>
+            <a class="category-link" href="https://jackdewinter.github.io/categories#software-quality-ref">Software Quality</a>
+            <h4>Tags</h4>
+            <ul class="list-of-tags tags-in-article">
+                <li><a href="https://jackdewinter.github.io/tags#markdown-linter-ref">markdown linter
+                    <span>12</span>
+</a></li>
+            </ul>
+<h4>Stay in Touch</h4>
+<div id="sidebar-social-link">
+    <a href="https://github.com/jackdewinter" title="github-alt" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="GitHub" role="img" viewBox="0 0 512 512"><rect width="512" height="512" rx="15%" fill="#1B1817"/><path fill="#fff" d="M335 499c14 0 12 17 12 17H165s-2-17 12-17c13 0 16-6 16-12l-1-50c-71 16-86-28-86-28-12-30-28-37-28-37-24-16 1-16 1-16 26 2 40 26 40 26 22 39 59 28 74 22 2-17 9-28 16-35-57-6-116-28-116-126 0-28 10-51 26-69-3-6-11-32 3-67 0 0 21-7 70 26 42-12 86-12 128 0 49-33 70-26 70-26 14 35 6 61 3 67 16 18 26 41 26 69 0 98-60 120-117 126 10 8 18 24 18 48l-1 70c0 6 3 12 16 12z"/></svg>
+    </a>
+    <a href="https://www.linkedin.com/in/jackdewinter/" title="linkedin" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="LinkedIn" role="img" viewBox="0 0 512 512" fill="#fff"><rect width="512" height="512" rx="15%" fill="#0077b5"/><circle cx="142" cy="138" r="37"/><path stroke="#fff" stroke-width="66" d="M244 194v198M142 194v198"/><path d="M276 282c0-20 13-40 36-40 24 0 33 18 33 45v105h66V279c0-61-32-89-76-89-34 0-51 19-59 32"/></svg>
+    </a>
+    <a href="https://jackdewinter.github.io/feeds/all.atom.xml" title="" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="RSS" role="img" viewBox="0 0 512 512"><rect width="512" height="512" rx="15%" fill="#f80"/><circle cx="145" cy="367" r="35" fill="#fff"/><path fill="none" stroke="#fff" stroke-width="60" d="M109 241c89 0 162 73 162 162M109 127c152 0 276 124 276 276"/></svg>
+    </a>
+</div>
+            
+
+
+
+
+
+            
+
+
+
+
+
+        </section>
+</div>
+</article>
+                    </div>
+                    <div class="span1"></div>
+                </div>
+            </div>
+        </div>
+<footer>
+    <div>
+        
+&copy; Copyright 2019 by Jack De Winter and licensed under a <a rel="license"
+  href="http://creativecommons.org/licenses/by/4.0/">
+  <img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/80x15.png" />
+  Creative Commons Attribution 4.0 International License</a>.
+
+    </div>
+
+
+
+
+    <div id="fpowered">
+        Powered by: <a href="http://getpelican.com/" title="Pelican Home Page" target="_blank" rel="nofollow noopener noreferrer">Pelican</a>
+        Theme: <a href="https://elegant.oncrashreboot.com/" title="Theme Elegant Home Page" target="_blank" rel="nofollow noopener noreferrer">Elegant</a>
+    </div>
+</footer>            <script src="//code.jquery.com/jquery.min.js"></script>
+        <script src="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>
+        <script>
+            function validateForm(query)
+            {
+                return (query.length > 0);
+            }
+        </script>
+
+    <script>
+    (function () {
+        if (window.location.hash.match(/^#comment-\d+$/)) {
+            $('#comment_thread').collapse('show');
+        }
+    })();
+    window.onhashchange=function(){
+        if (window.location.hash.match(/^#comment-\d+$/))
+            window.location.reload(true);
+    }
+    $('#comment_thread').on('shown', function () {
+        var link = document.getElementById('comment-accordion-toggle');
+        var old_innerHTML = link.innerHTML;
+        $(link).fadeOut(200, function() {
+            $(this).text('Click here to hide comments').fadeIn(200);
+        });
+        $('#comment_thread').on('hidden', function () {
+            $(link).fadeOut(200, function() {
+                $(this).text(old_innerHTML).fadeIn(200);
+            });
+        })
+    })
+</script>
+
+    </body>
+    <!-- Theme: Elegant built for Pelican
+        License : MIT -->
+</html>
