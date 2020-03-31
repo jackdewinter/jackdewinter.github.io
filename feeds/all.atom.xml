@@ -1,5 +1,287 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/all.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2020-03-23T00:00:00-07:00</updated><entry><title>Markdown Linter - Adding Inline Emphasis</title><link href="https://jackdewinter.github.io/2020/03/23/markdown-linter-adding-inline-emphasis/" rel="alternate"></link><published>2020-03-23T00:00:00-07:00</published><updated>2020-03-23T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-03-23:/2020/03/23/markdown-linter-adding-inline-emphasis/</id><summary type="html">
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/all.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2020-03-30T00:00:00-07:00</updated><entry><title>Markdown Linter - Adding Inline Links</title><link href="https://jackdewinter.github.io/2020/03/30/markdown-linter-adding-inline-links/" rel="alternate"></link><published>2020-03-30T00:00:00-07:00</published><updated>2020-03-30T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-03-30:/2020/03/30/markdown-linter-adding-inline-links/</id><summary type="html">
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Having just implemented the
+&lt;a href="https://jackdewinter.github.io/2020/03/23/markdown-linter-adding-inline-emphasis/"&gt;Inline Emphasis&lt;/a&gt; feature
+as documented in my last article, I was eager to move forward with the implementation
+of the links feature.  As the group of features under links were the only ones
+separating me from the completion of the project’s parser, I was …&lt;/p&gt;</summary><content type="html">
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Having just implemented the
+&lt;a href="https://jackdewinter.github.io/2020/03/23/markdown-linter-adding-inline-emphasis/"&gt;Inline Emphasis&lt;/a&gt; feature
+as documented in my last article, I was eager to move forward with the implementation
+of the links feature.  As the group of features under links were the only ones
+separating me from the completion of the project’s parser, I was happy when I noticed
+that I was starting to think “when the parser is done” instead of
+“if the parser is EVER done”. I have been working on this project for a while and it
+was nice to know that in my mind, I could “see the light” with respect to this
+project.&lt;/p&gt;
+&lt;p&gt;In implementing the algorithm outlined in the section
+&lt;a href="https://github.github.com/gfm/#phase-2-inline-structure"&gt;Phase 2: inline structure&lt;/a&gt;,
+I chose to implement the emphasis feature first, leaving the implementation of links
+until the base algorithm and emphasis feature were implemented and tested.  Seeing as
+both of those were accomplished, I felt that it was the right time to apply my
+success in implementing the emphasis feature to the link feature.  I knew that the
+work on the delimiter stack would easily carry over, but I was eager to see if the
+implementation of the next part of links would be as easy as the implementation of
+emphasis.&lt;/p&gt;
+&lt;p&gt;The full record of the work detailed in this article is documented in the
+project’s GitHub repository in the commit of
+&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/a0deb2e362adebd2bb65fd0095e5add160f1dfad"&gt;17 March 2020&lt;/a&gt;.&lt;/p&gt;
+&lt;h2 id="why-inline-links"&gt;Why Inline Links?&lt;a class="headerlink" href="#why-inline-links" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Taking a quick peek ahead, I observed that the link feature in the specification is
+broken down into four groups:
+&lt;a href="https://github.github.com/gfm/#inline-link"&gt;inline links&lt;/a&gt;,
+&lt;a href="https://github.github.com/gfm/#link-reference-definitions"&gt;link reference definitions&lt;/a&gt;,
+&lt;a href="https://github.github.com/gfm/#reference-link"&gt;reference links&lt;/a&gt;, and
+&lt;a href="https://github.github.com/gfm/#images"&gt;image links&lt;/a&gt;.
+Based on a quick reading of each section, it was obvious to me that for reference links
+to work properly, link reference definitions would be needed.  Image links are
+variations on the inline link type and reference link type, the only difference being a
+different start
+delimiter.  As such, I didn’t see any benefit to implementing image links
+before those other two link types are completed.  This leaves inline links. Inline
+links are self-contained, allowing them to be implemented separately from the other
+three groups.  Being somewhat impatient to get the parser done, I decided to go for the
+sub-feature that was more immediately available: inline links.&lt;/p&gt;
+&lt;h2 id="i-use-inline-links-almost-exclusively"&gt;I Use Inline Links (Almost) Exclusively&lt;a class="headerlink" href="#i-use-inline-links-almost-exclusively" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;When writing my articles and documentation, I personally find it more readable to
+include any
+links in my documents as a complete unit.  This means that when I add a link, I will
+typically add it in the form shown in the GFM specification at
+&lt;a href="https://github.github.com/gfm/#example-494"&gt;example 494&lt;/a&gt;:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;link&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;uri&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;As a concrete example of this, the above link to example 494 that precedes the sample
+link format was created with the following Markdown:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;example&lt;/span&gt; &lt;span class="mi"&gt;494&lt;/span&gt;&lt;span class="p"&gt;](&lt;/span&gt;&lt;span class="n"&gt;https&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="o"&gt;//&lt;/span&gt;&lt;span class="n"&gt;github&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;github&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;com&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;gfm&lt;/span&gt;&lt;span class="o"&gt;/#&lt;/span&gt;&lt;span class="n"&gt;example&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;494&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;While the form can be augmented as such:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;link&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;uri&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="ss"&gt;"title"&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;to provide a title, I cannot remember a case where I have used that form.
+While I do not have a strong reason for or against this format, I believe that I just
+have not encountered a case where I believe that a title for the link was either
+desired or required.  On the other hand, I have used the following form a number of
+times before:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;link&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="o"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="n"&gt;my&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;uri&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;as an alternative to the form:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;link&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;my&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;uri&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;While my use of the angle bracket form is rare, it was useful in a couple of cases
+where I needed to provide a space character as part of an URI.  While different
+Markdown-to-HTML processors will handle the space character differently, I just wanted
+something that read well and was mostly universal.&lt;/p&gt;
+&lt;h2 id="what-is-an-inline-link"&gt;What is an Inline Link?&lt;a class="headerlink" href="#what-is-an-inline-link" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;For a well documented answer to this question, please look at the
+&lt;a href="https://github.github.com/gfm/#inline-link"&gt;inline link section&lt;/a&gt; of the GFM for
+a word-for-word answer, complete with helpful examples.  My own summarization of
+this section is as follows:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;an inline link occurs on a single line and comprised of the link text, a left parenthesis, an optional link destination followed by an optional whitespace and an optional link title, and a right parenthesis&lt;/li&gt;
+&lt;li&gt;if in doubt about any punctuation characters in the below constructs, backslash escape them&lt;/li&gt;
+&lt;li&gt;the link text is any text that appears between the opening square brackets (&lt;code&gt;[&lt;/code&gt;) and the closing square brackets (&lt;code&gt;]&lt;/code&gt;)&lt;/li&gt;
+&lt;li&gt;the link destination is any non-space, non-control characters, with special rules for the &lt;code&gt;&amp;lt;&lt;/code&gt;, &lt;code&gt;(&lt;/code&gt;, and &lt;code&gt;)&lt;/code&gt; characters&lt;/li&gt;
+&lt;li&gt;the link title, if included, is contained within a single-quoted string (&lt;code&gt;'&lt;/code&gt;), double-quoted string (&lt;code&gt;"&lt;/code&gt;), or a parenthesized string (&lt;code&gt;(&lt;/code&gt; and &lt;code&gt;)&lt;/code&gt;)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;After 5 revisions to try and keep my answer “minimal”, that is it!  While I could leave
+it in a more complicated state, that summary is what I believe I have it broken down
+to in my head.  For me, the first two points are the pivotal ones, setting up the link
+component order and exclusions needed to create valid inline links.  The last three
+rules are just simplifications of what is needed to represent each of the three
+components, rounding out the definition for inline links.&lt;/p&gt;
+&lt;p&gt;Keeping to those rules, when I am picturing Markdown links in my head, I usually think
+of these two forms:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;link&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;uri&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="ss"&gt;"title"&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;and:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;link&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;uri&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Between the 5 rules stated above and these two examples, I believe I am keeping it
+simple and minimal, ensuring my consistent use of links.  Let me dive into those
+a bit more.&lt;/p&gt;
+&lt;p&gt;In terms of the order of components, the link text and both outer parentheses are
+required for the inline links, but both the link destination and link title are
+optional.  However, due to how they are documented, if a link title is desired, a link
+destination must precede it.  Basically, the component order is always: the text that
+shows up inside of the link’s anchor, the link URI itself, and a title to use when the
+link is traversed.  Once again, I keep it simple to make it easy to use.&lt;/p&gt;
+&lt;p&gt;For remembering when to use punctuation characters and backslashes to escape them,
+I once again try to keep it simple.  The second rule is the embodiment of that.  My
+definition of “if in doubt”, as stated in the second rule, is that if I have to think
+“is this punctuation part of the link or not?”, I have doubt.  Therefore, if I am
+authoring a
+link and am not sure if I should backslash escape punctuation within a link, I escape
+it.&lt;/p&gt;
+&lt;p&gt;Those first two rules are specifically tailored for me and to how I write my articles.
+My primary
+goal in coming up with those rules is to allow me to author rough drafts of
+my articles as I go, links included.  During the rough draft phase, as efficiently as
+possible, I need to leave
+enough information in the added links to allow me to finish each link in subsequent
+passes through the document. While the “as I go” element isn’t present in the
+subsequent passes when I clean up the link, I do need
+to make sure that I keep those passes as efficient as possible.  By keeping those rules
+simple, I reduce the amount of friction incurred by adding links to the documents,
+therefore keeping those passes efficient.&lt;/p&gt;
+&lt;p&gt;An additional benefit to using those rules is the simplification of the specification’s
+acceptable rules.  Specifically, the wording of my two first points helps me avoid a
+lot of the weird cases included in the 41 test cases for inline links.  The two most
+frequent reasons for the examples containing weird cases are the inclusion of newline
+characters
+and the inclusion of extra punctuation characters.  The “single line” part of the first
+rule
+helps me avoid any of those newline cases, and the “if in doubt” part of the second rule
+helps me avoid any of the cases with extra punctuation.&lt;/p&gt;
+&lt;p&gt;My conservative estimate is
+that by adding those extra words to my personal rules, I was able to reduce the number
+of “applicable” cases for links that I am authoring in half, if not a bit more.  While
+that might sound like a weird statement to make, for me it means that I when am
+authoring a document and adding a link, I can keep my focus on the what I am adding to
+the document, and not focus on trying to remember all of the weird cases for links and
+how to avoid them.  For me, that is a plus.&lt;/p&gt;
+&lt;h2 id="implementing-the-algorithm"&gt;Implementing the Algorithm&lt;a class="headerlink" href="#implementing-the-algorithm" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Having constructed and tested the delimiter stack and emphasis parts of the algorithm,
+as documented in the last article on
+&lt;a href="https://jackdewinter.github.io/2020/03/23/markdown-linter-adding-inline-emphasis/"&gt;Inline Emphasis&lt;/a&gt;,
+it was time to implement the &lt;code&gt;look for link or image&lt;/code&gt; part of that algorithm.  Once
+again, in an effort to keep things simple, I added very minimal support for image links
+(as detailed in the algorithm), but that support also added &lt;code&gt;assert False&lt;/code&gt; statements
+to ensure
+that any scenarios with images were clearly identifiable and not executable.  This
+helped to prevent me
+from accidentally working on testing image link features before adding the real support
+for them in a subsequent feature.&lt;/p&gt;
+&lt;p&gt;While the link part of algorithm doesn’t have as many special cases as the 17 rules for
+emphasis, there are a decent number of elements to keep track of when implementing the
+links portion of the algorithm.  I found that by following the examples and the
+algorithm as stated,
+I was able to quickly isolate the changes for each example.  This isolation allowed me
+to to cleanly implement each small change with a
+clear idea of what was needed to be accomplished.  As I am human, there were a number of
+issues I initially had in following various portions of the algorithm.  In all of those
+cases, a
+quick re-read of
+the section helped me get the proper information I needed to implement that portion of
+the links.&lt;/p&gt;
+&lt;p&gt;Out of the 41 total examples for inline links, only the first 6 are ones that I would
+consider normal examples, the remaining 35 testing special cases and boundary
+conditions.  As such,
+I started with the first example,
+&lt;a href="https://github.github.com/gfm/#example-493"&gt;example 493&lt;/a&gt;,
+and added the code necessary to do a simple parsing of each of the components of that
+example: link text, link destination, link title, link format separators and link
+whitespace.  Then I simply started working my way down the list of examples,
+refining each implementation with each example that I worked on.  With each example
+that I cleared, the implementation visibly got closer to it’s final implementation.&lt;/p&gt;
+&lt;p&gt;I am not too proud to admit that on my first reading of a lot of the examples, I
+questioned what their worth to the feature was.  However, as I worked down the list of
+examples, the questioning changed into enjoyment.  Each new example added a small layer
+of complexity to the implementation, like a piece of a puzzle cleanly fitting into
+place.  Even concepts that I worried about, like new lines
+and backslashes, were given enough examples to clearly and properly demonstrate how
+they worked.
+There were a couple of times where I questioned whether or not an example was really
+needed, but those instances were few and far between.&lt;/p&gt;
+&lt;h2 id="where-i-had-problems"&gt;Where I had problems&lt;a class="headerlink" href="#where-i-had-problems" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;The addition of inline links to the project went without too many issues.  The most
+prominent of these were the proper encoding of special characters in the links and the
+interactions between links and emphasis.&lt;/p&gt;
+&lt;p&gt;In terms of the special characters, the main problem that I had was in selecting an
+interpretation of the term “special characters” that was consistent with the GFM
+specification, and
+hence the CommonMark implementation.  The first group of characters, the ones to
+replace with named HTML entity names is small, so examples such as
+&lt;a href="https://github.github.com/gfm/#example-514"&gt;example 514&lt;/a&gt;
+and
+&lt;a href="https://github.github.com/gfm/#example-517"&gt;example 517&lt;/a&gt;
+were easy to implement and get right on the first try.  From an HTML author’s point
+of view, it was pretty obvious that the following Markdown from example 517:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;link&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;url&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s1"&gt;'title "and" title'&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;should produce the following HTML:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;a&lt;/span&gt; &lt;span class="na"&gt;href&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;"/url"&lt;/span&gt; &lt;span class="na"&gt;title&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;"title &amp;amp;quot;and&amp;amp;quot; title"&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;link&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;a&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Taking that a bit further, the next groups was still pretty simple.  Any characters that
+are represented by more than 7 bits needed Unicode encoding, which I also thought was
+pretty obvious.  Once again, from an HTML author’s point of view, the following
+Markdown from
+&lt;a href="https://github.github.com/gfm/#example-511"&gt;example 511&lt;/a&gt;:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;link&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;foo&lt;/span&gt;&lt;span class="o"&gt;%&lt;/span&gt;&lt;span class="mi"&gt;20&lt;/span&gt;&lt;span class="n"&gt;b&lt;/span&gt;&lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="n"&gt;auml&lt;/span&gt;&lt;span class="p"&gt;;)&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;would obviously translate into the following HTML:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nt"&gt;&amp;lt;p&amp;gt;&amp;lt;a&lt;/span&gt; &lt;span class="na"&gt;href=&lt;/span&gt;&lt;span class="s"&gt;"foo%20b%C3%A4"&lt;/span&gt;&lt;span class="nt"&gt;&amp;gt;&lt;/span&gt;link&lt;span class="nt"&gt;&amp;lt;/a&amp;gt;&amp;lt;/p&amp;gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Verifying this was correct was pretty simple.  I had to look at the project’s
+&lt;code&gt;entities.json&lt;/code&gt; file for the information on
+the &lt;code&gt;&amp;amp;auml;&lt;/code&gt; symbol.  From there I quickly verified that it is represented by the
+Unicode sequence
+&lt;code&gt;\u00E4&lt;/code&gt;, which becomes the sequence &lt;code&gt;%C3%A4&lt;/code&gt; when encoded with &lt;code&gt;utf-8&lt;/code&gt;.  This was all
+done with Python’s &lt;code&gt;urllib&lt;/code&gt; module, specifically with the &lt;code&gt;urllib.parse.quote&lt;/code&gt;
+function, and it got all of these right on the first try.&lt;/p&gt;
+&lt;p&gt;The issue came to the proper encoding of characters with an ordinal value below 127
+(or 7F hex) that were not control characters and not alphanumeric characters. By
+default, the only character that is considered safe according to the
+&lt;code&gt;urllib.parse.quote&lt;/code&gt; function is the &lt;code&gt;/&lt;/code&gt; character.  When the parser
+emitted the HTML for those many of those remaining characters, it replaced the actual
+character with the percent-form of that character.  While both approaches are usually
+syntactically equivalent, the
+comparison failed because the URI was not exactly the same as the example’s output. It
+was only over the course of a number of examples that the punctuation character safe
+list from above was constructed.&lt;/p&gt;
+&lt;p&gt;The second group of issues came around the interaction between normal inline processing
+and the processing used for links.  In cases such as
+&lt;a href="https://github.github.com/gfm/#example-524"&gt;example&lt;/a&gt;:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;link&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;foo&lt;/span&gt; &lt;span class="o"&gt;**&lt;/span&gt;&lt;span class="n"&gt;bar&lt;/span&gt;&lt;span class="o"&gt;**&lt;/span&gt; &lt;span class="o"&gt;`#`*&lt;/span&gt;&lt;span class="p"&gt;](&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;uri&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;all of the inline processing occurs within the link text section, and is pretty
+unambiguous to what the intent is.  However, in the cases of
+&lt;a href="https://github.github.com/gfm/#example-529"&gt;example 529&lt;/a&gt; to
+&lt;a href="https://github.github.com/gfm/#example-534"&gt;example 534&lt;/a&gt;,
+it is not as clear as to what the intent of the author was.  In the case of
+&lt;a href="https://github.github.com/gfm/#example-530"&gt;example 531&lt;/a&gt;:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;foo&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;bar&lt;/span&gt;&lt;span class="p"&gt;](&lt;/span&gt;&lt;span class="n"&gt;baz&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;it is not clear to me at all what the author would have intended with this Markdown.
+Can you figure it out?
+The good news is that the GFM specification is really clear on the precedence of each
+of the inline processes, but even still, it took me a bit to get that precedence
+properly implemented.  &lt;/p&gt;
+&lt;h2 id="what-was-my-experience-so-far"&gt;What Was My Experience So Far?&lt;a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;With the exception of adding a metadata feature and a table of contents feature, both
+which are unofficial extensions, every other feature that I normally use when writing
+articles is now implemented and tested.  Having hit that personal milestone, it is a
+good feeling knowing that I am THAT close to being able to run PyMarkdown against my own
+articles to lint them.  The only other core feature that I sometimes use is the
+image link feature, and I know that is just a couple of features away.&lt;/p&gt;
+&lt;p&gt;In terms of the feature implementation and testing for this feature, the issues
+I had were either caused by my misreading of the specification or caused by trying to
+skip forward in the examples, and not
+following the example order set out in the GFM specification.  As I have mentioned
+numerous times in this section of past articles, the GFM specification is well thought
+out and battle tested from many implementations.  While I do recognize that and heap
+praise on them, at the same time I seem to think that I either know better than they
+do or know where they are going, hence my skips forward.  I need to stop that, as it
+seems to be keep getting me in trouble.&lt;/p&gt;
+&lt;p&gt;Except for a couple of “didn’t I learn this already?” moments, things went fine. My
+guess is that I will learn to trust this specification properly just before I finish
+the last example.  Go figure.  In all seriousness, I am going to try and put more
+effort into following the specification and it’s examples in their proper order for
+the next feature, and try and get it locked in.  If I had a great specification, I
+need to learn to lean into it for support, and not fight against it.&lt;/p&gt;
+&lt;p&gt;At the start of this article, I expressed an interest to see if the implementation of
+inline links would be as easy as the implementation for emphasis.  While there are
+differences, the 17 rules around emphasis and the looking for a complete inline link
+after having found the link label itself, I am pretty convinced that the effort
+required to implement each of them was pretty similar.  As an added bonus, having taken
+a quick look at all of the features in the link group, I am pretty sure that the work
+for inline links will be heavily leveraged to complete the link group itself.&lt;/p&gt;
+&lt;h2 id="what-is-next"&gt;What is Next?&lt;a class="headerlink" href="#what-is-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Emphasis and link support and delimiter stack?  Done and tested.  Inline support for
+links?  Done and tested.  Before going on to reference links and image links, it only
+made sense to do link reference definitions next, so that is where I implemented next,
+though not without a lot of difficulties.&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category></entry><entry><title>Markdown Linter - Adding Inline Emphasis</title><link href="https://jackdewinter.github.io/2020/03/23/markdown-linter-adding-inline-emphasis/" rel="alternate"></link><published>2020-03-23T00:00:00-07:00</published><updated>2020-03-23T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-03-23:/2020/03/23/markdown-linter-adding-inline-emphasis/</id><summary type="html">
 &lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;I have been reading and implementing specifications for a long time.  I truly
 believed that I had seen with and dealt with every situation presented in any
@@ -5294,128 +5576,4 @@ many site publishers, such as GitHub Pages.&lt;/p&gt;
 using Elegant, and noted how it will be picked up by GitHub Pages.  I also provided some
 basic information on how to set up a custom page for themes other then Elegant.  By
 using this approach, I was able to have a custom error page that had the theme of my
-website, allowing the reader to recover in case of a bad URL.&lt;/p&gt;</content><category term="Website"></category><category term="pelican website generator"></category><category term="pelican fine tuning"></category><category term="python"></category><category term="custom error page"></category><category term="github pages"></category></entry><entry><title>Fine Tuning Pelican: Markdown Configuration</title><link href="https://jackdewinter.github.io/2019/10/16/fine-tuning-pelican-markdown-configuration/" rel="alternate"></link><published>2019-10-16T00:00:00-07:00</published><updated>2019-10-16T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2019-10-16:/2019/10/16/fine-tuning-pelican-markdown-configuration/</id><summary type="html">
-&lt;h2 id="preface"&gt;Preface&lt;a class="headerlink" href="#preface" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;This is one of the articles in a series about how I fine tuned my Pelican+Elegant web
-site to make it “more mine”.  For other articles in the series, click on the title of
-the article under the heading “Fine Tuning Pelican” on the right side of the …&lt;/p&gt;</summary><content type="html">
-&lt;h2 id="preface"&gt;Preface&lt;a class="headerlink" href="#preface" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;This is one of the articles in a series about how I fine tuned my Pelican+Elegant web
-site to make it “more mine”.  For other articles in the series, click on the title of
-the article under the heading “Fine Tuning Pelican” on the right side of the webpage.&lt;/p&gt;
-&lt;p&gt;Unlike my series on &lt;a href="https://jackdewinter.github.io/2019/08/18/static-websites-choosing-a-static-web-site-generator/"&gt;Choosing and Setting Up Pelican&lt;/a&gt;,
-these articles are intended to be byte sized, addressing specific fine tunings I made to
-my own website. As such, the first article in this series contains a
-&lt;a href="https://jackdewinter.github.io/2019/09/29/fine-tuning-pelican-setting-up-the-landing-page/#disclaimer"&gt;Disclaimer section&lt;/a&gt; with generic information
-for each of the articles in the series.&lt;/p&gt;
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;When choosing authoring tools for a website, a primary concern is that the tools are
-either already used by the authors or easy enough to learn by the authors that it does
-not allow them to write freely.  For me, I regularly author documentation in Markdown
-using Visual Studio Code for my professional job, so using the same tools for my website
-was an easy choice. However, unlike the documents I write at work, the Pelican generator
-utilizes the &lt;a href="https://python-markdown.github.io/"&gt;Python-Markdown generator library&lt;/a&gt;
-which has a few more options than standard Markdown.  This article details the Markdown
-configuration that I have enabled for my website, and why I have enabled the specified
-configuration.&lt;/p&gt;
-&lt;h2 id="markdown-configuration"&gt;Markdown Configuration&lt;a class="headerlink" href="#markdown-configuration" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;The following configuration is the Markdown configuration for my website:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;MARKDOWN&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
-    &lt;span class="s1"&gt;'extension_configs'&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
-        &lt;span class="s1"&gt;'markdown.extensions.extra'&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{},&lt;/span&gt;
-        &lt;span class="s1"&gt;'markdown.extensions.admonition'&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{},&lt;/span&gt;
-        &lt;span class="s1"&gt;'markdown.extensions.codehilite'&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
-            &lt;span class="s1"&gt;'css_class'&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s1"&gt;'highlight'&lt;/span&gt;
-        &lt;span class="p"&gt;},&lt;/span&gt;
-        &lt;span class="s1"&gt;'markdown.extensions.meta'&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{},&lt;/span&gt;
-        &lt;span class="s1"&gt;'smarty'&lt;/span&gt; &lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
-            &lt;span class="s1"&gt;'smart_angled_quotes'&lt;/span&gt; &lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s1"&gt;'true'&lt;/span&gt;
-        &lt;span class="p"&gt;},&lt;/span&gt;
-        &lt;span class="s1"&gt;'markdown.extensions.toc'&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
-            &lt;span class="s1"&gt;'permalink'&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s1"&gt;'true'&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-        &lt;span class="p"&gt;},&lt;/span&gt;
-    &lt;span class="p"&gt;}&lt;/span&gt;
-&lt;span class="p"&gt;}&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;h3 id="markdownextensionsmeta"&gt;markdown.extensions.meta&lt;a class="headerlink" href="#markdownextensionsmeta" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;This configuration is perhaps the most important extension that I use.  This setting
-enables the
-&lt;a href="https://python-markdown.github.io/extensions/meta_data/"&gt;Python-Markdown - Metadata&lt;/a&gt;
-feature which enables the processing of the header of Markdown files with metadata about
-the Markdown that is being authored.  While the Python-Markdown processor does not use
-this metadata itself, the metadata is passed to Pelican and Elegant to allow for
-configuration of the articles and pages on a one-by-one basis.&lt;/p&gt;
-&lt;p&gt;This choice is actually a requirement for Pelican to work, being provided as one of the
-defaults for the &lt;code&gt;MARKDOWN&lt;/code&gt; configuration element,
-&lt;a href="http://docs.getpelican.com/en/stable/settings.html#basic-settings"&gt;as documented here&lt;/a&gt;.&lt;/p&gt;
-&lt;h3 id="markdownextensionsextra"&gt;markdown.extensions.extra&lt;a class="headerlink" href="#markdownextensionsextra" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;This configuration enables the
-&lt;a href="https://python-markdown.github.io/extensions/extra/"&gt;Python-Markdown - Extra&lt;/a&gt;
-features which includes support for: abbreviations, attribute lists, definition lists,
-fenced code blocks, footnotes, and tables.&lt;/p&gt;
-&lt;p&gt;This choice is actually a requirement for Pelican to work, being provided as one of the
-defaults for the &lt;code&gt;MARKDOWN&lt;/code&gt; configuration element,
-&lt;a href="http://docs.getpelican.com/en/stable/settings.html#basic-settings"&gt;as documented here&lt;/a&gt;.&lt;/p&gt;
-&lt;h3 id="markdownextensionscodehilite"&gt;markdown.extensions.codehilite&lt;a class="headerlink" href="#markdownextensionscodehilite" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;This configuration enables the
-&lt;a href="https://python-markdown.github.io/extensions/code_hilite/"&gt;Python-Markdown - Code Hilites&lt;/a&gt;
-feature to provide for special displaying of marked text within given areas of the
-document.  These sections or specially marked text are typically used to display text
-that represents code for programs or scripts, with more stringent rules on how to
-display the text.&lt;/p&gt;
-&lt;p&gt;If no specific text format is specified with the text block, such as many of the
-code blocks in the article on
-&lt;a href="https://jackdewinter.github.io/2019/09/01/static-websites-posting-my-first-article/#step-1-verify-our-basic-web-site"&gt;Static Websites: Posting My First Article&lt;/a&gt;.
-If a text format is specified, this feature will try it’s best to match it to known
-highlighters, using color to indicate different parts of the specified text format.
-This can be seen in a later section of the above article where a code block is used for a
-&lt;a href="https://jackdewinter.github.io/2019/09/01/static-websites-posting-my-first-article/#step-2-the-first-article"&gt;sample Markdown article&lt;/a&gt;
-and later in the series where
-&lt;a href="https://jackdewinter.github.io/2019/09/08/static-websites-getting-ready-for-publishing-themes-and-minutiae/#task-2-file-types-and-file-paths"&gt;Python configuration&lt;/a&gt;
-is referenced.  In both of these examples, the highlighting done to the text is able to
-be changed according to the type of text being highlighted.&lt;/p&gt;
-&lt;p&gt;This choice is actually a requirement for Pelican to work, being provided as one of the
-defaults for the &lt;code&gt;MARKDOWN&lt;/code&gt; configuration element,
-&lt;a href="http://docs.getpelican.com/en/stable/settings.html#basic-settings"&gt;as documented here&lt;/a&gt;.&lt;/p&gt;
-&lt;h3 id="markdownextensionstoc"&gt;markdown.extensions.toc&lt;a class="headerlink" href="#markdownextensionstoc" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;This configuration is present as part of the setup for
-&lt;a href="https://jackdewinter.github.io/2019/10/13/fine-tuning-pelican-pelican-plugins/#navigable"&gt;Elegant’s Table Of Contents&lt;/a&gt; support. This
-specific value instructs the
-&lt;a href="https://python-markdown.github.io/extensions/toc/"&gt;Python-Markdown - Table of Contents&lt;/a&gt;
-feature to generate permanent links at the end of each header.  These links provide the
-destination URLs that Elegant’s Table of Content support use to go directly to a given
-item in the Table of Contents.&lt;/p&gt;
-&lt;p&gt;I subscribe to Elegant’s philosophy on providing a clean reading experience with minimal
-distractions.  By moving the table of contents to the left sidebar and out of the
-article, I believe the reader can focus more on the article.&lt;/p&gt;
-&lt;h3 id="markdownextensionsadmonition"&gt;markdown.extensions.admonition&lt;a class="headerlink" href="#markdownextensionsadmonition" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;This configuration enables the
-&lt;a href="https://python-markdown.github.io/extensions/admonition/"&gt;Python-Markdown - Admonition&lt;/a&gt;
-feature to provide a highlighted box around the indicated text content.  These
-highlighted boxes are themed by Elegant to provide for a good, quick communication of
-important information to the reader without being too disruptive. An example of
-admonitions is available in this article on
-&lt;a href="https://jackdewinter.github.io/2019/07/28/glanceable-displays-fine-tuning-a-raspberry-pi-installation/#requirements"&gt;Glanceable Displays&lt;/a&gt;.&lt;/p&gt;
-&lt;p&gt;I find that using admonitions in articles allows me to include more useful and
-descriptive information to the reader.  The options of sections of tests in various
-parentheses and braces, or placing the text in footnotes, doesn’t feel right to me,
-while admonitions, with their colored call outs do.  This is a personal preference.&lt;/p&gt;
-&lt;h3 id="smarty"&gt;smarty&lt;a class="headerlink" href="#smarty" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;This configuration enables the
-&lt;a href="https://python-markdown.github.io/extensions/smarty/"&gt;Python-Markdown - SmartyPants&lt;/a&gt;
-feature to provide for more clear representation of various characters and character
-sequences used in articles and pages.&lt;/p&gt;
-&lt;p&gt;With this feature enabled, the following substitutions are made:&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;the apostrophe character (&lt;code&gt;'&lt;/code&gt;) is translated into a left and right single quotes around the words or phrases they surround:  ‘this is my phrase’&lt;/li&gt;
-&lt;li&gt;the quotation character (&lt;code&gt;'&lt;/code&gt;) is translated into a left and right double quotes around the words or phrases they surround:  “this is my phrase”&lt;/li&gt;
-&lt;li&gt;double greater than signs (&lt;code&gt;&amp;gt;&amp;gt;&lt;/code&gt;) and less than signs (&lt;code&gt;&amp;lt;&amp;lt;&lt;/code&gt;) are translated into angled quotes: « and »&lt;/li&gt;
-&lt;li&gt;three period characters in a row (&lt;code&gt;...&lt;/code&gt;) are translated into ellipses: and so they said…&lt;/li&gt;
-&lt;li&gt;two consecutive dashes (&lt;code&gt;--&lt;/code&gt;) and three consecutive dashes (&lt;code&gt;---&lt;/code&gt;) are turned into lengthened dash characters: – and —&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;While I am not 100% sold on this one, I like the effects it has, even though they are
-small.  It just seems to add a bit of a finished touch to the articles.&lt;/p&gt;
-&lt;h2 id="what-was-accomplished"&gt;What Was Accomplished&lt;a class="headerlink" href="#what-was-accomplished" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;This article was created to share the Markdown configuration that I use for my website
-For each feature that I use I specify what benefit it provides to the articles, along
-with the reasons that have for using that Markdown feature.&lt;/p&gt;</content><category term="Website"></category><category term="pelican website generator"></category><category term="pelican fine tuning"></category><category term="python"></category><category term="pelican markdown configuration"></category></entry></feed>
+website, allowing the reader to recover in case of a bad URL.&lt;/p&gt;</content><category term="Website"></category><category term="pelican website generator"></category><category term="pelican fine tuning"></category><category term="python"></category><category term="custom error page"></category><category term="github pages"></category></entry></feed>

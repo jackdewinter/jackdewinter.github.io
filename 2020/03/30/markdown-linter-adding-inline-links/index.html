@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="author" content="Jack De Winter" />
+
+        <meta name="description" content="Introduction¶ Having just implemented the Inline Emphasis feature as documented in my last article, I was eager to move forward with the implementation of the links feature. As the group of features under links were the only ones separating me from the completion of the project’s parser, I was …
+" />
+        <meta property="og:type" content="article" />
+        <meta name="twitter:card" content="summary">
+
+<meta name="keywords" content="markdown linter, Software Quality, " />
+
+<meta property="og:title" content="Markdown Linter - Adding Inline Links "/>
+<meta property="og:url" content="https://jackdewinter.github.io/2020/03/30/markdown-linter-adding-inline-links/" />
+<meta property="og:description" content="Introduction¶ Having just implemented the Inline Emphasis feature as documented in my last article, I was eager to move forward with the implementation of the links feature. As the group of features under links were the only ones separating me from the completion of the project’s parser, I was …" />
+<meta property="og:site_name" content="Jack&#39;s Digital Workbench" />
+<meta property="og:article:author" content="Jack De Winter" />
+<meta property="og:article:published_time" content="2020-03-30T00:00:00-07:00" />
+<meta name="twitter:title" content="Markdown Linter - Adding Inline Links ">
+<meta name="twitter:description" content="Introduction¶ Having just implemented the Inline Emphasis feature as documented in my last article, I was eager to move forward with the implementation of the links feature. As the group of features under links were the only ones separating me from the completion of the project’s parser, I was …">
+
+        <title>Markdown Linter - Adding Inline Links  · Jack&#39;s Digital Workbench
+</title>
+        <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://jackdewinter.github.io/theme/css/style.min.css?bec7d543">
+
+        <link href="https://jackdewinter.github.io/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Jack&#39;s Digital Workbench - Full Atom Feed" />
+
+
+    </head>
+    <body>
+        <div id="content">
+            <div class="navbar navbar-static-top">
+                <div class="navbar-inner">
+                    <div class="container-fluid">
+                        <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                        </a>
+                        <a class="brand" href="https://jackdewinter.github.io/"><span class=site-name>Jack's Digital Workbench</span></a>
+                        <div class="nav-collapse collapse">
+                            <ul class="nav pull-right top-menu">
+                                <li >
+                                    <a href=
+                                       https://jackdewinter.github.io
+                                    >Home</a>
+                                </li>
+                                <li ><a href="https://jackdewinter.github.io/categories">Categories</a></li>
+                                <li ><a href="https://jackdewinter.github.io/tags">Tags</a></li>
+                                <li ><a href="https://jackdewinter.github.io/archives">Archives</a></li>
+                                <li><form class="navbar-search" action="https://jackdewinter.github.io/search.html" onsubmit="return validateForm(this.elements['q'].value);"> <input type="text" class="search-query" placeholder="Search" name="q" id="tipue_search_input"></form></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="container-fluid">
+                <div class="row-fluid">
+                    <div class="span1"></div>
+                    <div class="span10">
+<article itemscope>
+<div class="row-fluid">
+    <header class="page-header span10 offset2">
+        <h1>
+            <a href="https://jackdewinter.github.io/2020/03/30/markdown-linter-adding-inline-links/">
+                Markdown Linter - Adding Inline Links
+            </a>
+        </h1>
+    </header>
+</div>
+
+<div class="row-fluid">
+    <div class="span2 table-of-content">
+        <nav>
+        <h4>Contents</h4>
+        <div class="toc">
+<ul>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#why-inline-links">Why Inline Links?</a></li>
+<li><a href="#i-use-inline-links-almost-exclusively">I Use Inline Links (Almost) Exclusively</a></li>
+<li><a href="#what-is-an-inline-link">What is an Inline Link?</a></li>
+<li><a href="#implementing-the-algorithm">Implementing the Algorithm</a></li>
+<li><a href="#where-i-had-problems">Where I had problems</a></li>
+<li><a href="#what-was-my-experience-so-far">What Was My Experience So Far?</a></li>
+<li><a href="#what-is-next">What is Next?</a></li>
+</ul>
+</div>
+        </nav>
+    </div>
+    <div class="span8 article-content">
+            
+            
+<h2 id="introduction">Introduction<a class="headerlink" href="#introduction" title="Permanent link">¶</a></h2>
+<p>Having just implemented the
+<a href="https://jackdewinter.github.io/2020/03/23/markdown-linter-adding-inline-emphasis/">Inline Emphasis</a> feature
+as documented in my last article, I was eager to move forward with the implementation
+of the links feature.  As the group of features under links were the only ones
+separating me from the completion of the project’s parser, I was happy when I noticed
+that I was starting to think “when the parser is done” instead of
+“if the parser is EVER done”. I have been working on this project for a while and it
+was nice to know that in my mind, I could “see the light” with respect to this
+project.</p>
+<p>In implementing the algorithm outlined in the section
+<a href="https://github.github.com/gfm/#phase-2-inline-structure">Phase 2: inline structure</a>,
+I chose to implement the emphasis feature first, leaving the implementation of links
+until the base algorithm and emphasis feature were implemented and tested.  Seeing as
+both of those were accomplished, I felt that it was the right time to apply my
+success in implementing the emphasis feature to the link feature.  I knew that the
+work on the delimiter stack would easily carry over, but I was eager to see if the
+implementation of the next part of links would be as easy as the implementation of
+emphasis.</p>
+<p>The full record of the work detailed in this article is documented in the
+project’s GitHub repository in the commit of
+<a href="https://github.com/jackdewinter/pymarkdown/commit/a0deb2e362adebd2bb65fd0095e5add160f1dfad">17 March 2020</a>.</p>
+<h2 id="why-inline-links">Why Inline Links?<a class="headerlink" href="#why-inline-links" title="Permanent link">¶</a></h2>
+<p>Taking a quick peek ahead, I observed that the link feature in the specification is
+broken down into four groups:
+<a href="https://github.github.com/gfm/#inline-link">inline links</a>,
+<a href="https://github.github.com/gfm/#link-reference-definitions">link reference definitions</a>,
+<a href="https://github.github.com/gfm/#reference-link">reference links</a>, and
+<a href="https://github.github.com/gfm/#images">image links</a>.
+Based on a quick reading of each section, it was obvious to me that for reference links
+to work properly, link reference definitions would be needed.  Image links are
+variations on the inline link type and reference link type, the only difference being a
+different start
+delimiter.  As such, I didn’t see any benefit to implementing image links
+before those other two link types are completed.  This leaves inline links. Inline
+links are self-contained, allowing them to be implemented separately from the other
+three groups.  Being somewhat impatient to get the parser done, I decided to go for the
+sub-feature that was more immediately available: inline links.</p>
+<h2 id="i-use-inline-links-almost-exclusively">I Use Inline Links (Almost) Exclusively<a class="headerlink" href="#i-use-inline-links-almost-exclusively" title="Permanent link">¶</a></h2>
+<p>When writing my articles and documentation, I personally find it more readable to
+include any
+links in my documents as a complete unit.  This means that when I add a link, I will
+typically add it in the form shown in the GFM specification at
+<a href="https://github.github.com/gfm/#example-494">example 494</a>:</p>
+<div class="highlight"><pre><span></span><span class="o">[</span><span class="n">link</span><span class="o">]</span><span class="p">(</span><span class="o">/</span><span class="n">uri</span><span class="p">)</span><span class="w"></span>
+</pre></div>
+<p>As a concrete example of this, the above link to example 494 that precedes the sample
+link format was created with the following Markdown:</p>
+<div class="highlight"><pre><span></span><span class="p">[</span><span class="n">example</span> <span class="mi">494</span><span class="p">](</span><span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="p">.</span><span class="n">github</span><span class="p">.</span><span class="n">com</span><span class="o">/</span><span class="n">gfm</span><span class="o">/#</span><span class="n">example</span><span class="o">-</span><span class="mi">494</span><span class="p">)</span>
+</pre></div>
+<p>While the form can be augmented as such:</p>
+<div class="highlight"><pre><span></span><span class="o">[</span><span class="n">link</span><span class="o">]</span><span class="p">(</span><span class="o">/</span><span class="n">uri</span><span class="w"> </span><span class="ss">"title"</span><span class="p">)</span><span class="w"></span>
+</pre></div>
+<p>to provide a title, I cannot remember a case where I have used that form.
+While I do not have a strong reason for or against this format, I believe that I just
+have not encountered a case where I believe that a title for the link was either
+desired or required.  On the other hand, I have used the following form a number of
+times before:</p>
+<div class="highlight"><pre><span></span><span class="o">[</span><span class="n">link</span><span class="o">]</span><span class="p">(</span><span class="o">&lt;/</span><span class="n">my</span><span class="w"> </span><span class="n">uri</span><span class="o">&gt;</span><span class="p">)</span><span class="w"></span>
+</pre></div>
+<p>as an alternative to the form:</p>
+<div class="highlight"><pre><span></span><span class="o">[</span><span class="n">link</span><span class="o">]</span><span class="p">(</span><span class="n">my</span><span class="w"> </span><span class="n">uri</span><span class="p">)</span><span class="w"></span>
+</pre></div>
+<p>While my use of the angle bracket form is rare, it was useful in a couple of cases
+where I needed to provide a space character as part of an URI.  While different
+Markdown-to-HTML processors will handle the space character differently, I just wanted
+something that read well and was mostly universal.</p>
+<h2 id="what-is-an-inline-link">What is an Inline Link?<a class="headerlink" href="#what-is-an-inline-link" title="Permanent link">¶</a></h2>
+<p>For a well documented answer to this question, please look at the
+<a href="https://github.github.com/gfm/#inline-link">inline link section</a> of the GFM for
+a word-for-word answer, complete with helpful examples.  My own summarization of
+this section is as follows:</p>
+<ul>
+<li>an inline link occurs on a single line and comprised of the link text, a left parenthesis, an optional link destination followed by an optional whitespace and an optional link title, and a right parenthesis</li>
+<li>if in doubt about any punctuation characters in the below constructs, backslash escape them</li>
+<li>the link text is any text that appears between the opening square brackets (<code>[</code>) and the closing square brackets (<code>]</code>)</li>
+<li>the link destination is any non-space, non-control characters, with special rules for the <code>&lt;</code>, <code>(</code>, and <code>)</code> characters</li>
+<li>the link title, if included, is contained within a single-quoted string (<code>'</code>), double-quoted string (<code>"</code>), or a parenthesized string (<code>(</code> and <code>)</code>)</li>
+</ul>
+<p>After 5 revisions to try and keep my answer “minimal”, that is it!  While I could leave
+it in a more complicated state, that summary is what I believe I have it broken down
+to in my head.  For me, the first two points are the pivotal ones, setting up the link
+component order and exclusions needed to create valid inline links.  The last three
+rules are just simplifications of what is needed to represent each of the three
+components, rounding out the definition for inline links.</p>
+<p>Keeping to those rules, when I am picturing Markdown links in my head, I usually think
+of these two forms:</p>
+<div class="highlight"><pre><span></span><span class="o">[</span><span class="n">link</span><span class="o">]</span><span class="p">(</span><span class="o">/</span><span class="n">uri</span><span class="w"> </span><span class="ss">"title"</span><span class="p">)</span><span class="w"></span>
+</pre></div>
+<p>and:</p>
+<div class="highlight"><pre><span></span><span class="o">[</span><span class="n">link</span><span class="o">]</span><span class="p">(</span><span class="o">/</span><span class="n">uri</span><span class="p">)</span><span class="w"></span>
+</pre></div>
+<p>Between the 5 rules stated above and these two examples, I believe I am keeping it
+simple and minimal, ensuring my consistent use of links.  Let me dive into those
+a bit more.</p>
+<p>In terms of the order of components, the link text and both outer parentheses are
+required for the inline links, but both the link destination and link title are
+optional.  However, due to how they are documented, if a link title is desired, a link
+destination must precede it.  Basically, the component order is always: the text that
+shows up inside of the link’s anchor, the link URI itself, and a title to use when the
+link is traversed.  Once again, I keep it simple to make it easy to use.</p>
+<p>For remembering when to use punctuation characters and backslashes to escape them,
+I once again try to keep it simple.  The second rule is the embodiment of that.  My
+definition of “if in doubt”, as stated in the second rule, is that if I have to think
+“is this punctuation part of the link or not?”, I have doubt.  Therefore, if I am
+authoring a
+link and am not sure if I should backslash escape punctuation within a link, I escape
+it.</p>
+<p>Those first two rules are specifically tailored for me and to how I write my articles.
+My primary
+goal in coming up with those rules is to allow me to author rough drafts of
+my articles as I go, links included.  During the rough draft phase, as efficiently as
+possible, I need to leave
+enough information in the added links to allow me to finish each link in subsequent
+passes through the document. While the “as I go” element isn’t present in the
+subsequent passes when I clean up the link, I do need
+to make sure that I keep those passes as efficient as possible.  By keeping those rules
+simple, I reduce the amount of friction incurred by adding links to the documents,
+therefore keeping those passes efficient.</p>
+<p>An additional benefit to using those rules is the simplification of the specification’s
+acceptable rules.  Specifically, the wording of my two first points helps me avoid a
+lot of the weird cases included in the 41 test cases for inline links.  The two most
+frequent reasons for the examples containing weird cases are the inclusion of newline
+characters
+and the inclusion of extra punctuation characters.  The “single line” part of the first
+rule
+helps me avoid any of those newline cases, and the “if in doubt” part of the second rule
+helps me avoid any of the cases with extra punctuation.</p>
+<p>My conservative estimate is
+that by adding those extra words to my personal rules, I was able to reduce the number
+of “applicable” cases for links that I am authoring in half, if not a bit more.  While
+that might sound like a weird statement to make, for me it means that I when am
+authoring a document and adding a link, I can keep my focus on the what I am adding to
+the document, and not focus on trying to remember all of the weird cases for links and
+how to avoid them.  For me, that is a plus.</p>
+<h2 id="implementing-the-algorithm">Implementing the Algorithm<a class="headerlink" href="#implementing-the-algorithm" title="Permanent link">¶</a></h2>
+<p>Having constructed and tested the delimiter stack and emphasis parts of the algorithm,
+as documented in the last article on
+<a href="https://jackdewinter.github.io/2020/03/23/markdown-linter-adding-inline-emphasis/">Inline Emphasis</a>,
+it was time to implement the <code>look for link or image</code> part of that algorithm.  Once
+again, in an effort to keep things simple, I added very minimal support for image links
+(as detailed in the algorithm), but that support also added <code>assert False</code> statements
+to ensure
+that any scenarios with images were clearly identifiable and not executable.  This
+helped to prevent me
+from accidentally working on testing image link features before adding the real support
+for them in a subsequent feature.</p>
+<p>While the link part of algorithm doesn’t have as many special cases as the 17 rules for
+emphasis, there are a decent number of elements to keep track of when implementing the
+links portion of the algorithm.  I found that by following the examples and the
+algorithm as stated,
+I was able to quickly isolate the changes for each example.  This isolation allowed me
+to to cleanly implement each small change with a
+clear idea of what was needed to be accomplished.  As I am human, there were a number of
+issues I initially had in following various portions of the algorithm.  In all of those
+cases, a
+quick re-read of
+the section helped me get the proper information I needed to implement that portion of
+the links.</p>
+<p>Out of the 41 total examples for inline links, only the first 6 are ones that I would
+consider normal examples, the remaining 35 testing special cases and boundary
+conditions.  As such,
+I started with the first example,
+<a href="https://github.github.com/gfm/#example-493">example 493</a>,
+and added the code necessary to do a simple parsing of each of the components of that
+example: link text, link destination, link title, link format separators and link
+whitespace.  Then I simply started working my way down the list of examples,
+refining each implementation with each example that I worked on.  With each example
+that I cleared, the implementation visibly got closer to it’s final implementation.</p>
+<p>I am not too proud to admit that on my first reading of a lot of the examples, I
+questioned what their worth to the feature was.  However, as I worked down the list of
+examples, the questioning changed into enjoyment.  Each new example added a small layer
+of complexity to the implementation, like a piece of a puzzle cleanly fitting into
+place.  Even concepts that I worried about, like new lines
+and backslashes, were given enough examples to clearly and properly demonstrate how
+they worked.
+There were a couple of times where I questioned whether or not an example was really
+needed, but those instances were few and far between.</p>
+<h2 id="where-i-had-problems">Where I had problems<a class="headerlink" href="#where-i-had-problems" title="Permanent link">¶</a></h2>
+<p>The addition of inline links to the project went without too many issues.  The most
+prominent of these were the proper encoding of special characters in the links and the
+interactions between links and emphasis.</p>
+<p>In terms of the special characters, the main problem that I had was in selecting an
+interpretation of the term “special characters” that was consistent with the GFM
+specification, and
+hence the CommonMark implementation.  The first group of characters, the ones to
+replace with named HTML entity names is small, so examples such as
+<a href="https://github.github.com/gfm/#example-514">example 514</a>
+and
+<a href="https://github.github.com/gfm/#example-517">example 517</a>
+were easy to implement and get right on the first try.  From an HTML author’s point
+of view, it was pretty obvious that the following Markdown from example 517:</p>
+<div class="highlight"><pre><span></span><span class="o">[</span><span class="n">link</span><span class="o">]</span><span class="p">(</span><span class="o">/</span><span class="n">url</span><span class="w"> </span><span class="s1">'title "and" title'</span><span class="p">)</span><span class="w"></span>
+</pre></div>
+<p>should produce the following HTML:</p>
+<div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">p</span><span class="p">&gt;&lt;</span><span class="nt">a</span> <span class="na">href</span><span class="o">=</span><span class="s">"/url"</span> <span class="na">title</span><span class="o">=</span><span class="s">"title &amp;quot;and&amp;quot; title"</span><span class="p">&gt;</span>link<span class="p">&lt;/</span><span class="nt">a</span><span class="p">&gt;&lt;/</span><span class="nt">p</span><span class="p">&gt;</span>
+</pre></div>
+<p>Taking that a bit further, the next groups was still pretty simple.  Any characters that
+are represented by more than 7 bits needed Unicode encoding, which I also thought was
+pretty obvious.  Once again, from an HTML author’s point of view, the following
+Markdown from
+<a href="https://github.github.com/gfm/#example-511">example 511</a>:</p>
+<div class="highlight"><pre><span></span><span class="o">[</span><span class="n">link</span><span class="o">]</span><span class="p">(</span><span class="n">foo</span><span class="o">%</span><span class="mi">20</span><span class="n">b</span><span class="o">&amp;</span><span class="n">auml</span><span class="p">;)</span><span class="w"></span>
+</pre></div>
+<p>would obviously translate into the following HTML:</p>
+<div class="highlight"><pre><span></span><span class="nt">&lt;p&gt;&lt;a</span> <span class="na">href=</span><span class="s">"foo%20b%C3%A4"</span><span class="nt">&gt;</span>link<span class="nt">&lt;/a&gt;&lt;/p&gt;</span>
+</pre></div>
+<p>Verifying this was correct was pretty simple.  I had to look at the project’s
+<code>entities.json</code> file for the information on
+the <code>&amp;auml;</code> symbol.  From there I quickly verified that it is represented by the
+Unicode sequence
+<code>\u00E4</code>, which becomes the sequence <code>%C3%A4</code> when encoded with <code>utf-8</code>.  This was all
+done with Python’s <code>urllib</code> module, specifically with the <code>urllib.parse.quote</code>
+function, and it got all of these right on the first try.</p>
+<p>The issue came to the proper encoding of characters with an ordinal value below 127
+(or 7F hex) that were not control characters and not alphanumeric characters. By
+default, the only character that is considered safe according to the
+<code>urllib.parse.quote</code> function is the <code>/</code> character.  When the parser
+emitted the HTML for those many of those remaining characters, it replaced the actual
+character with the percent-form of that character.  While both approaches are usually
+syntactically equivalent, the
+comparison failed because the URI was not exactly the same as the example’s output. It
+was only over the course of a number of examples that the punctuation character safe
+list from above was constructed.</p>
+<p>The second group of issues came around the interaction between normal inline processing
+and the processing used for links.  In cases such as
+<a href="https://github.github.com/gfm/#example-524">example</a>:</p>
+<div class="highlight"><pre><span></span><span class="p">[</span><span class="n">link</span> <span class="o">*</span><span class="n">foo</span> <span class="o">**</span><span class="n">bar</span><span class="o">**</span> <span class="o">`#`*</span><span class="p">](</span><span class="o">/</span><span class="n">uri</span><span class="p">)</span>
+</pre></div>
+<p>all of the inline processing occurs within the link text section, and is pretty
+unambiguous to what the intent is.  However, in the cases of
+<a href="https://github.github.com/gfm/#example-529">example 529</a> to
+<a href="https://github.github.com/gfm/#example-534">example 534</a>,
+it is not as clear as to what the intent of the author was.  In the case of
+<a href="https://github.github.com/gfm/#example-530">example 531</a>:</p>
+<div class="highlight"><pre><span></span><span class="p">[</span><span class="n">foo</span> <span class="o">*</span><span class="n">bar</span><span class="p">](</span><span class="n">baz</span><span class="o">*</span><span class="p">)</span>
+</pre></div>
+<p>it is not clear to me at all what the author would have intended with this Markdown.
+Can you figure it out?
+The good news is that the GFM specification is really clear on the precedence of each
+of the inline processes, but even still, it took me a bit to get that precedence
+properly implemented.  </p>
+<h2 id="what-was-my-experience-so-far">What Was My Experience So Far?<a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link">¶</a></h2>
+<p>With the exception of adding a metadata feature and a table of contents feature, both
+which are unofficial extensions, every other feature that I normally use when writing
+articles is now implemented and tested.  Having hit that personal milestone, it is a
+good feeling knowing that I am THAT close to being able to run PyMarkdown against my own
+articles to lint them.  The only other core feature that I sometimes use is the
+image link feature, and I know that is just a couple of features away.</p>
+<p>In terms of the feature implementation and testing for this feature, the issues
+I had were either caused by my misreading of the specification or caused by trying to
+skip forward in the examples, and not
+following the example order set out in the GFM specification.  As I have mentioned
+numerous times in this section of past articles, the GFM specification is well thought
+out and battle tested from many implementations.  While I do recognize that and heap
+praise on them, at the same time I seem to think that I either know better than they
+do or know where they are going, hence my skips forward.  I need to stop that, as it
+seems to be keep getting me in trouble.</p>
+<p>Except for a couple of “didn’t I learn this already?” moments, things went fine. My
+guess is that I will learn to trust this specification properly just before I finish
+the last example.  Go figure.  In all seriousness, I am going to try and put more
+effort into following the specification and it’s examples in their proper order for
+the next feature, and try and get it locked in.  If I had a great specification, I
+need to learn to lean into it for support, and not fight against it.</p>
+<p>At the start of this article, I expressed an interest to see if the implementation of
+inline links would be as easy as the implementation for emphasis.  While there are
+differences, the 17 rules around emphasis and the looking for a complete inline link
+after having found the link label itself, I am pretty convinced that the effort
+required to implement each of them was pretty similar.  As an added bonus, having taken
+a quick look at all of the features in the link group, I am pretty sure that the work
+for inline links will be heavily leveraged to complete the link group itself.</p>
+<h2 id="what-is-next">What is Next?<a class="headerlink" href="#what-is-next" title="Permanent link">¶</a></h2>
+<p>Emphasis and link support and delimiter stack?  Done and tested.  Inline support for
+links?  Done and tested.  Before going on to reference links and image links, it only
+made sense to do link reference definitions next, so that is where I implemented next,
+though not without a lot of difficulties.</p>
+
+
+             
+ 
+                <p id="post-share-links">
+    Like this post? Share on:
+    <a href="https://twitter.com/intent/tweet?text=Markdown%20Linter%20-%20Adding%20Inline%20Links&url=https%3A//jackdewinter.github.io/2020/03/30/markdown-linter-adding-inline-links/&hashtags=markdown-linter" target="_blank" rel="nofollow noopener noreferrer" title="Share on Twitter">Twitter</a>
+    ❄
+    <a href="https://www.facebook.com/sharer/sharer.php?u=https%3A//jackdewinter.github.io/2020/03/30/markdown-linter-adding-inline-links/" target="_blank" rel="nofollow noopener noreferrer" title="Share on Facebook">Facebook</a>
+    ❄
+    <a href="mailto:?subject=Markdown%20Linter%20-%20Adding%20Inline%20Links&amp;body=https%3A//jackdewinter.github.io/2020/03/30/markdown-linter-adding-inline-links/" target="_blank" rel="nofollow noopener noreferrer" title="Share via Email">Email</a>
+    </p>
+
+            
+            
+
+
+
+
+
+
+<section>
+    <h6 style="display:none;">Comments</h6>
+    <p id="comment-message">So what do you think? Did I miss something? Is any part unclear? Leave your comments below. </p>
+
+    <div class="accordion" id="accordion2">
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                <a class="accordion-toggle disqus-comment-count comment-count"
+                   data-toggle="collapse"
+                   data-parent="#accordion2"
+                   href="https://jackdewinter.github.io/2020/03/30/markdown-linter-adding-inline-links/#comment_thread"
+                   id="comment-accordion-toggle">
+                    Comments
+                </a>
+            </div>
+            <div id="comment_thread" class="accordion-body collapse">
+                <div class="accordion-inner">
+                    <div class="comments">
+
+                        <script src="https://utteranc.es/client.js"
+        data-repo="jackdewinter/jackdewinter.github.io"
+        data-issue-term="markdown-linter-adding-inline-links"
+        data-label="Comments"
+        data-theme="github-light"
+        crossorigin="anonymous"
+        async>
+</script>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+            <hr/>
+            <aside>
+            <nav>
+            <ul class="articles-timeline">
+                <li class="previous-article">« <a href="https://jackdewinter.github.io/2020/03/23/markdown-linter-adding-inline-emphasis/" title="Previous: Markdown Linter - Adding Inline Emphasis">Markdown Linter - Adding Inline Emphasis</a></li>
+            </ul>
+            </nav>
+            </aside>
+        </div>
+        <section id="article-sidebar" class="span2">
+    <h4>Reading Time</h4>
+    <p>~12 min read</p>
+            <h4>Published</h4>
+            <time itemprop="dateCreated" datetime="2020-03-30T00:00:00-07:00">Mar 30, 2020</time>
+        <h4>Markdown Linter</h4>
+    <ul class="multi-parts-list">
+            <li >
+            <a href="https://jackdewinter.github.io/2019/12/08/markdown-linter-collecting-requirements/" title="Markdown Linter - Collecting Requirements">Part 1: Markdown Linter - Collecting Requirements</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2019/12/16/markdown-linter-setting-up-parser-tests/" title="Markdown Linter - Setting Up Parser Tests">Part 2: Markdown Linter - Setting Up Parser Tests</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2019/12/22/markdown-linter-parser-testing-strategy/" title="Markdown Linter - Parser Testing Strategy">Part 3: Markdown Linter - Parser Testing Strategy</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/01/27/markdown-linter-parsing-normal-markdown-blocks/" title="Markdown Linter - Parsing Normal Markdown Blocks">Part 4: Markdown Linter - Parsing Normal Markdown Blocks</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/02/03/markdown-linter-adding-block-quotes-and-lists/" title="Markdown Linter - Adding Block Quotes and Lists">Part 5: Markdown Linter - Adding Block Quotes and Lists</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/02/10/markdown-linter-adding-html-blocks/" title="Markdown Linter - Adding HTML Blocks">Part 6: Markdown Linter - Adding HTML Blocks</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/02/17/markdown-linter-taking-time-to-refactor-post-block-implementation/" title="Markdown Linter - Taking Time to Refactor -- Post-Block Implementation">Part 7: Markdown Linter - Taking Time to Refactor -- Post-Block Implementation</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/02/24/markdown-linter-starting-inline-processing/" title="Markdown Linter - Starting Inline Processing">Part 8: Markdown Linter - Starting Inline Processing</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/03/02/markdown-linter-taking-time-to-refactor-post-easy-inlines/" title="Markdown Linter - Taking Time to Refactor -- Post-Easy Inlines">Part 9: Markdown Linter - Taking Time to Refactor -- Post-Easy Inlines</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/03/09/markdown-linter-autolinks-raw-html-and-line-breaks/" title="Markdown Linter - Autolinks, Raw HTML, and Line Breaks">Part 10: Markdown Linter - Autolinks, Raw HTML, and Line Breaks</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/03/16/markdown-linter-verifying-base-scenarios/" title="Markdown Linter - Verifying Base Scenarios">Part 11: Markdown Linter - Verifying Base Scenarios</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/03/23/markdown-linter-adding-inline-emphasis/" title="Markdown Linter - Adding Inline Emphasis">Part 12: Markdown Linter - Adding Inline Emphasis</a>
+            </li>
+            <li  class="active-part">
+            Part 13: Markdown Linter - Adding Inline Links
+            </li>
+    </ul>
+            <h4>Category</h4>
+            <a class="category-link" href="https://jackdewinter.github.io/categories#software-quality-ref">Software Quality</a>
+            <h4>Tags</h4>
+            <ul class="list-of-tags tags-in-article">
+                <li><a href="https://jackdewinter.github.io/tags#markdown-linter-ref">markdown linter
+                    <span>13</span>
+</a></li>
+            </ul>
+<h4>Stay in Touch</h4>
+<div id="sidebar-social-link">
+    <a href="https://github.com/jackdewinter" title="github-alt" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="GitHub" role="img" viewBox="0 0 512 512"><rect width="512" height="512" rx="15%" fill="#1B1817"/><path fill="#fff" d="M335 499c14 0 12 17 12 17H165s-2-17 12-17c13 0 16-6 16-12l-1-50c-71 16-86-28-86-28-12-30-28-37-28-37-24-16 1-16 1-16 26 2 40 26 40 26 22 39 59 28 74 22 2-17 9-28 16-35-57-6-116-28-116-126 0-28 10-51 26-69-3-6-11-32 3-67 0 0 21-7 70 26 42-12 86-12 128 0 49-33 70-26 70-26 14 35 6 61 3 67 16 18 26 41 26 69 0 98-60 120-117 126 10 8 18 24 18 48l-1 70c0 6 3 12 16 12z"/></svg>
+    </a>
+    <a href="https://www.linkedin.com/in/jackdewinter/" title="linkedin" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="LinkedIn" role="img" viewBox="0 0 512 512" fill="#fff"><rect width="512" height="512" rx="15%" fill="#0077b5"/><circle cx="142" cy="138" r="37"/><path stroke="#fff" stroke-width="66" d="M244 194v198M142 194v198"/><path d="M276 282c0-20 13-40 36-40 24 0 33 18 33 45v105h66V279c0-61-32-89-76-89-34 0-51 19-59 32"/></svg>
+    </a>
+    <a href="https://jackdewinter.github.io/feeds/all.atom.xml" title="" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="RSS" role="img" viewBox="0 0 512 512"><rect width="512" height="512" rx="15%" fill="#f80"/><circle cx="145" cy="367" r="35" fill="#fff"/><path fill="none" stroke="#fff" stroke-width="60" d="M109 241c89 0 162 73 162 162M109 127c152 0 276 124 276 276"/></svg>
+    </a>
+</div>
+            
+
+
+
+
+
+            
+
+
+
+
+
+        </section>
+</div>
+</article>
+                    </div>
+                    <div class="span1"></div>
+                </div>
+            </div>
+        </div>
+<footer>
+    <div>
+        
+&copy; Copyright 2019 by Jack De Winter and licensed under a <a rel="license"
+  href="http://creativecommons.org/licenses/by/4.0/">
+  <img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/80x15.png" />
+  Creative Commons Attribution 4.0 International License</a>.
+
+    </div>
+
+
+
+
+    <div id="fpowered">
+        Powered by: <a href="http://getpelican.com/" title="Pelican Home Page" target="_blank" rel="nofollow noopener noreferrer">Pelican</a>
+        Theme: <a href="https://elegant.oncrashreboot.com/" title="Theme Elegant Home Page" target="_blank" rel="nofollow noopener noreferrer">Elegant</a>
+    </div>
+</footer>            <script src="//code.jquery.com/jquery.min.js"></script>
+        <script src="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>
+        <script>
+            function validateForm(query)
+            {
+                return (query.length > 0);
+            }
+        </script>
+
+    <script>
+    (function () {
+        if (window.location.hash.match(/^#comment-\d+$/)) {
+            $('#comment_thread').collapse('show');
+        }
+    })();
+    window.onhashchange=function(){
+        if (window.location.hash.match(/^#comment-\d+$/))
+            window.location.reload(true);
+    }
+    $('#comment_thread').on('shown', function () {
+        var link = document.getElementById('comment-accordion-toggle');
+        var old_innerHTML = link.innerHTML;
+        $(link).fadeOut(200, function() {
+            $(this).text('Click here to hide comments').fadeIn(200);
+        });
+        $('#comment_thread').on('hidden', function () {
+            $(link).fadeOut(200, function() {
+                $(this).text(old_innerHTML).fadeIn(200);
+            });
+        })
+    })
+</script>
+
+    </body>
+    <!-- Theme: Elegant built for Pelican
+        License : MIT -->
+</html>
