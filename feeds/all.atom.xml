@@ -1,5 +1,347 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/all.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2020-03-30T00:00:00-07:00</updated><entry><title>Markdown Linter - Adding Inline Links</title><link href="https://jackdewinter.github.io/2020/03/30/markdown-linter-adding-inline-links/" rel="alternate"></link><published>2020-03-30T00:00:00-07:00</published><updated>2020-03-30T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-03-30:/2020/03/30/markdown-linter-adding-inline-links/</id><summary type="html">
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/all.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2020-04-06T00:00:00-07:00</updated><entry><title>Markdown Linter - Adding Link Reference Definitions</title><link href="https://jackdewinter.github.io/2020/04/06/markdown-linter-adding-link-reference-definitions/" rel="alternate"></link><published>2020-04-06T00:00:00-07:00</published><updated>2020-04-06T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-04-06:/2020/04/06/markdown-linter-adding-link-reference-definitions/</id><summary type="html">
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;As detailed in
+&lt;a href="https://jackdewinter.github.io/2020/03/30/markdown-linter-adding-inline-links/#Why-Inline-Links?"&gt;the last article&lt;/a&gt;,
+the remaining work left on the main parser consists of inline links,
+link reference definitions, reference links, and image links.  While I could try and
+come up with some grand reason for doing the link reference definitions next, the honest
+truth is simple …&lt;/p&gt;</summary><content type="html">
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;As detailed in
+&lt;a href="https://jackdewinter.github.io/2020/03/30/markdown-linter-adding-inline-links/#Why-Inline-Links?"&gt;the last article&lt;/a&gt;,
+the remaining work left on the main parser consists of inline links,
+link reference definitions, reference links, and image links.  While I could try and
+come up with some grand reason for doing the link reference definitions next, the honest
+truth is simple: they were next on the list.&lt;/p&gt;
+&lt;h2 id="what-is-the-audience-for-this-article"&gt;What Is The Audience For This Article?&lt;a class="headerlink" href="#what-is-the-audience-for-this-article" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;While detailed more eloquently in
+&lt;a href="https://jackdewinter.github.io/2020/04/05/what-is-the-audience-for-my-blog/#what-is-the-audience-for-my-blog"&gt;this article&lt;/a&gt;,
+my goal for this technical article is to focus on the reasoning behind my solutions,
+rather that the solutions themselves.  For a full record of the solutions presented in
+this article, please go to this project’s GitHub repository and consult the
+commit of
+&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/680e9d9fd7472e69232a191ca84ce9bc5ff4aaec"&gt;22 March 2020&lt;/a&gt;.&lt;/p&gt;
+&lt;h2 id="why-are-link-reference-definitions"&gt;Why Are Link Reference Definitions?&lt;a class="headerlink" href="#why-are-link-reference-definitions" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In the
+&lt;a href="https://jackdewinter.github.io/2020/03/30/markdown-linter-adding-inline-links/#what-is-an-inline-link"&gt;last article&lt;/a&gt;,
+I introduced inline links and how they present the text to appear in the
+link (link label), the link itself (link destination), and an optional title for that
+link (link title).  Link reference definitions are a related concept in that they take
+the link destination and link title parts of the link and store them in a map, to be
+used at a different time.&lt;/p&gt;
+&lt;p&gt;Basically, where an inline link uses the form:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;link&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;uri&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="ss"&gt;"title"&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;a link definition uses the form:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;link&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;uri&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="ss"&gt;"title"&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;The main difference between the two elements is that a link reference definition does
+not add any elements into the HTML document by itself.  To utilize the link reference
+definition, a reference link must be added to the document that has a
+normalized &lt;sup id="fnref:normalized"&gt;&lt;a class="footnote-ref" href="#fn:normalized"&gt;1&lt;/a&gt;&lt;/sup&gt; link label that matches the normalized &lt;sup id="fnref2:normalized"&gt;&lt;a class="footnote-ref" href="#fn:normalized"&gt;1&lt;/a&gt;&lt;/sup&gt; link
+label from a link reference definition present elsewhere in the same Markdown document.
+For example, using the simplest form of reference links, a
+&lt;a href="https://github.github.com/gfm/#shortcut-reference-link"&gt;shortcut reference link&lt;/a&gt;,
+the following Markdown:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;link&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;uri&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="ss"&gt;"title"&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
+
+&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;link&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;creates a link reference definition and uses it, generating the following HTML:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;a&lt;/span&gt; &lt;span class="na"&gt;href&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;"/uri"&lt;/span&gt; &lt;span class="na"&gt;title&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;"title"&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;link&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;a&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;While the normalization rules&lt;sup id="fnref3:normalized"&gt;&lt;a class="footnote-ref" href="#fn:normalized"&gt;1&lt;/a&gt;&lt;/sup&gt; are somewhat complex, in most cases it just
+means using the same link label in both the reference link and the link reference
+definition.  Unless you happen to get into the more interesting aspects of the
+normalization rules, both reference links and link reference definitions are easy to
+use, by design.&lt;/p&gt;
+&lt;h2 id="why-use-link-reference-definitions"&gt;Why Use Link Reference Definitions?&lt;a class="headerlink" href="#why-use-link-reference-definitions" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In the
+&lt;a href="https://jackdewinter.github.io/2020/03/30/markdown-linter-adding-inline-links/#i-use-inline-links-almost-exclusively"&gt;last article&lt;/a&gt;,
+I mentioned that I use inline links exclusively.  Now that I have introduced link
+resource definitions and reference links, I can provide more context on the difference
+between them. Using a simple
+&lt;a href="https://lipsum.com/"&gt;lorem ipsum generator&lt;/a&gt;,
+I came up with the following two examples.  This first example contains an inline link:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;Nam&lt;/span&gt; &lt;span class="n"&gt;efficitur&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;turpis&lt;/span&gt; &lt;span class="n"&gt;ac&lt;/span&gt; &lt;span class="n"&gt;vestibulum&lt;/span&gt; &lt;span class="n"&gt;imperdiet&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;nulla&lt;/span&gt; &lt;span class="n"&gt;mi&lt;/span&gt; &lt;span class="n"&gt;mollis&lt;/span&gt; &lt;span class="n"&gt;erat&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;nec&lt;/span&gt; &lt;span class="n"&gt;efficitur&lt;/span&gt; &lt;span class="n"&gt;nunc&lt;/span&gt;
+&lt;span class="n"&gt;lorem&lt;/span&gt; &lt;span class="n"&gt;rutrum&lt;/span&gt; &lt;span class="n"&gt;metus&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt; &lt;span class="n"&gt;Vestibulum&lt;/span&gt; &lt;span class="n"&gt;dictum&lt;/span&gt; &lt;span class="n"&gt;lacinia&lt;/span&gt; &lt;span class="n"&gt;lacus&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="k"&gt;at&lt;/span&gt; &lt;span class="n"&gt;ornare&lt;/span&gt; &lt;span class="n"&gt;quam&lt;/span&gt; &lt;span class="n"&gt;consequat&lt;/span&gt; &lt;span class="n"&gt;ultrices&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;
+&lt;span class="n"&gt;Nam&lt;/span&gt; &lt;span class="n"&gt;quam&lt;/span&gt; &lt;span class="n"&gt;leo&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;aliquet&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt; &lt;span class="n"&gt;luctus&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;porttitor&lt;/span&gt; &lt;span class="n"&gt;non&lt;/span&gt; &lt;span class="n"&gt;quam&lt;/span&gt;&lt;span class="p"&gt;](&lt;/span&gt;&lt;span class="n"&gt;https&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="o"&gt;//&lt;/span&gt;&lt;span class="n"&gt;lipsum&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;com&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="p"&gt;).&lt;/span&gt;
+&lt;span class="n"&gt;Donec&lt;/span&gt; &lt;span class="n"&gt;tincidunt&lt;/span&gt; &lt;span class="n"&gt;augue&lt;/span&gt; &lt;span class="n"&gt;nisi&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;sed&lt;/span&gt;
+&lt;span class="n"&gt;pellentesque&lt;/span&gt; &lt;span class="n"&gt;nisl&lt;/span&gt; &lt;span class="n"&gt;porttitor&lt;/span&gt; &lt;span class="n"&gt;vel&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;and this second example contains a reference link, specifically a shortcut reference
+link:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;Nam&lt;/span&gt; &lt;span class="n"&gt;efficitur&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;turpis&lt;/span&gt; &lt;span class="n"&gt;ac&lt;/span&gt; &lt;span class="n"&gt;vestibulum&lt;/span&gt; &lt;span class="n"&gt;imperdiet&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;nulla&lt;/span&gt; &lt;span class="n"&gt;mi&lt;/span&gt; &lt;span class="n"&gt;mollis&lt;/span&gt; &lt;span class="n"&gt;erat&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;nec&lt;/span&gt; &lt;span class="n"&gt;efficitur&lt;/span&gt; &lt;span class="n"&gt;nunc&lt;/span&gt;
+&lt;span class="n"&gt;lorem&lt;/span&gt; &lt;span class="n"&gt;rutrum&lt;/span&gt; &lt;span class="n"&gt;metus&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt; &lt;span class="n"&gt;Vestibulum&lt;/span&gt; &lt;span class="n"&gt;dictum&lt;/span&gt; &lt;span class="n"&gt;lacinia&lt;/span&gt; &lt;span class="n"&gt;lacus&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="k"&gt;at&lt;/span&gt; &lt;span class="n"&gt;ornare&lt;/span&gt; &lt;span class="n"&gt;quam&lt;/span&gt; &lt;span class="n"&gt;consequat&lt;/span&gt; &lt;span class="n"&gt;ultrices&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;
+&lt;span class="n"&gt;Nam&lt;/span&gt; &lt;span class="n"&gt;quam&lt;/span&gt; &lt;span class="n"&gt;leo&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;aliquet&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt; &lt;span class="n"&gt;luctus&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;porttitor&lt;/span&gt; &lt;span class="n"&gt;non&lt;/span&gt; &lt;span class="n"&gt;quam&lt;/span&gt;&lt;span class="p"&gt;].&lt;/span&gt; &lt;span class="n"&gt;Donec&lt;/span&gt; &lt;span class="n"&gt;tincidunt&lt;/span&gt; &lt;span class="n"&gt;augue&lt;/span&gt; &lt;span class="n"&gt;nisi&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;span class="n"&gt;sed&lt;/span&gt; &lt;span class="n"&gt;pellentesque&lt;/span&gt; &lt;span class="n"&gt;nisl&lt;/span&gt; &lt;span class="n"&gt;porttitor&lt;/span&gt; &lt;span class="n"&gt;vel&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;
+
+&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;porttitor&lt;/span&gt; &lt;span class="n"&gt;non&lt;/span&gt; &lt;span class="n"&gt;quam&lt;/span&gt;&lt;span class="p"&gt;]:&lt;/span&gt; &lt;span class="n"&gt;https&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="o"&gt;//&lt;/span&gt;&lt;span class="n"&gt;lipsum&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;com&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;From an HTML output point of view, both examples generate the exact same output.&lt;/p&gt;
+&lt;p&gt;In both cases, the examples are presented as I would normally include them in my
+articles, folding each line after the 90 characters that I keep my Markdown editor set
+to.  Applying my own stylistics, when I add an inline link I ensure that it begins at
+the start of a new line to ensure that I can clearly identify it as a link.  In
+trying an equivalent example with a reference link instead of an inline link, the
+style that I chose was to place the link label delimiters (&lt;code&gt;[&lt;/code&gt; and &lt;code&gt;]&lt;/code&gt;) around the link
+label itself with no change in formatting, with the link reference definition following
+later in the document.  While link reference definitions can precede or follow
+any reference links that use them, to me this seemed like the right way to do it.&lt;/p&gt;
+&lt;p&gt;From my point of view, I find that the inline reference provides better readability for
+me and how I read my articles when authoring them.  Perhaps it is through having
+authored and proofed many articles in this format, but to me, not having the link
+information right in the paragraph feels like a grammatical or spelling error. And
+while I didn’t really think about it before, when proofing the Markdown version of
+my articles, I don’t really “see” the link destination and link title until I slow down
+on my final passes.  Regardless of the reasoning behind it, I just find it works better
+for me to read the Markdown version of articles with inline links.&lt;/p&gt;
+&lt;p&gt;Please note that this view is solely my own.  When performing a similar evaluation for
+yourself or your organization, it is important to consider your own criteria when
+determining which options, reference links or inline links, is best for you.&lt;/p&gt;
+&lt;h2 id="hitting-implementation-issues"&gt;Hitting Implementation Issues&lt;a class="headerlink" href="#hitting-implementation-issues" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Having implemented inline links as documented in the
+&lt;a href="https://jackdewinter.github.io/2020/03/30/markdown-linter-adding-inline-links/#implementing-the-algorithm"&gt;last article&lt;/a&gt;,
+I started working on the link reference definitions thinking they would be easy.  In
+the case of the first example,
+&lt;a href="https://github.github.com/gfm/#example-161"&gt;example 161&lt;/a&gt;, it was in fact pretty easy.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;foo&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;url&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="ss"&gt;"title"&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
+
+&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;foo&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;A complete link label, followed by both a link destination and a link title.  All on
+one line.  Then add a simple shortcut reference link to reference the previously added
+link reference definition.  Nice. Compact.  Complete.&lt;/p&gt;
+&lt;p&gt;It was when I moved on to
+&lt;a href="https://github.github.com/gfm/#example-162"&gt;example 162&lt;/a&gt;
+that all of the issues started:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="w"&gt;   &lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;foo&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
+&lt;span class="w"&gt;      &lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;url&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
+&lt;span class="w"&gt;           &lt;/span&gt;&lt;span class="s1"&gt;'the title'&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
+
+&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;foo&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;The first important issue to understand is that link reference definitions are
+processed as leaf nodes instead of inline text.  To keep the memory footprint of the
+parser low, I made an early design decision to
+only get the text from the input source one line at a time.&lt;sup id="fnref:lineByLine"&gt;&lt;a class="footnote-ref" href="#fn:lineByLine"&gt;2&lt;/a&gt;&lt;/sup&gt;  While the
+proper implementation of that design is still in the future, that design limits the main
+parsing function of the parser to only knowing about the current line, with no
+built-in capacity for look-ahead or look-behind.  Remember this issue, as I will get
+back to it in just a minute.&lt;/p&gt;
+&lt;p&gt;The second important issue is that unlike all previous leaf node elements, it can take
+multiple lines to determine if the current link reference definition element is valid.
+In example 162, as provided above, it isn’t until the end of line following the second
+&lt;code&gt;'&lt;/code&gt; character on line 3 that the link reference definition is determined to be valid.
+To better highlight this problem, consider
+&lt;a href="https://github.github.com/gfm/#example-165"&gt;example 165&lt;/a&gt;
+which provides for an exaggerated example of this:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;foo&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;url&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s1"&gt;'&lt;/span&gt;
+&lt;span class="s1"&gt;title&lt;/span&gt;
+&lt;span class="s1"&gt;line1&lt;/span&gt;
+&lt;span class="s1"&gt;line2&lt;/span&gt;
+&lt;span class="s1"&gt;'&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
+
+&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;foo&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;While the link reference definition as stated in example 165 is valid, it isn’t until
+the 5th line, where the second &lt;code&gt;'&lt;/code&gt; character followed by the end of the line
+closes off the link title, that the entire link reference definition is deemed valid.
+By making one small change to the previous example, removing that previously mentioned
+5th line, that entire link reference definition is rendered invalid, as follows:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;foo&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;url&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="err"&gt;'&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
+&lt;span class="n"&gt;title&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
+&lt;span class="n"&gt;line1&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
+&lt;span class="n"&gt;line2&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
+
+&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;foo&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;After that one small change, instead of a link reference definition followed by a valid
+link reference, both elements are now just interpreted as plain text.&lt;/p&gt;
+&lt;p&gt;Remember a couple of paragraphs ago when I mentioned “remember this issue” when talking
+about processing link reference definitions as leaf nodes?  Here is the payoff.&lt;/p&gt;
+&lt;p&gt;Because of my design choice to process the Markdown document one line at a time, I
+needed to add extra logic to the parser to allow me to “rewind” those lines.  In the
+case of the modified example 165, the entire link reference definition is rendered
+invalid, and the parser must rewind to the start of the link reference definition.
+However, when it starts parsing the lines again, care must be taken to inform the
+parser that it cannot consider the newly rewound lines to be eligible for a valid
+link reference definition.  Painful, but not too painful.&lt;/p&gt;
+&lt;p&gt;Following along from that change, if we do a similar change to example 162 by removing
+the final &lt;code&gt;'&lt;/code&gt; character
+from the definition, it poses a different problem.  While the removal of the 5th line of
+example 165 invalidates the entire link reference definition, removing the final &lt;code&gt;'&lt;/code&gt;
+character from example 162 only invalidates the link title, leaving the rest of the link
+definition valid.  To deal with this, I needed to not only have logic to go backwards
+towards the start of the link reference definition, but to stop that rewinding if
+whatever part of the definition that was not rewound turned out to be a valid
+definition.  While the rewinding was a headache and somewhat obvious&lt;sup id="fnref:parsing"&gt;&lt;a class="footnote-ref" href="#fn:parsing"&gt;3&lt;/a&gt;&lt;/sup&gt;,
+aborting the rewinding if a valid link reference definition “fragment” was found was
+not obvious to me at all.&lt;/p&gt;
+&lt;p&gt;That code was painful.  Honestly speaking, that logic alone took about half of the 5
+days required to get the multiple-line aspect of link reference definition parsing
+properly.  A decent amount of that time was taken up with rewriting the logic for
+extracting the link
+label, link definition, and link title to handle being straddled over multiple lines.
+But the real “fun” was making sure that rewinding the lines would properly rewind the
+token stream and token stack in the parser.&lt;/p&gt;
+&lt;p&gt;While it took a lot of work to get there, it was personally fulfilling when I got it
+right.  It wasn’t an easy issue to solve, and coming up with a clean solution wasn’t
+easy.  As an added bonus, my dog stopped looking at me with a funny expression.  It
+was pointed out to me that he did that when facepalmed myself whenever I got the
+parsing wrong.  Personally, I considered that a 2-in-1 benefit!&lt;/p&gt;
+&lt;h2 id="what-was-my-experience-so-far"&gt;What Was My Experience So Far?&lt;a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;There have only been a few issues that have taxed my experience to solve them, and
+implementing link reference definitions was one of them.  That is both a good thing and
+a bad thing.  On the good side, due to my experience and stubbornness, I was able to
+modify my implementation to deal with the issue without having to change my design
+decision.  On the bad side, there is only one test with a link reference definition
+being within a container block, and that leaves a lot of questions about how to handle
+failures within those containers.  While I noted the later down for subsequent testing,
+it still leaves me feeling a bit uneasy that I had to modify the parser to handle that.&lt;/p&gt;
+&lt;p&gt;Considering where I am with the parser, I am glad that I hit that issue now, and not
+after I finished the parser.  While it was painful to go through, it did reinforce
+a number of things about the design of the parser so far.&lt;/p&gt;
+&lt;p&gt;The first thing that was
+reinforced was that, with only one exception, my early decision to do line-by-line
+parsing is viable.  While there may be parser extensions that change that, the
+number of exceptions in the link reference definition category should be low.  If
+I can then combine that with some Python generator logic, hopefully I can keep the
+memory profile of the parser low.&lt;/p&gt;
+&lt;p&gt;The second thing that was reinforced was that the general structure of the parser was
+properly designed and implemented.  While I still need to take some time and refactor
+individual
+groups of functions into their own modules, the actual function themselves are pretty
+durable.  With the exception of the link helper functions and a few core functions, I
+did not have to change any other functionality to handle the failure rewind scenario.
+In those few functions I changed, it was either to specifically handle that scenario
+or to pass information back to the main parser function about how to handle the rewind.
+Compared to past situations I have encountered, I consider it a benefit
+that I only had to change the small amount of code that I did.&lt;/p&gt;
+&lt;p&gt;Finally, my decision to use inline links over reference links was reinforced. In more
+closely examining the difference between the
+two types of links, I believe I better understand and appreciate both types of links.
+While I agree that writing Markdown with reference links will more closely approximate
+how the paragraphs will look when completed&lt;sup id="fnref:JohnGruberMarkdown"&gt;&lt;a class="footnote-ref" href="#fn:JohnGruberMarkdown"&gt;4&lt;/a&gt;&lt;/sup&gt;, the absence of the
+link destination and link title reduce my comprehension of the paragraph as a whole.
+So I find myself making the same decision as before, but now I believe I can more
+clearly communicate the options for both types of links and why I chose inline links
+over reference links.&lt;/p&gt;
+&lt;h2 id="what-is-next"&gt;What is Next?&lt;a class="headerlink" href="#what-is-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;The list of what is left to complete in the parser is getting shorter and shorter.
+With inline links and link reference definitions tested and completed, only the
+full implementation of reference links and image links remain.  While a lot of
+foundation work has already been set up for these features, I am wary of declaring
+that it will be an easy job from here on it.  But with only 2 features left, I know
+the start of the real linting work in coming soon!&lt;/p&gt;
+&lt;div class="footnote"&gt;
+&lt;hr/&gt;
+&lt;ol&gt;
+&lt;li id="fn:normalized"&gt;
+&lt;p&gt;Long winded version: To normalize a label, strip off the opening and closing brackets, perform the Unicode case fold, strip leading and trailing whitespace and collapse consecutive internal whitespace to a single space.  Shorter version: reduce or eliminate whitespace and do a case-insensitive comparison. &lt;a class="footnote-backref" href="#fnref:normalized" title="Jump back to footnote 1 in the text"&gt;↩&lt;/a&gt;&lt;a class="footnote-backref" href="#fnref2:normalized" title="Jump back to footnote 1 in the text"&gt;↩&lt;/a&gt;&lt;a class="footnote-backref" href="#fnref3:normalized" title="Jump back to footnote 1 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li id="fn:lineByLine"&gt;
+&lt;p&gt;To keep the memory footprint of a parser low, the parser design should try and only keep the information that is required for parsing in memory.  By parsing the Markdown input line by line, I do not have to worry about having to load the entire Markdown input into memory before I can begin parsing it. &lt;a class="footnote-backref" href="#fnref:lineByLine" title="Jump back to footnote 2 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li id="fn:parsing"&gt;
+&lt;p&gt;Except for a Lisp parser that I once wrote, I cannot think of a single parser where I didn’t have to rewind at least one complex entity out of the 25+ parsers that I have written. &lt;a class="footnote-backref" href="#fnref:parsing" title="Jump back to footnote 3 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li id="fn:JohnGruberMarkdown"&gt;
+&lt;p&gt;As per John Gruber’s original intentions.  Go to &lt;a href="https://daringfireball.net/projects/markdown/syntax#em"&gt;this part&lt;/a&gt; of his original Markdown article and go to the paragraph preceding the start of the emphasis section.  For more complete information on why John felt that reference links were better, look further up in that section for more details. &lt;a class="footnote-backref" href="#fnref:JohnGruberMarkdown" title="Jump back to footnote 4 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/div&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category></entry><entry><title>What is the Audience for my Blog?</title><link href="https://jackdewinter.github.io/2020/04/05/what-is-the-audience-for-my-blog/" rel="alternate"></link><published>2020-04-05T00:00:00-07:00</published><updated>2020-04-05T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-04-05:/2020/04/05/what-is-the-audience-for-my-blog/</id><summary type="html">
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;From my experience, the two most critical components for learning are: the focus and
+desire to learn; and the ability to seek out, handle, and then learn from constructive
+criticism obtained from people that are more experienced.  It is primarily the people
+that I have seen employ both of …&lt;/p&gt;</summary><content type="html">
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;From my experience, the two most critical components for learning are: the focus and
+desire to learn; and the ability to seek out, handle, and then learn from constructive
+criticism obtained from people that are more experienced.  It is primarily the people
+that I have seen employ both of those components in unison that I have seen learn and
+excel in their fields.&lt;/p&gt;
+&lt;p&gt;From the day last summer when I started writing this blog until today, I believe I have
+proven to myself that I have the focus to continue writing and the desire to keep on
+writing.  It was when I reached out to some friends and colleagues in the writing field
+for constructive criticism that they all asked the same question: “What is the audience
+for your articles?”&lt;/p&gt;
+&lt;h2 id="thinking-about-that-question"&gt;Thinking About That Question&lt;a class="headerlink" href="#thinking-about-that-question" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Wow.  It was a pretty obvious question, but at the same time, it was one that I just
+assumed I knew the answer to.  As I started to write this article, I just assumed that
+the words would just flow out of my fingers…&lt;/p&gt;
+&lt;p&gt;Until they didn’t.&lt;/p&gt;
+&lt;p&gt;Instead, I sat at the keyboard for a long while, with a flood of thoughts going through
+my head.  I was pretty sure I wasn’t doing the blog for attention, but what was it
+really that drove me to take the day or two out of my week to write these blog posts?
+To get my thoughts out of my head, I started writing different parts of different
+paragraphs that were prototypes for this article.  In the end, each one seemed like it
+was scratching at the service, not really answering the question.&lt;/p&gt;
+&lt;p&gt;To be clear, none of those paragraphs made it to this final version of the article. In
+any form.  Not even remotely.  I knew I had to come up with an answer, but I was hitting
+a wall. And try as I might, I was not making any progress.  It was frustrating… very
+frustrating.&lt;/p&gt;
+&lt;p&gt;It was while doing something totally unrelated that I remembered a conversation with a
+colleague about elevator pitches.  The general idea behind elevator pitches is that in
+the 30-45 seconds that you have with someone in an elevator, you can pitch them an
+idea that is comprised of the 2-3 sentences that are the distillation of the most
+important points to get across about your idea.  If you want to successfully get the
+other person’s attention, you need to “hook” them before those elevator doors open and
+their attention is no longer focused on you, but what is outside of the elevator doors.&lt;/p&gt;
+&lt;p&gt;To me, this concept seems to contain some basic truths.  There are a fair number of
+talented people that can briefly capture your attention by coming up with flowery words
+about their ideas, but those ideas usually end up just being smoke and mirrors.  In
+response, when people start seeing those kinds of words and sentences coming their way,
+their past experience trains them to disregard a lot of what you are saying.
+Based on personal experience, this decision is made within the first 3-5 sentences that
+you speak to the other person.  Therefore, if you honestly have something meaningful to
+say, you should be
+able to describe it in a short and powerful burst that is simple and straightforward,
+containing the most important parts of what you want to say.&lt;/p&gt;
+&lt;p&gt;So, how could I apply that concept to the question of audience and how I would answer
+it?&lt;/p&gt;
+&lt;h2 id="what-is-my-goal"&gt;What Is My Goal?&lt;a class="headerlink" href="#what-is-my-goal" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;It took my quite the while.  But ultimately, for me and my blog, it boils down to this:&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;I want my blog to inspire people and help them learn, like people have inspired and helped me in the past.&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;It may seem simple and altruistic, but that is the heart of what I want to accomplish.
+Not a lot of flowery words.  Not a lot of meaningless sentences.  Just a simple
+statement of what I want to accomplish with my blog.&lt;/p&gt;
+&lt;p&gt;It was a good start on what I wanted to accomplish, but I still needed more.&lt;/p&gt;
+&lt;h2 id="how-do-i-accomplish-that-goal"&gt;How do I accomplish that goal?&lt;a class="headerlink" href="#how-do-i-accomplish-that-goal" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Having a good statement of my goal, I needed to figure out how my blog was going to
+accomplish that goal, thereby further defining the audience.&lt;/p&gt;
+&lt;p&gt;Based on my stated goal, I started thinking about the blogs that I usually read.
+Writing some of those blogs down, I found there were two categories that emerged: ones
+that I use as a point-in-time resource and ones that I read and learn from.  From my
+point of view, a lot of the blogs and sources out there present the information
+necessary to solve an
+immediate problem, but not a lot them offer insight as to how the authors arrived at
+that solution or what the alternatives are.&lt;/p&gt;
+&lt;p&gt;To be clear, that isn’t always a problem.  I use sites like
+&lt;a href="https://stackoverflow.com"&gt;Stack Overflow&lt;/a&gt; all
+of the time to get help with a particular situation.  However, in terms of being a site
+that I learn from, Stack Overflow will rarely be one of them. In contrast, the blogs
+and sites
+that I keep on going back to are ones that offer that additional insight and help me
+learn through that insight.  They provide something to me above and beyond the normal
+solutions to problems that are documented on other sites.&lt;/p&gt;
+&lt;p&gt;But what exactly was it about those blogs that helped me learn?  What were their
+hooks?  And more importantly, what was the way in which I was going to do this for
+people reading my blog?&lt;/p&gt;
+&lt;p&gt;Thinking about that information for a long while, and then distilling it down to it’s
+essence, I expanded on my stated goal from above to include be a more complete answer.&lt;/p&gt;
+&lt;h2 id="what-is-the-audience-for-my-blog"&gt;What Is The Audience For My Blog?&lt;a class="headerlink" href="#what-is-the-audience-for-my-blog" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;&lt;em&gt;I want my blog to inspire people and help them learn, like people have inspired and helped me in the past.  For technical articles, I feel that I can best do that by focusing more on the &lt;code&gt;why&lt;/code&gt; and &lt;code&gt;how&lt;/code&gt; of the decisions leading up to the solutions rather than the &lt;code&gt;what&lt;/code&gt; of the solutions themselves.  For other articles, I feel that I can best do that by being an honest and believable storyteller, helping people to understand issues and situations as I see them.&lt;/em&gt;&lt;/p&gt;
+&lt;h2 id="wrap-up"&gt;Wrap Up&lt;a class="headerlink" href="#wrap-up" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;It was an interesting process for me to try and summarize a whole lot of thoughts about
+why I write my blog and reduce them down to 3 sentences.  The above lines took a number
+of days to arrive at, with lots of writing, even more editing of those words, and even
+more distillation of those edited words until I got down to the plain and simple
+sentences that I arrived at.&lt;/p&gt;
+&lt;p&gt;I hope those two sentences help explain what I see as the audience for my blog.&lt;/p&gt;</content><category term="Website"></category><category term="website"></category><category term="audience"></category></entry><entry><title>Markdown Linter - Adding Inline Links</title><link href="https://jackdewinter.github.io/2020/03/30/markdown-linter-adding-inline-links/" rel="alternate"></link><published>2020-03-30T00:00:00-07:00</published><updated>2020-03-30T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-03-30:/2020/03/30/markdown-linter-adding-inline-links/</id><summary type="html">
 &lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;Having just implemented the
 &lt;a href="https://jackdewinter.github.io/2020/03/23/markdown-linter-adding-inline-emphasis/"&gt;Inline Emphasis&lt;/a&gt; feature
@@ -5442,138 +5784,4 @@ great documentation from Elegant (
 &lt;a href="https://next.elegant.oncrashreboot.com/invite-visitors-comment"&gt;Comments - Invite Visitors To Comment&lt;/a&gt;
 )
 and
-&lt;a href="https://utteranc.es/"&gt;Utterances&lt;/a&gt; made this a snap to setup.&lt;/p&gt;</content><category term="Website"></category><category term="pelican website generator"></category><category term="pelican fine tuning"></category><category term="python"></category><category term="pelican connect readers"></category><category term="pelican comments"></category><category term="utterances"></category></entry><entry><title>Fine Tuning Pelican: Producing RSS Feeds</title><link href="https://jackdewinter.github.io/2019/10/23/fine-tuning-pelican-producing-rss-feeds/" rel="alternate"></link><published>2019-10-23T00:00:00-07:00</published><updated>2019-10-23T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2019-10-23:/2019/10/23/fine-tuning-pelican-producing-rss-feeds/</id><summary type="html">
-&lt;h2 id="preface"&gt;Preface&lt;a class="headerlink" href="#preface" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;This is one of the articles in a series about how I fine tuned my Pelican+Elegant web
-site to make it “more mine”.  For other articles in the series, click on the title of
-the article under the heading “Fine Tuning Pelican” on the right side of the …&lt;/p&gt;</summary><content type="html">
-&lt;h2 id="preface"&gt;Preface&lt;a class="headerlink" href="#preface" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;This is one of the articles in a series about how I fine tuned my Pelican+Elegant web
-site to make it “more mine”.  For other articles in the series, click on the title of
-the article under the heading “Fine Tuning Pelican” on the right side of the webpage.&lt;/p&gt;
-&lt;p&gt;Unlike my series on &lt;a href="https://jackdewinter.github.io/2019/08/18/static-websites-choosing-a-static-web-site-generator/"&gt;Choosing and Setting Up Pelican&lt;/a&gt;,
-these articles are intended to be byte sized, addressing specific fine tunings I made to
-my own website. As such, the first article in this series contains a
-&lt;a href="https://jackdewinter.github.io/2019/09/29/fine-tuning-pelican-setting-up-the-landing-page/#disclaimer"&gt;Disclaimer section&lt;/a&gt; with generic information
-for each of the articles in the series.&lt;/p&gt;
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;While it may seem counter-intuitive, the mostly text
-&lt;a href="https://en.wikipedia.org/wiki/RSS"&gt;RSS Feeds&lt;/a&gt; have experienced a comeback in the last
-5-10 years.  Due in large part to a wave of automation, these feeds are mostly set up
-for computers to read and process new and existing articles, rather than human readers.
-As such, I felt it was important to provide RSS feeds for my website.  This article
-describes how to set up RSS feeds for a Pelican website.&lt;/p&gt;
-&lt;h2 id="strictly-speaking"&gt;Strictly Speaking…&lt;a class="headerlink" href="#strictly-speaking" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;For any purists reading this, note that the output that Pelican provides is actually in
-the Atom format not pure RSS.  This is not a major issue as most RSS readers will accept
-RSS format or Atom format for their readers.  A good article on the differences between
-the two is
-&lt;a href="http://www.differencebetween.info/difference-between-rss-and-atom"&gt;presented here&lt;/a&gt;.&lt;/p&gt;
-&lt;h2 id="only-generate-feeds-when-publishing"&gt;Only Generate Feeds When Publishing&lt;a class="headerlink" href="#only-generate-feeds-when-publishing" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;During the normal course of writing content, I will often do a simple publish against the
-&lt;code&gt;pelicanconf.py&lt;/code&gt; configuration to see how that content looks when rendered.  In my
-&lt;code&gt;pelicanconf.py&lt;/code&gt; configuration, the following lines are present:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="c1"&gt;# Feed generation is usually not desired when developing&lt;/span&gt;
-&lt;span class="n"&gt;FEED_ALL_ATOM&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;
-&lt;span class="n"&gt;CATEGORY_FEED_ATOM&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;
-&lt;span class="n"&gt;TRANSLATION_FEED_ATOM&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;
-&lt;span class="n"&gt;AUTHOR_FEED_ATOM&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;
-&lt;span class="n"&gt;AUTHOR_FEED_RSS&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Unless you are actively debugging something to do with RSS feeds, there is no need to
-generate these feeds during development.  From a look and feel point of view, each RSS
-feed contains the same text as the normally viewed article, with all of the theme
-styling and extras removed.  As such, there is usually no benefit to generating the RSS
-feed until the final publish step.  That is why the &lt;code&gt;publishconf.py&lt;/code&gt; configuration
-includes configuration to override the &lt;code&gt;pelicanconf.py&lt;/code&gt; which enables RSS feed
-generation.&lt;/p&gt;
-&lt;h2 id="generating-the-right-types-of-rss-feeds"&gt;Generating the Right Types of RSS Feeds&lt;a class="headerlink" href="#generating-the-right-types-of-rss-feeds" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;To provide the right types of RSS feeds for my website, I provided the following
-configuration in the &lt;code&gt;publishconf.py&lt;/code&gt; files:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="c1"&gt;# Feed Items&lt;/span&gt;
-&lt;span class="n"&gt;FEED_MAX_ITEMS&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;15&lt;/span&gt;
-&lt;span class="n"&gt;FEED_ALL_ATOM&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s1"&gt;'feeds/all.atom.xml'&lt;/span&gt;
-&lt;span class="n"&gt;CATEGORY_FEED_ATOM&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s1"&gt;'feeds/{slug}.atom.xml'&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;The first line of configuration specifies that none of the feeds should not contain more
-than 15 items.  Without this setting, a website with 200 articles would have all 200 of
-those articles included in the feed each time the feed was generated.  In addition, when
-each feed was downloaded, it would download all 200 articles. For me, this setting
-presents a good balance between presenting a decent amount of content and sending too
-much data.  It is very unlikely that I will publish more than 15 articles at a time, so
-it just seems right.&lt;/p&gt;
-&lt;p&gt;The next two lines of configuration enable the “all” feed and the “category” feeds.
-The &lt;code&gt;FEED_ALL_ATOM&lt;/code&gt; configuration enables the &lt;code&gt;all.atom.xml&lt;/code&gt; feed to be established at
-the location &lt;code&gt;feeds/all.atom.xml&lt;/code&gt;.  This feed contains every article is published, in
-reverse order of publication.  The &lt;code&gt;CATEGORY_FEED_ATOM&lt;/code&gt; configuration enables the
-individual category feeds, one for each category that exists.  Each on of those feeds is
-located at &lt;code&gt;feeds/{slug}.atom.xml&lt;/code&gt; where &lt;code&gt;{slug}&lt;/code&gt; is the category for which the feed is
-being generated.&lt;/p&gt;
-&lt;p&gt;Based on the above configuration &lt;code&gt;publishconf.py&lt;/code&gt;, when this article was written, the
-feeds produced were:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;/feeds/all.atom.xml
-/feeds/github.atom.xml
-/feeds/markdown.atom.xml
-/feeds/quality.atom.xml
-/feeds/technology.atom.xml
-&lt;/pre&gt;&lt;/div&gt;
-&lt;h2 id="what-was-accomplished"&gt;What Was Accomplished&lt;a class="headerlink" href="#what-was-accomplished" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;I started with a quick description of why an older protocol such as RSS and Atom are
-still good things to have in today’s website world.  I then covered why to not generate
-RSS feeds until publish time, followed by how to setup and configure the RSS feeds when
-it was publish time.  This effort allowed me to add RSS feeds to my website in a pretty
-painless manner, and should allow a reader to perform that same task.&lt;/p&gt;</content><category term="Website"></category><category term="pelican website generator"></category><category term="pelican fine tuning"></category><category term="python"></category><category term="pelican rss feeds"></category></entry><entry><title>Fine Tuning Pelican: Custom Error Pages</title><link href="https://jackdewinter.github.io/2019/10/20/fine-tuning-pelican-custom-error-pages/" rel="alternate"></link><published>2019-10-20T00:00:00-07:00</published><updated>2019-10-20T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2019-10-20:/2019/10/20/fine-tuning-pelican-custom-error-pages/</id><summary type="html">
-&lt;h2 id="preface"&gt;Preface&lt;a class="headerlink" href="#preface" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;This is one of the articles in a series about how I fine tuned my Pelican+Elegant web
-site to make it “more mine”.  For other articles in the series, click on the title of
-the article under the heading “Fine Tuning Pelican” on the right side of the …&lt;/p&gt;</summary><content type="html">
-&lt;h2 id="preface"&gt;Preface&lt;a class="headerlink" href="#preface" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;This is one of the articles in a series about how I fine tuned my Pelican+Elegant web
-site to make it “more mine”.  For other articles in the series, click on the title of
-the article under the heading “Fine Tuning Pelican” on the right side of the webpage.&lt;/p&gt;
-&lt;p&gt;Unlike my series on &lt;a href="https://jackdewinter.github.io/2019/08/18/static-websites-choosing-a-static-web-site-generator/"&gt;Choosing and Setting Up Pelican&lt;/a&gt;,
-these articles are intended to be byte sized, addressing specific fine tunings I made to
-my own website. As such, the first article in this series contains a
-&lt;a href="https://jackdewinter.github.io/2019/09/29/fine-tuning-pelican-setting-up-the-landing-page/#disclaimer"&gt;Disclaimer section&lt;/a&gt; with generic information
-for each of the articles in the series.&lt;/p&gt;
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;When a webpage is requested that does not exist, it is common for websites to react to
-the request by displaying a custom error page.  While Pelican does not natively ship
-with this feature, Elegant adds a themed page that does.  This article details the
-changes needed to mark Elegant’s custom error page is properly used as “the” error page.&lt;/p&gt;
-&lt;h2 id="configuring-elegant-and-github-pages"&gt;Configuring Elegant and GitHub Pages&lt;a class="headerlink" href="#configuring-elegant-and-github-pages" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Following the instructions from the
-&lt;a href="https://elegant.oncrashreboot.com/custom-404-page"&gt;Elegant Documentation&lt;/a&gt;,
-Elegant can be instructed to generate a properly themed 404 page by adding the &lt;code&gt;404&lt;/code&gt;
-string to the &lt;code&gt;DIRECT_TEMPLATES&lt;/code&gt; variable in the &lt;code&gt;pelicanconf.py&lt;/code&gt; file.  After following
-those instructions, the next time the website is generated, a &lt;code&gt;404.html&lt;/code&gt; file will be
-generated in the base directory.  This file will have all of the trappings of the
-Elegant theme, and it will display an error page that includes a box to search for what
-the reader was looking for.&lt;/p&gt;
-&lt;p&gt;The website hosting service that is being used will dictate if there are any extra steps
-needed to enable the custom 404 page.  For GitHub Pages, as long as the file is named
-&lt;code&gt;404.html&lt;/code&gt; and is in the root directory that is being hosted, GitHub will automatically
-pick it up and use it as the 404 error page.  Note that it seems like the file must
-exist on the &lt;code&gt;master&lt;/code&gt; branch of the GitHub Pages directory in order for that action to
-take effect.&lt;/p&gt;
-&lt;h2 id="using-other-themes"&gt;Using Other Themes&lt;a class="headerlink" href="#using-other-themes" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;If you are using a theme other than Elegant, you can replicate some of the behavior that
-Elegant provides out of the box.  In particular, you can define a page called
-&lt;code&gt;markdown.md&lt;/code&gt; somewhere in your contents, and add the following text to it:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="c1"&gt;---&lt;/span&gt;
-&lt;span class="n"&gt;Title&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;My&lt;/span&gt; &lt;span class="n"&gt;Custom&lt;/span&gt; &lt;span class="n"&gt;Page&lt;/span&gt;
-&lt;span class="n"&gt;permalink&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="mi"&gt;404&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;html&lt;/span&gt;
-&lt;span class="c1"&gt;---&lt;/span&gt;
-
-&lt;span class="n"&gt;This&lt;/span&gt; &lt;span class="k"&gt;is&lt;/span&gt; &lt;span class="n"&gt;my&lt;/span&gt; &lt;span class="n"&gt;custom&lt;/span&gt; &lt;span class="n"&gt;error&lt;/span&gt; &lt;span class="n"&gt;page&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;The key to this being used as an error page is the &lt;code&gt;permalink: /404.html&lt;/code&gt; part of the
-markdown header.  This informs Pelican to always publish the page with output file of
-&lt;code&gt;/404.html&lt;/code&gt;, placing it in the root directory where it will be picked up properly by
-many site publishers, such as GitHub Pages.&lt;/p&gt;
-&lt;h2 id="what-was-accomplished"&gt;What Was Accomplished&lt;a class="headerlink" href="#what-was-accomplished" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;In this article, I provided some quick information on how to set up a custom 404 page
-using Elegant, and noted how it will be picked up by GitHub Pages.  I also provided some
-basic information on how to set up a custom page for themes other then Elegant.  By
-using this approach, I was able to have a custom error page that had the theme of my
-website, allowing the reader to recover in case of a bad URL.&lt;/p&gt;</content><category term="Website"></category><category term="pelican website generator"></category><category term="pelican fine tuning"></category><category term="python"></category><category term="custom error page"></category><category term="github pages"></category></entry></feed>
+&lt;a href="https://utteranc.es/"&gt;Utterances&lt;/a&gt; made this a snap to setup.&lt;/p&gt;</content><category term="Website"></category><category term="pelican website generator"></category><category term="pelican fine tuning"></category><category term="python"></category><category term="pelican connect readers"></category><category term="pelican comments"></category><category term="utterances"></category></entry></feed>

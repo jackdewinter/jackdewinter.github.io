@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="author" content="Jack De Winter" />
+
+        <meta name="description" content="Introduction¶ As detailed in the last article, the remaining work left on the main parser consists of inline links, link reference definitions, reference links, and image links. While I could try and come up with some grand reason for doing the link reference definitions next, the honest truth is simple …
+" />
+        <meta property="og:type" content="article" />
+        <meta name="twitter:card" content="summary">
+
+<meta name="keywords" content="markdown linter, Software Quality, " />
+
+<meta property="og:title" content="Markdown Linter - Adding Link Reference Definitions "/>
+<meta property="og:url" content="https://jackdewinter.github.io/2020/04/06/markdown-linter-adding-link-reference-definitions/" />
+<meta property="og:description" content="Introduction¶ As detailed in the last article, the remaining work left on the main parser consists of inline links, link reference definitions, reference links, and image links. While I could try and come up with some grand reason for doing the link reference definitions next, the honest truth is simple …" />
+<meta property="og:site_name" content="Jack&#39;s Digital Workbench" />
+<meta property="og:article:author" content="Jack De Winter" />
+<meta property="og:article:published_time" content="2020-04-06T00:00:00-07:00" />
+<meta name="twitter:title" content="Markdown Linter - Adding Link Reference Definitions ">
+<meta name="twitter:description" content="Introduction¶ As detailed in the last article, the remaining work left on the main parser consists of inline links, link reference definitions, reference links, and image links. While I could try and come up with some grand reason for doing the link reference definitions next, the honest truth is simple …">
+
+        <title>Markdown Linter - Adding Link Reference Definitions  · Jack&#39;s Digital Workbench
+</title>
+        <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://jackdewinter.github.io/theme/css/style.min.css?bec7d543">
+
+        <link href="https://jackdewinter.github.io/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Jack&#39;s Digital Workbench - Full Atom Feed" />
+
+
+    </head>
+    <body>
+        <div id="content">
+            <div class="navbar navbar-static-top">
+                <div class="navbar-inner">
+                    <div class="container-fluid">
+                        <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                        </a>
+                        <a class="brand" href="https://jackdewinter.github.io/"><span class=site-name>Jack's Digital Workbench</span></a>
+                        <div class="nav-collapse collapse">
+                            <ul class="nav pull-right top-menu">
+                                <li >
+                                    <a href=
+                                       https://jackdewinter.github.io
+                                    >Home</a>
+                                </li>
+                                <li ><a href="https://jackdewinter.github.io/categories">Categories</a></li>
+                                <li ><a href="https://jackdewinter.github.io/tags">Tags</a></li>
+                                <li ><a href="https://jackdewinter.github.io/archives">Archives</a></li>
+                                <li><form class="navbar-search" action="https://jackdewinter.github.io/search.html" onsubmit="return validateForm(this.elements['q'].value);"> <input type="text" class="search-query" placeholder="Search" name="q" id="tipue_search_input"></form></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="container-fluid">
+                <div class="row-fluid">
+                    <div class="span1"></div>
+                    <div class="span10">
+<article itemscope>
+<div class="row-fluid">
+    <header class="page-header span10 offset2">
+        <h1>
+            <a href="https://jackdewinter.github.io/2020/04/06/markdown-linter-adding-link-reference-definitions/">
+                Markdown Linter - Adding Link Reference Definitions
+            </a>
+        </h1>
+    </header>
+</div>
+
+<div class="row-fluid">
+    <div class="span2 table-of-content">
+        <nav>
+        <h4>Contents</h4>
+        <div class="toc">
+<ul>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#what-is-the-audience-for-this-article">What Is The Audience For This Article?</a></li>
+<li><a href="#why-are-link-reference-definitions">Why Are Link Reference Definitions?</a></li>
+<li><a href="#why-use-link-reference-definitions">Why Use Link Reference Definitions?</a></li>
+<li><a href="#hitting-implementation-issues">Hitting Implementation Issues</a></li>
+<li><a href="#what-was-my-experience-so-far">What Was My Experience So Far?</a></li>
+<li><a href="#what-is-next">What is Next?</a></li>
+</ul>
+</div>
+        </nav>
+    </div>
+    <div class="span8 article-content">
+            
+            
+<h2 id="introduction">Introduction<a class="headerlink" href="#introduction" title="Permanent link">¶</a></h2>
+<p>As detailed in
+<a href="https://jackdewinter.github.io/2020/03/30/markdown-linter-adding-inline-links/#Why-Inline-Links?">the last article</a>,
+the remaining work left on the main parser consists of inline links,
+link reference definitions, reference links, and image links.  While I could try and
+come up with some grand reason for doing the link reference definitions next, the honest
+truth is simple: they were next on the list.</p>
+<h2 id="what-is-the-audience-for-this-article">What Is The Audience For This Article?<a class="headerlink" href="#what-is-the-audience-for-this-article" title="Permanent link">¶</a></h2>
+<p>While detailed more eloquently in
+<a href="https://jackdewinter.github.io/2020/04/05/what-is-the-audience-for-my-blog/#what-is-the-audience-for-my-blog">this article</a>,
+my goal for this technical article is to focus on the reasoning behind my solutions,
+rather that the solutions themselves.  For a full record of the solutions presented in
+this article, please go to this project’s GitHub repository and consult the
+commit of
+<a href="https://github.com/jackdewinter/pymarkdown/commit/680e9d9fd7472e69232a191ca84ce9bc5ff4aaec">22 March 2020</a>.</p>
+<h2 id="why-are-link-reference-definitions">Why Are Link Reference Definitions?<a class="headerlink" href="#why-are-link-reference-definitions" title="Permanent link">¶</a></h2>
+<p>In the
+<a href="https://jackdewinter.github.io/2020/03/30/markdown-linter-adding-inline-links/#what-is-an-inline-link">last article</a>,
+I introduced inline links and how they present the text to appear in the
+link (link label), the link itself (link destination), and an optional title for that
+link (link title).  Link reference definitions are a related concept in that they take
+the link destination and link title parts of the link and store them in a map, to be
+used at a different time.</p>
+<p>Basically, where an inline link uses the form:</p>
+<div class="highlight"><pre><span></span><span class="o">[</span><span class="n">link</span><span class="o">]</span><span class="p">(</span><span class="o">/</span><span class="n">uri</span><span class="w"> </span><span class="ss">"title"</span><span class="p">)</span><span class="w"></span>
+</pre></div>
+<p>a link definition uses the form:</p>
+<div class="highlight"><pre><span></span><span class="o">[</span><span class="n">link</span><span class="o">]</span><span class="err">:</span><span class="w"> </span><span class="o">/</span><span class="n">uri</span><span class="w"> </span><span class="ss">"title"</span><span class="w"></span>
+</pre></div>
+<p>The main difference between the two elements is that a link reference definition does
+not add any elements into the HTML document by itself.  To utilize the link reference
+definition, a reference link must be added to the document that has a
+normalized <sup id="fnref:normalized"><a class="footnote-ref" href="#fn:normalized">1</a></sup> link label that matches the normalized <sup id="fnref2:normalized"><a class="footnote-ref" href="#fn:normalized">1</a></sup> link
+label from a link reference definition present elsewhere in the same Markdown document.
+For example, using the simplest form of reference links, a
+<a href="https://github.github.com/gfm/#shortcut-reference-link">shortcut reference link</a>,
+the following Markdown:</p>
+<div class="highlight"><pre><span></span><span class="o">[</span><span class="n">link</span><span class="o">]</span><span class="err">:</span><span class="w"> </span><span class="o">/</span><span class="n">uri</span><span class="w"> </span><span class="ss">"title"</span><span class="w"></span>
+
+<span class="o">[</span><span class="n">link</span><span class="o">]</span><span class="w"></span>
+</pre></div>
+<p>creates a link reference definition and uses it, generating the following HTML:</p>
+<div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">p</span><span class="p">&gt;&lt;</span><span class="nt">a</span> <span class="na">href</span><span class="o">=</span><span class="s">"/uri"</span> <span class="na">title</span><span class="o">=</span><span class="s">"title"</span><span class="p">&gt;</span>link<span class="p">&lt;/</span><span class="nt">a</span><span class="p">&gt;&lt;/</span><span class="nt">p</span><span class="p">&gt;</span>
+</pre></div>
+<p>While the normalization rules<sup id="fnref3:normalized"><a class="footnote-ref" href="#fn:normalized">1</a></sup> are somewhat complex, in most cases it just
+means using the same link label in both the reference link and the link reference
+definition.  Unless you happen to get into the more interesting aspects of the
+normalization rules, both reference links and link reference definitions are easy to
+use, by design.</p>
+<h2 id="why-use-link-reference-definitions">Why Use Link Reference Definitions?<a class="headerlink" href="#why-use-link-reference-definitions" title="Permanent link">¶</a></h2>
+<p>In the
+<a href="https://jackdewinter.github.io/2020/03/30/markdown-linter-adding-inline-links/#i-use-inline-links-almost-exclusively">last article</a>,
+I mentioned that I use inline links exclusively.  Now that I have introduced link
+resource definitions and reference links, I can provide more context on the difference
+between them. Using a simple
+<a href="https://lipsum.com/">lorem ipsum generator</a>,
+I came up with the following two examples.  This first example contains an inline link:</p>
+<div class="highlight"><pre><span></span><span class="n">Nam</span> <span class="n">efficitur</span><span class="p">,</span> <span class="n">turpis</span> <span class="n">ac</span> <span class="n">vestibulum</span> <span class="n">imperdiet</span><span class="p">,</span> <span class="n">nulla</span> <span class="n">mi</span> <span class="n">mollis</span> <span class="n">erat</span><span class="p">,</span> <span class="n">nec</span> <span class="n">efficitur</span> <span class="n">nunc</span>
+<span class="n">lorem</span> <span class="n">rutrum</span> <span class="n">metus</span><span class="p">.</span> <span class="n">Vestibulum</span> <span class="n">dictum</span> <span class="n">lacinia</span> <span class="n">lacus</span><span class="p">,</span> <span class="k">at</span> <span class="n">ornare</span> <span class="n">quam</span> <span class="n">consequat</span> <span class="n">ultrices</span><span class="p">.</span>
+<span class="n">Nam</span> <span class="n">quam</span> <span class="n">leo</span><span class="p">,</span> <span class="n">aliquet</span> <span class="k">in</span> <span class="n">luctus</span> <span class="k">in</span><span class="p">,</span>
+<span class="p">[</span><span class="n">porttitor</span> <span class="n">non</span> <span class="n">quam</span><span class="p">](</span><span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">lipsum</span><span class="p">.</span><span class="n">com</span><span class="o">/</span><span class="p">).</span>
+<span class="n">Donec</span> <span class="n">tincidunt</span> <span class="n">augue</span> <span class="n">nisi</span><span class="p">,</span> <span class="n">sed</span>
+<span class="n">pellentesque</span> <span class="n">nisl</span> <span class="n">porttitor</span> <span class="n">vel</span><span class="p">.</span>
+</pre></div>
+<p>and this second example contains a reference link, specifically a shortcut reference
+link:</p>
+<div class="highlight"><pre><span></span><span class="n">Nam</span> <span class="n">efficitur</span><span class="p">,</span> <span class="n">turpis</span> <span class="n">ac</span> <span class="n">vestibulum</span> <span class="n">imperdiet</span><span class="p">,</span> <span class="n">nulla</span> <span class="n">mi</span> <span class="n">mollis</span> <span class="n">erat</span><span class="p">,</span> <span class="n">nec</span> <span class="n">efficitur</span> <span class="n">nunc</span>
+<span class="n">lorem</span> <span class="n">rutrum</span> <span class="n">metus</span><span class="p">.</span> <span class="n">Vestibulum</span> <span class="n">dictum</span> <span class="n">lacinia</span> <span class="n">lacus</span><span class="p">,</span> <span class="k">at</span> <span class="n">ornare</span> <span class="n">quam</span> <span class="n">consequat</span> <span class="n">ultrices</span><span class="p">.</span>
+<span class="n">Nam</span> <span class="n">quam</span> <span class="n">leo</span><span class="p">,</span> <span class="n">aliquet</span> <span class="k">in</span> <span class="n">luctus</span> <span class="k">in</span><span class="p">,</span> <span class="p">[</span><span class="n">porttitor</span> <span class="n">non</span> <span class="n">quam</span><span class="p">].</span> <span class="n">Donec</span> <span class="n">tincidunt</span> <span class="n">augue</span> <span class="n">nisi</span><span class="p">,</span>
+<span class="n">sed</span> <span class="n">pellentesque</span> <span class="n">nisl</span> <span class="n">porttitor</span> <span class="n">vel</span><span class="p">.</span>
+
+<span class="p">[</span><span class="n">porttitor</span> <span class="n">non</span> <span class="n">quam</span><span class="p">]:</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">lipsum</span><span class="p">.</span><span class="n">com</span><span class="o">/</span>
+</pre></div>
+<p>From an HTML output point of view, both examples generate the exact same output.</p>
+<p>In both cases, the examples are presented as I would normally include them in my
+articles, folding each line after the 90 characters that I keep my Markdown editor set
+to.  Applying my own stylistics, when I add an inline link I ensure that it begins at
+the start of a new line to ensure that I can clearly identify it as a link.  In
+trying an equivalent example with a reference link instead of an inline link, the
+style that I chose was to place the link label delimiters (<code>[</code> and <code>]</code>) around the link
+label itself with no change in formatting, with the link reference definition following
+later in the document.  While link reference definitions can precede or follow
+any reference links that use them, to me this seemed like the right way to do it.</p>
+<p>From my point of view, I find that the inline reference provides better readability for
+me and how I read my articles when authoring them.  Perhaps it is through having
+authored and proofed many articles in this format, but to me, not having the link
+information right in the paragraph feels like a grammatical or spelling error. And
+while I didn’t really think about it before, when proofing the Markdown version of
+my articles, I don’t really “see” the link destination and link title until I slow down
+on my final passes.  Regardless of the reasoning behind it, I just find it works better
+for me to read the Markdown version of articles with inline links.</p>
+<p>Please note that this view is solely my own.  When performing a similar evaluation for
+yourself or your organization, it is important to consider your own criteria when
+determining which options, reference links or inline links, is best for you.</p>
+<h2 id="hitting-implementation-issues">Hitting Implementation Issues<a class="headerlink" href="#hitting-implementation-issues" title="Permanent link">¶</a></h2>
+<p>Having implemented inline links as documented in the
+<a href="https://jackdewinter.github.io/2020/03/30/markdown-linter-adding-inline-links/#implementing-the-algorithm">last article</a>,
+I started working on the link reference definitions thinking they would be easy.  In
+the case of the first example,
+<a href="https://github.github.com/gfm/#example-161">example 161</a>, it was in fact pretty easy.</p>
+<div class="highlight"><pre><span></span><span class="o">[</span><span class="n">foo</span><span class="o">]</span><span class="err">:</span><span class="w"> </span><span class="o">/</span><span class="n">url</span><span class="w"> </span><span class="ss">"title"</span><span class="w"></span>
+
+<span class="o">[</span><span class="n">foo</span><span class="o">]</span><span class="w"></span>
+</pre></div>
+<p>A complete link label, followed by both a link destination and a link title.  All on
+one line.  Then add a simple shortcut reference link to reference the previously added
+link reference definition.  Nice. Compact.  Complete.</p>
+<p>It was when I moved on to
+<a href="https://github.github.com/gfm/#example-162">example 162</a>
+that all of the issues started:</p>
+<div class="highlight"><pre><span></span><span class="w">   </span><span class="o">[</span><span class="n">foo</span><span class="o">]</span><span class="err">:</span><span class="w"></span>
+<span class="w">      </span><span class="o">/</span><span class="n">url</span><span class="w"></span>
+<span class="w">           </span><span class="s1">'the title'</span><span class="w"></span>
+
+<span class="o">[</span><span class="n">foo</span><span class="o">]</span><span class="w"></span>
+</pre></div>
+<p>The first important issue to understand is that link reference definitions are
+processed as leaf nodes instead of inline text.  To keep the memory footprint of the
+parser low, I made an early design decision to
+only get the text from the input source one line at a time.<sup id="fnref:lineByLine"><a class="footnote-ref" href="#fn:lineByLine">2</a></sup>  While the
+proper implementation of that design is still in the future, that design limits the main
+parsing function of the parser to only knowing about the current line, with no
+built-in capacity for look-ahead or look-behind.  Remember this issue, as I will get
+back to it in just a minute.</p>
+<p>The second important issue is that unlike all previous leaf node elements, it can take
+multiple lines to determine if the current link reference definition element is valid.
+In example 162, as provided above, it isn’t until the end of line following the second
+<code>'</code> character on line 3 that the link reference definition is determined to be valid.
+To better highlight this problem, consider
+<a href="https://github.github.com/gfm/#example-165">example 165</a>
+which provides for an exaggerated example of this:</p>
+<div class="highlight"><pre><span></span><span class="o">[</span><span class="n">foo</span><span class="o">]</span><span class="err">:</span><span class="w"> </span><span class="o">/</span><span class="n">url</span><span class="w"> </span><span class="s1">'</span>
+<span class="s1">title</span>
+<span class="s1">line1</span>
+<span class="s1">line2</span>
+<span class="s1">'</span><span class="w"></span>
+
+<span class="o">[</span><span class="n">foo</span><span class="o">]</span><span class="w"></span>
+</pre></div>
+<p>While the link reference definition as stated in example 165 is valid, it isn’t until
+the 5th line, where the second <code>'</code> character followed by the end of the line
+closes off the link title, that the entire link reference definition is deemed valid.
+By making one small change to the previous example, removing that previously mentioned
+5th line, that entire link reference definition is rendered invalid, as follows:</p>
+<div class="highlight"><pre><span></span><span class="o">[</span><span class="n">foo</span><span class="o">]</span><span class="err">:</span><span class="w"> </span><span class="o">/</span><span class="n">url</span><span class="w"> </span><span class="err">'</span><span class="w"></span>
+<span class="n">title</span><span class="w"></span>
+<span class="n">line1</span><span class="w"></span>
+<span class="n">line2</span><span class="w"></span>
+
+<span class="o">[</span><span class="n">foo</span><span class="o">]</span><span class="w"></span>
+</pre></div>
+<p>After that one small change, instead of a link reference definition followed by a valid
+link reference, both elements are now just interpreted as plain text.</p>
+<p>Remember a couple of paragraphs ago when I mentioned “remember this issue” when talking
+about processing link reference definitions as leaf nodes?  Here is the payoff.</p>
+<p>Because of my design choice to process the Markdown document one line at a time, I
+needed to add extra logic to the parser to allow me to “rewind” those lines.  In the
+case of the modified example 165, the entire link reference definition is rendered
+invalid, and the parser must rewind to the start of the link reference definition.
+However, when it starts parsing the lines again, care must be taken to inform the
+parser that it cannot consider the newly rewound lines to be eligible for a valid
+link reference definition.  Painful, but not too painful.</p>
+<p>Following along from that change, if we do a similar change to example 162 by removing
+the final <code>'</code> character
+from the definition, it poses a different problem.  While the removal of the 5th line of
+example 165 invalidates the entire link reference definition, removing the final <code>'</code>
+character from example 162 only invalidates the link title, leaving the rest of the link
+definition valid.  To deal with this, I needed to not only have logic to go backwards
+towards the start of the link reference definition, but to stop that rewinding if
+whatever part of the definition that was not rewound turned out to be a valid
+definition.  While the rewinding was a headache and somewhat obvious<sup id="fnref:parsing"><a class="footnote-ref" href="#fn:parsing">3</a></sup>,
+aborting the rewinding if a valid link reference definition “fragment” was found was
+not obvious to me at all.</p>
+<p>That code was painful.  Honestly speaking, that logic alone took about half of the 5
+days required to get the multiple-line aspect of link reference definition parsing
+properly.  A decent amount of that time was taken up with rewriting the logic for
+extracting the link
+label, link definition, and link title to handle being straddled over multiple lines.
+But the real “fun” was making sure that rewinding the lines would properly rewind the
+token stream and token stack in the parser.</p>
+<p>While it took a lot of work to get there, it was personally fulfilling when I got it
+right.  It wasn’t an easy issue to solve, and coming up with a clean solution wasn’t
+easy.  As an added bonus, my dog stopped looking at me with a funny expression.  It
+was pointed out to me that he did that when facepalmed myself whenever I got the
+parsing wrong.  Personally, I considered that a 2-in-1 benefit!</p>
+<h2 id="what-was-my-experience-so-far">What Was My Experience So Far?<a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link">¶</a></h2>
+<p>There have only been a few issues that have taxed my experience to solve them, and
+implementing link reference definitions was one of them.  That is both a good thing and
+a bad thing.  On the good side, due to my experience and stubbornness, I was able to
+modify my implementation to deal with the issue without having to change my design
+decision.  On the bad side, there is only one test with a link reference definition
+being within a container block, and that leaves a lot of questions about how to handle
+failures within those containers.  While I noted the later down for subsequent testing,
+it still leaves me feeling a bit uneasy that I had to modify the parser to handle that.</p>
+<p>Considering where I am with the parser, I am glad that I hit that issue now, and not
+after I finished the parser.  While it was painful to go through, it did reinforce
+a number of things about the design of the parser so far.</p>
+<p>The first thing that was
+reinforced was that, with only one exception, my early decision to do line-by-line
+parsing is viable.  While there may be parser extensions that change that, the
+number of exceptions in the link reference definition category should be low.  If
+I can then combine that with some Python generator logic, hopefully I can keep the
+memory profile of the parser low.</p>
+<p>The second thing that was reinforced was that the general structure of the parser was
+properly designed and implemented.  While I still need to take some time and refactor
+individual
+groups of functions into their own modules, the actual function themselves are pretty
+durable.  With the exception of the link helper functions and a few core functions, I
+did not have to change any other functionality to handle the failure rewind scenario.
+In those few functions I changed, it was either to specifically handle that scenario
+or to pass information back to the main parser function about how to handle the rewind.
+Compared to past situations I have encountered, I consider it a benefit
+that I only had to change the small amount of code that I did.</p>
+<p>Finally, my decision to use inline links over reference links was reinforced. In more
+closely examining the difference between the
+two types of links, I believe I better understand and appreciate both types of links.
+While I agree that writing Markdown with reference links will more closely approximate
+how the paragraphs will look when completed<sup id="fnref:JohnGruberMarkdown"><a class="footnote-ref" href="#fn:JohnGruberMarkdown">4</a></sup>, the absence of the
+link destination and link title reduce my comprehension of the paragraph as a whole.
+So I find myself making the same decision as before, but now I believe I can more
+clearly communicate the options for both types of links and why I chose inline links
+over reference links.</p>
+<h2 id="what-is-next">What is Next?<a class="headerlink" href="#what-is-next" title="Permanent link">¶</a></h2>
+<p>The list of what is left to complete in the parser is getting shorter and shorter.
+With inline links and link reference definitions tested and completed, only the
+full implementation of reference links and image links remain.  While a lot of
+foundation work has already been set up for these features, I am wary of declaring
+that it will be an easy job from here on it.  But with only 2 features left, I know
+the start of the real linting work in coming soon!</p>
+<div class="footnote">
+<hr/>
+<ol>
+<li id="fn:normalized">
+<p>Long winded version: To normalize a label, strip off the opening and closing brackets, perform the Unicode case fold, strip leading and trailing whitespace and collapse consecutive internal whitespace to a single space.  Shorter version: reduce or eliminate whitespace and do a case-insensitive comparison. <a class="footnote-backref" href="#fnref:normalized" title="Jump back to footnote 1 in the text">↩</a><a class="footnote-backref" href="#fnref2:normalized" title="Jump back to footnote 1 in the text">↩</a><a class="footnote-backref" href="#fnref3:normalized" title="Jump back to footnote 1 in the text">↩</a></p>
+</li>
+<li id="fn:lineByLine">
+<p>To keep the memory footprint of a parser low, the parser design should try and only keep the information that is required for parsing in memory.  By parsing the Markdown input line by line, I do not have to worry about having to load the entire Markdown input into memory before I can begin parsing it. <a class="footnote-backref" href="#fnref:lineByLine" title="Jump back to footnote 2 in the text">↩</a></p>
+</li>
+<li id="fn:parsing">
+<p>Except for a Lisp parser that I once wrote, I cannot think of a single parser where I didn’t have to rewind at least one complex entity out of the 25+ parsers that I have written. <a class="footnote-backref" href="#fnref:parsing" title="Jump back to footnote 3 in the text">↩</a></p>
+</li>
+<li id="fn:JohnGruberMarkdown">
+<p>As per John Gruber’s original intentions.  Go to <a href="https://daringfireball.net/projects/markdown/syntax#em">this part</a> of his original Markdown article and go to the paragraph preceding the start of the emphasis section.  For more complete information on why John felt that reference links were better, look further up in that section for more details. <a class="footnote-backref" href="#fnref:JohnGruberMarkdown" title="Jump back to footnote 4 in the text">↩</a></p>
+</li>
+</ol>
+</div>
+
+
+             
+ 
+                <p id="post-share-links">
+    Like this post? Share on:
+    <a href="https://twitter.com/intent/tweet?text=Markdown%20Linter%20-%20Adding%20Link%20Reference%20Definitions&url=https%3A//jackdewinter.github.io/2020/04/06/markdown-linter-adding-link-reference-definitions/&hashtags=markdown-linter" target="_blank" rel="nofollow noopener noreferrer" title="Share on Twitter">Twitter</a>
+    ❄
+    <a href="https://www.facebook.com/sharer/sharer.php?u=https%3A//jackdewinter.github.io/2020/04/06/markdown-linter-adding-link-reference-definitions/" target="_blank" rel="nofollow noopener noreferrer" title="Share on Facebook">Facebook</a>
+    ❄
+    <a href="mailto:?subject=Markdown%20Linter%20-%20Adding%20Link%20Reference%20Definitions&amp;body=https%3A//jackdewinter.github.io/2020/04/06/markdown-linter-adding-link-reference-definitions/" target="_blank" rel="nofollow noopener noreferrer" title="Share via Email">Email</a>
+    </p>
+
+            
+            
+
+
+
+
+
+
+<section>
+    <h6 style="display:none;">Comments</h6>
+    <p id="comment-message">So what do you think? Did I miss something? Is any part unclear? Leave your comments below. </p>
+
+    <div class="accordion" id="accordion2">
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                <a class="accordion-toggle disqus-comment-count comment-count"
+                   data-toggle="collapse"
+                   data-parent="#accordion2"
+                   href="https://jackdewinter.github.io/2020/04/06/markdown-linter-adding-link-reference-definitions/#comment_thread"
+                   id="comment-accordion-toggle">
+                    Comments
+                </a>
+            </div>
+            <div id="comment_thread" class="accordion-body collapse">
+                <div class="accordion-inner">
+                    <div class="comments">
+
+                        <script src="https://utteranc.es/client.js"
+        data-repo="jackdewinter/jackdewinter.github.io"
+        data-issue-term="markdown-linter-adding-link-reference-definitions"
+        data-label="Comments"
+        data-theme="github-light"
+        crossorigin="anonymous"
+        async>
+</script>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+            <hr/>
+            <aside>
+            <nav>
+            <ul class="articles-timeline">
+                <li class="previous-article">« <a href="https://jackdewinter.github.io/2020/04/05/what-is-the-audience-for-my-blog/" title="Previous: What is the Audience for my Blog?">What is the Audience for my Blog?</a></li>
+            </ul>
+            </nav>
+            </aside>
+        </div>
+        <section id="article-sidebar" class="span2">
+    <h4>Reading Time</h4>
+    <p>~10 min read</p>
+            <h4>Published</h4>
+            <time itemprop="dateCreated" datetime="2020-04-06T00:00:00-07:00">Apr 6, 2020</time>
+        <h4>Markdown Linter</h4>
+    <ul class="multi-parts-list">
+            <li >
+            <a href="https://jackdewinter.github.io/2019/12/08/markdown-linter-collecting-requirements/" title="Markdown Linter - Collecting Requirements">Part 1: Markdown Linter - Collecting Requirements</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2019/12/16/markdown-linter-setting-up-parser-tests/" title="Markdown Linter - Setting Up Parser Tests">Part 2: Markdown Linter - Setting Up Parser Tests</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2019/12/22/markdown-linter-parser-testing-strategy/" title="Markdown Linter - Parser Testing Strategy">Part 3: Markdown Linter - Parser Testing Strategy</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/01/27/markdown-linter-parsing-normal-markdown-blocks/" title="Markdown Linter - Parsing Normal Markdown Blocks">Part 4: Markdown Linter - Parsing Normal Markdown Blocks</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/02/03/markdown-linter-adding-block-quotes-and-lists/" title="Markdown Linter - Adding Block Quotes and Lists">Part 5: Markdown Linter - Adding Block Quotes and Lists</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/02/10/markdown-linter-adding-html-blocks/" title="Markdown Linter - Adding HTML Blocks">Part 6: Markdown Linter - Adding HTML Blocks</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/02/17/markdown-linter-taking-time-to-refactor-post-block-implementation/" title="Markdown Linter - Taking Time to Refactor -- Post-Block Implementation">Part 7: Markdown Linter - Taking Time to Refactor -- Post-Block Implementation</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/02/24/markdown-linter-starting-inline-processing/" title="Markdown Linter - Starting Inline Processing">Part 8: Markdown Linter - Starting Inline Processing</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/03/02/markdown-linter-taking-time-to-refactor-post-easy-inlines/" title="Markdown Linter - Taking Time to Refactor -- Post-Easy Inlines">Part 9: Markdown Linter - Taking Time to Refactor -- Post-Easy Inlines</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/03/09/markdown-linter-autolinks-raw-html-and-line-breaks/" title="Markdown Linter - Autolinks, Raw HTML, and Line Breaks">Part 10: Markdown Linter - Autolinks, Raw HTML, and Line Breaks</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/03/16/markdown-linter-verifying-base-scenarios/" title="Markdown Linter - Verifying Base Scenarios">Part 11: Markdown Linter - Verifying Base Scenarios</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/03/23/markdown-linter-adding-inline-emphasis/" title="Markdown Linter - Adding Inline Emphasis">Part 12: Markdown Linter - Adding Inline Emphasis</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/03/30/markdown-linter-adding-inline-links/" title="Markdown Linter - Adding Inline Links">Part 13: Markdown Linter - Adding Inline Links</a>
+            </li>
+            <li  class="active-part">
+            Part 14: Markdown Linter - Adding Link Reference Definitions
+            </li>
+    </ul>
+            <h4>Category</h4>
+            <a class="category-link" href="https://jackdewinter.github.io/categories#software-quality-ref">Software Quality</a>
+            <h4>Tags</h4>
+            <ul class="list-of-tags tags-in-article">
+                <li><a href="https://jackdewinter.github.io/tags#markdown-linter-ref">markdown linter
+                    <span>14</span>
+</a></li>
+            </ul>
+<h4>Stay in Touch</h4>
+<div id="sidebar-social-link">
+    <a href="https://github.com/jackdewinter" title="github-alt" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="GitHub" role="img" viewBox="0 0 512 512"><rect width="512" height="512" rx="15%" fill="#1B1817"/><path fill="#fff" d="M335 499c14 0 12 17 12 17H165s-2-17 12-17c13 0 16-6 16-12l-1-50c-71 16-86-28-86-28-12-30-28-37-28-37-24-16 1-16 1-16 26 2 40 26 40 26 22 39 59 28 74 22 2-17 9-28 16-35-57-6-116-28-116-126 0-28 10-51 26-69-3-6-11-32 3-67 0 0 21-7 70 26 42-12 86-12 128 0 49-33 70-26 70-26 14 35 6 61 3 67 16 18 26 41 26 69 0 98-60 120-117 126 10 8 18 24 18 48l-1 70c0 6 3 12 16 12z"/></svg>
+    </a>
+    <a href="https://www.linkedin.com/in/jackdewinter/" title="linkedin" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="LinkedIn" role="img" viewBox="0 0 512 512" fill="#fff"><rect width="512" height="512" rx="15%" fill="#0077b5"/><circle cx="142" cy="138" r="37"/><path stroke="#fff" stroke-width="66" d="M244 194v198M142 194v198"/><path d="M276 282c0-20 13-40 36-40 24 0 33 18 33 45v105h66V279c0-61-32-89-76-89-34 0-51 19-59 32"/></svg>
+    </a>
+    <a href="https://jackdewinter.github.io/feeds/all.atom.xml" title="" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="RSS" role="img" viewBox="0 0 512 512"><rect width="512" height="512" rx="15%" fill="#f80"/><circle cx="145" cy="367" r="35" fill="#fff"/><path fill="none" stroke="#fff" stroke-width="60" d="M109 241c89 0 162 73 162 162M109 127c152 0 276 124 276 276"/></svg>
+    </a>
+</div>
+            
+
+
+
+
+
+            
+
+
+
+
+
+        </section>
+</div>
+</article>
+                    </div>
+                    <div class="span1"></div>
+                </div>
+            </div>
+        </div>
+<footer>
+    <div>
+        
+&copy; Copyright 2019 by Jack De Winter and licensed under a <a rel="license"
+  href="http://creativecommons.org/licenses/by/4.0/">
+  <img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/80x15.png" />
+  Creative Commons Attribution 4.0 International License</a>.
+
+    </div>
+
+
+
+
+    <div id="fpowered">
+        Powered by: <a href="http://getpelican.com/" title="Pelican Home Page" target="_blank" rel="nofollow noopener noreferrer">Pelican</a>
+        Theme: <a href="https://elegant.oncrashreboot.com/" title="Theme Elegant Home Page" target="_blank" rel="nofollow noopener noreferrer">Elegant</a>
+    </div>
+</footer>            <script src="//code.jquery.com/jquery.min.js"></script>
+        <script src="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>
+        <script>
+            function validateForm(query)
+            {
+                return (query.length > 0);
+            }
+        </script>
+
+    <script>
+    (function () {
+        if (window.location.hash.match(/^#comment-\d+$/)) {
+            $('#comment_thread').collapse('show');
+        }
+    })();
+    window.onhashchange=function(){
+        if (window.location.hash.match(/^#comment-\d+$/))
+            window.location.reload(true);
+    }
+    $('#comment_thread').on('shown', function () {
+        var link = document.getElementById('comment-accordion-toggle');
+        var old_innerHTML = link.innerHTML;
+        $(link).fadeOut(200, function() {
+            $(this).text('Click here to hide comments').fadeIn(200);
+        });
+        $('#comment_thread').on('hidden', function () {
+            $(link).fadeOut(200, function() {
+                $(this).text(old_innerHTML).fadeIn(200);
+            });
+        })
+    })
+</script>
+
+    </body>
+    <!-- Theme: Elegant built for Pelican
+        License : MIT -->
+</html>
