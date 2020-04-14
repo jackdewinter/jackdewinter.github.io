@@ -1,17 +1,380 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench - Software Quality</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/software-quality.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2020-04-06T00:00:00-07:00</updated><entry><title>Markdown Linter - Adding Link Reference Definitions</title><link href="https://jackdewinter.github.io/2020/04/06/markdown-linter-adding-link-reference-definitions/" rel="alternate"></link><published>2020-04-06T00:00:00-07:00</published><updated>2020-04-06T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-04-06:/2020/04/06/markdown-linter-adding-link-reference-definitions/</id><summary type="html">
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench - Software Quality</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/software-quality.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2020-04-13T00:00:00-07:00</updated><entry><title>Markdown Linter - Adding Reference Links</title><link href="https://jackdewinter.github.io/2020/04/13/markdown-linter-adding-reference-links/" rel="alternate"></link><published>2020-04-13T00:00:00-07:00</published><updated>2020-04-13T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-04-13:/2020/04/13/markdown-linter-adding-reference-links/</id><summary type="html">
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;The end of the main parser is in sight!  Two articles ago, the additional
+of support for
+&lt;a href="https://jackdewinter.github.io/2020/03/30/markdown-linter-adding-inline-links/#why-inline-links"&gt;inline links&lt;/a&gt;
+was documented, and the last article detailed the addition of support for
+&lt;a href="https://jackdewinter.github.io/2020/04/06/markdown-linter-adding-link-reference-definitions/#what-are-link-reference-definitions"&gt;link reference definitions&lt;/a&gt;.
+In terms of remaining work required to meet the GFM specification, only reference links
+and …&lt;/p&gt;</summary><content type="html">
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;The end of the main parser is in sight!  Two articles ago, the additional
+of support for
+&lt;a href="https://jackdewinter.github.io/2020/03/30/markdown-linter-adding-inline-links/#why-inline-links"&gt;inline links&lt;/a&gt;
+was documented, and the last article detailed the addition of support for
+&lt;a href="https://jackdewinter.github.io/2020/04/06/markdown-linter-adding-link-reference-definitions/#what-are-link-reference-definitions"&gt;link reference definitions&lt;/a&gt;.
+In terms of remaining work required to meet the GFM specification, only reference links
+and image links are left.  As image links are just reference links with a slightly
+different syntax and slightly different rules, it made sense to focus on reference
+links first.&lt;/p&gt;
+&lt;h2 id="what-is-the-audience-for-this-article"&gt;What Is The Audience For This Article?&lt;a class="headerlink" href="#what-is-the-audience-for-this-article" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;While detailed more eloquently in
+&lt;a href="https://jackdewinter.github.io/2020/04/05/what-is-the-audience-for-my-blog/#what-is-the-audience-for-my-blog"&gt;this article&lt;/a&gt;,
+my goal for this technical article is to focus on the reasoning behind my solutions,
+rather that the solutions themselves.  For a full record of the solutions presented in
+this article, please go to this project’s GitHub repository and consult the
+commit of
+&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/ed20bc4e38342b2c9e3fdebc691e2021c80c67b4"&gt;26 March 2020&lt;/a&gt;.&lt;/p&gt;
+&lt;h2 id="a-quick-aside"&gt;A Quick Aside&lt;a class="headerlink" href="#a-quick-aside" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;I just wanted to take a moment to give some context on why I am providing a large number
+of examples in this article.  If it feels like I am providing a lot of “extra”
+examples, that is because I initially had a number of issues with the different link
+types and their syntax.  For whatever reason, the different link types were just not
+“clicking” inside of my head.  It was only after I started focusing equally on the rules
+and the examples, that I was able to match the “abstract” text in the specification
+with the “concrete” examples provided.  Together they provided the context that I
+required to truly understand reference links.&lt;/p&gt;
+&lt;p&gt;I hope that by providing good examples in this article, I am providing a similar amount
+of clarity to help any readers who may encounter similar issues to what I encountered.&lt;/p&gt;
+&lt;h2 id="what-are-shortcut-reference-links"&gt;What Are Shortcut Reference Links?&lt;a class="headerlink" href="#what-are-shortcut-reference-links" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In the last article on
+&lt;a href="https://jackdewinter.github.io/2020/04/06/markdown-linter-adding-link-reference-definitions/#what-are-link-reference-definitions"&gt;link reference definitions&lt;/a&gt;,
+I briefly introduced a concept called a shortcut reference link.  As that article was
+focusing on link reference definitions and not reference links, I introduced it only
+as a way to show what link reference definitions were capable of
+doing.  A good example of this is the following Markdown where the link reference
+definition is specified on the first line and the shortcut reference link that utilizes
+that definition is specified on the third line:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;link&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;uri&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="ss"&gt;"title"&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
+
+&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;link&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Shortcut reference links like this are the easiest of the three reference link types to
+understand as everything is kept simple.  As with all types of reference links,
+shortcut reference links are taken care of in the inline processing stage, long after
+any link reference definitions have been collected.
+To use a link reference definition, the
+normalized version of the link label from the shortcut reference link must match a
+link label from a previously defined link reference definition.&lt;sup id="fnref:before"&gt;&lt;a class="footnote-ref" href="#fn:before"&gt;1&lt;/a&gt;&lt;/sup&gt;  To keep
+things simple for now, I am going to assign
+words like “normalized” to mean a case-insensitive comparison between two strings,
+with no other modifications. While this is not completely accurate, it will help keep
+things simple for now, and I promise to revisit it before the end of the article.&lt;/p&gt;
+&lt;p&gt;If the link’s link label matches a link reference definition, the shortcut reference
+link uses the link label as the text within the anchor.  In the case of the above
+example, this produces the following HTML:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;a&lt;/span&gt; &lt;span class="na"&gt;href&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;"/uri"&lt;/span&gt; &lt;span class="na"&gt;title&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;"title"&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;link&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;a&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;When this HTML was generated, the text &lt;code&gt;link&lt;/code&gt; was used from the shortcut reference link
+and the rest of the anchor tag (the text between &lt;code&gt;&amp;lt;a&lt;/code&gt; and
+&lt;code&gt;&amp;lt;/a&amp;gt;&lt;/code&gt; excluding the text &lt;code&gt;link&lt;/code&gt;) was composed using information from the link
+reference definition.  The benefit of this approach is that the “marker” for the link
+is inline with the rest of the text while the more bulky link data is located
+elsewhere in the document.   This benefit allows the author to better control their own
+authoring experience by controlling where the link reference definitions occur in their
+document: after the paragraph containing the link, at the end of the section, or at the
+end of the document.&lt;/p&gt;
+&lt;p&gt;Without exploring the normalization of link labels (yet!), each link label is parsed
+to render inline processing for the link label.  A good instance of this is
+&lt;a href="https://github.github.com/gfm/#example-566"&gt;example 566&lt;/a&gt;
+from the GFM specification which adds inline emphasis to the link label:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;[*foo* bar]&lt;/span&gt;
+
+&lt;span class="na"&gt;[*foo* bar]: /url "title"&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;and is rendered as:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;a&lt;/span&gt; &lt;span class="na"&gt;href&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;"/url"&lt;/span&gt; &lt;span class="na"&gt;title&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;"title"&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;em&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;foo&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;em&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt; bar&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;a&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;The key is that as long as the normalized link label of both the shortcut reference
+link and the link reference definition match, everything works fine.  If the link
+label does not match, the text is simply rendered as normal text:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;[&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;em&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;foo&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;em&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt; bar]&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Other than that, the only other special thing is that the link label for a shortcut
+reference link cannot contain another link.  This is explicitly stated in the
+definition of &lt;a href="https://github.github.com/gfm/#link-text"&gt;link text&lt;/a&gt; which states:&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Links may not contain other links, at any level of nesting. If multiple otherwise valid link definitions appear nested inside each other, the inner-most definition is used.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;A good example of this is obtained when the following Markdown text is fed through a
+GFM compliant parser:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;[foo[foo]]&lt;/span&gt;
+
+&lt;span class="na"&gt;[foo]: /url "title"&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;generating the following HTML:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;[foo&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;a&lt;/span&gt; &lt;span class="na"&gt;href&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;"/url"&lt;/span&gt; &lt;span class="na"&gt;title&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;"title"&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;foo&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;a&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;]&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Looking at the HTML, the inner shortcut reference link &lt;code&gt;[foo]&lt;/code&gt; was interpreted and the
+outer link &lt;code&gt;[foo[foo]]&lt;/code&gt; was deemed invalid, therefore being rendered normally.&lt;/p&gt;
+&lt;h3 id="multiple-references-of-a-link-reference-definition"&gt;Multiple References of a Link Reference Definition&lt;a class="headerlink" href="#multiple-references-of-a-link-reference-definition" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;In the
+&lt;a href="https://github.github.com/gfm"&gt;GFM specification&lt;/a&gt; there are instructions and examples
+on what to do if there are multiple link reference definitions declared with the same
+normalized link label.  However, after a couple of passes through the GFM specification,
+I was unable to find any guidance on what to do if there are multiple reference links
+that use a given link reference definition.  The closest that the specification gets to
+this is near the start of the section on
+&lt;a href="https://github.github.com/gfm/#full-reference-link"&gt;full reference links&lt;/a&gt;
+(covered in the next section) which states:&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;followed by a link label that matches a link reference definition elsewhere in the document.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;Based on this information, along with testing against the CommonMark reference parser,
+I can safely state that the following example:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;foo&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="n"&gt;bar&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="err"&gt;\&lt;/span&gt;
+&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;foo&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="n"&gt;bar&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+
+&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;foo&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="n"&gt;bar&lt;/span&gt;&lt;span class="p"&gt;]:&lt;/span&gt; &lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;url&lt;/span&gt; &lt;span class="ss"&gt;"title"&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;generates the following HTML:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;a&lt;/span&gt; &lt;span class="na"&gt;href&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;"/url"&lt;/span&gt; &lt;span class="na"&gt;title&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;"title"&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;em&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;foo&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;em&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt; bar&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;a&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;a&lt;/span&gt; &lt;span class="na"&gt;href&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;"/url"&lt;/span&gt; &lt;span class="na"&gt;title&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;"title"&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;em&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;foo&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;em&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt; bar&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;a&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Based on this information and the quote above, I feel that this is a good feature of
+Markdown.  In certain cases where a link is used repeatedly, this behavior can be used
+to have a single link reference definition to provide the link itself, and multiple
+reference links pointed to that one definition.  In my mind, that is where full
+reference links come in.&lt;/p&gt;
+&lt;h2 id="what-are-full-reference-links"&gt;What Are Full Reference Links?&lt;a class="headerlink" href="#what-are-full-reference-links" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In
+&lt;a href="https://daringfireball.net/projects/markdown/syntax#link"&gt;John Gruber’s original specification&lt;/a&gt;,
+there were no shortcut links and full reference links were referred
+to as “reference-style links”.  It was only with later parsers that the more compact
+shortcut reference link was introduced.  In my mind, instead of the order in which
+reference links were historically introduced, I prefer to see the hierarchy of
+reference links in reverse chronological order, with the shortcut reference links first
+and the full reference links second.&lt;/p&gt;
+&lt;p&gt;My reasoning for this is as follows.  Based purely on efficiency, I typically start
+with the clearest construct that has the least amount of effort to add. With reference
+links, my first instinct is to add a shortcut reference link with the
+link label matching the link reference definition that I need to add to complete it.
+In 95% of the cases that I come across, I need a single link reference definition and a
+single reference link, so a shortcut reference link is the best option.  For the
+remaining 5%, I usually have a case where I have multiple reference links referencing a
+single link reference definition, and I need a reference link that I can use there to
+good effect.&lt;/p&gt;
+&lt;p&gt;Consider the following example:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;This&lt;/span&gt; &lt;span class="n"&gt;is&lt;/span&gt; &lt;span class="n"&gt;a&lt;/span&gt; &lt;span class="n"&gt;sentence&lt;/span&gt; &lt;span class="n"&gt;that&lt;/span&gt; &lt;span class="n"&gt;refers&lt;/span&gt; &lt;span class="n"&gt;to&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;my&lt;/span&gt; &lt;span class="n"&gt;link&lt;/span&gt;&lt;span class="p"&gt;].&lt;/span&gt;
+
+&lt;span class="n"&gt;Then&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt; &lt;span class="n"&gt;a&lt;/span&gt; &lt;span class="n"&gt;separate&lt;/span&gt; &lt;span class="n"&gt;paragraph&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;I&lt;/span&gt; &lt;span class="n"&gt;must&lt;/span&gt; &lt;span class="n"&gt;still&lt;/span&gt; &lt;span class="n"&gt;refer&lt;/span&gt; &lt;span class="n"&gt;to&lt;/span&gt; &lt;span class="n"&gt;it&lt;/span&gt; &lt;span class="n"&gt;as&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;my&lt;/span&gt; &lt;span class="n"&gt;link&lt;/span&gt;&lt;span class="p"&gt;].&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;When coming up with this example, I needed to take care to create my example second
+paragraph in manner in which &lt;code&gt;[my link]&lt;/code&gt; would fit somewhat fluidly in the sentence.
+It would be more useful to do the following:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;This&lt;/span&gt; &lt;span class="n"&gt;is&lt;/span&gt; &lt;span class="n"&gt;a&lt;/span&gt; &lt;span class="n"&gt;sentence&lt;/span&gt; &lt;span class="n"&gt;that&lt;/span&gt; &lt;span class="n"&gt;refers&lt;/span&gt; &lt;span class="n"&gt;to&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;my&lt;/span&gt; &lt;span class="n"&gt;link&lt;/span&gt;&lt;span class="p"&gt;].&lt;/span&gt;
+
+&lt;span class="n"&gt;Then&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt; &lt;span class="n"&gt;a&lt;/span&gt; &lt;span class="n"&gt;separate&lt;/span&gt; &lt;span class="n"&gt;paragraph&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;I&lt;/span&gt; &lt;span class="n"&gt;can&lt;/span&gt; &lt;span class="n"&gt;then&lt;/span&gt; &lt;span class="n"&gt;refer&lt;/span&gt; &lt;span class="n"&gt;to&lt;/span&gt; &lt;span class="n"&gt;it&lt;/span&gt; &lt;span class="n"&gt;as&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;my&lt;/span&gt; &lt;span class="n"&gt;other&lt;/span&gt; &lt;span class="n"&gt;link&lt;/span&gt;&lt;span class="p"&gt;][&lt;/span&gt;&lt;span class="n"&gt;my&lt;/span&gt; &lt;span class="n"&gt;link&lt;/span&gt;&lt;span class="p"&gt;].&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;For me, that is where the benefit of full reference links come in.&lt;/p&gt;
+&lt;p&gt;As I alluded to
+in the previous example, full reference links are of the form:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;[text][link]&lt;/span&gt;
+
+&lt;span class="na"&gt;[link]: /url "title"&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Where the first set of square brackets encloses link text and the second set of brackets
+encloses the link label.  Unlike the shortcut reference link, where the link label
+serves as both the text to match and the text around which to link, a full reference
+link assigns a block of text to each of those responsibilities.  This allows a single
+link reference definition to be referred to by multiple reference links, each one
+having tailored link text.&lt;/p&gt;
+&lt;p&gt;The link text is defined in a manner very similar to link labels, including the
+limitation that link text cannot include other links, demonstrated by the
+&lt;a href="https://github.github.com/gfm/#example-541"&gt;example 541&lt;/a&gt;:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;[foo *bar [baz][ref]*][ref]&lt;/span&gt;
+
+&lt;span class="na"&gt;[ref]: /uri&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;which generates the following HTML:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;[foo &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;em&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;bar &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;a&lt;/span&gt; &lt;span class="na"&gt;href&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;"/uri"&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;baz&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;a&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;em&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;]&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;a&lt;/span&gt; &lt;span class="na"&gt;href&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;"/uri"&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;ref&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;a&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Similar to how the link-within-a-possible-link example was handled for shortcut
+reference links, the inner reference link text &lt;code&gt;[baz][ref]&lt;/code&gt; is interpreted as a valid
+link, with the rest of the possible-link’s link text being presented as plain text.
+It is simply an act of serendipity that both the inner link and outer possible-link
+used the link label &lt;code&gt;[ref]&lt;/code&gt;.  Because of this act of serendipity, when the inline
+processor gets to the &lt;code&gt;[ref]&lt;/code&gt; text at the end of the line, it is interpreted as a
+shortcut reference
+link, in a completely separate context from the previous link.  As such, a second
+link to the same URI is generated at the end of the HTML paragraph.&lt;/p&gt;
+&lt;p&gt;While I found it easier to visually see the how the above example should be parsed by
+working through it in my head, it was examples of this flavor that I really struggled
+with before I combined looking at rule with looking at examples, as detailed above.
+To be honest, to properly figure these out, I used a pencil and a sheet of paper to
+visually break down the problem.  Only when I had those scribbled notes in front of me
+did I really get this example.  Perhaps it is only me, but it was by literally working
+through the example and showing my work that I was able to really understand what
+the parser needed to do.  After that, coding the parser to do it was simple.  As
+I have mentioned a number of times, figure out whatever works for you, and leverage
+that.&lt;/p&gt;
+&lt;h2 id="collapsed-reference-links"&gt;Collapsed Reference Links&lt;a class="headerlink" href="#collapsed-reference-links" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;While the inclusion of collapsed link references into the specification may seem like
+an unnecessary element, it is an alternative that offers the author leeway on how
+their Markdown article is constructed.  For some authors, the full reference link of
+&lt;code&gt;[label][label]&lt;/code&gt; might be preferred.  For other authors, the shortcut reference link of
+&lt;code&gt;[label]&lt;/code&gt; might be preferred.  If the author is looking for something in between, the
+collapsed reference link and it’s format of &lt;code&gt;[label][]&lt;/code&gt; offers a middle ground.  All
+three of the examples provided in this paragraph are semantically equal and will produce
+the exacts same HTML.&lt;/p&gt;
+&lt;p&gt;In the end, it is just a matter of preference which of the reference link formats
+that the author prefers, and is comfortable with.&lt;/p&gt;
+&lt;h2 id="normalizing-link-labels"&gt;Normalizing Link Labels&lt;a class="headerlink" href="#normalizing-link-labels" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Back in the section on
+&lt;a href="https://jackdewinter.github.io/2020/04/13/markdown-linter-adding-reference-links/#what-are-shortcut-reference-links"&gt;What Are Shortcut Reference Links?&lt;/a&gt;,
+I simplified
+the term “normalized” to mean &lt;code&gt;case-insensitive comparison&lt;/code&gt;.  The full definition of
+&lt;a href="https://github.github.com/gfm/#matches"&gt;normalized&lt;/a&gt;
+is a bit more complicated, but not by much.  In order of operation:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;grab the link text in its unprocessed form&lt;/li&gt;
+&lt;li&gt;remove the opening and closing brackets from the link label&lt;/li&gt;
+&lt;li&gt;perform a Unicode case fold (the Unicode equivalent of reducing all letters to lower case)&lt;/li&gt;
+&lt;li&gt;strip leading and trailing whitespace&lt;/li&gt;
+&lt;li&gt;collapse consecutive internal whitespace to a single space&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Once these steps have been applied to the link label’s text, it is that text that is
+used to determine if it matches an existing link reference definition.  In cases where
+the link label is &lt;code&gt;[foo]&lt;/code&gt; or &lt;code&gt;[referenced document]&lt;/code&gt;, this process may seem weird or
+superfluous.  But, in the case of
+&lt;a href="https://github.github.com/gfm/#example-553"&gt;example 553&lt;/a&gt;:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;[bar][foo\!]&lt;/span&gt;
+
+&lt;span class="na"&gt;[foo!]: /url&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;the parsed inline text is equivalent, but the link is not interpreted as a full
+reference link.  This is because the normalized text for the reference link is &lt;code&gt;foo\!&lt;/code&gt;
+while the normalized text for the link reference definition is
+&lt;code&gt;foo!&lt;/code&gt;.  While both of these strings will be equivalent to &lt;code&gt;foo!&lt;/code&gt; after applying inline
+parsing, their normalized values does not match, and as such, the above example is
+rendered in HTML as:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;[bar][foo!]&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;h2 id="what-implementation-problems-did-i-have"&gt;What Implementation Problems Did I Have?&lt;a class="headerlink" href="#what-implementation-problems-did-i-have" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Between the work previously done for
+&lt;a href="https://jackdewinter.github.io/2020/03/30/markdown-linter-adding-inline-links/#why-inline-links"&gt;inline links&lt;/a&gt;
+and
+&lt;a href="https://jackdewinter.github.io/2020/04/06/markdown-linter-adding-link-reference-definitions/#what-are-link-reference-definitions"&gt;link reference definitions&lt;/a&gt;,
+most of the required foundation work was already in place when I started with
+reference links.  As I required a simple implementation of shortcut reference
+links to properly test link reference definitions, it was only the introduction of
+link text for full reference links that required any real block of new code.&lt;/p&gt;
+&lt;p&gt;Even given that solid, tested foundation, there were two issues that gave me troubles
+as I implemented reference links: using the correct text to determine matching and the
+order of precedence between different types of reference links.&lt;/p&gt;
+&lt;p&gt;Adding the parsing for shortcut reference links as part of the work for link
+reference definitions, I naturally did the bare minimum required to get it working.  For
+the link label matching algorithm, it was a simple &lt;code&gt;a == b&lt;/code&gt; comparison which worked
+nicely for all of the link reference definition examples except two.  To get it working
+with those two examples, both dealing with case insensitivity, I changed the
+comparison to &lt;code&gt;a.lower() == b.lower()&lt;/code&gt; and then both examples parsed correctly.&lt;/p&gt;
+&lt;p&gt;When I reached the reference link examples that dealt with link label matching,
+things got a bit more tricky, but not too tricky.  Use &lt;code&gt;.casefold()&lt;/code&gt; instead of
+&lt;code&gt;.lower()&lt;/code&gt;? No problem.  Stripping various forms of whitespace from the link label?
+No problem.  Using the right text as a basis for those transformations?  That took a
+bit of work.&lt;/p&gt;
+&lt;p&gt;Given that link processing is handled in the inline processing phase, the easiest
+solution was to add parallel text handling.  My thinking was that since the inline
+processing is constrained to a single continuous grouping of text, I just needed
+something simple that would only exist for the lifetime of that grouping.  To accomplish
+this, I used the variable &lt;code&gt;current_string_unresolved&lt;/code&gt; to keep track of a raw,
+unresolved version of the string that was being processed in the variable
+&lt;code&gt;current_string&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;While that
+might seem a bit of a kludge&lt;sup id="fnref:kludge"&gt;&lt;a class="footnote-ref" href="#fn:kludge"&gt;2&lt;/a&gt;&lt;/sup&gt;, for me it was a simple solution that was
+contained to the area most affected by the issue.  The other option, using an
+unresolved stream and then resolving it later, seemed to have too many
+issues to deal with in a manner that I was sure was going to cover all of the edge
+cases.  I know this because I tried that first (and second and third), before sitting
+back and rethinking what the best approach would be from a high level. After three
+attempts with the unresolved stream and no success, the kludge solution worked on the
+first try with no issues.  Guess it really wasn’t a kludge!&lt;/p&gt;
+&lt;p&gt;Having found a decent solution for using the right text to match against, the only
+issue I had left to deal with was in dealing with the order of precedence of reference
+links with themselves and other elements.  Detailed in the examples between
+&lt;a href="https://github.github.com/gfm/#example-572"&gt;example 572&lt;/a&gt; and
+&lt;a href="https://github.github.com/gfm/#example-579"&gt;example 579&lt;/a&gt;, these examples give very
+specific guidance on the precedence to use for each combination.  While the examples
+provided good guidance, the implementation wasn’t always so easy to get right.&lt;/p&gt;
+&lt;p&gt;While getting the order in which to check for
+the various types of reference links took a bit, it was complicated by the determination
+of whether or not a given reference link referenced a valid link reference definition.
+Out of the 4 days it took for me to complete reference links, one of those days was
+spent just going over all of the combinations, making sure that the specification
+detailed them (it did!), and then checking and rechecking each modification that made
+another of the above examples work.  It was only then that I staged my changes and moved
+on to the next example.  In the end, it was very tedious work, but it was worthwhile
+because it worked.&lt;/p&gt;
+&lt;h2 id="what-was-my-experience-so-far"&gt;What Was My Experience So Far?&lt;a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;For the most part, the implementation of the reference links was a good experience,
+combining a bit of “reuse foundation” work with some “how do I get this to work
+properly” challenges.  There was just one dark sport on the implementation of the
+feature.&lt;/p&gt;
+&lt;p&gt;I have already mentioned my issues with understanding the link specification in the
+above sections, but I feel the topic is important enough topic to warrant more
+discussion.  Unlike before where I was
+&lt;a href="https://jackdewinter.github.io/2020/03/30/markdown-linter-adding-inline-links/#what-was-my-experience-so-far"&gt;skipping parts&lt;/a&gt;
+of the specification, this challenge was a genuine case of me reading the specification
+and not getting a good understanding of it.  Even with the provided examples, there
+were still times where I was unable to comprehend what the specification was doing.  It
+was only after going “old school” and getting out a pencil and some paper did I work
+through it.&lt;/p&gt;
+&lt;p&gt;At one point, I remember thinking to myself:&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Writing parsers for 30 years and you still need a pencil and paper?&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;It was not one of the brightest moments of the project, but it did happen. It
+was after what I think was the 7th or 8th time of me trying to
+understand the preventing the link within a link logic detailed in the section on
+&lt;a href="https://jackdewinter.github.io/2020/04/13/markdown-linter-adding-reference-links/#what-are-full-reference-links"&gt;reference links&lt;/a&gt;.
+Honestly, I am guessing it was the 7th or 8th time, I actually lost count of the number
+of attempts. For whatever reason, it just wasn’t clicking for
+me.  It’s times like those that I like to break a problem down to smaller components,
+what I refer to the “boulders to pebbles” approach.  And for some reason, I needed to
+break those pebbles down even smaller, and I was really hard on myself for it.&lt;/p&gt;
+&lt;p&gt;No matter who you are, you are going to have good days, bad days, and a lot of in
+between days.  The more that you take care of yourself, the better your chance of
+being on the positive end of that spectrum.  I didn’t need a pencil and paper because
+I wasn’t capable of figuring out the problem myself, I needed them as a tool to
+help me figure it out myself on that day.  I now look back at the problem and my
+scribbles and have the mental capacity to understand: it was just a bad day.  And
+even if I am being more charitable about the day than it really was.  So what?
+I used the tools that I needed to in order to solve the problem I faced.  Simple as
+that.&lt;/p&gt;
+&lt;p&gt;I started this project with a need and a desire to learn.  I completed this feature
+learning that I still have what it takes to solve the issues that I need to.  I also
+learned that I need to focus a bit more on taking better care of myself and nudging
+myself towards the positive end of that spectrum.  Guess what? I stumble, I learn,
+and I get up and try and not do the same thing again.  Well… not too often at least.&lt;/p&gt;
+&lt;h2 id="what-is-next"&gt;What is Next?&lt;a class="headerlink" href="#what-is-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;While I know there is some “optional” stuff I need to add to the parser before I
+can use it on my own website, there is only one more feature that I need to complete
+before the parser is complete and GFM compliant.  With a bit of a mental drum roll…
+image links are next!&lt;/p&gt;
+&lt;div class="footnote"&gt;
+&lt;hr/&gt;
+&lt;ol&gt;
+&lt;li id="fn:before"&gt;
+&lt;p&gt;As link reference definitions are parsed with the leaf blocks, and reference links are parsed later with inline processing, the term “previously defined” refers to any definition in the Markdown document that was parsed, and not “previously defined” with respect to the relative locations of the reference links and the definition within the Markdown document. &lt;a class="footnote-backref" href="#fnref:before" title="Jump back to footnote 1 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li id="fn:kludge"&gt;
+&lt;p&gt;According to Merriam-Webster: “a haphazard or makeshift solution to a problem and especially to a computer or programming problem” &lt;a class="footnote-backref" href="#fnref:kludge" title="Jump back to footnote 2 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/div&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category></entry><entry><title>Markdown Linter - Adding Link Reference Definitions</title><link href="https://jackdewinter.github.io/2020/04/06/markdown-linter-adding-link-reference-definitions/" rel="alternate"></link><published>2020-04-06T00:00:00-07:00</published><updated>2020-04-06T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-04-06:/2020/04/06/markdown-linter-adding-link-reference-definitions/</id><summary type="html">
 &lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;As detailed in
 &lt;a href="https://jackdewinter.github.io/2020/03/30/markdown-linter-adding-inline-links/#Why-Inline-Links?"&gt;the last article&lt;/a&gt;,
 the remaining work left on the main parser consists of inline links,
-link reference definitions, reference links, and image links.  While I could try and
-come up with some grand reason for doing the link reference definitions next, the honest
-truth is simple …&lt;/p&gt;</summary><content type="html">
+link reference definitions, reference links, and image links.  Inline links were
+covered in the last article.  While I could try and
+come up with some grand reason for doing the link …&lt;/p&gt;</summary><content type="html">
 &lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;As detailed in
 &lt;a href="https://jackdewinter.github.io/2020/03/30/markdown-linter-adding-inline-links/#Why-Inline-Links?"&gt;the last article&lt;/a&gt;,
 the remaining work left on the main parser consists of inline links,
-link reference definitions, reference links, and image links.  While I could try and
+link reference definitions, reference links, and image links.  Inline links were
+covered in the last article.  While I could try and
 come up with some grand reason for doing the link reference definitions next, the honest
 truth is simple: they were next on the list.&lt;/p&gt;
 &lt;h2 id="what-is-the-audience-for-this-article"&gt;What Is The Audience For This Article?&lt;a class="headerlink" href="#what-is-the-audience-for-this-article" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
@@ -22,7 +385,7 @@ rather that the solutions themselves.  For a full record of the solutions presen
 this article, please go to this project’s GitHub repository and consult the
 commit of
 &lt;a href="https://github.com/jackdewinter/pymarkdown/commit/680e9d9fd7472e69232a191ca84ce9bc5ff4aaec"&gt;22 March 2020&lt;/a&gt;.&lt;/p&gt;
-&lt;h2 id="why-are-link-reference-definitions"&gt;Why Are Link Reference Definitions?&lt;a class="headerlink" href="#why-are-link-reference-definitions" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;h2 id="what-are-link-reference-definitions"&gt;What Are Link Reference Definitions?&lt;a class="headerlink" href="#what-are-link-reference-definitions" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;In the
 &lt;a href="https://jackdewinter.github.io/2020/03/30/markdown-linter-adding-inline-links/#what-is-an-inline-link"&gt;last article&lt;/a&gt;,
 I introduced inline links and how they present the text to appear in the
