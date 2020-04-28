@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="author" content="Jack De Winter" />
+
+        <meta name="description" content="Introduction¶ First off, despite what I said at the end of the last article, no, I am not going to call this “Refactoring: The Sequel”… even if that would be a cool name. From my point of view, refactoring is anything involving getting rid of technical debt, usually increasing the …
+" />
+        <meta property="og:type" content="article" />
+        <meta name="twitter:card" content="summary">
+
+<meta name="keywords" content="markdown linter, Software Quality, " />
+
+<meta property="og:title" content="Markdown Linter - Reducing the Parser&#39;s Technical Debt "/>
+<meta property="og:url" content="https://jackdewinter.github.io/2020/04/27/markdown-linter-reducing-the-parsers-technical-debt/" />
+<meta property="og:description" content="Introduction¶ First off, despite what I said at the end of the last article, no, I am not going to call this “Refactoring: The Sequel”… even if that would be a cool name. From my point of view, refactoring is anything involving getting rid of technical debt, usually increasing the …" />
+<meta property="og:site_name" content="Jack&#39;s Digital Workbench" />
+<meta property="og:article:author" content="Jack De Winter" />
+<meta property="og:article:published_time" content="2020-04-27T00:00:00-07:00" />
+<meta name="twitter:title" content="Markdown Linter - Reducing the Parser&#39;s Technical Debt ">
+<meta name="twitter:description" content="Introduction¶ First off, despite what I said at the end of the last article, no, I am not going to call this “Refactoring: The Sequel”… even if that would be a cool name. From my point of view, refactoring is anything involving getting rid of technical debt, usually increasing the …">
+
+        <title>Markdown Linter - Reducing the Parser&#39;s Technical Debt  · Jack&#39;s Digital Workbench
+</title>
+        <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://jackdewinter.github.io/theme/css/style.min.css?bec7d543">
+
+        <link href="https://jackdewinter.github.io/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Jack&#39;s Digital Workbench - Full Atom Feed" />
+
+
+    </head>
+    <body>
+        <div id="content">
+            <div class="navbar navbar-static-top">
+                <div class="navbar-inner">
+                    <div class="container-fluid">
+                        <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                        </a>
+                        <a class="brand" href="https://jackdewinter.github.io/"><span class=site-name>Jack's Digital Workbench</span></a>
+                        <div class="nav-collapse collapse">
+                            <ul class="nav pull-right top-menu">
+                                <li >
+                                    <a href=
+                                       https://jackdewinter.github.io
+                                    >Home</a>
+                                </li>
+                                <li ><a href="https://jackdewinter.github.io/categories">Categories</a></li>
+                                <li ><a href="https://jackdewinter.github.io/tags">Tags</a></li>
+                                <li ><a href="https://jackdewinter.github.io/archives">Archives</a></li>
+                                <li><form class="navbar-search" action="https://jackdewinter.github.io/search.html" onsubmit="return validateForm(this.elements['q'].value);"> <input type="text" class="search-query" placeholder="Search" name="q" id="tipue_search_input"></form></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="container-fluid">
+                <div class="row-fluid">
+                    <div class="span1"></div>
+                    <div class="span10">
+<article itemscope>
+<div class="row-fluid">
+    <header class="page-header span10 offset2">
+        <h1>
+            <a href="https://jackdewinter.github.io/2020/04/27/markdown-linter-reducing-the-parsers-technical-debt/">
+                Markdown Linter - Reducing the Parser's Technical Debt
+            </a>
+        </h1>
+    </header>
+</div>
+
+<div class="row-fluid">
+    <div class="span2 table-of-content">
+        <nav>
+        <h4>Contents</h4>
+        <div class="toc">
+<ul>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#what-is-the-audience-for-this-article">What Is the Audience For This Article?</a></li>
+<li><a href="#refactor-1-matching-commonmark-character-encoding">Refactor 1: Matching CommonMark Character Encoding</a></li>
+<li><a href="#refactor-2-more-fun-with-tabs">Refactor 2:  More Fun with Tabs</a></li>
+<li><a href="#refactor-3-fenced-code-blocks">Refactor 3: Fenced Code Blocks</a></li>
+<li><a href="#refactor-4-html-blocks-inside-of-lists">Refactor 4: HTML Blocks inside of Lists</a></li>
+<li><a href="#refactor-5-more-fun-with-lists">Refactor 5: More Fun with Lists</a></li>
+<li><a href="#what-was-my-experience-so-far">What Was My Experience So Far?</a></li>
+<li><a href="#what-is-next">What is Next?</a></li>
+</ul>
+</div>
+        </nav>
+    </div>
+    <div class="span8 article-content">
+            
+            
+<h2 id="introduction">Introduction<a class="headerlink" href="#introduction" title="Permanent link">¶</a></h2>
+<p>First off, despite what I said at the end of the
+<a href="https://jackdewinter.github.io/2020/04/27/markdown-linter-reducing-the-parsers-technical-debt/#what-is-next">last article</a>,
+no, I am not going to call this “Refactoring: The Sequel”… even if that would be a
+cool name.  From my point of view, refactoring is anything involving getting rid of
+technical debt, usually increasing the correctness, readability, or maintainability of
+a project.  This can be as simple as writing clear and concise documentation, or a
+more difficult task involving the rewriting of project code.  If a task moves
+the project in a positive direction while not adding a new feature to the project, I
+believe that that task falls under the category of refactoring.  It is a simple
+definition, but it has served me well.</p>
+<p>Since this project has been ongoing since 22 Nov 2019, there have been a decent number
+of issues that have been added to the parser’s technical debt list, and a decent number
+of issues removed from that same list due to informal “refactor weeks” that I had.
+Most of the issues that I added to that list had a very specific reason that I decided
+to put them on the list instead of handling that issue right there. But as I am
+only human, there were probably a few times where it was just easier to deal with it
+later.  Regardless of how each issue was added to the list of technical debt, I wanted
+to try and make a decent size dent to the pile of parser’s technical debt before
+closing out the main development effort on it.  As my goal is to give better
+perspective on what I am doing and why, I thought an article just focusing on these
+technical debt items would be informative to anyone that has been following the project
+so far.</p>
+<p>Just to keep everything above board, I am not going to talk about every individual
+commit between the two commit points noted in the next section, just the interesting
+ones.  In that uninteresting category are some changes to get ready for future
+features, some changes to fix cut-and-paste issues from past changes, and some changes
+to correct something that I forgot to do.  While they are necessary, they are not
+interesting.  They just prove I am human and make mistakes just like everyone else.</p>
+<p>And like everyone else, I sometimes put things off until later.  But at some point,
+the bill is due.  For me, it was now that I wanted to pay some of that bill off.</p>
+<h2 id="what-is-the-audience-for-this-article">What Is the Audience For This Article?<a class="headerlink" href="#what-is-the-audience-for-this-article" title="Permanent link">¶</a></h2>
+<p>While detailed more eloquently in
+<a href="https://jackdewinter.github.io/2020/04/05/what-is-the-audience-for-my-blog/#what-is-the-audience-for-my-blog">this article</a>,
+my goal for this technical article is to focus on the reasoning behind my solutions,
+rather that the solutions themselves.  For a full record of the solutions presented in
+this article, please go to this project’s GitHub repository and consult the
+commits between
+<a href="https://github.com/jackdewinter/pymarkdown/commit/e638e0bd6bc069ad17f9d22b3473e639c8caaa01">05 April 2020</a> and
+<a href="https://github.com/jackdewinter/pymarkdown/commit/3b2025a01c436a810d1b084ab6bf38fd83a627d1">11 April 2020</a>.</p>
+<h2 id="refactor-1-matching-commonmark-character-encoding">Refactor 1: Matching CommonMark Character Encoding<a class="headerlink" href="#refactor-1-matching-commonmark-character-encoding" title="Permanent link">¶</a></h2>
+<p>The issue that was the parent of this one was an interesting issue to find, and this
+issue was generated to perform the cleanup for that issue.  The HTML output for the
+examples in the
+<a href="https://github.github.com/gfm">GFM specification</a>
+are generated by processing the Markdown text examples through
+<a href="https://commonmark.org/">CommonMark</a>,
+mainly because CommonMark is considered the reference implementation for the
+specification.  In each of the following scenario tests, the parser’s output for the
+<code>href</code> attribute in each link was arguably correct, but the output did not match the
+output in the examples.  To resolve this issue and ensure that the scenario tests
+passed, I needed to fix the link functionality in the parser so that it encodes the
+right characters according to CommonMark’s “right way” to ensure the parser passed
+the tests.</p>
+<p>It would have been easy if the encoding misses were all the same thing, but they
+were not.  In the <code>href</code> attribute for
+<a href="https://github.github.com/gfm/#example-603">example 603</a>,
+the ampersand character <code>&amp;</code> is replaced with the string <code>&amp;amp;</code>.  In
+<a href="https://github.github.com/gfm/#example-510">example 510</a>, the <code>\</code> is replaced by the
+string <code>%5C</code>.  However, in
+<a href="https://github.github.com/gfm/#example-509">example 509</a>,
+the <code>?</code> and <code>#</code> characters are both left alone, and not specially encoded.  Just
+small differences in how the characters were represented, and each one a bit different.</p>
+<p>To be clear, the main goal of resolving the original issue with those tests was not to
+figure out what the “actual right way” of encoding the <code>href</code> attribute was, but to
+match what CommonMark was doing.  Specifically, I wanted to make sure I have a solid
+starting point for matching my parser against others, and CommonMark seemed a better
+candidate than others.  After all, they published a specification on what they expect
+from the CommonMark parser in the GFM specification.  But as the above cases only
+caught a small number of issues in 3 tests, I determined that I needed to figure out
+what the proper set of ASCII character encodings are for CommonMark.</p>
+<p>To properly figure out what CommonMark encodes and does not encode, I added in the tests
+in the <code>test_markdown_extra.py</code> file that specifies, in sequence, each of the possible
+characters after the <code>space</code> character and before the <code>del</code> character in the ASCII
+table.  While I could have done something clever using the
+<a href="https://docs.python.org/3.7/library/string.html">Python string constants</a>,
+I wanted the test to be explicit about what it was testing.  After submitting the
+newly generated Markdown sample to
+<a href="https://johnmacfarlane.net/babelmark2/">Babelmark</a>,
+I copied Babelmark’s response for CommonMark back into the test as the response.
+From there, I just kept on adjusting the encoding code until the HTML output matched
+Babelmark’s output for CommonMark exactly.</p>
+<p>Did I have to do this? Not really.  Technically I was already meeting the minimum
+requirements by passing the scenario tests.  However, I just felt that it was better to
+do the thorough job than to leave it to chance.</p>
+<h2 id="refactor-2-more-fun-with-tabs">Refactor 2:  More Fun with Tabs<a class="headerlink" href="#refactor-2-more-fun-with-tabs" title="Permanent link">¶</a></h2>
+<p>When people start developing code in any programming language, one of the first things
+that they learn is that the tab character in most languages is a bad
+idea.  After that, the religious conversations start about whether to replace a tab
+character with 2 spaces or 4 spaces, but that is not something I want to go into.
+Those kinds of conversations usually just devolve into
+<a href="https://en.wiktionary.org/wiki/bikeshedding">bike-shedding</a>
+within minutes.</p>
+<p>In the GPF specification, they avoid this conversation nicely by making it clear:</p>
+<blockquote>
+<p>Tabs in lines are not expanded to spaces. However, in contexts where whitespace helps to define block structure, tabs behave as if they were replaced by spaces with a tab stop of 4 characters.</p>
+</blockquote>
+<p>Good!  So tab characters have a width of 4 characters.<sup id="fnref:holdIt"><a class="footnote-ref" href="#fn:holdIt">1</a></sup>  That sounds right.  I
+then changed my <code>calculate_length</code> function to count every tab character as 4
+characters and every non-tab character as 1 character.  No problem. Then I went
+back to fix
+<a href="https://github.github.com/gfm/#example-6">example 6</a>
+which was marked as skipped and
+<a href="https://github.github.com/gfm/#example-7">example 7</a>
+which was added incorrectly as a test.  Reading the preface for those tests:</p>
+<blockquote>
+<p>Normally the &gt; that begins a block quote may be followed optionally by a space, which is not considered part of the content. In the following case &gt; is followed by a tab, which is treated as if it were expanded into three spaces. Since one of these spaces is considered part of the delimiter, foo is considered to be indented six spaces inside the block quote context, so we get an indented code block starting with two spaces.</p>
+</blockquote>
+<p>That statement did not sound right to me.  The math was wrong.  The block quote start
+character is followed by 2 tab characters for a total count of 8 whitespace
+characters.  Subtract
+1 from that for the whitespace character following the block quote character and you
+have 7, not 6.  I read the entire section on tabs about 4 or 5 times, being either
+persistent or stubborn, depending on your point of view.  Then finally I keyed in on
+the phrase “expanded into three spaces”.</p>
+<p>Something was wrong.  I rechecked my math using 3 spaces instead of 4 spaces for
+that example, and it worked.  But it said at the top that tabs were the equivalent of 4
+spaces, didn’t it?  Rereading the preface for Markdown tab characters, for what seemed
+like the 10th time, it was then that I noticed it.  Not a tab width of 4 characters,
+but a tab stop of 4 characters.
+While it may seem like a simple difference, it is not.</p>
+<p>A tab stop of 4 means that if a tab character is encountered, the parser should consider
+there to be spaces until reaching a column index that is a multiple of 4. In the above
+example, the tab character was encountered after the block quote start character,
+effectively at an index of 1 on that line.  That meant when the parser encountered the
+tab character, it should be considered the same as 3 space characters, as it would take
+adding 3 space character to get from the current position of 1 to the next tab stop at
+index 4.</p>
+<p>While somewhat interesting, the impact of those changes was more interesting
+to me.  The first impact was that I needed to rewrite the <code>calculate_length</code> function to
+expand tabs based on a possibly non-zero index starting point.  This wasn’t a really
+big deal as it was a small function, but as the complexity increased enough to where
+I was worried about properly calculating the length, I added the <code>test_calculate_length</code>
+module to properly test all of its cases.</p>
+<p>The second impact was on the block quote blocks and list blocks, both of which are
+container blocks.  Before this change, the start position of an enclosed block inside
+of a container block was not an issue.  With this change, to properly account for tabs
+and tab stops, the parser needs to know the exact position on the line where the
+current string started in case it contained tabs.  This proved to be complicated
+enough that I spread it over 2 commits.</p>
+<p>In between, the third impact was discovered, the tokens for indented code blocks.  As
+a bit of a shortcut, instead of grabbing the required whitespace from the
+string being parsed, I simply used a string containing 4 space characters as the leading
+whitespace for the code block.  I needed to change that to grabbing the correct
+whitespace as the length of the tab character was now variable.</p>
+<p>In the end, 3 small examples, 1 tab character, 3 impacted areas, and a lot of grumbling
+on my behalf.  But it got fixed… it just took a while.</p>
+<h2 id="refactor-3-fenced-code-blocks">Refactor 3: Fenced Code Blocks<a class="headerlink" href="#refactor-3-fenced-code-blocks" title="Permanent link">¶</a></h2>
+<p>In getting rid of some of the technical debt, there were a couple of issues with the
+fenced code blocks that I really wanted to address: fenced code blocks inside of
+block quotes and fenced code blocks with starting whitespace.</p>
+<p>The examination of the first issue, fenced code blocks inside of block quotes, started
+off easy enough.  In
+<a href="https://github.github.com/gfm/#example-98">example 98</a>,
+which is as follows:</p>
+<div class="highlight"><pre><span></span><span class="o">&gt;</span> <span class="o">```</span>
+<span class="o">&gt;</span> <span class="n">aaa</span>
+
+<span class="n">bbb</span>
+</pre></div>
+<p>a fenced code block is started within the block quote.  As such, when the block quote
+ends, the fenced code block is closed.  That part was already working fine.  However,
+when the first and only line in the code block was extracted, it was extract with 2
+extra characters of whitespace in front of it, providing for a token representation of
+<code>[text:aaa:  ]</code> instead of <code>[text:aaa:]</code>.  This in turn added the string <code>aaa</code> to
+the HTML document instead of <code>aaa</code>, causing the scenario test to fail.</p>
+<p>This issue was easy to fix, making sure that the indent count was considered when
+returning the remaining string in the fenced code block.  Along the way,
+just to make sure things were parsing properly, I added 2 extra variants of example
+98, one with an extra <code>&gt;</code> character at the start of the second line and one without any
+<code>&gt;</code> at the start of the second line, just to make sure they were being parsed properly.
+Seeing as there was already one issue found in that area, I figured the extra tests
+would not hurt.</p>
+<p>Following that quick find-and-fix, I moved on to
+<a href="https://github.github.com/gfm/#example-101">example 101</a> and
+<a href="https://github.github.com/gfm/#example-103">example 103</a>
+which also dealt with inconsistent spacing with fenced code blocks.  However, in the
+case of these examples, it was an issue with properly handing the leading spaces before
+the fenced code block start, code block content, and fenced code block end.</p>
+<p>In the case of example 101:</p>
+<div class="highlight"><pre><span></span> <span class="o">```</span>
+ <span class="n">aaa</span>
+<span class="n">aaa</span>
+<span class="o">```</span>
+</pre></div>
+<p>the fenced code block start sequence is preceded by a single space character, as is the
+first line of the code block content.  The specification clearly states:</p>
+<blockquote>
+<p>If the leading code fence is indented N spaces, then up to N spaces of indentation are removed from each line of the content (if present).</p>
+</blockquote>
+<p>Looking at the source code, it was obvious to me that any indentation for the fenced
+code block start was extracted and then immediately thrown out.  A quick change to
+how the fenced code block was storing the information to include the indent count of
+the fenced code block start, some other code to remove up to that many whitespace
+characters from the start of any content lines, and it was done.  This was the same
+for example 103, just with more of an additional indent, and the added concern of
+having one of the lines have fewer indent characters than the fenced code block
+start line.</p>
+<p>These two small issues only took a matter of hours before they were fixed,
+but they were good fixes.  I am not sure why, but I felt that these issues were going
+to be larger than they were and seeing them in my “to fix” list was causing
+me a bit of stress.  Regardless of the effort required, it was good to get them
+taking care of.  Sometimes you move the project in a positive direction in big steps,
+and sometimes they are baby steps.  The important thing to remember is that they
+are both moving the project in the right direction.</p>
+<h2 id="refactor-4-html-blocks-inside-of-lists">Refactor 4: HTML Blocks inside of Lists<a class="headerlink" href="#refactor-4-html-blocks-inside-of-lists" title="Permanent link">¶</a></h2>
+<p>Sometimes I look at some code, and I get a feeling that it isn’t quite right. I often
+cannot immediately point to something specific, but I just have a feeling that usually
+turns
+out to be accurate indicator of bad code. That was the case with
+<a href="https://github.github.com/gfm/#example-144">example 144</a>.
+Ignoring any previous statements that I have made about the use of HTML in Markdown,
+I wanted to make sure that this example was being parsed properly.  In this example:</p>
+<div class="highlight"><pre><span></span><span class="o">-</span> <span class="o">&lt;</span><span class="n">div</span><span class="o">&gt;</span>
+<span class="o">-</span> <span class="n">foo</span>
+</pre></div>
+<p>what should be created is a list with an item containing a single <code>&lt;div&gt;</code> HTML item and
+another list item with the text <code>foo</code>.  To be honest, I had to check the HTML and list
+specifications a couple of times to find out which of them overruled the other.  As I
+should have gathered, the list (a container block) has higher precedence than the
+HTML block (a leaf block), so when the next list item within the list block starts, the
+HTML block from the first item is automatically closed.</p>
+<p>It is probably because of my uncertainty with the specification regarding which block
+had the higher precedence that I decided to add an extra test, <code>test_html_blocks_144a</code>:</p>
+<div class="highlight"><pre><span></span><span class="o">-</span> <span class="o">&lt;</span><span class="n">div</span><span class="o">&gt;</span>
+<span class="o">-</span> <span class="n">foo</span>
+
+<span class="n">foo</span>
+</pre></div>
+<p>I realize it might seem like the extra paragraph is unwarranted, but I wanted to
+make extra sure that everything was being unwound properly, including the list.  Whether
+or not the extra test really adds anything, I’ll double check on later.  Even though
+there was nothing wrong with this test, I still trust my previous experience with code.
+I would rather double check some code and find nothing rather than not check and miss
+something important.  But at the same time, it had me looking at the list block code,
+which is how I started looking at the issues for the next section.</p>
+<h2 id="refactor-5-more-fun-with-lists">Refactor 5: More Fun with Lists<a class="headerlink" href="#refactor-5-more-fun-with-lists" title="Permanent link">¶</a></h2>
+<p>As I mentioned previously, I often get a feeling that a given set of code is not 100%
+correct, and this time it was about lists, specifically sublists. While each of the
+required scenario tests for sublists were passing, there was just this little voice in
+my head saying that something did not feel right.  There was just something there that
+inspired me to add an issue to my notes to check them out further, but not enough for
+me to give anything more than a vague feeling.</p>
+<p>Unlike how things turned out in the previous section with HTML blocks, after I did
+some digging in the code, I found that my feeling was correct!  Due to my digging,
+I found several problems with sublists, specifically with indenting and switching
+between sublists and other lists.  To debug these problems and to make sure they
+stayed fixed, I introduced a total of 16 variations on existing, passing scenario
+tests to properly address these issues.  I am still trying to figure out if these
+issues are due to how I implemented the parser or if they are legitimate edge cases
+for the specification.  Stay tuned for that!</p>
+<p>These issues with the newly added scenario tests fall into 2 categories: indenting and
+switching list start sequences.  My examples will mostly deal with unordered lists, but
+I added the same types of tests for both ordered and unordered lists.</p>
+<p>As a good example of what I looked for, consider
+<a href="https://github.github.com/gfm/#example-281">example 281</a>:</p>
+<div class="highlight"><pre><span></span><span class="o">-</span> <span class="n">foo</span>
+<span class="o">-</span> <span class="n">bar</span>
+<span class="o">+</span> <span class="n">baz</span>
+</pre></div>
+<p>Looking at this Markdown, it should be obvious that it is a pair of unordered lists,
+the first having two elements and the second having a single element. Playing around
+with the structure a bit, I decided to keep all the list start characters the same but
+change the indent of the second list item to make it into a sublist.</p>
+<div class="highlight"><pre><span></span><span class="o">*</span> <span class="n">foo</span>
+  <span class="o">*</span> <span class="n">bar</span>
+<span class="o">*</span> <span class="n">baz</span>
+</pre></div>
+<p>And… boom!  The parser returned an unordered list that contained another list with
+2 items in that sublist.  Thinking it was a fluke, I changed the last list start
+character to the <code>+</code> character:</p>
+<div class="highlight"><pre><span></span><span class="o">*</span> <span class="n">foo</span>
+  <span class="o">*</span> <span class="n">bar</span>
+<span class="o">+</span> <span class="n">baz</span>
+</pre></div>
+<p>And boom… again! The results were not as expected.  Working my way through many of
+the examples of lists in the GFM specification, I found 16 variations of
+simple changes to existing scenario tests that created sublists that were parsed
+incorrectly.  If I worked them out on paper or by using Babelmark, the paper and
+Babelmark results backed each other up, but the parser’s results were off.  I was
+missing something important somewhere.  But where?</p>
+<p>Taking a bit of time to cool down, when I started looking at those examples and various
+patterns of indentation, start character, and sublists emerged.  Adding some debug
+code to aid in the diagnosis, I ran each of the newly added tests again.  After some
+screaming at my monitor in frustration<sup id="fnref:rubberDucking"><a class="footnote-ref" href="#fn:rubberDucking">2</a></sup>, I was rewarded with a common
+thread that went across all of the tests: starting conditions.</p>
+<p>When I start a list in the parser, the most relevant information about the list start
+is the starting index of the list and the start character.  For single level lists and
+lists that are neat (that is all the sublists are indented the same amount), there
+are no issues with this approach as everything lines up.  But when I started moving the
+starting locations of the list items and the starting locations of the text within the
+list items, that is when things fell apart.  The big issue was not with the parser
+going down into the sublists, but in how it recovered when exiting from those
+sublists, understanding which lists to take off the list stack on the way back out.</p>
+<p>With a large amount of grumbling on my part, I worked through each of the new scenario
+tests and added code that not only remembered where the list item character was, but
+where the text for that item started.  This allowed me to properly figure out where the
+list itself started, allowing me to create better comparisons on whether a not a list
+should be removed on the way out.  It wasn’t an easy experience, but one by one the
+failing tests became passing tests as I worked through the various combinations
+required to get it working properly.</p>
+<p>Sure, I grumbled a lot on this one.  But I was glad that I followed a feeling and did
+some exploratory testing to put that feeling to rest, rather than dismiss it!  In
+my experience, there are many times where you can look at code and instantly
+know it is wrong and why it is wrong.  (And no, I am not talking about tabs, or line
+spacing, or curly bracket positioning, or…)  However, the really interesting times
+are when you have to trust you gut feeling and explore some scenarios, either to find
+an issue or to be able to increase your confidence to where you do not have that
+feeling anymore.</p>
+<p>Whether it is a “I can see that is wrong” bug or a “I feel like there is something
+wrong there” feeling, both have a valid place in your arsenal for improving the
+quality of the project.</p>
+<h2 id="what-was-my-experience-so-far">What Was My Experience So Far?<a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link">¶</a></h2>
+<p>The purpose of this dedicated session of refactoring was not to eliminate all
+the parser’s technical debt, just make a good dent in it.  Based on that metric,
+I feel good that I have reduced the technical debt a decent amount.  Furthermore,
+I took some steps to reorganize the remaining items into more organized lists,
+for further study.  After making some forward progress with other components of
+the linter, I will inevitably come back to the list in a few weeks and try and deal
+with a couple more of those items.</p>
+<p>Other than the logistics, I feel good about the parser.  There are a decent number of
+issues documented in the list, 40 items in all, but a lot of them are either suggestions
+for more complete testing or questions about whether something is possible or
+desired.  Doing a quick scan of those items as I write this article, there are not any
+open items that I am very worried about, just concerns and ideas that I want explored.
+Basically, I have things that I want to deal with, but it is okay if they wait a bit.</p>
+<p>It is with mixed feelings that I move from writing the parser to writing the
+rules that will take advantage of the parser.  I know that I am moving from having
+conquered one challenge to starting another challenge, and I am okay with that.  On
+one hand, that transition means that the hard work I have put into the parser will
+pay off.  On the other hand, it means that I will be subjecting that same work to
+more stringent tests as I go forward with the rules and the rest of the linter.</p>
+<p>In the end, I guess it boils down to two things.  I have confidence in the work I
+have done to date with the parser, and if anything is missing or needs fixing, I
+know I will be able to handle it.  I also know that the best way to show my confidence
+in the project is to move ahead and write rules that rely on that parser.</p>
+<h2 id="what-is-next">What is Next?<a class="headerlink" href="#what-is-next" title="Permanent link">¶</a></h2>
+<p>While I know the parser is not perfect, and it may never be, I know it is a good enough
+to base the rules on top of it.  As such, my next set of tasks involves making some
+changes to how the parser interacts with the rest of the project code, to ensure
+that it can handle a wide variety of requirements that I may throw at it!</p>
+<div class="footnote">
+<hr/>
+<ol>
+<li id="fn:holdIt">
+<p>Yes, I know. That does not sound right to me now either.  But at the time, I honestly thought it said a tab width of 4 characters.  Keep on reading. <a class="footnote-backref" href="#fnref:holdIt" title="Jump back to footnote 1 in the text">↩</a></p>
+</li>
+<li id="fn:rubberDucking">
+<p>While I don’t frequently use screaming at my monitor as a form of <a href="https://en.wikipedia.org/wiki/Rubber_duck_debugging">rubber duck debugging</a>, it does have it’s benefits sometimes. <a class="footnote-backref" href="#fnref:rubberDucking" title="Jump back to footnote 2 in the text">↩</a></p>
+</li>
+</ol>
+</div>
+
+
+             
+ 
+                <p id="post-share-links">
+    Like this post? Share on:
+    <a href="https://twitter.com/intent/tweet?text=Markdown%20Linter%20-%20Reducing%20the%20Parser%27s%20Technical%20Debt&url=https%3A//jackdewinter.github.io/2020/04/27/markdown-linter-reducing-the-parsers-technical-debt/&hashtags=markdown-linter" target="_blank" rel="nofollow noopener noreferrer" title="Share on Twitter">Twitter</a>
+    ❄
+    <a href="https://www.facebook.com/sharer/sharer.php?u=https%3A//jackdewinter.github.io/2020/04/27/markdown-linter-reducing-the-parsers-technical-debt/" target="_blank" rel="nofollow noopener noreferrer" title="Share on Facebook">Facebook</a>
+    ❄
+    <a href="mailto:?subject=Markdown%20Linter%20-%20Reducing%20the%20Parser%27s%20Technical%20Debt&amp;body=https%3A//jackdewinter.github.io/2020/04/27/markdown-linter-reducing-the-parsers-technical-debt/" target="_blank" rel="nofollow noopener noreferrer" title="Share via Email">Email</a>
+    </p>
+
+            
+            
+
+
+
+
+
+
+<section>
+    <h6 style="display:none;">Comments</h6>
+    <p id="comment-message">So what do you think? Did I miss something? Is any part unclear? Leave your comments below. </p>
+
+    <div class="accordion" id="accordion2">
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                <a class="accordion-toggle disqus-comment-count comment-count"
+                   data-toggle="collapse"
+                   data-parent="#accordion2"
+                   href="https://jackdewinter.github.io/2020/04/27/markdown-linter-reducing-the-parsers-technical-debt/#comment_thread"
+                   id="comment-accordion-toggle">
+                    Comments
+                </a>
+            </div>
+            <div id="comment_thread" class="accordion-body collapse">
+                <div class="accordion-inner">
+                    <div class="comments">
+
+                        <script src="https://utteranc.es/client.js"
+        data-repo="jackdewinter/jackdewinter.github.io"
+        data-issue-term="markdown-linter-reducing-the-parsers-technical-debt"
+        data-label="Comments"
+        data-theme="github-light"
+        crossorigin="anonymous"
+        async>
+</script>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+            <hr/>
+            <aside>
+            <nav>
+            <ul class="articles-timeline">
+                <li class="previous-article">« <a href="https://jackdewinter.github.io/2020/04/20/markdown-linter-adding-image-links-and-simple-cleanup/" title="Previous: Markdown Linter - Adding Image Links and Simple Cleanup">Markdown Linter - Adding Image Links and Simple Cleanup</a></li>
+            </ul>
+            </nav>
+            </aside>
+        </div>
+        <section id="article-sidebar" class="span2">
+    <h4>Reading Time</h4>
+    <p>~16 min read</p>
+            <h4>Published</h4>
+            <time itemprop="dateCreated" datetime="2020-04-27T00:00:00-07:00">Apr 27, 2020</time>
+        <h4>Markdown Linter</h4>
+    <ul class="multi-parts-list">
+            <li >
+            <a href="https://jackdewinter.github.io/2019/12/08/markdown-linter-collecting-requirements/" title="Markdown Linter - Collecting Requirements">Part 1: Markdown Linter - Collecting Requirements</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2019/12/16/markdown-linter-setting-up-parser-tests/" title="Markdown Linter - Setting Up Parser Tests">Part 2: Markdown Linter - Setting Up Parser Tests</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2019/12/22/markdown-linter-parser-testing-strategy/" title="Markdown Linter - Parser Testing Strategy">Part 3: Markdown Linter - Parser Testing Strategy</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/01/27/markdown-linter-parsing-normal-markdown-blocks/" title="Markdown Linter - Parsing Normal Markdown Blocks">Part 4: Markdown Linter - Parsing Normal Markdown Blocks</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/02/03/markdown-linter-adding-block-quotes-and-lists/" title="Markdown Linter - Adding Block Quotes and Lists">Part 5: Markdown Linter - Adding Block Quotes and Lists</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/02/10/markdown-linter-adding-html-blocks/" title="Markdown Linter - Adding HTML Blocks">Part 6: Markdown Linter - Adding HTML Blocks</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/02/17/markdown-linter-taking-time-to-refactor-post-block-implementation/" title="Markdown Linter - Taking Time to Refactor -- Post-Block Implementation">Part 7: Markdown Linter - Taking Time to Refactor -- Post-Block Implementation</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/02/24/markdown-linter-starting-inline-processing/" title="Markdown Linter - Starting Inline Processing">Part 8: Markdown Linter - Starting Inline Processing</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/03/02/markdown-linter-taking-time-to-refactor-post-easy-inlines/" title="Markdown Linter - Taking Time to Refactor -- Post-Easy Inlines">Part 9: Markdown Linter - Taking Time to Refactor -- Post-Easy Inlines</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/03/09/markdown-linter-autolinks-raw-html-and-line-breaks/" title="Markdown Linter - Autolinks, Raw HTML, and Line Breaks">Part 10: Markdown Linter - Autolinks, Raw HTML, and Line Breaks</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/03/16/markdown-linter-verifying-base-scenarios/" title="Markdown Linter - Verifying Base Scenarios">Part 11: Markdown Linter - Verifying Base Scenarios</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/03/23/markdown-linter-adding-inline-emphasis/" title="Markdown Linter - Adding Inline Emphasis">Part 12: Markdown Linter - Adding Inline Emphasis</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/03/30/markdown-linter-adding-inline-links/" title="Markdown Linter - Adding Inline Links">Part 13: Markdown Linter - Adding Inline Links</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/04/06/markdown-linter-adding-link-reference-definitions/" title="Markdown Linter - Adding Link Reference Definitions">Part 14: Markdown Linter - Adding Link Reference Definitions</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/04/13/markdown-linter-adding-reference-links/" title="Markdown Linter - Adding Reference Links">Part 15: Markdown Linter - Adding Reference Links</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/04/20/markdown-linter-adding-image-links-and-simple-cleanup/" title="Markdown Linter - Adding Image Links and Simple Cleanup">Part 16: Markdown Linter - Adding Image Links and Simple Cleanup</a>
+            </li>
+            <li  class="active-part">
+            Part 17: Markdown Linter - Reducing the Parser's Technical Debt
+            </li>
+    </ul>
+            <h4>Category</h4>
+            <a class="category-link" href="https://jackdewinter.github.io/categories#software-quality-ref">Software Quality</a>
+            <h4>Tags</h4>
+            <ul class="list-of-tags tags-in-article">
+                <li><a href="https://jackdewinter.github.io/tags#markdown-linter-ref">markdown linter
+                    <span>17</span>
+</a></li>
+            </ul>
+<h4>Stay in Touch</h4>
+<div id="sidebar-social-link">
+    <a href="https://github.com/jackdewinter" title="github-alt" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="GitHub" role="img" viewBox="0 0 512 512"><rect width="512" height="512" rx="15%" fill="#1B1817"/><path fill="#fff" d="M335 499c14 0 12 17 12 17H165s-2-17 12-17c13 0 16-6 16-12l-1-50c-71 16-86-28-86-28-12-30-28-37-28-37-24-16 1-16 1-16 26 2 40 26 40 26 22 39 59 28 74 22 2-17 9-28 16-35-57-6-116-28-116-126 0-28 10-51 26-69-3-6-11-32 3-67 0 0 21-7 70 26 42-12 86-12 128 0 49-33 70-26 70-26 14 35 6 61 3 67 16 18 26 41 26 69 0 98-60 120-117 126 10 8 18 24 18 48l-1 70c0 6 3 12 16 12z"/></svg>
+    </a>
+    <a href="https://www.linkedin.com/in/jackdewinter/" title="linkedin" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="LinkedIn" role="img" viewBox="0 0 512 512" fill="#fff"><rect width="512" height="512" rx="15%" fill="#0077b5"/><circle cx="142" cy="138" r="37"/><path stroke="#fff" stroke-width="66" d="M244 194v198M142 194v198"/><path d="M276 282c0-20 13-40 36-40 24 0 33 18 33 45v105h66V279c0-61-32-89-76-89-34 0-51 19-59 32"/></svg>
+    </a>
+    <a href="https://jackdewinter.github.io/feeds/all.atom.xml" title="" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="RSS" role="img" viewBox="0 0 512 512"><rect width="512" height="512" rx="15%" fill="#f80"/><circle cx="145" cy="367" r="35" fill="#fff"/><path fill="none" stroke="#fff" stroke-width="60" d="M109 241c89 0 162 73 162 162M109 127c152 0 276 124 276 276"/></svg>
+    </a>
+</div>
+            
+
+
+
+
+
+            
+
+
+
+
+
+        </section>
+</div>
+</article>
+                    </div>
+                    <div class="span1"></div>
+                </div>
+            </div>
+        </div>
+<footer>
+    <div>
+        
+&copy; Copyright 2019 by Jack De Winter and licensed under a <a rel="license"
+  href="http://creativecommons.org/licenses/by/4.0/">
+  <img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/80x15.png" />
+  Creative Commons Attribution 4.0 International License</a>.
+
+    </div>
+
+
+
+
+    <div id="fpowered">
+        Powered by: <a href="http://getpelican.com/" title="Pelican Home Page" target="_blank" rel="nofollow noopener noreferrer">Pelican</a>
+        Theme: <a href="https://elegant.oncrashreboot.com/" title="Theme Elegant Home Page" target="_blank" rel="nofollow noopener noreferrer">Elegant</a>
+    </div>
+</footer>            <script src="//code.jquery.com/jquery.min.js"></script>
+        <script src="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>
+        <script>
+            function validateForm(query)
+            {
+                return (query.length > 0);
+            }
+        </script>
+
+    <script>
+    (function () {
+        if (window.location.hash.match(/^#comment-\d+$/)) {
+            $('#comment_thread').collapse('show');
+        }
+    })();
+    window.onhashchange=function(){
+        if (window.location.hash.match(/^#comment-\d+$/))
+            window.location.reload(true);
+    }
+    $('#comment_thread').on('shown', function () {
+        var link = document.getElementById('comment-accordion-toggle');
+        var old_innerHTML = link.innerHTML;
+        $(link).fadeOut(200, function() {
+            $(this).text('Click here to hide comments').fadeIn(200);
+        });
+        $('#comment_thread').on('hidden', function () {
+            $(link).fadeOut(200, function() {
+                $(this).text(old_innerHTML).fadeIn(200);
+            });
+        })
+    })
+</script>
+
+    </body>
+    <!-- Theme: Elegant built for Pelican
+        License : MIT -->
+</html>
