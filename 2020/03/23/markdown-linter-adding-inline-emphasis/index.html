@@ -80,9 +80,10 @@
         <div class="toc">
 <ul>
 <li><a href="#introduction">Introduction</a></li>
+<li><a href="#what-is-the-audience-for-this-article">What Is the Audience For This Article?</a></li>
 <li><a href="#emphasis-is-hard-and-not-always-consistent">Emphasis is Hard and not always Consistent</a></li>
 <li><a href="#utilizing-the-wisdom-of-others">Utilizing the Wisdom of Others</a></li>
-<li><a href="#building-the-delimiter-stack">Building The Delimiter Stack</a></li>
+<li><a href="#building-the-delimiter-stack">Building the Delimiter Stack</a></li>
 <li><a href="#resolving-the-delimiter-stack">Resolving the Delimiter Stack</a></li>
 <li><a href="#emphasis-the-base-cases">Emphasis - The Base Cases</a></li>
 <li><a href="#emphasis-resolving-the-ambiguity-of-complex-cases">Emphasis - Resolving the Ambiguity of Complex Cases</a></li>
@@ -124,15 +125,15 @@ to understand, if not for the start of the next section of Phase 2:</p>
 <p>I was kind of skeptical, but I continued reading… and reading… and reading.
 After a couple of thorough reads of the section in the GFM specification on
 <a href="https://github.github.com/gfm/#emphasis-and-strong-emphasis">Emphasis and strong emphasis</a>,
-I started to understand why emphasis is not as easy as it seems. At it’s root it is
+I started to understand why emphasis is not as easy as it seems. At its root it is
 pretty simple: use one <code>*</code> for emphasis and <code>**</code> for strong emphasis.  No problems
 there.  If you need a subtle change in the emphasis rules, primarily around intra-word
-use and use around punctuation, use <code>_</code> instead of <code>*</code>. Okay…why do I need so many
+usage and use around punctuation, use <code>_</code> instead of <code>*</code>. Okay…why do I need so many
 rules?</p>
 <p>Isn’t it <em>as easy</em> as <strong>this</strong>?</p>
 <div class="highlight"><pre><span></span><span class="n">Isn</span><span class="err">'</span><span class="n">t</span> <span class="n">it</span> <span class="o">*</span><span class="k">as</span> <span class="n">easy</span><span class="o">*</span> <span class="k">as</span> <span class="o">**</span><span class="n">this</span><span class="o">**?</span>
 </pre></div>
-<p>It took a bit more reading, but for me, it was when the finally some questions from
+<p>It took a bit more reading, but for me, it was some questions from the preface of
 the specification that made me understand.  The big revelation finally hit me in
 the form of those questions and the ambiguity that they raised.</p>
 <p>How are the following cases from the specification of strong emphasis interpreted?</p>
@@ -152,10 +153,15 @@ no emphasis: foo_bar_baz
 </pre></div>
 <p>For most of those examples, I could come up with at least 2-3 different ways that
 they could be parsed.  As such, it is probably a good idea that there are 17 rules to
-help out with emphasis.  But before I could work on the implementation, I needed to
+help with emphasis.  But before I could work on the implementation, I needed to
 do some more research.</p>
-<p>The full record of the work detailed in this article is documented in the
-project’s GitHub repository in the commits between
+<h2 id="what-is-the-audience-for-this-article">What Is the Audience For This Article?<a class="headerlink" href="#what-is-the-audience-for-this-article" title="Permanent link">¶</a></h2>
+<p>While detailed more eloquently in
+<a href="https://jackdewinter.github.io/2020/04/05/what-is-the-audience-for-my-blog/#what-is-the-audience-for-my-blog">this article</a>,
+my goal for this technical article is to focus on the reasoning behind my solutions,
+rather that the solutions themselves.  For a full record of the solutions presented in
+this article, please go to this project’s GitHub repository and consult the
+commits between
 <a href="https://github.com/jackdewinter/pymarkdown/commit/ad66340685ba128fa522a6d275ae55348951c96c">10 March 2020</a> and
 <a href="https://github.com/jackdewinter/pymarkdown/commit/23e77f98d9ab4a7a8d05285cbc11293a96c9ed11">13 March 2020</a>.</p>
 <h2 id="emphasis-is-hard-and-not-always-consistent">Emphasis is Hard and not always Consistent<a class="headerlink" href="#emphasis-is-hard-and-not-always-consistent" title="Permanent link">¶</a></h2>
@@ -165,7 +171,7 @@ properly to allow my
 <a href="https://jackdewinter.github.io/2019/08/25/static-websites-setting-up-the-pelican-static-site-generator/">static site generator</a>
 to take care of the proper coloring. However, for the above examples, I just marked
 them as normal text blocks without any language specified.  This
-was not a mistake, it was a conscious decision.</p>
+was not a mistake; it was a conscious decision.</p>
 <p>When I started entering the fenced code
 block for the text, everything looked normal. However, once I added the <code>Markdown</code>
 language tag at the start of the block, that all changed.  What I saw in my VSCode
@@ -180,7 +186,7 @@ editor was the following:</p>
 <strong>in strong <em>emph</em></strong><br/>
 <em>in emph <strong>strong</strong></em><br/></p>
 <p>Three different platforms and three different ways to interpret the emphasis.
-To me, it was then that it was really apparent why a consistent way to implement
+To me, it was then that it was apparent why a consistent way to implement
 emphasis was needed in order to produce consistent results.</p>
 <h2 id="utilizing-the-wisdom-of-others">Utilizing the Wisdom of Others<a class="headerlink" href="#utilizing-the-wisdom-of-others" title="Permanent link">¶</a></h2>
 <p>Instead of trying to figure everything out myself, tempting as that can be sometimes,
@@ -191,15 +197,15 @@ later.  My plan was to focus on the emphasis itself before moving on to
 links, which I still believe was a very good decision on my part.</p>
 <p>In looking at the algorithm through a bit of a sideways lens, I observed that there were
 two main tasks that the algorithm accomplishes: building the delimiter stack and
-resolving that same delimiter stack.  Without taking a two phase approach to the
+resolving that same delimiter stack.  Without taking a two-phase approach to the
 algorithm, I determined that I would be multitasking two separate objectives, and not
 doing either of them very well.  I just felt strongly that it was better to split the
 task in two and focus on each one until it’s completion.  In the end, I was going to
-finish both part of the algorithm, so as long as both tasks were done, emphasis would
+finish both part of the algorithm, so if both tasks were done, emphasis would
 be implemented.</p>
 <p>The first task: building the delimiter stack.</p>
-<h2 id="building-the-delimiter-stack">Building The Delimiter Stack<a class="headerlink" href="#building-the-delimiter-stack" title="Permanent link">¶</a></h2>
-<p>Taking a high level look at the algorithm, I came up with the following two
+<h2 id="building-the-delimiter-stack">Building the Delimiter Stack<a class="headerlink" href="#building-the-delimiter-stack" title="Permanent link">¶</a></h2>
+<p>Taking a high-level look at the algorithm, I came up with the following two
 observations. In cases where a delimiter is not used in a special way, it needs to be
 represented by a simple text node.  Where it is used in a special way, it may need to
 be removed and properly replaced with the tokens that the delimiters represent. The
@@ -233,10 +239,10 @@ was built, that same string was represented by 4 tokens:</p>
 <li>a <code>TextMarkdownToken</code> token with the string <code>bar</code></li>
 <li>a <code>SpecialTextMarkdownToken</code> token with the string <code>*</code></li>
 </ul>
-<p>In addition, the delimiter stack contained both of the <code>SpecialTextMarkdownToken</code>
+<p>In addition, the delimiter stack contained both <code>SpecialTextMarkdownToken</code>
 tokens in the order that they appear.  At this point in the process, that was the
 expected token output, and I was happy to see it work so well.</p>
-<p>As one good test wasn’t solid proof to me, I continued to make sure that I had decent
+<p>As one good test was not solid proof to me, I continued to make sure that I had decent
 results after building the delimiter stack by repeating this examination with 5-6
 other tests.  While there were a couple of small issues along the way, I was able to
 quickly get to the part where I had a high degree of confidence that the delimiter
@@ -248,7 +254,7 @@ times, taking notes as I went.  I then went back to the
 <a href="https://github.github.com/gfm/#emphasis-and-strong-emphasis">emphasis scetion</a>
 of the GFM and started pairing each of the 17 rules to each note that I made and was
 happy to find a 1-to-1 mapping between the two lists.</p>
-<p>And yes, that’s right… 17 rules.  It did take a while, but I validated each step
+<p>And yes, that is right… 17 rules.  It did take a while, but I validated each step
 in the specification against each of the rules, making detailed notes as I went.  While
 it was slow to emerge, by the time I reached the last rule I had a plan to follow.
 To implement each rule, I would implement the tests in order of the rules that they
@@ -271,7 +277,7 @@ all felt like just another step.  It was a nice feeling.</p>
 <p>As I progressed with the rules, it was nice to see the natural progressing in the
 sequences that I was enabling for the parser.  This progression was so natural
 and straightforward, I want to take the time to show how things progressed over
-the course of the 17 rules.  The honest truth is that when I was finished, it felt
+the course of the 17 rules.  The truth is that when I was finished, it felt
 more like 4-5 rules than 17 rules.</p>
 <p>In order of enablement, first there were
 the simple sequences enabled in rules 1 to 4:</p>
@@ -300,7 +306,7 @@ handled:</p>
 </pre></div>
 <p>*<strong>foo</strong></p>
 <h2 id="emphasis-resolving-the-ambiguity-of-complex-cases">Emphasis - Resolving the Ambiguity of Complex Cases<a class="headerlink" href="#emphasis-resolving-the-ambiguity-of-complex-cases" title="Permanent link">¶</a></h2>
-<p>Using just the prior rules, there were a number of representations that could be
+<p>Using just the prior rules, there were many representations that could be
 inconsistent from parser to parser.  These rules are used to resolve that ambiguity.
 As these rules resolve ambiguity, I am only showing the HTML output in a code block
 instead of showing the HTML output in a code block and the actual HTML itself.</p>
@@ -336,24 +342,24 @@ over the parsing of the emphasis spans.</p>
 <div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">p</span><span class="p">&gt;&lt;</span><span class="nt">em</span><span class="p">&gt;</span>a <span class="p">&lt;</span><span class="nt">code</span><span class="p">&gt;</span>*<span class="p">&lt;/</span><span class="nt">code</span><span class="p">&gt;&lt;/</span><span class="nt">em</span><span class="p">&gt;&lt;/</span><span class="nt">p</span><span class="p">&gt;</span>
 </pre></div>
 <h2 id="emphasis-rule-summary">Emphasis - Rule Summary<a class="headerlink" href="#emphasis-rule-summary" title="Permanent link">¶</a></h2>
-<p>Without actually implementing a Markdown parser, it might be hard to appreciate how
+<p>Without implementing a Markdown parser, it might be hard to appreciate how
 natural the process of building the emphasis support into the parser was.  But please
 believe me, it was a thing of beauty.  The best way to describe it was that as I
 was implementing each section, I jotted down notes for myself that usually started
 with “what about…”.  It was usually within a rule or two that I scratched off that
 note as it was no longer an issue.  By the time I got to the end of the emphasis
-implementation, all of the notes were scratched off.  That kind of progression when
-implementing a specification are rare, and it was just really wonderful to witness.</p>
+implementation, all the notes were scratched off.  That kind of progression when
+implementing a specification are rare, and it was just wonderful to witness.</p>
 <h2 id="what-were-the-bumps-on-the-road">What were the bumps on the road?<a class="headerlink" href="#what-were-the-bumps-on-the-road" title="Permanent link">¶</a></h2>
 <p>During the implementation to support inline emphasis, other than “fat man finger”
-typing errors, there were only a couple of issues that impeded it’s addition to the
+typing errors, there were only a couple of issues that impeded its addition to the
 parser.  The first was because I got impatient and tried to implement one of the rules
 ahead of time and the second was caused by a subtle change I made to the algorithm
 and the side effects that I needed to abate. Other than those two issues, the
 development just flowed easily from the rules and their examples.</p>
 <p>The impatience issue occurred when I was trying to take care of a side-effect of rule
-11, but I was trying to take care of it when implementing rule 1.  It side tracked me
-for a couple of hours without any resolution.  It wasn’t until I double checked that it
+11, but I was trying to take care of it when implementing rule 1.  It sidetracked me
+for a couple of hours without any resolution.  It was not until I double checked that it
 was indeed part of rule 11 that I abandoned it until later.  The “funny” thing is that
 when I did get to implementing rule 11 in the proper order, it was implemented with
 almost no friction in less than 5 minutes. Because of the way the rules build on
@@ -366,7 +372,7 @@ delimiter stack were made with indices (or “indexes” for Americans) instead 
 In the “if one is found” section of the algorithm there are two cases where the
 algorithm calls for the removal of nodes from the delimiter stack.  Instead of removing
 the elements of the delimiter stack and recomputing the indices, I just altered the
-algorithm to work better with the <code>active</code> field.  While this did cause a number of
+algorithm to work better with the <code>active</code> field.  While this did cause a few
 small issues that needed to be resolved, in the end I believe it still was a better
 course of development to take.</p>
 <h2 id="what-was-my-experience-so-far">What Was My Experience So Far?<a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link">¶</a></h2>
@@ -380,15 +386,15 @@ That was nice and gratifying.</p>
 the effort they took to specify the emphasis elements.  Not only did they work hard
 to resolve any ambiguity with 17 rules, but they provided a solid road map for
 implementers to follow with a suggested approach.  For me, the beauty of those two
-part of the specification is how they weave together, each one reinforcing the other
-one.  In it’s simplest form, they took something that I was sure was going to be
+parts of the specification is how they weave together, each one reinforcing the other
+one.  In its simplest form, they took something that I was sure was going to be
 a headache and made it very easy to implement correctly.</p>
 <p>Basically, I started this part of the parser with a feeling of dread, thinking that
-I would plan an approach and have to switch to plan B, or even up to plan F.  But
+I would plan an approach and switch to plan B, or even to plan F.  But
 with some good planning on the behalf of the authors of the GFM specification, it
 went off without any major issues.  It was cool to see that happen.</p>
 <h2 id="what-is-next">What is Next?<a class="headerlink" href="#what-is-next" title="Permanent link">¶</a></h2>
-<p>Having had a really smooth time implementing emphasis, it was very tempting to just dive
+<p>Having had a very smooth time implementing emphasis, it was very tempting to just dive
 in and tackle all of the link support at the same time.  However, in looking at the
 different types of links in the specification, I decided that inline links would be
 a good place to start.  That is where I will pick up in my next article!</p>
