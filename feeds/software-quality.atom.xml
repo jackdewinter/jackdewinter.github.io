@@ -1,5 +1,374 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench - Software Quality</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/software-quality.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2020-04-27T00:00:00-07:00</updated><entry><title>Markdown Linter - Reducing the Parser's Technical Debt</title><link href="https://jackdewinter.github.io/2020/04/27/markdown-linter-reducing-the-parsers-technical-debt/" rel="alternate"></link><published>2020-04-27T00:00:00-07:00</published><updated>2020-04-27T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-04-27:/2020/04/27/markdown-linter-reducing-the-parsers-technical-debt/</id><summary type="html">
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench - Software Quality</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/software-quality.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2020-05-04T00:00:00-07:00</updated><entry><title>Markdown Linter - Core - Pre-Rule Improvements</title><link href="https://jackdewinter.github.io/2020/05/04/markdown-linter-core-pre-rule-improvements/" rel="alternate"></link><published>2020-05-04T00:00:00-07:00</published><updated>2020-05-04T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-05-04:/2020/05/04/markdown-linter-core-pre-rule-improvements/</id><summary type="html">
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Way back in 2019 November, I started this project with a bare-bones framework using a
+simple dynamic plugin loader.  It was a simple proof of concept to determine whether I
+could create the basis for an extensible linter framework in Python.  Once I verified
+that I could write that …&lt;/p&gt;</summary><content type="html">
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Way back in 2019 November, I started this project with a bare-bones framework using a
+simple dynamic plugin loader.  It was a simple proof of concept to determine whether I
+could create the basis for an extensible linter framework in Python.  Once I verified
+that I could write that framework, I implemented a very simple case to test against:
+checking to make sure the provided Markdown text ends with an empty line.  While that
+rule was easy to implement, it was when I looked for another rule to implement that
+I determined that to properly lint Markdown text, I needed a Markdown tokenizing
+parser.  From my viewpoint, unless I had a parser that
+emitted tokens that were a good representation of the Markdown to lint, the linting
+rules that I wanted to write would require too much guess work for my own liking.  If I
+wanted to write good, solid rules, I needed to have the right information
+available for those rules to act upon.  I needed a Markdown parser that emits Markdown
+tokens that I had confidence would be the required, correct information for the rules.&lt;/p&gt;
+&lt;p&gt;Having now written such a parser against the
+&lt;a href="https://github.github.com/gfm/"&gt;Github Flavored Markdown specification&lt;/a&gt;,
+it was time to move on to the next part of the project: writing rules.  However, since
+almost 5 months had passed since the project started, there were a few changes
+that were required in the linter’s core before I could continue.&lt;/p&gt;
+&lt;h2 id="what-is-the-audience-for-this-article"&gt;What Is the Audience for This Article?&lt;a class="headerlink" href="#what-is-the-audience-for-this-article" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;While detailed more eloquently in
+&lt;a href="https://jackdewinter.github.io/2020/04/05/what-is-the-audience-for-my-blog/#what-is-the-audience-for-my-blog"&gt;this article&lt;/a&gt;,
+my goal for this technical article is to focus on the reasoning behind my solutions,
+rather that the solutions themselves.  For a full record of the solutions presented in
+this article, please go to this project’s GitHub repository and consult the
+commits between
+&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/51bb1cf945ad5171bd1c41829a48beceb95a3ab0"&gt;12 April 2020&lt;/a&gt; and
+&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/c8ee25446a425cabf9886b65ad1d4922949bbf44"&gt;16 April 2020&lt;/a&gt;, and the commit from
+&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/562600457654234aa7cabefa8e2a6b56665d936c"&gt;18 April 2020&lt;/a&gt;.&lt;/p&gt;
+&lt;h2 id="source-providers"&gt;Source Providers&lt;a class="headerlink" href="#source-providers" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In my experience, following the
+&lt;a href="https://en.wikipedia.org/wiki/Rule_of_three_(computer_programming)"&gt;threefold rule for refactoring&lt;/a&gt;
+is usually a good idea, as its wisdom has borne out true in my projects many times.
+While not a
+literal copy of the threefold rule, I choose to remember the rule as follows:&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Write it once, write it neat.  Write it twice, think about extracting it.  Write it three times, extract it without a second thought.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;The original text of “three strikes and you refactor” always seemed a little too harsh
+for me with its negative connotation. In addition, I feel that it does not provide good
+enough guidance on what to do in the first two cases, just the third one.  My
+version of the rule still adheres to the spirit of the original rule, while
+fixing the specific issues that I perceive with it.&lt;/p&gt;
+&lt;p&gt;Source providers for the parser are a concept that fits that refactoring pattern very
+well.  When the
+original framework for the parser was written, it was designed to parse a line at a
+time to conserve memory.  In the parser tests, this information is provided to the
+&lt;code&gt;TokenizedMarkdown&lt;/code&gt; class as a single string, with the internal functions of the
+&lt;code&gt;TokenizedMarkdown&lt;/code&gt; class breaking down that data
+into individual lines for further processing. With the exception of a single
+feature’s error case&lt;sup id="fnref:linkReferenceDefinitionError"&gt;&lt;a class="footnote-ref" href="#fn:linkReferenceDefinitionError"&gt;1&lt;/a&gt;&lt;/sup&gt;, this design has proven to be very
+useful in reducing the complexity of the parser.
+It made sense to me to refactor this section of code when considering how to
+add support for the second source of Markdown data: Markdown files.&lt;/p&gt;
+&lt;h3 id="starting-with-the-inmemorysourceprovider"&gt;Starting with the InMemorySourceProvider&lt;a class="headerlink" href="#starting-with-the-inmemorysourceprovider" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Now that the project was moving into the rule-development phase, it was necessary to
+ensure that it was just as easy to feed the parser information from a string as it was
+to feed it information from a file.  As the initial development
+kept things neat, it was relatively simple to take the logic for grabbing the next line
+and encapsulate it within the &lt;code&gt;InMemorySourceProvider&lt;/code&gt; class as follows:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;class&lt;/span&gt; &lt;span class="nc"&gt;InMemorySourceProvider&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+    &lt;span class="sd"&gt;"""&lt;/span&gt;
+&lt;span class="sd"&gt;    Class to provide for a source provider that is totally within memory.&lt;/span&gt;
+&lt;span class="sd"&gt;    """&lt;/span&gt;
+
+    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="fm"&gt;__init__&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;source_text&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;next_token&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;source_text&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;split&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;get_next_line&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="sd"&gt;"""&lt;/span&gt;
+&lt;span class="sd"&gt;        Get the next line from the source provider.&lt;/span&gt;
+&lt;span class="sd"&gt;        """&lt;/span&gt;
+        &lt;span class="n"&gt;token_to_use&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;next_token&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;next_token&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+                &lt;span class="n"&gt;token_to_use&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;next_token&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+                &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;next_token&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;next_token&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;split&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+            &lt;span class="k"&gt;else&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+                &lt;span class="k"&gt;assert&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;next_token&lt;/span&gt;
+                &lt;span class="n"&gt;token_to_use&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;next_token&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+                &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;next_token&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;token_to_use&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;This class contains very simple logic.  When the instance of the class is initialized,
+it starts by breaking down the input text into a tuple.  The first element of the
+resultant tuple contains the next line to be parsed and the second element of that same
+tuple contains the input text to be parsed in the immediate future.  Once that
+calculation has been performed, the rest of the processing is relatively simple.
+If &lt;code&gt;get_next_line&lt;/code&gt; is called and the tuple contains 2 elements, the first element is
+returned as the next line, and the &lt;code&gt;next_token&lt;/code&gt; variable (for next time) is
+recalculated using the same expression as was used in the &lt;code&gt;__init__&lt;/code&gt; function.
+When the &lt;code&gt;get_next_line&lt;/code&gt; is called at the end of the file, the tuple contains only 1
+element.  At that point, that singular element is returned as the next line to be
+parsed, and
+the &lt;code&gt;next_token&lt;/code&gt; variable is set to &lt;code&gt;None&lt;/code&gt; to make sure we end the processing
+properly.  Finally, when &lt;code&gt;get_next_line&lt;/code&gt; is called and the tuple is set to &lt;code&gt;None&lt;/code&gt;,
+there is nothing left to parse and &lt;code&gt;None&lt;/code&gt; is returned, signaling that the provider has
+reached the end of its available text.&lt;/p&gt;
+&lt;p&gt;To be clear, this is the exact code that was in place for the duration of the parser
+testing, just repackaged to be in a more reusable form.  Its interface is plain and
+simple: it either returns the next line as a string, or it
+returns a &lt;code&gt;None&lt;/code&gt; object if there are no more lines.  Nothing fancy as a class either,
+just a simple interface: one function to create the instance and get it setup, and one
+function to read the next line.&lt;/p&gt;
+&lt;h3 id="continuing-with-the-filesourceprovider"&gt;Continuing with the FileSourceProvider&lt;a class="headerlink" href="#continuing-with-the-filesourceprovider" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;By keeping things simple, creating the class &lt;code&gt;FileSourceProvider&lt;/code&gt; was almost as simple
+as the refactoring to create the &lt;code&gt;InMemorySourceProvider&lt;/code&gt; class.  While I want to keep
+options open for future performance experimentation, I just needed something simple
+for reading a file from the file system.  Based on those qualifications, I came up with
+this:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;class&lt;/span&gt; &lt;span class="nc"&gt;FileSourceProvider&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+    &lt;span class="sd"&gt;"""&lt;/span&gt;
+&lt;span class="sd"&gt;    Class to provide for a source provider that is on media as a file.&lt;/span&gt;
+&lt;span class="sd"&gt;    """&lt;/span&gt;
+
+    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="fm"&gt;__init__&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;file_to_open&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="k"&gt;with&lt;/span&gt; &lt;span class="nb"&gt;open&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;file_to_open&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;encoding&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;"utf-8"&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="k"&gt;as&lt;/span&gt; &lt;span class="n"&gt;file_to_parse&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="n"&gt;file_as_lines&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;file_to_parse&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;readlines&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;read_lines&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[]&lt;/span&gt;
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;read_index&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;
+        &lt;span class="n"&gt;did_line_end_in_newline&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;True&lt;/span&gt;
+        &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;next_line&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;file_as_lines&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="n"&gt;did_line_end_in_newline&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;next_line&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;endswith&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+            &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;did_line_end_in_newline&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+                &lt;span class="n"&gt;next_line&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;next_line&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+            &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;read_lines&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;append&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;next_line&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;did_line_end_in_newline&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;read_lines&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;append&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;""&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Basically, open the file, read in the lines, and process the lines into the format
+that we expect.  The only tricky bit with the class’s &lt;code&gt;__init__&lt;/code&gt; function was handling
+line terminators properly.  In fact, that is the only
+purpose for the &lt;code&gt;did_line_end_in_newline&lt;/code&gt; variable, remembering if the current line
+ended with a newline character before it is removed.  Based on independent unit testing
+of the class, I had problems with the characters at the end of the file, which adding
+that variable and the final &lt;code&gt;if&lt;/code&gt; statement resolved cleanly.  I am not sure if I feel
+that the &lt;code&gt;did_line_end_in_newline&lt;/code&gt; variable is a kludge or not, but I do feel that it
+was the right thing to do in order to maintain the fidelity of the data being read in
+from the file.&lt;/p&gt;
+&lt;p&gt;Because care was taken in the provider’s &lt;code&gt;__init__&lt;/code&gt; function to do all the necessary
+processing, the &lt;code&gt;get_next_line&lt;/code&gt; function is very basic:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;get_next_line&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="sd"&gt;"""&lt;/span&gt;
+&lt;span class="sd"&gt;        Get the next line from the source provider.&lt;/span&gt;
+&lt;span class="sd"&gt;        """&lt;/span&gt;
+        &lt;span class="n"&gt;token_to_use&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;read_index&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;read_lines&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+            &lt;span class="n"&gt;token_to_use&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;read_lines&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;read_index&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+            &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;read_index&lt;/span&gt; &lt;span class="o"&gt;+=&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;token_to_use&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;While this function could be more complicated (or simplified depending on your
+viewpoint), I feel that this is a good example of keeping things basic.  The provider
+reads the information into an array of strings during the &lt;code&gt;__init__&lt;/code&gt; function, and this
+function simply uses an index to iterate through and return each element of that
+array.  Nothing fancy for now, just some code that
+is very functional.  Fancy code can always be added later.&lt;/p&gt;
+&lt;h3 id="testing-the-source-providers"&gt;Testing the Source Providers&lt;a class="headerlink" href="#testing-the-source-providers" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;To make sure both providers are adhering to the interface in the same way, I
+added a decent number of tests in the &lt;code&gt;test_source_providers.py&lt;/code&gt; file.  In all the
+tests, the big thing that is being tested is if the source providers return the correct
+lines given the correct input.  If there are 2 line terminators in the input, each
+provider must return 3 lines, even if the last one is empty.  Every test is a variation
+on that, thoroughly exercising each provider to ensure that both adhere to the
+interface flawlessly.  After all, if the parser gets bad input to tokenize, it cannot
+help but to produce bad output, even if is only off by a line terminator.&lt;/p&gt;
+&lt;h2 id="replacing-print-with-log"&gt;Replacing Print with Log&lt;a class="headerlink" href="#replacing-print-with-log" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;This improvement was a long time coming: replacing all of the &lt;code&gt;print&lt;/code&gt; statements in the
+parser with &lt;code&gt;log.debug&lt;/code&gt; statements.  When I was developing the parser, adding a simple
+Python &lt;code&gt;print&lt;/code&gt; statement was the easiest way to add extra debug to the output of the
+tests.  This information was pivotal in my ability to debug the parser and quickly
+add new features to the parser with confidence.  And in the cases where there were
+problems with those features, those same &lt;code&gt;print&lt;/code&gt; statements were also pivotal in
+helping me ensure the flow of each function was as I had designed it.&lt;/p&gt;
+&lt;p&gt;Why did I avoid using &lt;code&gt;log.debug&lt;/code&gt; statements from the beginning of development, and
+instead use &lt;code&gt;print&lt;/code&gt; statements?  I am honestly not sure.  I do recall an early
+experiment in which I used both types of statements, to see which one worked better for
+me.  I remember the experiment, I remember choosing &lt;code&gt;print&lt;/code&gt; statements, but I cannot
+remember why I chose them, knowing I would have to replace them later. I even checked
+my notes from back then, and nothing about logging vs print.  Interesting.&lt;/p&gt;
+&lt;p&gt;Regardless of why I did it, the time to fix it was now.  It was a mostly painless
+transition and didn’t take that long to accomplish.  To the start of most files, I
+added the following import:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;logging&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;and at the start of many blocks of processing, I added the following line:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="n"&gt;logger&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;logging&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;getLogger&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="vm"&gt;__name__&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Then, for each time I called the print function, like this example:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;        &lt;span class="k"&gt;print&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"Line:"&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;line_to_parse&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s2"&gt;":"&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;I replaced it with the exact same arguments, just changing the name of the called
+function from &lt;code&gt;print&lt;/code&gt; to &lt;code&gt;logger.debug&lt;/code&gt; as follows:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;        &lt;span class="n"&gt;logger&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;debug&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"Line:"&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;line_to_parse&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s2"&gt;":"&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;After the initial changes to replace &lt;code&gt;print&lt;/code&gt; with &lt;code&gt;log.debug&lt;/code&gt;, everything looked okay
+until I ran the normal &lt;code&gt;clean&lt;/code&gt; script that I use with the project.  This script is a
+simple script to execute the
+&lt;a href="https://pypi.org/project/black/"&gt;black&lt;/a&gt;
+code formatter, the
+&lt;a href="https://pypi.org/project/flake8/"&gt;Flake8&lt;/a&gt;
+and
+&lt;a href="https://www.pylint.org/"&gt;PyLint&lt;/a&gt;
+linters, and the full set of tests for the project.  When the script got to PyLint,
+it seemed to go crazy and was emitting lots or warning lines, each line essentially
+being the same.&lt;/p&gt;
+&lt;p&gt;Reading the warnings carefully and looking at the source code, PyLint seemed to be
+complaining about each logging function call that
+involved concatenation.  In each case where I was concatenating strings to arrive at
+what I wanted to log, PyLint raised a warning that I wasn’t doing it right.  According
+to PyLint, the proper way to log a message for the above example is:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;        &lt;span class="n"&gt;logger&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;debug&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"Line:&lt;/span&gt;&lt;span class="si"&gt;%s&lt;/span&gt;&lt;span class="s2"&gt;:"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;line_to_parse&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Doing a bit more research, the reason for the warning is because the logging library
+was purposefully created to be lazy.  If the log level for a given call is not high
+enough to cause the string to be logged, doing any kind of formatting or concatenation
+on that string is wasted effort.  Following that logic, the logger follows the same
+conventions that are used with the percent character (&lt;code&gt;%&lt;/code&gt;) as the
+&lt;a href="https://docs.python.org/3/library/stdtypes.html?highlight=interpolation#printf-style-string-formatting"&gt;string interpolation operator&lt;/a&gt;,
+delaying the evaluation of the actual string until the logger determines
+whether the specified string is actually going to be logged.  Once a positive
+determination has been made, the format and the arguments are applied to each other,
+a resolved string is produced, and that string that is then logged.&lt;/p&gt;
+&lt;p&gt;It took a while to go through each of those messages. I had to examine each
+concatenation sequence, break it down into its component parts, and verify my changes.
+Each string that was concatenated needed to be represented in either the format string
+or the arguments passed to the logger.  It was slow and pedantic work, but in the end,
+I was happy to have a logging solution that was more performant than before.&lt;/p&gt;
+&lt;h3 id="side-note"&gt;Side Note&lt;a class="headerlink" href="#side-note" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Note that as a Python logging newbie, I am not 100% sure if I created more work for
+myself by
+frequently creating logging instances inside of the project’s static functions.  It is
+possible that I can get away with a static logger variable created in the module’s
+namespace at the top of the file, and not worry about creating any other loggers within
+the same file.
+However, in all the examples I have seen to date, the logger is
+either declared at the top of a simple file or within the &lt;code&gt;__init__&lt;/code&gt; method of a
+class.  As a lot of the helper classes are a collection of functions that are labelled
+with the &lt;code&gt;@staticmethod&lt;/code&gt; annotation, I am not sure if one instance at the top of the
+file is the correct way to go.  While
+it might be more effort than I really need, I am confident that I am covering all
+the logging situations properly.  If I learn something differently about logging, I
+will come back and revisit it.&lt;/p&gt;
+&lt;h2 id="better-error-reporting"&gt;Better Error Reporting&lt;a class="headerlink" href="#better-error-reporting" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;When I initially proofed out the plugin architecture for the linter, I added a
+&lt;code&gt;BadPluginError&lt;/code&gt; class to help identify plugin issues and report them back to the
+command line.  Using this same pattern to integrate error handling for the parser to
+the linter, I added the &lt;code&gt;BadParsingError&lt;/code&gt; class, raising this error when there were
+exceptions raised during the parser’s tokenization of the Markdown text.  A bit more
+typing and a short while later, I had the &lt;code&gt;__handle_error&lt;/code&gt; function with refactored
+content.  This newly minted function reused the error handling meant for the
+&lt;code&gt;BadPluginError&lt;/code&gt; class to handle both the &lt;code&gt;BadPluginError&lt;/code&gt; class and the
+&lt;code&gt;BadParsingError&lt;/code&gt; class in the same manner.&lt;/p&gt;
+&lt;p&gt;With that tweak done, I had confidence that the error reporting was done, and I wouldn’t
+need anything more serious until far later in the project. That is what I foolishly
+thought until about 2 days later. After doing some work on implementing the first two
+rules, I realized that some things needed to be fixed with error reporting.&lt;/p&gt;
+&lt;p&gt;The first change I made was to change the name of the error class from &lt;code&gt;BadParsingError&lt;/code&gt;
+to &lt;code&gt;BadTokenizationError&lt;/code&gt; to reflect the problem area more accurately.  While it is
+more of a mouthful to say, it accurately describes that it is a problem with the
+tokenization of the document, not a generic “parsing” issue. A good example of this is
+when the &lt;code&gt;TokenizedMarkdown&lt;/code&gt; class is created.  Upon creation, one of the things
+that it does is load the &lt;code&gt;entities.json&lt;/code&gt; file from the resources directory, as detailed
+in
+&lt;a href="https://jackdewinter.github.io/2020/02/24/markdown-linter-starting-inline-processing/#character-references"&gt;this article&lt;/a&gt;.
+If that resource file is not
+loaded properly, that code was changed to raise a &lt;code&gt;BadTokenizationError&lt;/code&gt; instead of
+what it was previously doing.  Without this file, parsing the Markdown text would still
+be possible without any issues.  But to properly tokenize the Markdown text, the parser
+needs to know if the named character entities that are provided in the Markdown
+document refer to valid named entities.  It may
+appear to be a semantic difference to some, but in my experience, it is the attention
+to detail on little things like that which help improve the project’s maintainability.&lt;/p&gt;
+&lt;p&gt;In addressing the above case, I stumbled into the second issue: too many exit
+points.
+While it does not show it in the commit for the &lt;code&gt;BadTokenizationError&lt;/code&gt; fix documented
+in the paragraph above, the first pass at addressing that issue was messy. It caught
+any raised error, did some bare bones reporting, and then performed a &lt;code&gt;sys.exit(1)&lt;/code&gt; to
+stop the program with an error code of 1.  Doing a quick search through the code, I
+stopped counting once I hit the third instance of a &lt;code&gt;sys.exit(1)&lt;/code&gt; call in the code.
+It was time for a refactor.&lt;/p&gt;
+&lt;p&gt;Beginning with the initial case that started the search, I took a quick look at the
+various search results and came up with a good rubric to follow.  If possible,
+I would try and more correctly classify the error using one of the two existing error
+classes, &lt;code&gt;BadTokenizationError&lt;/code&gt; or &lt;code&gt;BadPluginError&lt;/code&gt;, which were already handled at the
+top level by the &lt;code&gt;__handle_error&lt;/code&gt; function.  If the error occurred in the
+&lt;code&gt;main.py&lt;/code&gt; file and didn’t fall into either of those categories, I would call the
+&lt;code&gt;__handle_error&lt;/code&gt; function directly, striving to give a clean and concise message on
+what that error was and why it occurred.  If I encountered any errors outside of those
+parameters, I would save them for last and re-evaluate my rules.&lt;/p&gt;
+&lt;p&gt;Based on what I found in the project, the first two rules were enough, as I did
+not find an error that could not neatly fit into one of those two categories.
+Instead of a few different ways of exiting the linter with an error condition,
+&lt;code&gt;__handle_error&lt;/code&gt; was now the sole conduit for exiting with an error.  I went over the
+tests in the &lt;code&gt;test_main.py&lt;/code&gt;,
+&lt;code&gt;test_plugin_manager.py&lt;/code&gt; and &lt;code&gt;test_markdown_entity_and_numeric_character_references.py&lt;/code&gt;
+files to make sure everything looked consistent, and things were good!&lt;/p&gt;
+&lt;h2 id="what-was-my-experience-so-far"&gt;What Was My Experience So Far?&lt;a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;As I have mentioned in previous articles, I like refactoring, and this stretch of
+refactoring was no
+exception.  Each of these tasks were little tasks, but I felt better knowing that they
+were addressed before I shifted my focus to writing the rules for the linter.  The
+change to using source providers would be pivotal in dealing with test sources (strings)
+and live sources (files) as sibling concepts. Replacing &lt;code&gt;print&lt;/code&gt; with &lt;code&gt;log.debug&lt;/code&gt; was
+also pivotal to using live sources, keeping the ability to debug what was going
+on for experienced users, but not flooding a casual user with all of that information.
+Finally, getting
+all of the error reporting to go through one conduit just seems cleaner and more
+concise to me.  Getting these taken care of just felt like the right refactoring to
+do at the right time.&lt;/p&gt;
+&lt;p&gt;I also realized that I enjoy the cadence I have established with refactoring.  While
+there are
+short bursts where it is just adding new features, for the most part I have tried to
+switch off between refactoring and adding new features.  I feel that for my development
+style, I have found a good balance between fixing things and adding things, even if it
+needs tweaking every so often.  Perhaps it is because of that sense of balance that I
+have been able to focus on this project for so long without losing energy on it.
+For me, I believe it boils down to a feeling that this project is not about adding
+features as much as it is about continual improvement of the project towards its goal,
+taking my time to do things right as I go.&lt;/p&gt;
+&lt;p&gt;Looking forward, I am sure I am not done adding features, refactoring code,
+or learning something new and interesting.&lt;/p&gt;
+&lt;h2 id="what-is-next"&gt;What is Next?&lt;a class="headerlink" href="#what-is-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Taking a bit of a jump back in time a couple of days from where I am leaving off,
+in the next article I am going to start talking about the rules that I am developing,
+and how their development proceeded.  Please stay tuned!&lt;/p&gt;
+&lt;div class="footnote"&gt;
+&lt;hr/&gt;
+&lt;ol&gt;
+&lt;li id="fn:linkReferenceDefinitionError"&gt;
+&lt;p&gt;Due to link reference definitions being a multiline element, some of the error cases required the parser to be rewritten to handle lines that need to be “rewound”, as documented in &lt;a href="https://jackdewinter.github.io/2020/04/06/markdown-linter-adding-link-reference-definitions/#hitting-implementation-issues"&gt;this previous article&lt;/a&gt;. &lt;a class="footnote-backref" href="#fnref:linkReferenceDefinitionError" title="Jump back to footnote 1 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/div&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry><entry><title>Markdown Linter - Splitting Up The Articles</title><link href="https://jackdewinter.github.io/2020/05/03/markdown-linter-splitting-up-the-articles/" rel="alternate"></link><published>2020-05-03T00:00:00-07:00</published><updated>2020-05-03T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-05-03:/2020/05/03/markdown-linter-splitting-up-the-articles/</id><summary type="html">
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Wow!  Getting to this point in the parser took a good amount of time, but in my head,
+I didn’t expect it to create 17 articles!  Looking back at what I wanted to achieve by
+writing about the linter as I develop it, it makes sense to me …&lt;/p&gt;</summary><content type="html">
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Wow!  Getting to this point in the parser took a good amount of time, but in my head,
+I didn’t expect it to create 17 articles!  Looking back at what I wanted to achieve by
+writing about the linter as I develop it, it makes sense to me, and I am not sorry that
+I wrote any of the articles.&lt;/p&gt;
+&lt;p&gt;However, that does leave me with a bit of a problem.  This is article 18 in a series on
+writing a linter, and I have not really done any serious work on the linter yet.&lt;/p&gt;
+&lt;h2 id="splitting-up-the-articles"&gt;Splitting Up the Articles&lt;a class="headerlink" href="#splitting-up-the-articles" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;While going back and changing the names of the articles to “Markdown Tokenizer…” was
+attractive, thinking about it made me feel like I would be lying to any readers.&lt;/p&gt;
+&lt;p&gt;In the end, the best option that emerged was to use this article as a jumping off point
+for the other aspects of the project.  Basically, a jump page.  While not glamorous,
+it is honest, and follows
+&lt;a href="linter-6.md#changing-the-narrative"&gt;one of the things&lt;/a&gt;
+that I am trying to inspire: “Stuff happens, pick yourself up, dust yourself off, and
+figure out what to do next.”&lt;/p&gt;
+&lt;h2 id="jump-links-for-the-linter-project"&gt;Jump Links For the Linter Project&lt;a class="headerlink" href="#jump-links-for-the-linter-project" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Here are the various directions that I have gone in documenting the further development
+on the project.&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href="https://jackdewinter.github.io/tags#markdown-linter-ref"&gt;Chronological&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://jackdewinter.github.io/tags#core-linter-ref"&gt;Core Linter&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://jackdewinter.github.io/tags#linter-tokenizer-ref"&gt;Linter Tokenizer&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category></entry><entry><title>Markdown Linter - Reducing the Parser's Technical Debt</title><link href="https://jackdewinter.github.io/2020/04/27/markdown-linter-reducing-the-parsers-technical-debt/" rel="alternate"></link><published>2020-04-27T00:00:00-07:00</published><updated>2020-04-27T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-04-27:/2020/04/27/markdown-linter-reducing-the-parsers-technical-debt/</id><summary type="html">
 &lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;First off, despite what I said at the end of the
 &lt;a href="https://jackdewinter.github.io/2020/04/27/markdown-linter-reducing-the-parsers-technical-debt/#what-is-next"&gt;last article&lt;/a&gt;,
@@ -357,7 +726,7 @@ that it can handle a wide variety of requirements that I may throw at it!&lt;/p&
 &lt;p&gt;While I don’t frequently use screaming at my monitor as a form of &lt;a href="https://en.wikipedia.org/wiki/Rubber_duck_debugging"&gt;rubber duck debugging&lt;/a&gt;, it does have it’s benefits sometimes. &lt;a class="footnote-backref" href="#fnref:rubberDucking" title="Jump back to footnote 2 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
 &lt;/li&gt;
 &lt;/ol&gt;
-&lt;/div&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category></entry><entry><title>Markdown Linter - Adding Image Links and Simple Cleanup</title><link href="https://jackdewinter.github.io/2020/04/20/markdown-linter-adding-image-links-and-simple-cleanup/" rel="alternate"></link><published>2020-04-20T00:00:00-07:00</published><updated>2020-04-20T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-04-20:/2020/04/20/markdown-linter-adding-image-links-and-simple-cleanup/</id><summary type="html">
+&lt;/div&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="linter tokenizer"></category></entry><entry><title>Markdown Linter - Adding Image Links and Simple Cleanup</title><link href="https://jackdewinter.github.io/2020/04/20/markdown-linter-adding-image-links-and-simple-cleanup/" rel="alternate"></link><published>2020-04-20T00:00:00-07:00</published><updated>2020-04-20T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-04-20:/2020/04/20/markdown-linter-adding-image-links-and-simple-cleanup/</id><summary type="html">
 &lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;While it just happened to be the feature that was last on the list, I feel that it was
 kind of fitting that image links were the last feature to be added.  Whether or not an
@@ -664,7 +1033,7 @@ challenges are.  It just took me thinking about what perspective I wanted to hav
 addressed with the parser before I could continue.  While I could have left them there
 and dealt with them later, I wanted to take a good crack at the top items on the list
 and deal with them now, before the rules were added.  So next article:
-“Refactoring: The Sequel!”&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category></entry><entry><title>Markdown Linter - Adding Reference Links</title><link href="https://jackdewinter.github.io/2020/04/13/markdown-linter-adding-reference-links/" rel="alternate"></link><published>2020-04-13T00:00:00-07:00</published><updated>2020-04-13T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-04-13:/2020/04/13/markdown-linter-adding-reference-links/</id><summary type="html">
+“Refactoring: The Sequel!”&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="linter tokenizer"></category></entry><entry><title>Markdown Linter - Adding Reference Links</title><link href="https://jackdewinter.github.io/2020/04/13/markdown-linter-adding-reference-links/" rel="alternate"></link><published>2020-04-13T00:00:00-07:00</published><updated>2020-04-13T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-04-13:/2020/04/13/markdown-linter-adding-reference-links/</id><summary type="html">
 &lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;The end of the main parser is in sight!  Two articles ago, the additional
 of support for
@@ -1026,7 +1395,7 @@ image links are next!&lt;/p&gt;
 &lt;p&gt;According to Merriam-Webster: “a haphazard or makeshift solution to a problem and especially to a computer or programming problem” &lt;a class="footnote-backref" href="#fnref:kludge" title="Jump back to footnote 2 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
 &lt;/li&gt;
 &lt;/ol&gt;
-&lt;/div&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category></entry><entry><title>Markdown Linter - Adding Link Reference Definitions</title><link href="https://jackdewinter.github.io/2020/04/06/markdown-linter-adding-link-reference-definitions/" rel="alternate"></link><published>2020-04-06T00:00:00-07:00</published><updated>2020-04-06T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-04-06:/2020/04/06/markdown-linter-adding-link-reference-definitions/</id><summary type="html">
+&lt;/div&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="linter tokenizer"></category></entry><entry><title>Markdown Linter - Adding Link Reference Definitions</title><link href="https://jackdewinter.github.io/2020/04/06/markdown-linter-adding-link-reference-definitions/" rel="alternate"></link><published>2020-04-06T00:00:00-07:00</published><updated>2020-04-06T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-04-06:/2020/04/06/markdown-linter-adding-link-reference-definitions/</id><summary type="html">
 &lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;As detailed in
 &lt;a href="https://jackdewinter.github.io/2020/03/30/markdown-linter-adding-inline-links/#Why-Inline-Links?"&gt;the last article&lt;/a&gt;,
@@ -1280,7 +1649,7 @@ the start of the real linting work in coming soon!&lt;/p&gt;
 &lt;p&gt;As per John Gruber’s original intentions.  Go to &lt;a href="https://daringfireball.net/projects/markdown/syntax#em"&gt;this part&lt;/a&gt; of his original Markdown article and go to the paragraph preceding the start of the emphasis section.  For more complete information on why John felt that reference links were better, look further up in that section for more details. &lt;a class="footnote-backref" href="#fnref:JohnGruberMarkdown" title="Jump back to footnote 4 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
 &lt;/li&gt;
 &lt;/ol&gt;
-&lt;/div&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category></entry><entry><title>Markdown Linter - Adding Inline Links</title><link href="https://jackdewinter.github.io/2020/03/30/markdown-linter-adding-inline-links/" rel="alternate"></link><published>2020-03-30T00:00:00-07:00</published><updated>2020-03-30T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-03-30:/2020/03/30/markdown-linter-adding-inline-links/</id><summary type="html">
+&lt;/div&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="linter tokenizer"></category></entry><entry><title>Markdown Linter - Adding Inline Links</title><link href="https://jackdewinter.github.io/2020/03/30/markdown-linter-adding-inline-links/" rel="alternate"></link><published>2020-03-30T00:00:00-07:00</published><updated>2020-03-30T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-03-30:/2020/03/30/markdown-linter-adding-inline-links/</id><summary type="html">
 &lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;Having just implemented the
 &lt;a href="https://jackdewinter.github.io/2020/03/23/markdown-linter-adding-inline-emphasis/"&gt;Inline Emphasis&lt;/a&gt; feature
@@ -1563,7 +1932,7 @@ for inline links will be heavily leveraged to complete the link group itself.&lt
 &lt;p&gt;Emphasis and link support and delimiter stack?  Done and tested.  Inline support for
 links?  Done and tested.  Before going on to reference links and image links, it only
 made sense to do link reference definitions next, so that is where I implemented next,
-though not without a lot of difficulties.&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category></entry><entry><title>Markdown Linter - Adding Inline Emphasis</title><link href="https://jackdewinter.github.io/2020/03/23/markdown-linter-adding-inline-emphasis/" rel="alternate"></link><published>2020-03-23T00:00:00-07:00</published><updated>2020-03-23T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-03-23:/2020/03/23/markdown-linter-adding-inline-emphasis/</id><summary type="html">
+though not without a lot of difficulties.&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="linter tokenizer"></category></entry><entry><title>Markdown Linter - Adding Inline Emphasis</title><link href="https://jackdewinter.github.io/2020/03/23/markdown-linter-adding-inline-emphasis/" rel="alternate"></link><published>2020-03-23T00:00:00-07:00</published><updated>2020-03-23T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-03-23:/2020/03/23/markdown-linter-adding-inline-emphasis/</id><summary type="html">
 &lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;I have been reading and implementing specifications for a long time.  I truly
 believed that I had seen with and dealt with every situation presented in any
@@ -1869,7 +2238,7 @@ went off without any major issues.  It was cool to see that happen.&lt;/p&gt;
 &lt;p&gt;Having had a very smooth time implementing emphasis, it was very tempting to just dive
 in and tackle all of the link support at the same time.  However, in looking at the
 different types of links in the specification, I decided that inline links would be
-a good place to start.  That is where I will pick up in my next article!&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category></entry><entry><title>Markdown Linter - Verifying Base Scenarios</title><link href="https://jackdewinter.github.io/2020/03/16/markdown-linter-verifying-base-scenarios/" rel="alternate"></link><published>2020-03-16T00:00:00-07:00</published><updated>2020-03-16T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-03-16:/2020/03/16/markdown-linter-verifying-base-scenarios/</id><summary type="html">
+a good place to start.  That is where I will pick up in my next article!&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="linter tokenizer"></category></entry><entry><title>Markdown Linter - Verifying Base Scenarios</title><link href="https://jackdewinter.github.io/2020/03/16/markdown-linter-verifying-base-scenarios/" rel="alternate"></link><published>2020-03-16T00:00:00-07:00</published><updated>2020-03-16T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-03-16:/2020/03/16/markdown-linter-verifying-base-scenarios/</id><summary type="html">
 &lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;In the wrap up for
 &lt;a href="https://jackdewinter.github.io/2020/02/10/markdown-linter-adding-html-blocks/#what-was-my-experience-so-far"&gt;my last article&lt;/a&gt;,
@@ -2237,7 +2606,7 @@ translate into the proper HTML… I now had proof they did!&lt;/p&gt;
 way of…”, it usually means that at least 2-3 groups of people implementing the
 protocol specification had issues.  So, it was with a bit of dread and a bit of
 confidence that I started looking at dealing with inline emphasis, the topic of the
-next article.&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category></entry><entry><title>Markdown Linter - Autolinks, Raw HTML, and Line Breaks</title><link href="https://jackdewinter.github.io/2020/03/09/markdown-linter-autolinks-raw-html-and-line-breaks/" rel="alternate"></link><published>2020-03-09T00:00:00-07:00</published><updated>2020-03-09T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-03-09:/2020/03/09/markdown-linter-autolinks-raw-html-and-line-breaks/</id><summary type="html">
+next article.&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="linter tokenizer"></category></entry><entry><title>Markdown Linter - Autolinks, Raw HTML, and Line Breaks</title><link href="https://jackdewinter.github.io/2020/03/09/markdown-linter-autolinks-raw-html-and-line-breaks/" rel="alternate"></link><published>2020-03-09T00:00:00-07:00</published><updated>2020-03-09T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-03-09:/2020/03/09/markdown-linter-autolinks-raw-html-and-line-breaks/</id><summary type="html">
 &lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;Having completed another refactoring session, I have confidence that the PyMarkdown
 project code has been returned to what I feel is a healthy amount of technical debt.
@@ -2551,7 +2920,7 @@ tokenization of the Markdown was correct, so I decided to go all out for the nex
 section and add the remaining scenario tests from the GFM specification.  To close
 the loop on the testing, I also went through all the existing tests and added
 a new class that transforms the PyMarkdown tokens into HTML, comparing that output
-directly against the GFM specification.  Stay tuned!&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category></entry><entry><title>Markdown Linter - Taking Time to Refactor -- Post-Easy Inlines</title><link href="https://jackdewinter.github.io/2020/03/02/markdown-linter-taking-time-to-refactor-post-easy-inlines/" rel="alternate"></link><published>2020-03-02T00:00:00-08:00</published><updated>2020-03-02T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-03-02:/2020/03/02/markdown-linter-taking-time-to-refactor-post-easy-inlines/</id><summary type="html">
+directly against the GFM specification.  Stay tuned!&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="linter tokenizer"></category></entry><entry><title>Markdown Linter - Taking Time to Refactor -- Post-Easy Inlines</title><link href="https://jackdewinter.github.io/2020/03/02/markdown-linter-taking-time-to-refactor-post-easy-inlines/" rel="alternate"></link><published>2020-03-02T00:00:00-08:00</published><updated>2020-03-02T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-03-02:/2020/03/02/markdown-linter-taking-time-to-refactor-post-easy-inlines/</id><summary type="html">
 &lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;When I was working on implementing the
 &lt;a href="https://jackdewinter.github.io/2020/02/24/markdown-linter-starting-inline-processing/#code-spans"&gt;inline code spans&lt;/a&gt;,
@@ -2944,7 +3313,7 @@ my everyday Markdown usage.&lt;/p&gt;
 &lt;p&gt;The specification states “The paragraph’s raw content is formed by concatenating the lines and removing initial and final whitespace.”  This is the closest reference that I could find to removing whitespace.  Perhaps initial means per line? &lt;a class="footnote-backref" href="#fnref:Missing" title="Jump back to footnote 2 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
 &lt;/li&gt;
 &lt;/ol&gt;
-&lt;/div&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category></entry><entry><title>Markdown Linter - Starting Inline Processing</title><link href="https://jackdewinter.github.io/2020/02/24/markdown-linter-starting-inline-processing/" rel="alternate"></link><published>2020-02-24T00:00:00-08:00</published><updated>2020-02-24T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-02-24:/2020/02/24/markdown-linter-starting-inline-processing/</id><summary type="html">
+&lt;/div&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="linter tokenizer"></category></entry><entry><title>Markdown Linter - Starting Inline Processing</title><link href="https://jackdewinter.github.io/2020/02/24/markdown-linter-starting-inline-processing/" rel="alternate"></link><published>2020-02-24T00:00:00-08:00</published><updated>2020-02-24T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-02-24:/2020/02/24/markdown-linter-starting-inline-processing/</id><summary type="html">
 &lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;Maybe it is just me, but I love the feeling of completing a good round of refactoring
 where I really get to focus on making sure that the foundations of the project are
@@ -3225,7 +3594,7 @@ scenario tests, and how I addressed them.&lt;/p&gt;
 &lt;p&gt;For a good example of this, see &lt;a href="https://github.github.com/gfm/#example-339"&gt;example 339&lt;/a&gt; in the GFM specification. &lt;a class="footnote-backref" href="#fnref:doubleBacktick" title="Jump back to footnote 4 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
 &lt;/li&gt;
 &lt;/ol&gt;
-&lt;/div&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category></entry><entry><title>Markdown Linter - Taking Time to Refactor -- Post-Block Implementation</title><link href="https://jackdewinter.github.io/2020/02/17/markdown-linter-taking-time-to-refactor-post-block-implementation/" rel="alternate"></link><published>2020-02-17T00:00:00-08:00</published><updated>2020-02-17T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-02-17:/2020/02/17/markdown-linter-taking-time-to-refactor-post-block-implementation/</id><summary type="html">
+&lt;/div&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="linter tokenizer"></category></entry><entry><title>Markdown Linter - Taking Time to Refactor -- Post-Block Implementation</title><link href="https://jackdewinter.github.io/2020/02/17/markdown-linter-taking-time-to-refactor-post-block-implementation/" rel="alternate"></link><published>2020-02-17T00:00:00-08:00</published><updated>2020-02-17T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-02-17:/2020/02/17/markdown-linter-taking-time-to-refactor-post-block-implementation/</id><summary type="html">
 &lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;The title of the article is not very glamorous, but it describes the changes I made to
 the project after the block processing and before the inline processing.  From a project
@@ -3523,7 +3892,7 @@ quality meter much, each change helps.&lt;/p&gt;
 &lt;h2 id="what-is-next"&gt;What is Next?&lt;a class="headerlink" href="#what-is-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;Having teased the addition of inline processing to the project for most of this
 article, the next article will be on the implementation of the first 3 aspects of
-inline processing that I tackled.&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category></entry><entry><title>Markdown Linter - Adding HTML Blocks</title><link href="https://jackdewinter.github.io/2020/02/10/markdown-linter-adding-html-blocks/" rel="alternate"></link><published>2020-02-10T00:00:00-08:00</published><updated>2020-02-10T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-02-10:/2020/02/10/markdown-linter-adding-html-blocks/</id><summary type="html">
+inline processing that I tackled.&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="linter tokenizer"></category></entry><entry><title>Markdown Linter - Adding HTML Blocks</title><link href="https://jackdewinter.github.io/2020/02/10/markdown-linter-adding-html-blocks/" rel="alternate"></link><published>2020-02-10T00:00:00-08:00</published><updated>2020-02-10T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-02-10:/2020/02/10/markdown-linter-adding-html-blocks/</id><summary type="html">
 &lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;Having completed most of the Markdown block elements, as documented
 in the last two articles on
@@ -3809,7 +4178,7 @@ next article will go over the refactoring that I did, and how it helped the proj
 &lt;p&gt;The totals are as follows: paragraphs (9), tabs (11), indented code blocks (15), atx headings (18), thematic breaks (19), block quotes (22), lists (25),setext headings (27), and fenced code blocks (29). &lt;a class="footnote-backref" href="#fnref:countScenarios" title="Jump back to footnote 1 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
 &lt;/li&gt;
 &lt;/ol&gt;
-&lt;/div&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category></entry><entry><title>Markdown Linter - Adding Block Quotes and Lists</title><link href="https://jackdewinter.github.io/2020/02/03/markdown-linter-adding-block-quotes-and-lists/" rel="alternate"></link><published>2020-02-03T00:00:00-08:00</published><updated>2020-02-03T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-02-03:/2020/02/03/markdown-linter-adding-block-quotes-and-lists/</id><summary type="html">
+&lt;/div&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="linter tokenizer"></category></entry><entry><title>Markdown Linter - Adding Block Quotes and Lists</title><link href="https://jackdewinter.github.io/2020/02/03/markdown-linter-adding-block-quotes-and-lists/" rel="alternate"></link><published>2020-02-03T00:00:00-08:00</published><updated>2020-02-03T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-02-03:/2020/02/03/markdown-linter-adding-block-quotes-and-lists/</id><summary type="html">
 &lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;Having the leaf blocks mostly in place, as documented
 &lt;a href="https://jackdewinter.github.io/2020/01/27/markdown-linter-parsing-normal-markdown-blocks/"&gt;in the last article&lt;/a&gt;, the next items
@@ -4041,7 +4410,7 @@ with it, the next article will be devoted entirely to the HTML blocks.&lt;/p&gt;
 &lt;p&gt;When my kids were younger, I did indeed use the word “stuff”.  As my kids got older, we changed that word to another one that also starts with “s”.  The actual word that we now use should be easy to figure out! &lt;a class="footnote-backref" href="#fnref:notStuff" title="Jump back to footnote 1 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
 &lt;/li&gt;
 &lt;/ol&gt;
-&lt;/div&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category></entry><entry><title>Markdown Linter - Parsing Normal Markdown Blocks</title><link href="https://jackdewinter.github.io/2020/01/27/markdown-linter-parsing-normal-markdown-blocks/" rel="alternate"></link><published>2020-01-27T00:00:00-08:00</published><updated>2020-01-27T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-01-27:/2020/01/27/markdown-linter-parsing-normal-markdown-blocks/</id><summary type="html">
+&lt;/div&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="linter tokenizer"></category></entry><entry><title>Markdown Linter - Parsing Normal Markdown Blocks</title><link href="https://jackdewinter.github.io/2020/01/27/markdown-linter-parsing-normal-markdown-blocks/" rel="alternate"></link><published>2020-01-27T00:00:00-08:00</published><updated>2020-01-27T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-01-27:/2020/01/27/markdown-linter-parsing-normal-markdown-blocks/</id><summary type="html">
 &lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;With the &lt;a href="https://jackdewinter.github.io/2019/12/08/markdown-linter-collecting-requirements/"&gt;project requirements&lt;/a&gt;,
 the &lt;a href="https://jackdewinter.github.io/2019/12/16/markdown-linter-setting-up-parser-tests/"&gt;test framework&lt;/a&gt;,
@@ -4328,7 +4697,7 @@ in the process… and learning is always good!&lt;/p&gt;
 &lt;p&gt;I remember this term being used all the way back to my university days.  The closest I have been able to come to a definition is the Oxford dictionary’s definition: touch or fidget with something in a restless or nervous way.  Perhaps this is alluding to amount of work to get most string operations “just right”? &lt;a class="footnote-backref" href="#fnref:stringFiddle" title="Jump back to footnote 1 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
 &lt;/li&gt;
 &lt;/ol&gt;
-&lt;/div&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category></entry><entry><title>Clarity Through The Summarizing of Test Measurements</title><link href="https://jackdewinter.github.io/2020/01/20/clarity-through-the-summarizing-of-test-measurements/" rel="alternate"></link><published>2020-01-20T00:00:00-08:00</published><updated>2020-01-20T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-01-20:/2020/01/20/clarity-through-the-summarizing-of-test-measurements/</id><summary type="html">
+&lt;/div&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="linter tokenizer"></category></entry><entry><title>Clarity Through The Summarizing of Test Measurements</title><link href="https://jackdewinter.github.io/2020/01/20/clarity-through-the-summarizing-of-test-measurements/" rel="alternate"></link><published>2020-01-20T00:00:00-08:00</published><updated>2020-01-20T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-01-20:/2020/01/20/clarity-through-the-summarizing-of-test-measurements/</id><summary type="html">
 &lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;As part of the process of
 &lt;a href="https://jackdewinter.github.io/2019/12/08/markdown-linter-collecting-requirements/"&gt;creating a Markdown Linter&lt;/a&gt;
@@ -5574,7 +5943,7 @@ taught, but what a gem it is!&lt;/p&gt;
 &lt;p&gt;In the next article, I take the requirements, scenarios,
 and strategies and put them together to start writing the parser.  As one of the
 test groups that I came up with was normal Markdown blocks, I will describe how I
-implemented those blocks as well as the issues I had in doing so cleanly.&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category></entry><entry><title>Markdown Linter - Setting Up Parser Tests</title><link href="https://jackdewinter.github.io/2019/12/16/markdown-linter-setting-up-parser-tests/" rel="alternate"></link><published>2019-12-16T00:00:00-08:00</published><updated>2019-12-16T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2019-12-16:/2019/12/16/markdown-linter-setting-up-parser-tests/</id><summary type="html">
+implemented those blocks as well as the issues I had in doing so cleanly.&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry><entry><title>Markdown Linter - Setting Up Parser Tests</title><link href="https://jackdewinter.github.io/2019/12/16/markdown-linter-setting-up-parser-tests/" rel="alternate"></link><published>2019-12-16T00:00:00-08:00</published><updated>2019-12-16T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2019-12-16:/2019/12/16/markdown-linter-setting-up-parser-tests/</id><summary type="html">
 &lt;h2 id="sidebar"&gt;Sidebar&lt;a class="headerlink" href="#sidebar" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;My apologies for this being a day or two later than usual.  My son brought home a
 cold that knocked the stuffing out of me, I needed to take some personal time to ensure
@@ -5826,7 +6195,7 @@ specified interface, providing for a clean definition of expected input and outp
 I look at the work that needs to
 be done and come up with general strategies that I use to implement the parser
 required for the linter.  With the specification’s 637 examples as a base for the
-scenario tests, good planning is needed to ensure the work can progress forward.&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category></entry><entry><title>Markdown Linter - Collecting Requirements</title><link href="https://jackdewinter.github.io/2019/12/08/markdown-linter-collecting-requirements/" rel="alternate"></link><published>2019-12-08T00:00:00-08:00</published><updated>2019-12-08T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2019-12-08:/2019/12/08/markdown-linter-collecting-requirements/</id><summary type="html">
+scenario tests, good planning is needed to ensure the work can progress forward.&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry><entry><title>Markdown Linter - Collecting Requirements</title><link href="https://jackdewinter.github.io/2019/12/08/markdown-linter-collecting-requirements/" rel="alternate"></link><published>2019-12-08T00:00:00-08:00</published><updated>2019-12-08T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2019-12-08:/2019/12/08/markdown-linter-collecting-requirements/</id><summary type="html">
 &lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;My website is now up and running, even though in my mind it took forever.  To make sure
 everything was “just so”, I went through each article with a fine-toothed comb multiple
@@ -5940,7 +6309,7 @@ like!&lt;/p&gt;
 requirements for the Markdown parser and document how I will setup the tests for it.
 As I am parsing a well-known format with varying implementations already available, it
 is important to stay focused on one implementation and have a solid set of tests to
-ensure I don’t go backwards in my development.&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category></entry><entry><title>Software Quality: Reliability</title><link href="https://jackdewinter.github.io/2019/11/10/software-quality-reliability/" rel="alternate"></link><published>2019-11-10T00:00:00-08:00</published><updated>2019-11-10T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2019-11-10:/2019/11/10/software-quality-reliability/</id><summary type="html">
+ensure I don’t go backwards in my development.&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry><entry><title>Software Quality: Reliability</title><link href="https://jackdewinter.github.io/2019/11/10/software-quality-reliability/" rel="alternate"></link><published>2019-11-10T00:00:00-08:00</published><updated>2019-11-10T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2019-11-10:/2019/11/10/software-quality-reliability/</id><summary type="html">
 &lt;p&gt;In the main article titled &lt;a href="https://jackdewinter.github.io/2019/09/15/what-is-software-quality/"&gt;What is Software Quality?&lt;/a&gt;, I
 took a high level look at what I believe are the 4 pillars of software quality.  This article
 will focus specifically on the Reliability pillar, with suggestions on how to measure

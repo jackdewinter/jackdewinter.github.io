@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="author" content="Jack De Winter" />
+
+        <meta name="description" content="Introduction¶ Way back in 2019 November, I started this project with a bare bones framework using a simple dynamic plugin loader. It was a simple proof-of-concept to determine whether I could create the basis for an extendable linter framework in Python. Once I verified that I could write that framework …
+" />
+        <meta property="og:type" content="article" />
+        <meta name="twitter:card" content="summary">
+
+<meta name="keywords" content="markdown linter, core linter, Software Quality, " />
+
+<meta property="og:title" content="Markdown Linter - Core - XXX "/>
+<meta property="og:url" content="http://localhost:8000/2020/05/03/markdown-linter-core-xxx/" />
+<meta property="og:description" content="Introduction¶ Way back in 2019 November, I started this project with a bare bones framework using a simple dynamic plugin loader. It was a simple proof-of-concept to determine whether I could create the basis for an extendable linter framework in Python. Once I verified that I could write that framework …" />
+<meta property="og:site_name" content="Jack&#39;s Digital Workbench" />
+<meta property="og:article:author" content="Jack De Winter" />
+<meta property="og:article:published_time" content="2020-05-03T00:00:00-07:00" />
+<meta name="twitter:title" content="Markdown Linter - Core - XXX ">
+<meta name="twitter:description" content="Introduction¶ Way back in 2019 November, I started this project with a bare bones framework using a simple dynamic plugin loader. It was a simple proof-of-concept to determine whether I could create the basis for an extendable linter framework in Python. Once I verified that I could write that framework …">
+
+        <title>Markdown Linter - Core - XXX  · Jack&#39;s Digital Workbench
+</title>
+        <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">
+<link rel="stylesheet" href="http://localhost:8000/theme/webassets-external/c843160cb3809a5812fff6e168b9d4db_elegant.prod.css">
+<link rel="stylesheet" href="http://localhost:8000/theme/webassets-external/78ddd4ea7393d1ac1fd9f91c21aa8b5f_custom.css">
+
+
+
+    </head>
+    <body>
+        <div id="content">
+            <div class="navbar navbar-static-top">
+                <div class="navbar-inner">
+                    <div class="container-fluid">
+                        <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                        </a>
+                        <a class="brand" href="http://localhost:8000/"><span class=site-name>Jack's Digital Workbench</span></a>
+                        <div class="nav-collapse collapse">
+                            <ul class="nav pull-right top-menu">
+                                <li >
+                                    <a href=
+                                       http://localhost:8000
+                                    >Home</a>
+                                </li>
+                                <li ><a href="http://localhost:8000/categories">Categories</a></li>
+                                <li ><a href="http://localhost:8000/tags">Tags</a></li>
+                                <li ><a href="http://localhost:8000/archives">Archives</a></li>
+                                <li><form class="navbar-search" action="http://localhost:8000/search.html" onsubmit="return validateForm(this.elements['q'].value);"> <input type="text" class="search-query" placeholder="Search" name="q" id="tipue_search_input"></form></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="container-fluid">
+                <div class="row-fluid">
+                    <div class="span1"></div>
+                    <div class="span10">
+<article itemscope>
+<div class="row-fluid">
+    <header class="page-header span10 offset2">
+        <h1>
+            <a href="http://localhost:8000/2020/05/03/markdown-linter-core-xxx/">
+                Markdown Linter - Core - XXX
+            </a>
+        </h1>
+    </header>
+</div>
+
+<div class="row-fluid">
+    <div class="span2 table-of-content">
+        <nav>
+        <h4>Contents</h4>
+        <div class="toc">
+<ul>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#what-is-the-audience-for-this-article">What Is the Audience For This Article?</a></li>
+<li><a href="#source-providers">Source Providers</a><ul>
+<li><a href="#starting-with-the-inmemorysourceprovider">Starting With the InMemorySourceProvider</a></li>
+<li><a href="#continuing-with-the-filesourceprovider">Continuing With the FileSourceProvider</a></li>
+<li><a href="#testing-the-source-providers">Testing the Source Providers</a></li>
+</ul>
+</li>
+</ul>
+</div>
+        </nav>
+    </div>
+    <div class="span8 article-content">
+            
+            
+<h2 id="introduction">Introduction<a class="headerlink" href="#introduction" title="Permanent link">¶</a></h2>
+<p>Way back in 2019 November, I started this project with a bare bones framework using a
+simple dynamic plugin loader.  It was a simple proof-of-concept to determine whether I
+could create the basis for an extendable linter framework in Python.  Once I verified
+that I could write that framework, I implemented a very simple case to test against:
+checking to make sure the Markdown text ends with an empty line.  While that rule was
+easy to implement, it was then that I determined that to properly lint Markdown text,
+I needed a Markdown tokenizing parser.  From my viewpoint, unless I had a parser that
+emitted tokens that were a good representation of the Markdown to lint, the linting
+rules that I wanted to write would require too much guess work for my own liking.  If I
+wanted to write good, solid rules, I needed to have the right information
+available for those rules to act upon.  I needed a Markdown parser that emits Markdown
+tokens that I had confidence would be the required, correct information for the rules.</p>
+<p>Having now written such a parser against the
+<a href="http://gfm">Github Flavored Markdown specification</a>,
+it was time to move on to the next part of the project: writing rules.  However, since
+almost 5 months had passed since the project started, there were a number of changes
+that were required in the linter’s core before I could continue.</p>
+<h2 id="what-is-the-audience-for-this-article">What Is the Audience For This Article?<a class="headerlink" href="#what-is-the-audience-for-this-article" title="Permanent link">¶</a></h2>
+<p>While detailed more eloquently in
+<a href="http://localhost:8000/2020/04/05/what-is-the-audience-for-my-blog/#what-is-the-audience-for-my-blog">this article</a>,
+my goal for this technical article is to focus on the reasoning behind my solutions,
+rather that the solutions themselves.  For a full record of the solutions presented in
+this article, please go to this project’s GitHub repository and consult the
+commits between
+<a href="https://github.com/jackdewinter/pymarkdown/commit/51bb1cf945ad5171bd1c41829a48beceb95a3ab0">12 April 2020</a> and
+<a href="https://github.com/jackdewinter/pymarkdown/commit/c8ee25446a425cabf9886b65ad1d4922949bbf44">16 April 2020</a>.</p>
+<h2 id="source-providers">Source Providers<a class="headerlink" href="#source-providers" title="Permanent link">¶</a></h2>
+<p>In my experience, following the
+<a href="https://en.wikipedia.org/wiki/Rule_of_three_(computer_programming)">threefold rule for refactoring</a>
+is usually a good idea, as it has borne out true in my projects many times.  While not a
+literal copy of the threefold rule, I choose to remember the rule as follows:</p>
+<blockquote>
+<p>Write it once, write it neat.  Write it twice, think about extracting it.  Write it three times, extract it without a second thought.</p>
+</blockquote>
+<p>The original text of “three strikes and you refactor” always seemed a little too harsh
+for me with its negative connotation. In addition, I feel that it does not provide good
+enough guidance on what to do in the the first two cases, just the third one.  My
+version of the rule still adheres to the spirit of the original rule, while
+fixing the specific issues that I perceive with it.</p>
+<p>Source providers for the parser are a concept that fits that refactoring pattern very
+well.  When the
+original framework for the parser was written, it was designed to parse a line at a
+time to conserve memory.  In the parser tests, this information is provided to the
+<code>TokenizedMarkdown</code> class as a single string, which the internal functions of the
+<code>TokenizedMarkdown</code> class break down
+into individual lines for further processing. With the exception of a single
+feature’s error case<sup id="fnref:linkReferenceDefinitionError"><a class="footnote-ref" href="#fn:linkReferenceDefinitionError">1</a></sup>, this separation of data into
+individual lines has proven to be very useful in reducing the complexity of the parser.
+It only made sense to refactor the code when considering how to add support for the
+second source of Markdown data: Markdown files.</p>
+<h3 id="starting-with-the-inmemorysourceprovider">Starting With the InMemorySourceProvider<a class="headerlink" href="#starting-with-the-inmemorysourceprovider" title="Permanent link">¶</a></h3>
+<p>Now that the project was moving into the rule-development phase, it was necessary to
+ensure that it was just as easy to feed the parser information from an in-memory string
+as it was to feed it information from a file to be scanned.  As the initial development
+kept things neat, it was relatively simple to take the logic for grabbing the next line
+and encapsulating it within the <code>InMemorySourceProvider</code> class.</p>
+<div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">InMemorySourceProvider</span><span class="p">:</span>
+    <span class="sd">"""</span>
+<span class="sd">    Class to provide for a source provider that is totally within memory.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">source_text</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">next_token</span> <span class="o">=</span> <span class="n">source_text</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_next_line</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Get the next line from the source provider.</span>
+<span class="sd">        """</span>
+        <span class="n">token_to_use</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">next_token</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">next_token</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="n">token_to_use</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">next_token</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">next_token</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">next_token</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">next_token</span>
+                <span class="n">token_to_use</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">next_token</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">next_token</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">return</span> <span class="n">token_to_use</span>
+</pre></div>
+<p>This class contains very simple logic.  When the instance of the class is initialized,
+it starts by breaking down the input text into a tuple.  The first element of the
+resultant tuple contains the next line to be parsed and the second element of that same
+tuple contains the input text to be parsed in the immediate future.  Once that
+calculation has been performed, the rest of the processing is relatively simple.
+If <code>get_next_line</code> is called and the tuple contains 2 elements, the first element is
+returned as the next line, and the <code>next_token</code> variable (for next time) is
+recalculated using the same expression as was used in the <code>__init__</code> function.
+When the <code>get_next_line</code> is called at the end of the file, the tuple contains only 1
+element.  At that point, that singular element is returned as the next line to be
+parsed, and
+the <code>next_token</code> variable is set to <code>None</code> to make sure we end the processing
+properly.  Finally, when <code>get_next_line</code> is called and the tuple is set to <code>None</code>,
+there is nothing left to parse and <code>None</code> is returned, signaling that the provider has
+reached the end of it’s available text.</p>
+<p>To be clear, this is the exact code that was in place for the duration of the parser
+testing, just repackaged to be in a more reusable form.  Its interface is plain and
+simple: it either returns the next line as a string if there is a next line, or it
+returns a <code>None</code> object if there are no more lines.  Nothing fancy as a class either,
+just a simple interface: one function to create the instance and get it setup, and one
+function to read the next line.</p>
+<h3 id="continuing-with-the-filesourceprovider">Continuing With the FileSourceProvider<a class="headerlink" href="#continuing-with-the-filesourceprovider" title="Permanent link">¶</a></h3>
+<p>By keeping things simple, creating the class <code>FileSourceProvider</code> was almost as simple
+as the refactoring to create the <code>InMemorySourceProvider</code> class.  While I want to keep
+options open for future performance experimentation, I just needed something simple
+for reading a file from the file system.  Based on those qualifications, I came up with
+this:</p>
+<div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">FileSourceProvider</span><span class="p">:</span>
+    <span class="sd">"""</span>
+<span class="sd">    Class to provide for a source provider that is on media as a file.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">file_to_open</span><span class="p">):</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">file_to_open</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">)</span> <span class="k">as</span> <span class="n">file_to_parse</span><span class="p">:</span>
+            <span class="n">file_as_lines</span> <span class="o">=</span> <span class="n">file_to_parse</span><span class="o">.</span><span class="n">readlines</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">read_lines</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">read_index</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">did_line_end_in_newline</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="k">for</span> <span class="n">next_line</span> <span class="ow">in</span> <span class="n">file_as_lines</span><span class="p">:</span>
+            <span class="n">did_line_end_in_newline</span> <span class="o">=</span> <span class="n">next_line</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">did_line_end_in_newline</span><span class="p">:</span>
+                <span class="n">next_line</span> <span class="o">=</span> <span class="n">next_line</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">read_lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">next_line</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">did_line_end_in_newline</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">read_lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">""</span><span class="p">)</span>
+</pre></div>
+<p>Basically, open the file, read in the lines, and process the lines into the format
+that we expect.  The only tricky bit with the class’s <code>__init__</code> function was handling
+line terminators properly.  In fact, that is the only
+purpose for the <code>did_line_end_in_newline</code> variable, remembering if the current line
+ended with a newline character before it is removed.  Based on independent unit testing
+of the class, I had problems with the characters at the end of the file, which adding
+that variable and the final <code>if</code> statement resolved cleanly.  I am not sure if I feel
+that the <code>did_line_end_in_newline</code> variable is a kludge or not, but I do feel that it
+was the right thing to do in order to maintain the fidelity of the data being read in
+from the file.</p>
+<p>Because care was taken in the provider’s <code>__init__</code> function to do all of the necessary
+processing, the <code>get_next_line</code> function is very basic:</p>
+<div class="highlight"><pre><span></span>    <span class="k">def</span> <span class="nf">get_next_line</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Get the next line from the source provider.</span>
+<span class="sd">        """</span>
+        <span class="n">token_to_use</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_index</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">read_lines</span><span class="p">):</span>
+            <span class="n">token_to_use</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_lines</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">read_index</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">read_index</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="n">token_to_use</span>
+</pre></div>
+<p>While this could be more complicated, or simplified depending on your viewpoint, for me
+this is keeping it basic.  The information we read into an array of strings during the
+<code>__init__</code> function, and this function simply uses an index to iterate through and
+return each element.  Nothing fancy for now, just some code the is very functional.</p>
+<h3 id="testing-the-source-providers">Testing the Source Providers<a class="headerlink" href="#testing-the-source-providers" title="Permanent link">¶</a></h3>
+<p>To make sure both providers are adhering to the interface in the same way, I
+added a decent number of tests in the <code>test_source_providers.py</code> file.  Over all of the
+tests, the big thing that is being tested is if the source providers return the correct
+lines given the correct input.  If there are 2 line terminators in the input, each
+provider must return 3 lines, even if the last one is empty.  Every test is a variation
+on that, thoroughly exercising each provider to ensure that both of them adhere to the
+interface flawlessly.  After all, if the parser gets bad input to tokenize, it cannot
+help but to produce bad output, even if is only off by a line terminator.</p>
+<div class="footnote">
+<hr/>
+<ol>
+<li id="fn:linkReferenceDefinitionError">
+<p>Due to link reference definitions being a multiline element, some of the error cases required the parser to be rewritten to handle lines that need to be “rewound”, as documented in <a href="markdown-linter-adding-link-reference-definitions/#hitting-implementation-issues">this previous article</a>. <a class="footnote-backref" href="#fnref:linkReferenceDefinitionError" title="Jump back to footnote 1 in the text">↩</a></p>
+</li>
+</ol>
+</div>
+
+
+             
+ 
+                <p id="post-share-links">
+    Like this post? Share on:
+    <a href="https://twitter.com/intent/tweet?text=Markdown%20Linter%20-%20Core%20-%20XXX&url=http%3A//localhost%3A8000/2020/05/03/markdown-linter-core-xxx/&hashtags=markdown-linter,core-linter" target="_blank" rel="nofollow noopener noreferrer" title="Share on Twitter">Twitter</a>
+    ❄
+    <a href="https://www.facebook.com/sharer/sharer.php?u=http%3A//localhost%3A8000/2020/05/03/markdown-linter-core-xxx/" target="_blank" rel="nofollow noopener noreferrer" title="Share on Facebook">Facebook</a>
+    ❄
+    <a href="mailto:?subject=Markdown%20Linter%20-%20Core%20-%20XXX&amp;body=http%3A//localhost%3A8000/2020/05/03/markdown-linter-core-xxx/" target="_blank" rel="nofollow noopener noreferrer" title="Share via Email">Email</a>
+    </p>
+
+            
+            
+
+
+
+
+
+
+<section>
+    <h6 style="display:none;">Comments</h6>
+    <p id="comment-message">So what do you think? Did I miss something? Is any part unclear? Leave your comments below. </p>
+
+    <div class="accordion" id="accordion2">
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                <a class="accordion-toggle disqus-comment-count comment-count"
+                   data-toggle="collapse"
+                   data-parent="#accordion2"
+                   href="http://localhost:8000/2020/05/03/markdown-linter-core-xxx/#comment_thread"
+                   id="comment-accordion-toggle">
+                    Comments
+                </a>
+            </div>
+            <div id="comment_thread" class="accordion-body collapse">
+                <div class="accordion-inner">
+                    <div class="comments">
+
+                        <script src="https://utteranc.es/client.js"
+        data-repo="jackdewinter/jackdewinter.github.io"
+        data-issue-term="markdown-linter-core-splitting-up-the-articles"
+        data-label="Comments"
+        data-theme="github-light"
+        crossorigin="anonymous"
+        async>
+</script>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+            <hr/>
+            <aside>
+            <nav>
+            <ul class="articles-timeline">
+                <li class="previous-article">« <a href="http://localhost:8000/2020/05/03/markdown-linter-splitting-up-the-articles/" title="Previous: Markdown Linter - Splitting Up The Articles">Markdown Linter - Splitting Up The Articles</a></li>
+            </ul>
+            </nav>
+            </aside>
+        </div>
+        <section id="article-sidebar" class="span2">
+    <h4>Reading Time</h4>
+    <p>~6 min read</p>
+            <h4>Published</h4>
+            <time itemprop="dateCreated" datetime="2020-05-03T00:00:00-07:00">May 3, 2020</time>
+        <h4>Markdown Linter Core</h4>
+    <ul class="multi-parts-list">
+            <li  class="active-part">
+            Part 1: Markdown Linter - Core - XXX
+            </li>
+    </ul>
+            <h4>Category</h4>
+            <a class="category-link" href="http://localhost:8000/categories#software-quality-ref">Software Quality</a>
+            <h4>Tags</h4>
+            <ul class="list-of-tags tags-in-article">
+                <li><a href="http://localhost:8000/tags#core-linter-ref">core linter
+                    <span>4</span>
+</a></li>
+                <li><a href="http://localhost:8000/tags#markdown-linter-ref">markdown linter
+                    <span>19</span>
+</a></li>
+            </ul>
+<h4>Stay in Touch</h4>
+<div id="sidebar-social-link">
+    <a href="https://github.com/jackdewinter" title="github-alt" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="GitHub" role="img" viewBox="0 0 512 512"><rect width="512" height="512" rx="15%" fill="#1B1817"/><path fill="#fff" d="M335 499c14 0 12 17 12 17H165s-2-17 12-17c13 0 16-6 16-12l-1-50c-71 16-86-28-86-28-12-30-28-37-28-37-24-16 1-16 1-16 26 2 40 26 40 26 22 39 59 28 74 22 2-17 9-28 16-35-57-6-116-28-116-126 0-28 10-51 26-69-3-6-11-32 3-67 0 0 21-7 70 26 42-12 86-12 128 0 49-33 70-26 70-26 14 35 6 61 3 67 16 18 26 41 26 69 0 98-60 120-117 126 10 8 18 24 18 48l-1 70c0 6 3 12 16 12z"/></svg>
+    </a>
+    <a href="https://www.linkedin.com/in/jackdewinter/" title="linkedin" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="LinkedIn" role="img" viewBox="0 0 512 512" fill="#fff"><rect width="512" height="512" rx="15%" fill="#0077b5"/><circle cx="142" cy="138" r="37"/><path stroke="#fff" stroke-width="66" d="M244 194v198M142 194v198"/><path d="M276 282c0-20 13-40 36-40 24 0 33 18 33 45v105h66V279c0-61-32-89-76-89-34 0-51 19-59 32"/></svg>
+    </a>
+    <a href="https://jackdewinter.github.io/feeds/all.atom.xml" title="" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="RSS" role="img" viewBox="0 0 512 512"><rect width="512" height="512" rx="15%" fill="#f80"/><circle cx="145" cy="367" r="35" fill="#fff"/><path fill="none" stroke="#fff" stroke-width="60" d="M109 241c89 0 162 73 162 162M109 127c152 0 276 124 276 276"/></svg>
+    </a>
+</div>
+            
+
+
+
+
+
+            
+
+
+
+
+
+        </section>
+</div>
+</article>
+                    </div>
+                    <div class="span1"></div>
+                </div>
+            </div>
+        </div>
+<footer>
+    <div>
+        
+&copy; Copyright 2019 by Jack De Winter and licensed under a <a rel="license"
+  href="http://creativecommons.org/licenses/by/4.0/">
+  <img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/80x15.png" />
+  Creative Commons Attribution 4.0 International License</a>.
+
+    </div>
+
+
+
+
+    <div id="fpowered">
+        Powered by: <a href="http://getpelican.com/" title="Pelican Home Page" target="_blank" rel="nofollow noopener noreferrer">Pelican</a>
+        Theme: <a href="https://elegant.oncrashreboot.com/" title="Theme Elegant Home Page" target="_blank" rel="nofollow noopener noreferrer">Elegant</a>
+    </div>
+</footer>            <script src="//code.jquery.com/jquery.min.js"></script>
+        <script src="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>
+        <script>
+            function validateForm(query)
+            {
+                return (query.length > 0);
+            }
+        </script>
+
+    <script>
+    (function () {
+        if (window.location.hash.match(/^#comment-\d+$/)) {
+            $('#comment_thread').collapse('show');
+        }
+    })();
+    window.onhashchange=function(){
+        if (window.location.hash.match(/^#comment-\d+$/))
+            window.location.reload(true);
+    }
+    $('#comment_thread').on('shown', function () {
+        var link = document.getElementById('comment-accordion-toggle');
+        var old_innerHTML = link.innerHTML;
+        $(link).fadeOut(200, function() {
+            $(this).text('Click here to hide comments').fadeIn(200);
+        });
+        $('#comment_thread').on('hidden', function () {
+            $(link).fadeOut(200, function() {
+                $(this).text(old_innerHTML).fadeIn(200);
+            });
+        })
+    })
+</script>
+
+    </body>
+    <!-- Theme: Elegant built for Pelican
+        License : MIT -->
+</html>
