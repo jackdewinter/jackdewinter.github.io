@@ -1,5 +1,557 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/all.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2020-05-04T00:00:00-07:00</updated><entry><title>Markdown Linter - Core - Pre-Rule Improvements</title><link href="https://jackdewinter.github.io/2020/05/04/markdown-linter-core-pre-rule-improvements/" rel="alternate"></link><published>2020-05-04T00:00:00-07:00</published><updated>2020-05-04T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-05-04:/2020/05/04/markdown-linter-core-pre-rule-improvements/</id><summary type="html">
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/all.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2020-05-11T00:00:00-07:00</updated><entry><title>Markdown Linter - Rules - The First Three</title><link href="https://jackdewinter.github.io/2020/05/11/markdown-linter-rules-the-first-three/" rel="alternate"></link><published>2020-05-11T00:00:00-07:00</published><updated>2020-05-11T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-05-11:/2020/05/11/markdown-linter-rules-the-first-three/</id><summary type="html">
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;With some solid refactoring work completed, it was time for me to write the first set
+of rules based on all that hard work.  To start things off, I planned to work on 2-3
+rules that would verify that I had created an acceptable framework for writing and
+evaluating …&lt;/p&gt;</summary><content type="html">
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;With some solid refactoring work completed, it was time for me to write the first set
+of rules based on all that hard work.  To start things off, I planned to work on 2-3
+rules that would verify that I had created an acceptable framework for writing and
+evaluating Markdown linting rules.  As
+&lt;a href="https://github.com/DavidAnson/markdownlint"&gt;David Anson’s MarkDownLint&lt;/a&gt;
+plugin for VSCode already has a number of rules defined, it made sense to pick a
+handful of rules from there as a starting point.  This choice was also fitting, as
+David’s NPM-based project was the inspiration for my Python-based project.&lt;/p&gt;
+&lt;p&gt;But how to pick the rules to start with?  One of my criteria was that whatever
+set of rules that I picked, I wanted to be able to extend the set  of rules naturally
+once I finished proving the first few rules were able to be clearly written.  The other
+criteria that I wanted was for those initial rules to be a good cross-section of what to
+expect in the other rules.&lt;/p&gt;
+&lt;p&gt;Based on those criteria and some quick thinking on my part, it took me less than 2
+minutes to realized that the first three rules in David’s check list would do just fine!&lt;/p&gt;
+&lt;h2 id="why-is-this-article-so-long"&gt;Why Is This Article So Long?&lt;a class="headerlink" href="#why-is-this-article-so-long" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;To be honest, this article got away from me.  Without breaking down this article into
+3 articles, each one focusing on its own rule, I couldn’t see any intermediate
+solutions for breaking up the article.  These are the first three rules I wrote for the
+project, and as such, they laid the foundation for all the other rules.  It just
+did not seem right to artificially break up the article.&lt;/p&gt;
+&lt;h2 id="what-is-the-audience-for-this-article"&gt;What Is the Audience for This Article?&lt;a class="headerlink" href="#what-is-the-audience-for-this-article" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;While detailed more eloquently in
+&lt;a href="https://jackdewinter.github.io/2020/04/05/what-is-the-audience-for-my-blog/#what-is-the-audience-for-my-blog"&gt;this article&lt;/a&gt;,
+my goal for this technical article is to focus on the reasoning behind my solutions,
+rather that the solutions themselves.  For a full record of the solutions presented in
+this article, please go to this project’s GitHub repository and consult the
+commits between
+&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/c9e487dcf47b9fce0bdf4ccf6e5af26507a06c65"&gt;17 April 2020&lt;/a&gt; and
+&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/2425a81be8b95ed891cb210e8bdfa4d7de126f6a"&gt;23 April 2020&lt;/a&gt;, except for the commit from
+&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/562600457654234aa7cabefa8e2a6b56665d936c"&gt;18 April 2020&lt;/a&gt;.&lt;/p&gt;
+&lt;h2 id="why-the-first-three-rules"&gt;Why the First Three Rules?&lt;a class="headerlink" href="#why-the-first-three-rules" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Given that David Anson’s work was the inspiration for this project, it made sense to
+start with those rules,
+&lt;a href="https://github.com/DavidAnson/markdownlint/blob/master/doc/Rules.md#rules"&gt;outlined here&lt;/a&gt;.
+The first three of those rules easily meet the first criteria, as all three rules deal
+with examining the headings in a Markdown document.  Doing a quick count of all the
+rules that dealt with headings, I counted 15 such rules.  Definitely qualifies as
+extensible.&lt;/p&gt;
+&lt;p&gt;As for the second criteria, the first rule is a standard rule, the second rule is a
+disabled rule, and the third rule has configuration that affects how the rule is
+measured.  Between the three of them, I had a lot of confidence that together they
+would represent a good cross-section of all rules, and therefore satisfy the
+second criteria nicely.&lt;/p&gt;
+&lt;p&gt;With the three rules selected and a confirmation that these three rules satisfied my
+criteria, it was time to move forward with implementation.&lt;/p&gt;
+&lt;h2 id="a-quick-aside"&gt;A Quick Aside&lt;a class="headerlink" href="#a-quick-aside" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Are they &lt;code&gt;headings&lt;/code&gt; or &lt;code&gt;headers&lt;/code&gt;?  While some of my cheat sheet resources like the
+&lt;a href="https://www.markdownguide.org/cheat-sheet"&gt;Markdown Guide’s Cheat Sheet&lt;/a&gt;
+refer to them as &lt;code&gt;headings&lt;/code&gt;, other resources like
+&lt;a href="https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet"&gt;Adam Pritchard’s Cheatsheet&lt;/a&gt;
+refer to them as &lt;code&gt;headers&lt;/code&gt;.  Even the
+&lt;a href="https://spec.commonmark.org/0.29/#atx-headings"&gt;CommonMark specification&lt;/a&gt;
+refers to them as &lt;code&gt;headings&lt;/code&gt;, but then include a couple of times where the term
+&lt;code&gt;header&lt;/code&gt; is used instead of &lt;code&gt;heading&lt;/code&gt;.  So which one is right?&lt;sup id="fnref:cheatSheet"&gt;&lt;a class="footnote-ref" href="#fn:cheatSheet"&gt;1&lt;/a&gt;&lt;/sup&gt;&lt;/p&gt;
+&lt;p&gt;To keep things simple, I am going to use the term &lt;code&gt;heading&lt;/code&gt; in this article and my
+other articles that deal with headings going forward.  That term seems to be the one
+that is most dominant in the specification, and I believe that the authors of the
+specification had a good reason for specifically using the term &lt;code&gt;heading&lt;/code&gt;.  Even if
+that reason is not documented.&lt;/p&gt;
+&lt;h2 id="rule-md001-incrementing-heading-levels"&gt;Rule MD001 - Incrementing Heading Levels&lt;a class="headerlink" href="#rule-md001-incrementing-heading-levels" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;This section describes the initial implement of PyMarkdown’s
+&lt;a href="https://github.com/jackdewinter/pymarkdown/blob/master/pymarkdown/plugins/rule_md_001.py"&gt;Rule MD001&lt;/a&gt;.  Feel free to examine the code at your convenience.&lt;/p&gt;
+&lt;h3 id="why-does-this-rule-make-sense"&gt;Why Does This Rule Make Sense?&lt;a class="headerlink" href="#why-does-this-rule-make-sense" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;This rule is simple: when using headings, the heading level should at most
+increase by one.  Based largely on the
+&lt;a href="https://www.w3.org/WAI/tutorials/page-structure/headings/"&gt;W3C’s Accessibility Guidelines&lt;/a&gt;,
+this rule just makes sense even without those accessibility guidelines.  If you have a
+heading, and you want subsections under that heading, you use a heading level that is
+one below the current one.  Consider this example:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;# &lt;span class="nv"&gt;What&lt;/span&gt; &lt;span class="nv"&gt;I&lt;/span&gt; &lt;span class="nv"&gt;Did&lt;/span&gt; &lt;span class="nv"&gt;On&lt;/span&gt; &lt;span class="nv"&gt;My&lt;/span&gt; &lt;span class="nv"&gt;Summer&lt;/span&gt; &lt;span class="nv"&gt;Vacation&lt;/span&gt;
+
+&lt;span class="nv"&gt;I&lt;/span&gt; &lt;span class="nv"&gt;did&lt;/span&gt; &lt;span class="nv"&gt;a&lt;/span&gt; &lt;span class="nv"&gt;lot&lt;/span&gt; &lt;span class="nv"&gt;of&lt;/span&gt; &lt;span class="nv"&gt;things&lt;/span&gt;.
+
+## &lt;span class="nv"&gt;July&lt;/span&gt;
+
+&lt;span class="nv"&gt;July&lt;/span&gt; &lt;span class="nv"&gt;is&lt;/span&gt; &lt;span class="nv"&gt;when&lt;/span&gt; &lt;span class="nv"&gt;it&lt;/span&gt; &lt;span class="nv"&gt;started&lt;/span&gt;.
+
+### &lt;span class="nv"&gt;The&lt;/span&gt; &lt;span class="nv"&gt;Pool&lt;/span&gt;
+
+&lt;span class="nv"&gt;I&lt;/span&gt; &lt;span class="nv"&gt;went&lt;/span&gt; &lt;span class="nv"&gt;to&lt;/span&gt; &lt;span class="nv"&gt;the&lt;/span&gt; &lt;span class="nv"&gt;pool&lt;/span&gt; &lt;span class="nv"&gt;every&lt;/span&gt; &lt;span class="nv"&gt;day&lt;/span&gt;.
+
+#### &lt;span class="nv"&gt;Swim&lt;/span&gt; &lt;span class="nv"&gt;Classes&lt;/span&gt;
+
+&lt;span class="nv"&gt;Mom&lt;/span&gt; &lt;span class="nv"&gt;made&lt;/span&gt; &lt;span class="nv"&gt;me&lt;/span&gt; &lt;span class="k"&gt;do&lt;/span&gt; &lt;span class="nv"&gt;this&lt;/span&gt;, &lt;span class="nv"&gt;again&lt;/span&gt;&lt;span class="o"&gt;!&lt;/span&gt;
+
+## &lt;span class="nv"&gt;August&lt;/span&gt;
+
+&lt;span class="nv"&gt;This&lt;/span&gt; &lt;span class="nv"&gt;is&lt;/span&gt; &lt;span class="nv"&gt;when&lt;/span&gt; &lt;span class="nv"&gt;everything&lt;/span&gt; &lt;span class="nv"&gt;seemed&lt;/span&gt; &lt;span class="nv"&gt;repetitive&lt;/span&gt;.
+
+### &lt;span class="nv"&gt;The&lt;/span&gt; &lt;span class="nv"&gt;Pool&lt;/span&gt;
+
+&lt;span class="nv"&gt;I&lt;/span&gt; &lt;span class="nv"&gt;got&lt;/span&gt; &lt;span class="nv"&gt;really&lt;/span&gt; &lt;span class="nv"&gt;sick&lt;/span&gt; &lt;span class="nv"&gt;of&lt;/span&gt; &lt;span class="nv"&gt;the&lt;/span&gt; &lt;span class="nv"&gt;pool&lt;/span&gt;.
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;While it does accurately detail most of my summer vacations as a kid, I believe that it
+is also a decent example of a report with the various highlights of each section
+organized under their own headings.  It makes sense to
+begin the document with the level 1 heading describing what the document is all about.
+From there, it logically follows that to break the document up, there should be level 2
+headings with the month names, each heading containing text specific to that month.
+As going to the local pool was the major part of each summer, it therefore follows that
+each of the months has its own level 3 heading under which I talk about what I did at
+the pool during that month.  Finally, swim classes were deemed mandatory by my mother,
+so me and my siblings took at least one session of swim classes each summer.  Detailing
+those classes in the month they happened, under a level 4 heading, just seems to be the
+right thing to do.  As a matter of fact, this example reminds me a lot of the
+“returning to school” report that my mother made us right just before school started,
+just to ensure that our waterlogged brains still remembered how to write properly.
+Thanks Mom!&lt;/p&gt;
+&lt;p&gt;Putting my reminiscing about summers as a kid aside, take another look at the headings
+and the text, observing the natural progression for heading levels, as detailed in the
+last paragraph.  For me, the headings and their levels just feel right, their flow is
+natural and not jarring.  When I need to get more specific with information in each
+section, I used a new heading one level down from the current heading and added that
+more specific information under the new heading.  From my point of view, it just worked,
+and I really did not need to think about why it worked… it just did.&lt;/p&gt;
+&lt;p&gt;Specifically looking at the heading levels themselves, while there is a case where the
+heading levels decrease by more than 1, there are no cases where the heading level
+does not increase by 1.  As an author, it just made sense to author the report like
+that, adding more detail with a lower heading and a lower subsection, and then popping
+back up to the right level to continue.   While there may have been a scenario in which
+the &lt;code&gt;Swim Classes&lt;/code&gt; section was followed by a level 3 heading and more text, it was not
+required.  In fact, I believe that my freedom to not follow up that section with a
+“garbage” level 3 heading and section text are what makes the flow of the headings
+work as they do.&lt;/p&gt;
+&lt;p&gt;While I might have taken the long way around in describing my theory behind this rule,
+to me it simply just makes sense both as an author and as a reader.&lt;/p&gt;
+&lt;h3 id="adding-the-rule"&gt;Adding the Rule&lt;a class="headerlink" href="#adding-the-rule" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;This was my first rule using the built-in parser, so I wanted to make sure to lay down
+some good patterns for myself to repeat going forward.&lt;/p&gt;
+&lt;h4 id="pattern-test-format"&gt;Pattern: Test Format&lt;a class="headerlink" href="#pattern-test-format" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h4&gt;
+&lt;p&gt;The first pattern I wanted to set in stone is the pattern to specify how to execute
+tests for a given rule. After experimenting with different formats and combinations,
+it was the proven test format that I chose
+&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/04222e24fdfb4c0f2d5c0e768516590a0140bb63#diff-0f4bc6824d3dcdb712fd4a5305ff4e4f"&gt;back in November&lt;/a&gt;
+that won out.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;test_md0047_good_description&lt;/span&gt;&lt;span class="p"&gt;():&lt;/span&gt;
+    &lt;span class="sd"&gt;"""&lt;/span&gt;
+&lt;span class="sd"&gt;    Test to make sure...&lt;/span&gt;
+&lt;span class="sd"&gt;    """&lt;/span&gt;
+
+    &lt;span class="c1"&gt;# Arrange&lt;/span&gt;
+    &lt;span class="n"&gt;scanner&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;MarkdownScanner&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+    &lt;span class="n"&gt;suppplied_arguments&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s2"&gt;"test/resources/rules/md047/some_test_file.md"&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+
+    &lt;span class="n"&gt;expected_return_code&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;
+    &lt;span class="n"&gt;expected_output&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;""&lt;/span&gt;
+    &lt;span class="n"&gt;expected_error&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;""&lt;/span&gt;
+
+    &lt;span class="c1"&gt;# Act&lt;/span&gt;
+    &lt;span class="n"&gt;execute_results&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;scanner&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;invoke_main&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;arguments&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;suppplied_arguments&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+    &lt;span class="c1"&gt;# Assert&lt;/span&gt;
+    &lt;span class="n"&gt;execute_results&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;assert_results&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+        &lt;span class="n"&gt;expected_output&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;expected_error&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;expected_return_code&lt;/span&gt;
+    &lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;This format keeps things simple: a descriptive function name, a decent function
+description, and simple boiler-plate code for the function that can be applied to most
+tests.  Even in cases where I had to add some extra code, such as adding a
+configuration file for the linter
+to read in and use, those changes were always applied on top of this template code,
+not instead of it.
+And except for those additions, only the variables &lt;code&gt;supplied_arguments&lt;/code&gt;,
+&lt;code&gt;expected_return_code&lt;/code&gt;, &lt;code&gt;expected_output&lt;/code&gt;, and
+&lt;code&gt;expected_error&lt;/code&gt; were ever changed for any of the tests, even to this day.&lt;/p&gt;
+&lt;p&gt;Basically, my plan was to create the template once, put it through a trial of fire to
+test it, and then reuse it endlessly once proven.  Keep it effective by keeping it
+simple.  As Isaac Newton said:&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Truth is ever to be found in the simplicity, and not in the multiplicity and confusion of things.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;h4 id="pattern-creating-a-new-rule"&gt;Pattern: Creating a New Rule&lt;a class="headerlink" href="#pattern-creating-a-new-rule" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h4&gt;
+&lt;p&gt;Translating the logic described under the section
+&lt;a href="https://jackdewinter.github.io/2020/05/11/markdown-linter-rules-the-first-three/#why-does-this-rule-make-sense"&gt;Why Does This Rule Make Sense?&lt;/a&gt;
+into Python code was easy.  First, I created the tests cases described above, and
+examined the debug information output for those cases, specifically looking at what the
+final sequence of tokens was.  As all the information for the rules was contained
+within the instances of the &lt;code&gt;AtxHeaderMarkdownToken&lt;/code&gt; or
+the &lt;code&gt;SetextHeaderMarkdownToken&lt;/code&gt;&lt;sup id="fnref:here"&gt;&lt;a class="footnote-ref" href="#fn:here"&gt;2&lt;/a&gt;&lt;/sup&gt;, those were the only two tokens I had to worry
+about.&lt;/p&gt;
+&lt;p&gt;With that knowledge in hand, it was time to move to the second pattern that I wanted to
+repeat: creating a new
+rule.  While the content of each rule changes, this process is always consistent.
+First, I pick a test to clone from and copy its contents into a new file.  In this
+initial case, I copied the file &lt;code&gt;rule_md_047.py&lt;/code&gt; into the file
+&lt;code&gt;rule_md_001.py&lt;/code&gt;.  Any initialization for each rule is performed in the
+&lt;code&gt;starting_new_file&lt;/code&gt; function, so that function is cleaned out except for the comment.
+Finally, the &lt;code&gt;next_token&lt;/code&gt; is cleaned out in the same way, to provide for a clean slate
+to start writing the rule with.  For this rule, &lt;code&gt;rule_md_047.py&lt;/code&gt; used the &lt;code&gt;next_line&lt;/code&gt;
+function, so that needed to be changed to override the &lt;code&gt;next_token&lt;/code&gt; function instead,
+as this rule is specifically token based.  Except for this one special case, this
+pattern has now been replicated for each rule in the project.&lt;/p&gt;
+&lt;h4 id="pattern-creating-the-initial-tests"&gt;Pattern: Creating the Initial Tests&lt;a class="headerlink" href="#pattern-creating-the-initial-tests" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h4&gt;
+&lt;p&gt;The third pattern that I wanted to get in place was specifying a good set of initial
+test cases for the rule, prior to writing the rule itself.  A strong proponent of
+test-driven development, I believe that before writing the source code, at least a
+rough outline of the test code and test data should be written.&lt;/p&gt;
+&lt;p&gt;A common misconception of test-driven development is that before you write any code,
+you write all the tests.  The process is an iterative process, one
+that grows over time.  While this entire process is the pattern that I want to
+enshrine in this project, the important part that I want to tackle at this point is
+coming up with a good set of tests and test data to start with.&lt;/p&gt;
+&lt;p&gt;For this project, this initial set of tests and test data are made easy by the
+existing MarkdownLint rules
+&lt;a href="https://github.com/DavidAnson/markdownlint/blob/master/doc/Rules.md#rules"&gt;outlined here&lt;/a&gt;.
+While the rules outlined there do not always have a comprehensive set of Markdown
+documents to test that rule, they always document at least one good
+Markdown document and one bad Markdown document.  If there was something obvious that
+is missing, I also try and add it at this point, just to save iterations later. But
+just in case I miss something, I have another pattern,
+&lt;a href="https://jackdewinter.github.io/2020/05/11/markdown-linter-rules-the-first-three/#pattern-thorough-rule-validation"&gt;Thorough Rule Validation&lt;/a&gt;,
+that I will talk about later to try and catch those missed cases.&lt;/p&gt;
+&lt;h4 id="implementing-the-rule"&gt;Implementing the Rule&lt;a class="headerlink" href="#implementing-the-rule" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h4&gt;
+&lt;p&gt;Once things were setup, it was time to add the logic.  A false failure is not desired
+when a new document is started, so I added a reset of the &lt;code&gt;last_header_count&lt;/code&gt; class
+variable in the &lt;code&gt;starting_new_file&lt;/code&gt; function.  In the &lt;code&gt;next_token&lt;/code&gt; function, I then
+added some simple code to test whether the token was one of the two heading tokens, and
+if so, set the &lt;code&gt;hash_count&lt;/code&gt; variable to a non-None value.  At this point, I added some
+debug to the function and ran each of the test cases against the rule, checking to see
+whether what I expected to happen, did happen.&lt;/p&gt;
+&lt;p&gt;As this rule implements simple logic, the initial logic was validated on my first try.
+Removing the debug statements, I added some logic to filter out any cases where
+&lt;code&gt;last_header_count&lt;/code&gt; was not set (initial case) or where &lt;code&gt;header_count&lt;/code&gt; was not greater
+than &lt;code&gt;last_header_count&lt;/code&gt; (not increasing).  With those cases filtered out, it was
+simple to
+check for an increase of 1 and to fail if the increase was more than 1.  A quick
+call to &lt;code&gt;report_next_token_error&lt;/code&gt; to report the failure, and the basic case was
+completed.&lt;/p&gt;
+&lt;p&gt;From there, I circled back to the test data, and looked to see if there were any
+obvious cases that I was missing.  It was then that I noticed that the text’s
+description specified headings, but had no test data for SetExt headings, just
+Atx headings.  I quickly crafted some data that mixed a SetExt heading followed by
+a valid and invalid Atx heading and iterated through the process again.  It was
+only after I was sure that I had not missed anything obvious that I proceeded
+to the next pattern: Thorough Rule Validation.&lt;/p&gt;
+&lt;h4 id="pattern-thorough-rule-validation"&gt;Pattern: Thorough Rule Validation&lt;a class="headerlink" href="#pattern-thorough-rule-validation" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h4&gt;
+&lt;p&gt;The final pattern that I wanted to put into place was to be thorough in my rule
+validation, using both internal data sources and external data sources.&lt;/p&gt;
+&lt;p&gt;The validation against the internal data sources was easy, as I had just finished the
+source code
+and the tests code for that rule.  However, I put that aside and instead ignored the
+source code in favor of the the definition of the rule’s scenario along with the
+test data.  Based on those two factors alone, I predicted what the outcome of the test
+should be, then executed the test to verify that prediction.&lt;/p&gt;
+&lt;p&gt;If I encountered an error, the first step I took was to recheck the expected output
+more rigorously against the rule’s scenario and the test data.  Whenever doing this, I
+rechecked the output multiple times just to make sure I had the right answer.  From
+my experience, unless I try very hard, it is unlikely that I will make the same mistake
+twice.  If there was an error in the output, I corrected the error and executed the
+tests again, as if from the beginning of this section.  If there was an error in the
+rule itself, I would add some debug to the rule and run further tests to check what
+refinements I needed to make, before restarting all the tests in this section.&lt;/p&gt;
+&lt;p&gt;For this initial rule, I had errors in the test data and the rule, and this attention
+to detail helped me spot them quickly.  After a few iterations, I was confident
+that the validation against internal data sources was completed, and I needed to move
+on to an external data source.  As the MarkDownLint implementation of the rules was
+done as a VSCode plugin, it made sense to use VSCode + MarkDownLint as the external
+validation source.&lt;/p&gt;
+&lt;p&gt;It was with great confidence that I I loaded up the sample files into VSCode to check
+against MarkDownLint.  It was when I looked at VSCode’s Problems tab that I got a big
+surprise.  I had forgotten something important: line numbers and column numbers.&lt;/p&gt;
+&lt;h4 id="line-numbers-and-column-numbers"&gt;Line Numbers and Column Numbers&lt;a class="headerlink" href="#line-numbers-and-column-numbers" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h4&gt;
+&lt;p&gt;To say this hit me like a ton of bricks would not do it justice.  I was floored.
+I was so focused on getting the parsing of the tokens done accurately, I completely
+forgot to design and implement a way to place the location of the element in the
+Markdown document into their tokens.  It was hard to miss the issue:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;MD001/heading-increment/header-increment:
+  Heading levels should only increment by one level at a time
+  [Expected: h3; Actual: h4] markdownlint(MD001) [4,1]
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Honestly, I took me a bit to get over this.  It was so obvious to me that I should
+have seen this ahead of time.  When you are reporting any type of linting failure, you
+need to specify the location of that failure so that the user can fix it.  Without
+that information, the rule is somewhat useless.&lt;/p&gt;
+&lt;p&gt;In the present as I am writing this article, I can better understand what happened
+and how I missed those number.  However, at the time I struggled to find an interim
+solution until I could start to tackle this properly.  I needed to focus on the
+first cohort of rules, so I tried to put this mishap out of my mind.  It was after
+some a couple of frustrating hours that I added two fields to track the line number and
+column number of the tokens, setting both to 0.&lt;/p&gt;
+&lt;p&gt;After some additional “yelling” at my monitor, I decided to close out that first rule,
+and moved one to the second rule, confident that I (mostly) had set up some solid
+patterns to focus on for the future rules.&lt;/p&gt;
+&lt;h2 id="rule-md002-deprecated-first-heading-should-be-top-level"&gt;Rule MD002 - (Deprecated) First Heading Should Be Top Level&lt;a class="headerlink" href="#rule-md002-deprecated-first-heading-should-be-top-level" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;This section describes the initial implement of PyMarkdown’s
+&lt;a href="https://github.com/jackdewinter/pymarkdown/blob/master/pymarkdown/plugins/rule_md_002.py"&gt;Rule MD002&lt;/a&gt;.&lt;/p&gt;
+&lt;h3 id="why-does-this-rule-not-make-sense"&gt;Why Does This Rule (Not) Make Sense?&lt;a class="headerlink" href="#why-does-this-rule-not-make-sense" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Note the slightly different wording of the heading.  As documented on the
+&lt;a href="https://github.com/DavidAnson/markdownlint/blob/master/doc/Rules.md#md002---first-heading-should-be-a-top-level-heading"&gt;MarkdownLint site&lt;/a&gt;,
+this rule has been replaced by
+&lt;a href="https://github.com/DavidAnson/markdownlint/blob/master/doc/Rules.md#md041---first-line-in-file-should-be-a-top-level-heading"&gt;rule MD041&lt;/a&gt;.
+The important difference between the two rules is that MD002 looks at Atx headings
+and SetExt headings, while rule MD041 also looks at the metadata at the start of the
+document, often referred to as YAML front matter.  Because there is an improved rule,
+this rule is disabled by default in favor of that rule.&lt;/p&gt;
+&lt;p&gt;Whether in rule MD002 or rule MD047, the reasoning for both rules is consistent: each
+document should contain a clean title.  For both rules, this is achieved by looking at
+the first Atx heading or SetExt heading in the document and verifying that the first
+heading is a level 1 heading.  For rule MD047, the only difference from rule MD002 is
+that it additionally looks for a specific metadata field that can take the place of an
+explicit level 1 heading.&lt;/p&gt;
+&lt;p&gt;A good example of rule MD002 is the standard &lt;code&gt;readme.md&lt;/code&gt; file that I usually add at
+the base of a GitHub project.  Typically, I start with a file that looks like this:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;#&lt;/span&gt; &lt;span class="n"&gt;ReadMe&lt;/span&gt;
+
+&lt;span class="n"&gt;This&lt;/span&gt; &lt;span class="n"&gt;file&lt;/span&gt; &lt;span class="n"&gt;describes&lt;/span&gt; &lt;span class="n"&gt;what&lt;/span&gt; &lt;span class="n"&gt;the&lt;/span&gt; &lt;span class="n"&gt;project&lt;/span&gt; &lt;span class="n"&gt;does&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;who&lt;/span&gt; &lt;span class="k"&gt;to&lt;/span&gt; &lt;span class="n"&gt;contact&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;etc&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;While the title is simplistic, it does present a clear indication of what the title and
+purpose of the document is.  If, on the other hand, you see a Markdown document like:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;Lorem&lt;/span&gt; &lt;span class="n"&gt;ipsum&lt;/span&gt; &lt;span class="n"&gt;dolor&lt;/span&gt; &lt;span class="n"&gt;sit&lt;/span&gt; &lt;span class="n"&gt;amet&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;consectetur&lt;/span&gt; &lt;span class="n"&gt;adipiscing&lt;/span&gt; &lt;span class="n"&gt;elit&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt; &lt;span class="n"&gt;Phasellus&lt;/span&gt; &lt;span class="n"&gt;felis&lt;/span&gt; &lt;span class="n"&gt;lacus&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;finibus&lt;/span&gt;
+&lt;span class="n"&gt;eget&lt;/span&gt; &lt;span class="n"&gt;gravida&lt;/span&gt; &lt;span class="n"&gt;eget&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;dapibus&lt;/span&gt; &lt;span class="n"&gt;vel&lt;/span&gt; &lt;span class="n"&gt;lacus&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt; &lt;span class="n"&gt;Phasellus&lt;/span&gt; &lt;span class="n"&gt;placerat&lt;/span&gt; &lt;span class="n"&gt;nisi&lt;/span&gt; &lt;span class="n"&gt;enim&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;eu&lt;/span&gt; &lt;span class="n"&gt;maximus&lt;/span&gt; &lt;span class="n"&gt;ipsum&lt;/span&gt;
+&lt;span class="n"&gt;congue&lt;/span&gt; &lt;span class="n"&gt;nec&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt; &lt;span class="nb"&gt;Integer&lt;/span&gt; &lt;span class="n"&gt;sollicitudin&lt;/span&gt; &lt;span class="n"&gt;metus&lt;/span&gt; &lt;span class="n"&gt;urna&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;quis&lt;/span&gt; &lt;span class="n"&gt;iaculis&lt;/span&gt; &lt;span class="n"&gt;ligula&lt;/span&gt; &lt;span class="n"&gt;condimentum&lt;/span&gt; &lt;span class="n"&gt;eu&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;it is hard to figure out what this document is for.  Simply by adding a title heading,
+this can be cleared up.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;# &lt;span class="k"&gt;Random&lt;/span&gt; &lt;span class="nv"&gt;Test&lt;/span&gt; &lt;span class="nv"&gt;Paragraphs&lt;/span&gt;
+
+&lt;span class="nv"&gt;Lorem&lt;/span&gt; &lt;span class="nv"&gt;ipsum&lt;/span&gt; &lt;span class="nv"&gt;dolor&lt;/span&gt; &lt;span class="nv"&gt;sit&lt;/span&gt; &lt;span class="nv"&gt;amet&lt;/span&gt;, &lt;span class="nv"&gt;consectetur&lt;/span&gt; &lt;span class="nv"&gt;adipiscing&lt;/span&gt; &lt;span class="nv"&gt;elit&lt;/span&gt;. &lt;span class="nv"&gt;Phasellus&lt;/span&gt; &lt;span class="nv"&gt;felis&lt;/span&gt; &lt;span class="nv"&gt;lacus&lt;/span&gt;, &lt;span class="nv"&gt;finibus&lt;/span&gt;
+&lt;span class="nv"&gt;eget&lt;/span&gt; &lt;span class="nv"&gt;gravida&lt;/span&gt; &lt;span class="nv"&gt;eget&lt;/span&gt;, &lt;span class="nv"&gt;dapibus&lt;/span&gt; &lt;span class="nv"&gt;vel&lt;/span&gt; &lt;span class="nv"&gt;lacus&lt;/span&gt;. &lt;span class="nv"&gt;Phasellus&lt;/span&gt; &lt;span class="nv"&gt;placerat&lt;/span&gt; &lt;span class="nv"&gt;nisi&lt;/span&gt; &lt;span class="nv"&gt;enim&lt;/span&gt;, &lt;span class="nv"&gt;eu&lt;/span&gt; &lt;span class="nv"&gt;maximus&lt;/span&gt; &lt;span class="nv"&gt;ipsum&lt;/span&gt;
+&lt;span class="nv"&gt;congue&lt;/span&gt; &lt;span class="nv"&gt;nec&lt;/span&gt;. &lt;span class="nv"&gt;Integer&lt;/span&gt; &lt;span class="nv"&gt;sollicitudin&lt;/span&gt; &lt;span class="nv"&gt;metus&lt;/span&gt; &lt;span class="nv"&gt;urna&lt;/span&gt;, &lt;span class="nv"&gt;quis&lt;/span&gt; &lt;span class="nv"&gt;iaculis&lt;/span&gt; &lt;span class="nv"&gt;ligula&lt;/span&gt; &lt;span class="nv"&gt;condimentum&lt;/span&gt; &lt;span class="nv"&gt;eu&lt;/span&gt;.
+&lt;/pre&gt;&lt;/div&gt;
+&lt;h3 id="adding-the-rule_1"&gt;Adding the Rule&lt;a class="headerlink" href="#adding-the-rule_1" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Having previously explained my process for
+&lt;a href="https://jackdewinter.github.io/2020/05/11/markdown-linter-rules-the-first-three/#adding-the-rule"&gt;adding new rules&lt;/a&gt;,
+I’ll leave that content out from here on, and just concentrate on what has changed.&lt;/p&gt;
+&lt;p&gt;The logic for this rule is almost exactly the same as for the previously implemented
+rule
+&lt;a href="https://jackdewinter.github.io/2020/05/11/markdown-linter-rules-the-first-three/#rule-md001-incrementing-heading-levels"&gt;MD001&lt;/a&gt;,
+except that instead of checking for an increase in the heading level,
+it simply looks to see if the first heading it encounters has a heading level of 1.
+The implementation of this rule introduced two new concepts: rule configuration and
+disabling a rule by default.  While the next rule,
+&lt;a href="https://jackdewinter.github.io/2020/05/11/markdown-linter-rules-the-first-three/#rule-md003-heading-style"&gt;MD003&lt;/a&gt;,
+will properly deal with the configuration aspect, the main focus of this rule is the
+ability to add a rule that is disabled by default.&lt;/p&gt;
+&lt;p&gt;To provide options to the user, adding a rule that is disabled has merit.  In this
+case, a new rule was added that is more comprehensive than this rule. However, rather
+than removing this rule and possibly breaking the configuration of some users, the
+original rule was preserved for users that are not comfortable updating their linting
+to use the more comprehensive rule.  In addition, there is also a good
+argument to be made for new rules to be added in a disabled state, allowing people who
+are upgrading to a new version of the project to control which new features they want.
+As both examples illustrate, having a rule be disabled by default is a useful feature
+to have.&lt;/p&gt;
+&lt;p&gt;The code to allow for a rule to be disabled by default was added back in November when
+I was testing out the plugin manager concept.  While there was a good test of the
+disable feature at that time, it was now time to really test its functionality with
+this rule.  This testing was achieved by looking back at the test data for MD001 and
+noticing that the first heading in the file &lt;code&gt;improper_setext_header_incrementing.md&lt;/code&gt; is
+a level 2 heading.  That means that if rule MD002 is enabled and executed for that
+Markdown file, I would expect a failure to occur.  Therefore, when I executed the
+MD001 tests again, with rule MD002 in its default disabled state, I expected that no
+additional failures would be reported.  I executed that tests, and this behavior is
+exactly what I saw in the results.  For me, that was enough proof that the rule was
+disabled by default.  &lt;/p&gt;
+&lt;p&gt;To properly test this disabled rule, only a slight change to my normal process of
+testing rules was required.  In addition to the normal information supplied by
+the test in the &lt;code&gt;supplied_arguments&lt;/code&gt; variable of the test, the start of that array
+was modified to include the elements &lt;code&gt;-e&lt;/code&gt; and &lt;code&gt;MD002&lt;/code&gt;.  As PyMarkdown allows for rules
+to be enabled and disabled on the command line, those two additions simply told the
+command line to enable (&lt;code&gt;-e&lt;/code&gt;) rule MD002 (&lt;code&gt;MD002&lt;/code&gt;).&lt;/p&gt;
+&lt;p&gt;With those changes made to the tests, the rest of the testing went by without incident.&lt;/p&gt;
+&lt;h2 id="rule-md003-heading-style"&gt;Rule MD003 - Heading Style&lt;a class="headerlink" href="#rule-md003-heading-style" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;This section describes the initial implement of PyMarkdown’s
+&lt;a href="https://github.com/jackdewinter/pymarkdown/blob/master/pymarkdown/plugins/rule_md_003.py"&gt;Rule MD003&lt;/a&gt;.&lt;/p&gt;
+&lt;h3 id="why-does-this-rule-make-sense_1"&gt;Why Does This Rule Make Sense?&lt;a class="headerlink" href="#why-does-this-rule-make-sense_1" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;In a single word: consistency.  I am sure I would not want to read a Markdown document
+that had multiple heading styles, such as:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;#&lt;/span&gt; &lt;span class="n"&gt;ATX&lt;/span&gt; &lt;span class="n"&gt;style&lt;/span&gt; &lt;span class="n"&gt;H1&lt;/span&gt;
+
+&lt;span class="o"&gt;##&lt;/span&gt; &lt;span class="n"&gt;Closed&lt;/span&gt; &lt;span class="n"&gt;ATX&lt;/span&gt; &lt;span class="n"&gt;style&lt;/span&gt; &lt;span class="n"&gt;H2&lt;/span&gt; &lt;span class="o"&gt;##&lt;/span&gt;
+
+&lt;span class="n"&gt;Setext&lt;/span&gt; &lt;span class="n"&gt;style&lt;/span&gt; &lt;span class="n"&gt;H1&lt;/span&gt;
+&lt;span class="o"&gt;===============&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;It would be a confusing mess!  If I were reviewing that document for someone, I would
+tell them to
+keep it simple, pick a heading style, and stick to it.  By picking a single, simple
+style, it would help any readers know what to expect.&lt;/p&gt;
+&lt;p&gt;In terms of styles, there are 6 styles to choose from.  The obvious style, the default
+&lt;code&gt;consistent&lt;/code&gt; style, simply looks at the first header and assumes that the style
+of that heading will be used for the entire document, &lt;code&gt;atx&lt;/code&gt;, &lt;code&gt;atx_closed&lt;/code&gt; or &lt;code&gt;setext&lt;/code&gt;.
+If the user wants to be more
+specific about the style, there are two variations on Atx headings styles, and three
+variations on SetExt headings styles to choose from.  They take a bit of getting used
+to, so let me walk through them.&lt;/p&gt;
+&lt;p&gt;For Atx headings, the two variations that are available are &lt;code&gt;atx&lt;/code&gt; and &lt;code&gt;atx_closed&lt;/code&gt;,
+demonstrated in the follow example:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;##&lt;/span&gt; &lt;span class="n"&gt;Atx&lt;/span&gt;
+
+&lt;span class="o"&gt;##&lt;/span&gt; &lt;span class="n"&gt;Atx&lt;/span&gt; &lt;span class="n"&gt;Closed&lt;/span&gt; &lt;span class="o"&gt;##&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;The only difference between these two variations are that &lt;code&gt;atx_closed&lt;/code&gt; style includes
+&lt;code&gt;#&lt;/code&gt; characters at the end of the heading as well as at the beginning.  While the
+&lt;a href="https://github.github.com/gfm/"&gt;GFM specification&lt;/a&gt;
+has strict requirements that there can only be 1 to 6 &lt;code&gt;#&lt;/code&gt; characters at the start of the
+Atx heading, the only requirement for the closing &lt;code&gt;#&lt;/code&gt; characters is that there is at
+least one valid &lt;code&gt;#&lt;/code&gt; character.  For any stricter requirements on the closing &lt;code&gt;#&lt;/code&gt;
+characters, a new rule would have to be written to add more stringent requirements for
+any Markdown documents with the &lt;code&gt;atx_closed&lt;/code&gt; style.&lt;/p&gt;
+&lt;p&gt;For documents that use the SetExt headings, the obvious issue is what to do if the
+document requires a level 3 heading, as SetExt headings only support a level 1 and a
+level 2 heading.  To handle this case, the &lt;code&gt;setext_with_atx&lt;/code&gt; style is used to specify
+that level 1 and level 2 headings remain SetExt, while level 2 to 6 headings are to
+use Atx headings, as in the following example:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="gh"&gt;Setext style H1&lt;/span&gt;
+&lt;span class="gh"&gt;===============&lt;/span&gt;
+
+&lt;span class="gh"&gt;Setext style H2&lt;/span&gt;
+&lt;span class="gh"&gt;---------------&lt;/span&gt;
+
+### ATX style H3
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Without specifying a heading style of &lt;code&gt;setext_with_atx&lt;/code&gt; and relying on an implicitly
+or defaulted setting of &lt;code&gt;setext&lt;/code&gt;, the rule would fail on the heading labeled
+&lt;code&gt;ATX style H3&lt;/code&gt;.  To round things out, there is also a style variation
+&lt;code&gt;setext_with_atx_closed&lt;/code&gt; which has the same behavior as the above example, except using
+the &lt;code&gt;atx_closed&lt;/code&gt; style instead of the &lt;code&gt;atx&lt;/code&gt; style.&lt;/p&gt;
+&lt;h3 id="adding-the-rule_2"&gt;Adding the Rule&lt;a class="headerlink" href="#adding-the-rule_2" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Back in the description for
+&lt;a href="https://jackdewinter.github.io/2020/05/11/markdown-linter-rules-the-first-three/#adding-the-rule_1"&gt;rule MD002&lt;/a&gt;,
+I mentioned that I would cover the configuration aspect later, focusing at that
+time on the disabling of rules by default.  Having completed the discussion about that
+rule, it is now time to talk configuration.  For any readers following along with the
+commits in the project’s repository, note that the work for rule configuration was
+performed in changes introduced in the commits for both rules MD002 and MD003.&lt;/p&gt;
+&lt;h4 id="configuration"&gt;Configuration&lt;a class="headerlink" href="#configuration" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h4&gt;
+&lt;p&gt;Configuration was the last component of the rules that I needed to have implemented and
+tested thoroughly before implementing more rules.  It was important to me to get
+configuration right, as just over half of the initial rules contains some element
+of configuration.&lt;/p&gt;
+&lt;p&gt;The main part of accepting configuration was to change the &lt;code&gt;main.py&lt;/code&gt; command line
+interface to accept a configuration file in the JSON format, verifying that it
+was a proper JSON file by parsing it into a simple Python &lt;code&gt;dict&lt;/code&gt; object before
+continuing.  Just before the files were scanned, a call was introduced to the new
+&lt;code&gt;__load_configuration_and_apply_to_plugins&lt;/code&gt; function, that function performing the
+required work to call the &lt;code&gt;initialize_from_config&lt;/code&gt; function in each plugin.  At that
+point, if the plugin requires any configuration, it calls the plugin’s
+&lt;code&gt;get_configuration_value&lt;/code&gt; function to see if a value of the requested type is present in
+the map.&lt;/p&gt;
+&lt;p&gt;That might seem like a lot of work, but that work done can be summarized
+as: load the configuration, let the plugins know about it, and then let the plugin
+retrieve the configuration if required.  Almost everything else surrounding those
+actions were either making sure errors were handled properly or making sure that the
+correct information was passed properly to the plugin manager.&lt;/p&gt;
+&lt;p&gt;Before checking the configuration code in for MD002, and then again for MD003, I
+changed various parts of the plugins to request different information from the
+configuration store.  It was this extra testing that allowed me to simplify rule MD003.
+The initial code for the rule raised an exception if the configuration value did not
+match one of the required values.  Based on that testing, I changed it to use the
+default value in that case instead.  It just seemed like the right thing to do in
+that case.&lt;/p&gt;
+&lt;h4 id="the-rule-and-the-tests"&gt;The Rule and The Tests&lt;a class="headerlink" href="#the-rule-and-the-tests" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h4&gt;
+&lt;p&gt;Once the configuration was in place, the rest of the development went smoothly.  A
+slight change to the Atx heading token was required to report the number of trailing
+&lt;code&gt;#&lt;/code&gt; characters, but other than that, the core rules engine was stabilizing with no
+other changes.&lt;/p&gt;
+&lt;p&gt;The rule itself was somewhat simple but reducing the complexity of the check was a
+daunting task.  At first, I wrote the rule with everything in the &lt;code&gt;next_token&lt;/code&gt;
+function, which worked decently well.  The first part of that function was a block
+of code that figured out two important attributes: the type of heading (&lt;code&gt;atx&lt;/code&gt;,
+&lt;code&gt;atx_closed&lt;/code&gt;, or &lt;code&gt;setext&lt;/code&gt;) if the token was a heading token and whether that token
+contained a level 1 or level 2 heading token.&lt;/p&gt;
+&lt;p&gt;Based on that information, the rest of the code worked out cleanly.  If it was not a
+heading token, exit quickly.  If the style was &lt;code&gt;consistent&lt;/code&gt; and this was the first
+heading token to be seen, set the style to the heading type of the current token.
+With all that out of the way, the actual checking of the styles started.  If the
+style was one of the 3 basic styles, a simple comparison determined if the rule
+failed or not.  In the &lt;code&gt;*with*&lt;/code&gt; variations for SetExt, the logic was a little more
+complicated, mostly dealing with checking the level of the heading. A certain amount
+of playing around with the code was required to get all the rules validating
+the Markdown in a clean and simple manner.&lt;/p&gt;
+&lt;p&gt;The tests themselves were simple as well.  Before starting on the rule, I had
+created one test input file
+with a positive example for each of the style types.  By changing the configured
+style type to apply to the rule, I was able to cover all combinations very quickly.
+What were negative cases for some tests became positive tests for other cases, and
+vice versa.  The reusability of the data for testing this rule ended up being a big
+win.  Instead of 3-5 test documents for each style, the tests only use a total of
+5 documents, not including the &lt;code&gt;empty.md&lt;/code&gt; file.  Pretty efficient!&lt;/p&gt;
+&lt;p&gt;It was with that battery of tests in place that I worked to reduce the complexity of
+the rule.  I won’t try and say I got everything right on the first try. I didn’t.
+But having those tests in place helped me figure out where I went wrong and helped
+me determine the next changes to make.  Having a good set of tests is pivotal in
+being able to refactor any algorithm, and that includes one the project’s rules.&lt;/p&gt;
+&lt;h4 id="resolving-conflicts-between-rule-test-data"&gt;Resolving Conflicts Between Rule Test Data&lt;a class="headerlink" href="#resolving-conflicts-between-rule-test-data" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h4&gt;
+&lt;p&gt;The one thing that I had to start watching out with this rule was the test data for one
+rule raising an error on a previously written rule.  In each of the tests that I wrote,
+I specifically wanted to narrow down the testing to that specific rule,
+to keep the test more relevant to the rule.  With rules MD001 and MD002 being in the
+same area, it was only luck that they did not cause any interference with each other.
+For rule &lt;code&gt;MD003&lt;/code&gt;, it caused interference with the test data for the previous 2 rules,
+where a consistent style for the input data was not a priority.&lt;/p&gt;
+&lt;p&gt;To remove the interference, the PyMarkdown’s disable rule feature was used, the
+opposite to the enable rule used in the testing of rule MD002.  Instead of adding the
+&lt;code&gt;-e&lt;/code&gt; and &lt;code&gt;MD002&lt;/code&gt;
+values to the &lt;code&gt;supplied_arguments&lt;/code&gt; variable, the values &lt;code&gt;--disable-rules&lt;/code&gt; and &lt;code&gt;MD003&lt;/code&gt;
+were added.  In the tests for rule MD002, rule MD002 was enabled from the
+command line at the same time that rule MD003 was disabled from the command line.&lt;/p&gt;
+&lt;p&gt;By applying &lt;code&gt;--disable-rules&lt;/code&gt; and &lt;code&gt;MD003&lt;/code&gt; to the tests for MD001 and MD002, I was
+able to resolve the interference from rule MD003 cleanly, getting nice consistent
+test results.&lt;/p&gt;
+&lt;h2 id="what-was-my-experience-so-far"&gt;What Was My Experience So Far?&lt;a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;The first part of my experience that I want to talk about is change and how I handle it.
+Specifically, I want to talk about the line and column numbers.  While it was painfully
+obvious after comparing the output in VS Code with my output, it really hadn’t crossed
+my mind before then.  I was more concerned with the ability to write a solid rule, and
+not concerned with the content that would be displayed when that rule detected a
+violation.  Sure, I felt like I should have caught that in the design process, and I
+gave myself somewhere between 5 minutes and 5 hours to deal with that.&lt;/p&gt;
+&lt;p&gt;After that, I noted it in my “to do” document as technical debut, and I just put it
+behind me.  That was not an easy thing to do, and my failure to account for that in
+my design haunted me for a bit.  In the end, what helped me get over it was looking at
+what I did accomplish.  I know it sounds cliché, but in this case, it helped me get
+a better perspective on the issue.  What I forgot to do was add support for line numbers
+and column numbers. What I did not forget was to build a strong parser that has over
+800 test cases that it is passing without fail.  That parser also has a simple
+translation layer that can be plugged in to the parser to generate GFM specification
+compliant HTML code.  Accomplishing those two feats was not easy.&lt;/p&gt;
+&lt;p&gt;On top of accomplishing those two feats was another, more obvious one.  I started in
+2019 November with an idea of writing a Markdown linter in Python.  With the three
+initial rules that I had just created, I proved to myself that I had made the right
+choice in selecting to build a parser for Markdown.  The successful rules just proved
+that.  The third feat was writing a parser-based linter for Markdown in Python.&lt;/p&gt;
+&lt;p&gt;Yeah, I still feel a bit like a fool for missing something that was obvious, but with
+those things in my head, it became easier to let it go.  Instead of focusing on the 1%
+that was that design flaw, I made sure to refocus myself on the 99% of the project that
+was not a design flaw… and moved forward.&lt;/p&gt;
+&lt;h2 id="what-is-next"&gt;What is Next?&lt;a class="headerlink" href="#what-is-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Having completed the first set of rules, I decided that it was more important for me
+to keep my momentum in creating new rules than to add line numbers and column numbers
+to the parser.  Truth be told, I thought that getting some distance from that problem
+would help me so it more clearly.  With both reasons in place, I started work on
+the next group of heading based rules.&lt;/p&gt;
+&lt;div class="footnote"&gt;
+&lt;hr/&gt;
+&lt;ol&gt;
+&lt;li id="fn:cheatSheet"&gt;
+&lt;p&gt;To avoid the same issue with “cheat sheet” versus “cheatsheet”, &lt;a href="https://www.dictionary.com/browse/cheat-sheet?s=t"&gt;dictionary.com&lt;/a&gt; says the correct answer is “cheat sheet”. &lt;a class="footnote-backref" href="#fnref:cheatSheet" title="Jump back to footnote 1 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li id="fn:here"&gt;
+&lt;p&gt;It was not until the writing of this article that I formally decided to go with heading over header.  There is now an item in my backlog to make this change throughout the source code. &lt;a class="footnote-backref" href="#fnref:here" title="Jump back to footnote 2 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/div&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="linter rules"></category></entry><entry><title>Markdown Linter - Core - Pre-Rule Improvements</title><link href="https://jackdewinter.github.io/2020/05/04/markdown-linter-core-pre-rule-improvements/" rel="alternate"></link><published>2020-05-04T00:00:00-07:00</published><updated>2020-05-04T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-05-04:/2020/05/04/markdown-linter-core-pre-rule-improvements/</id><summary type="html">
 &lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;Way back in 2019 November, I started this project with a bare-bones framework using a
 simple dynamic plugin loader.  It was a simple proof of concept to determine whether I
@@ -6398,24 +6950,4 @@ like!&lt;/p&gt;
 requirements for the Markdown parser and document how I will setup the tests for it.
 As I am parsing a well-known format with varying implementations already available, it
 is important to stay focused on one implementation and have a solid set of tests to
-ensure I don’t go backwards in my development.&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry><entry><title>Website Soft Launch!</title><link href="https://jackdewinter.github.io/2019/12/01/website-soft-launch/" rel="alternate"></link><published>2019-12-01T00:00:00-08:00</published><updated>2019-12-01T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2019-12-01:/2019/12/01/website-soft-launch/</id><summary type="html">
-&lt;p&gt;Well, it took a lot of work, but the website is finally tuned up the way I want it to be!&lt;/p&gt;
-&lt;p&gt;I still have a number of small things to do to get the website up and running at 100%.
-However, I am doing this soft-launch to start publishing articles …&lt;/p&gt;</summary><content type="html">
-&lt;p&gt;Well, it took a lot of work, but the website is finally tuned up the way I want it to be!&lt;/p&gt;
-&lt;p&gt;I still have a number of small things to do to get the website up and running at 100%.
-However, I am doing this soft-launch to start publishing articles on a regular basis
-instead of batching them up.  In the
-&lt;a href="https://www.graylog.org/resources/crawl-walk-run"&gt;crawl-walk-run model&lt;/a&gt;,
-this is me moving my website from the crawl stage to the walk stage.&lt;/p&gt;
-&lt;p&gt;The website itself was mostly ready about 2-3 weeks ago, near the start of November.  But
-as this is something public with my name attached to it, I wanted this soft-launch to be
-a good representation of what I can do and what I can say.  As such, I went over the
-website with a keen eye for detail during the period.  There were a number of days
-where I just went through each individual article, one at a time, looking for something
-specific.  On one day, it was making sure the categories were good.  On another, it was
-making sure the tags I had selected for each article made sense.  On others, it was just
-scanning the articles and making sure they were reflecting my voice.&lt;/p&gt;
-&lt;p&gt;As this is a learning experience for me, please visit the pages on the site and leave
-constructive comments about the content or the style!  Remember that everyone has had
-help learning things in their live, and pay it forward!&lt;/p&gt;</content><category term="Website"></category><category term="pelican website generator"></category><category term="website soft-launch"></category></entry></feed>
+ensure I don’t go backwards in my development.&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry></feed>
