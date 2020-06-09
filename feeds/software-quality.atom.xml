@@ -1,5 +1,480 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench - Software Quality</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/software-quality.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2020-06-01T00:00:00-07:00</updated><entry><title>Markdown Linter - Taking Time To Evaluate</title><link href="https://jackdewinter.github.io/2020/06/01/markdown-linter-taking-time-to-evaluate/" rel="alternate"></link><published>2020-06-01T00:00:00-07:00</published><updated>2020-06-01T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-06-01:/2020/06/01/markdown-linter-taking-time-to-evaluate/</id><summary type="html">
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench - Software Quality</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/software-quality.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2020-06-08T00:00:00-07:00</updated><entry><title>Markdown Linter - Adding Line and Column Support</title><link href="https://jackdewinter.github.io/2020/06/08/markdown-linter-adding-line-and-column-support/" rel="alternate"></link><published>2020-06-08T00:00:00-07:00</published><updated>2020-06-08T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-06-08:/2020/06/08/markdown-linter-adding-line-and-column-support/</id><summary type="html">
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;As I documented at the
+&lt;a href="https://jackdewinter.github.io/2020/06/01/markdown-linter-taking-time-to-evaluate/#what-is-next"&gt;end of the previous article&lt;/a&gt;,
+having arrived at the decision to improve the linter’s foundation,
+it was time to tackle the largest issue on the stack: missing support for line numbers
+and column numbers.
+While at the time I thought of it as …&lt;/p&gt;</summary><content type="html">
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;As I documented at the
+&lt;a href="https://jackdewinter.github.io/2020/06/01/markdown-linter-taking-time-to-evaluate/#what-is-next"&gt;end of the previous article&lt;/a&gt;,
+having arrived at the decision to improve the linter’s foundation,
+it was time to tackle the largest issue on the stack: missing support for line numbers
+and column numbers.
+While at the time I thought of it as a glaring omission (see
+&lt;a href="https://jackdewinter.github.io/2020/05/11/markdown-linter-rules-the-first-three/#line-numbers-and-column-numbers"&gt;this article for more&lt;/a&gt;
+), the passage of time since that discovery has helped me see that omission in a
+better light.  On its own, the process of getting the tokenization correct was a large
+enough task but adding the determination of each token’s line number and column
+number to that task would have made that task unbearably larger.
+Knowing myself as I do, even if I had discovered that requirement during the design
+phase, there is a really good chance that I would have relegated the determination of
+each token’s original position into its own task.  Regardless of what happened in the
+past, it was obvious that I needed to start working on that task now.&lt;/p&gt;
+&lt;p&gt;Starting to think about this issue, I had no doubt it was going to be a tough task to
+complete, and I knew that I needed to find a way to break things down even further.
+As I figured that
+adding line numbers and column numbers to every token was going to be too much, I
+reduced the scope even further by deciding to limit the scope to only block tokens.  As
+every inline element is rooted in
+a block element, I had
+confidence that this would ensure that the line number and column numbers would be solid
+in each block elements before adding the inline elements into the mix.  It was also a
+solid dividing line for the task that just made sense to me.&lt;/p&gt;
+&lt;p&gt;With those decisions on scope dealt with, it was time to delve into the depths of
+line numbers and column numbers.&lt;/p&gt;
+&lt;h2 id="what-is-the-audience-for-this-article"&gt;What Is the Audience for This Article?&lt;a class="headerlink" href="#what-is-the-audience-for-this-article" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;While detailed more eloquently in
+&lt;a href="https://jackdewinter.github.io/2020/04/05/what-is-the-audience-for-my-blog/#what-is-the-audience-for-my-blog"&gt;this article&lt;/a&gt;,
+my goal for this technical article is to focus on the reasoning behind my solutions,
+rather that the solutions themselves.  For a full record of the solutions presented in
+this article, please go to this project’s GitHub repository and consult the
+commits between
+&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/628d6848029c3a2b02c755611455301fdf0fced4"&gt;26 May 2020&lt;/a&gt; and
+&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/1eb3677506dcefe7562f72082bed5374761f21cc"&gt;16 May 2020&lt;/a&gt;.&lt;/p&gt;
+&lt;h2 id="why-was-reducing-the-scope-good"&gt;Why Was Reducing the Scope Good?&lt;a class="headerlink" href="#why-was-reducing-the-scope-good" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Each of the implemented and enabled parser test functions includes the list variable
+&lt;code&gt;expected_tokens&lt;/code&gt; and the string variable &lt;code&gt;expected_gfm&lt;/code&gt;.  The &lt;code&gt;expected_tokens&lt;/code&gt;
+variable
+is used to ensure that the tokens that are expected from the Markdown document are
+emitted by the parser.  The &lt;code&gt;expected_gfm&lt;/code&gt; variable is used to ensure that those tokens
+can use a simple algorithm&lt;sup id="fnref:simpleAlg"&gt;&lt;a class="footnote-ref" href="#fn:simpleAlg"&gt;1&lt;/a&gt;&lt;/sup&gt; to transform themselves into the HTML required by
+the specification.  Prior to this work, their focus was simple: enable that forward
+translation from Markdown into HTML.&lt;/p&gt;
+&lt;p&gt;Adding in support for line numbers and column numbers was going to be a lot of work,
+but it was working in a different direction: backwards towards the original Markdown
+document.  There was no denying that this was a difficult task to complete, but
+due to circumstances, the reduction in scope would leave me with a far simpler problem
+to solve.  In addition, to protect the work already done in the forward direction, the
+existing battery of tests remained in place, diligently guarding that work.&lt;/p&gt;
+&lt;p&gt;With protection for the already completed work in place, and a clear definition of the
+work to be done in mind, it was time for me to figure out how to start the process off.&lt;/p&gt;
+&lt;h2 id="where-to-start"&gt;Where to start?&lt;a class="headerlink" href="#where-to-start" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;To help me keep track of things,
+I added each of the block element names to the
+&lt;code&gt;readme.md&lt;/code&gt; document where I track my issues.  As I needed to represent
+every Markdown block, I moved the question in the issue document regarding the adding
+of a Link Reference Definition token to the start of this new section and transformed
+it into a statement.  As each block element in the
+Markdown document needed to be tagged with its position, it was a necessity that
+Link Reference Definition tokens be added, even if they did not result in any HTML
+output.&lt;/p&gt;
+&lt;p&gt;Having all the blocks elements listed in that document, I then needed to somehow
+pick a good place to start. I was aware that wherever I decided to start, that token
+was going to have a lot more work
+associated with it as I tested out and implemented the foundation used to add line
+numbers and column numbers to the other tokens.  Whatever process and code I used
+for that first block element; the plan was to repeat it in some closely related form
+for each of the other 10 block elements in the list.  But which one to pick?&lt;/p&gt;
+&lt;p&gt;In the end, I decided to start with Atx headings.  Unfortunately, I did not keep any
+notes as to why I picked this block element to start. My best guess is that after
+having a lot of exposure to heading code while implementing the last group of rules, I
+figured headings would be a good place to
+start.  Following that line of thought, I believe that I also would have guessed that
+SetExt headings were going to be the more difficult token to change, leaving Atx
+headings as the best place to start.  Either that, or I decided to go alphabetic and
+‘a’ is the first letter of the alphabet.  Either way, Atx headings were first, and it
+was going to be a &lt;em&gt;fun&lt;/em&gt; ride.&lt;/p&gt;
+&lt;h2 id="adding-in-position-markers"&gt;Adding in Position Markers&lt;a class="headerlink" href="#adding-in-position-markers" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Taking a good look at the Atx headings and the information that was being passed around,
+the first thing that caught my eye was a good opportunity to refactor.  As I was letting
+parts of the parser grow organically, many functions included the argument
+&lt;code&gt;line_to_parse&lt;/code&gt; along with an argument that was usually named &lt;code&gt;start_index&lt;/code&gt;.  This
+organic pairing made sense in a lot of places, allowing for the easy manipulation of
+the current index, and occasionally the &lt;code&gt;line_to_parse&lt;/code&gt;.  However, when adding in
+support for line numbers, I was going to have to pass in a third variable, meaning it
+was time to refactor this.  As I have said
+&lt;a href="https://jackdewinter.github.io/2020/05/04/markdown-linter-core-pre-rule-improvements/#source-providers"&gt;previously&lt;/a&gt;:&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Write it once, write it neat.  Write it twice, think about extracting it.  Write it three times, extract it without a second thought.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;And that is where I started to work on replacing the &lt;code&gt;line_to_parse&lt;/code&gt; variable and the
+&lt;code&gt;start_index&lt;/code&gt; like variables with the &lt;code&gt;position_marker&lt;/code&gt; variable and the
+&lt;code&gt;PositionMarker&lt;/code&gt; class.  This class was, and remains, very simple:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;class&lt;/span&gt; &lt;span class="nc"&gt;PositionMarker&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+    &lt;span class="sd"&gt;"""&lt;/span&gt;
+&lt;span class="sd"&gt;    Class to provide an encapsulation of the location within the Markdown document.&lt;/span&gt;
+&lt;span class="sd"&gt;    """&lt;/span&gt;
+
+    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="fm"&gt;__init__&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;line_number&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;index_number&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;text_to_parse&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;line_number&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;line_number&lt;/span&gt;
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;index_number&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;index_number&lt;/span&gt;
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;text_to_parse&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;text_to_parse&lt;/span&gt;
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;index_indent&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;The &lt;code&gt;line_to_parse&lt;/code&gt; variable was replaced by the &lt;code&gt;text_to_parse&lt;/code&gt; member variable, the
+index-type variable was replaced with the &lt;code&gt;index_number&lt;/code&gt; member variable, with the
+&lt;code&gt;line_number&lt;/code&gt; member variable being introduced.  As I knew I would have to support
+“indented” text, such as text after a block quote character or a list start sequence,
+I added &lt;code&gt;index_indent&lt;/code&gt; at the same time.&lt;/p&gt;
+&lt;p&gt;And with that, the easy stuff was ended.  It was time to move on to the tougher stuff.&lt;/p&gt;
+&lt;h3 id="creating-the-marker"&gt;Creating the marker&lt;a class="headerlink" href="#creating-the-marker" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Wanting to start at the beginning, I made some modifications to the
+&lt;code&gt;__parse_blocks_pass&lt;/code&gt; function in the &lt;code&gt;TokenizedMarkdown&lt;/code&gt; class to track the line
+number.  As I did not have to deal with Link Reference Definition tokens yet
+(spoilers!), this was a straight forward change, with the local &lt;code&gt;line_number&lt;/code&gt; variable
+being initialized
+before the main loop and that same variable being incremented at the end of the loop.
+To encapsulate this information, I created a new position marker as follows:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;position_marker&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;PositionMarker&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;line_number&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;token_to_use&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Instead of passing &lt;code&gt;token_to_use&lt;/code&gt; to the &lt;code&gt;parse_line_for_container_blocks&lt;/code&gt; function, I
+instead passed in the expression &lt;code&gt;position_marker.text_to_parse&lt;/code&gt;.  While I wanted to
+pass in &lt;code&gt;position_marker&lt;/code&gt; by itself, I knew I had some important work to do before
+getting that would be possible.&lt;/p&gt;
+&lt;h3 id="stage-1-integrating-the-marker-locally"&gt;Stage 1 - Integrating the Marker Locally&lt;a class="headerlink" href="#stage-1-integrating-the-marker-locally" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Using my knowledge of the project, I knew that the path between the
+&lt;code&gt;__parse_blocks_pass&lt;/code&gt; function in the &lt;code&gt;TokenizedMarkdown&lt;/code&gt; class and the
+&lt;code&gt;parse_atx_headings&lt;/code&gt; function in the &lt;code&gt;LeafBlockProcessor&lt;/code&gt; class was going to go through
+a number of functions in the &lt;code&gt;ContainerBlockProcessor&lt;/code&gt; class.  Instead of
+using a lot of guesswork to determine what that path was, I decided to start at the
+&lt;code&gt;parse_atx_headings&lt;/code&gt; function itself and work my way backwards to the
+&lt;code&gt;parse_line_for_container_blocks&lt;/code&gt; function.&lt;/p&gt;
+&lt;p&gt;In the place of adapting the entire function in one pass, I decided to start with
+focusing
+on the passing of the position marker into the function.  To facilitate this decision,
+in the &lt;code&gt;parse_atx_headings&lt;/code&gt; function, I wrote some simple
+&lt;a href="https://en.wikipedia.org/wiki/Glue_code"&gt;glue code&lt;/a&gt; to interface between the old style
+code and the new style code. Before the change, the code looked like this:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;parse_atx_headings&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+        &lt;span class="n"&gt;line_to_parse&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;start_index&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;extracted_whitespace&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;close_open_blocks_fn&lt;/span&gt;
+    &lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="sd"&gt;"""&lt;/span&gt;
+&lt;span class="sd"&gt;        Handle the parsing of an atx heading.&lt;/span&gt;
+&lt;span class="sd"&gt;        """&lt;/span&gt;
+        &lt;span class="n"&gt;new_tokens&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[]&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;After the change, the code looked like this:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;parse_atx_headings&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;position_marker&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;extracted_whitespace&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;close_open_blocks_fn&lt;/span&gt;
+    &lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="sd"&gt;"""&lt;/span&gt;
+&lt;span class="sd"&gt;        Handle the parsing of an atx heading.&lt;/span&gt;
+&lt;span class="sd"&gt;        """&lt;/span&gt;
+        &lt;span class="n"&gt;line_to_parse&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;position_marker&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;text_to_parse&lt;/span&gt;
+        &lt;span class="n"&gt;start_index&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;position_marker&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;index_number&lt;/span&gt;
+        &lt;span class="n"&gt;new_tokens&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[]&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;In the &lt;code&gt;__parse_line_for_leaf_blocks&lt;/code&gt; function where the &lt;code&gt;parse_atx_headings&lt;/code&gt; function
+was called from, I created a new &lt;code&gt;PositionMarker&lt;/code&gt; instance named &lt;code&gt;temp_marker&lt;/code&gt;, with
+the information from the local function.  That new &lt;code&gt;temp_marker&lt;/code&gt; variable was then
+passed into the &lt;code&gt;parse_atx_headings&lt;/code&gt; function instead of the previously used
+&lt;code&gt;line_to_parse&lt;/code&gt; and &lt;code&gt;start_index&lt;/code&gt; arguments.&lt;/p&gt;
+&lt;p&gt;I knew from the start that this approach was going to be more work.  However, by
+isolating the change
+to the function’s signature, I knew I could keep the parser stable and usable at any
+point.  By keeping the parser in that good state, I knew I could depend on the
+large bank of tests used by the project to verify any change was a successful change
+with no unintended side effects.  The process was indeed slower than some other
+methods, but it was a process that I had absolute confidence that I could rely on.&lt;/p&gt;
+&lt;h3 id="stage-2-integrating-the-marker-up-the-stack"&gt;Stage 2 - Integrating the Marker Up the Stack&lt;a class="headerlink" href="#stage-2-integrating-the-marker-up-the-stack" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;In this stage, the process that was applied to the &lt;code&gt;parse_atx_headings&lt;/code&gt; function was
+applied again and again until the &lt;code&gt;__parse_blocks_pass&lt;/code&gt; function was
+reached.  With every step going back towards that function, I repeated the same actions
+that I performed in stage 1, but with the calling function: add glue code, change
+function arguments, create a temporary position marker, and pass that position marker
+into the newly changed function.&lt;/p&gt;
+&lt;p&gt;The almost continuous execution of tests at this point was essential.  As with any
+parser, even slight changes in the content or interpretations of the content can cause
+small ripples in the output that may escape detection if not quickly located and
+addressed.  While I was doing my best to try and ensure that all changes were kept as
+isolated as possible, it was only the rapid battery of tests that kept my confidence
+high that I was going in the right direction with no ripples.&lt;/p&gt;
+&lt;p&gt;Another thing that helped me immensely was using Git’s staging ability.  To facilitate
+clean commits, Git has a nice feature called a
+&lt;a href="https://git-scm.com/about/staging-area"&gt;staging area&lt;/a&gt;,
+with the moving changes into this area being commonly referred to as staging.  The nice
+part about Git staging is that,
+&lt;a href="https://www.freecodecamp.org/forum/t/how-to-discard-unstaged-changes-in-git/13214"&gt;as this article describes&lt;/a&gt;,
+it is very easy to discard any changes made to your local files in favor of the state of
+that file with any committed changes and staged changes applied.  As such, each time I
+applied this process to another function, I ensured that once the tests were all
+passing that I staged those changes in the repository.  In the cases where I made
+mistakes, which did happen frequently, I had the knowledge that I was able to revert
+the relevant files back to their pre-change states, and resume work from there.  When
+it was time to commit those changes, they were already isolated in the staging area,
+ready to be committed.&lt;/p&gt;
+&lt;h3 id="stage-3-cleaning-up-going-back-down"&gt;Stage 3 - Cleaning up Going back down&lt;a class="headerlink" href="#stage-3-cleaning-up-going-back-down" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Once I reached the &lt;code&gt;__parse_blocks_pass&lt;/code&gt; function, I was able to connect
+with the real &lt;code&gt;position_marker&lt;/code&gt; variable, using that variable instead of creating a
+new &lt;code&gt;temp_marker&lt;/code&gt; variable.  I then started working back towards the
+&lt;code&gt;parse_atx_headings&lt;/code&gt; function, replacing &lt;code&gt;temp_marker&lt;/code&gt; with &lt;code&gt;position_marker&lt;/code&gt; as
+I went.&lt;/p&gt;
+&lt;p&gt;When I got to the
+&lt;code&gt;parse_atx_headings&lt;/code&gt; function, I then proceeded to replace instances of &lt;code&gt;line_to_parse&lt;/code&gt;
+within that function with &lt;code&gt;position_marker.text_to_parse&lt;/code&gt; and instances of &lt;code&gt;start_index&lt;/code&gt;
+with &lt;code&gt;position_marker.index_number&lt;/code&gt;.  As these changes were localized, they were
+easy to make, but I still ran frequent test passes just to make sure I was making
+the right changes.  I do acknowledge that some of those test passes were executed out
+of paranoia, but in my mind, if running the
+tests an extra time allowed me to step forward with no reservations, it was worth it.&lt;/p&gt;
+&lt;p&gt;Finally, at the end of all this process, I removed the &lt;code&gt;line_to_parse&lt;/code&gt; variable and
+the &lt;code&gt;start_index&lt;/code&gt; variable from the function, as they were no longer being used.
+There was no benefit to keeping those two variables around, so I just removed them.
+I now had a solid function to parse for Atx headings, referencing the line number and
+index number in a nice compact object.  In addition, I was able to easily trace this
+compact object from the main processing line of the parser directly to the function
+itself. The only thing left to complete the change was to wire up the token.&lt;/p&gt;
+&lt;h3 id="stage-4-wiring-up-the-token"&gt;Stage 4 - Wiring up the Token&lt;a class="headerlink" href="#stage-4-wiring-up-the-token" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Now that I had the &lt;code&gt;position_marker&lt;/code&gt; object being passed properly into the
+&lt;code&gt;parse_atx_headings&lt;/code&gt; function, I needed to pass that object into the token’s
+constructor.&lt;/p&gt;
+&lt;p&gt;The first change I made was to the base &lt;code&gt;MarkdownToken&lt;/code&gt; object, changing its constructor
+to allow the passing in of a &lt;code&gt;line_number&lt;/code&gt; argument and a &lt;code&gt;column_number&lt;/code&gt; argument to be
+stored in the instance.  To complement this change, I made some
+modifications to the &lt;code&gt;__str__&lt;/code&gt; method to add the line number and column number to
+the returned string, but only if at least one of those two numbers was not 0.  The
+benefit of this slight change was that the line number/column number pair would only
+show up in the function’s output if that information were provided.  As that information
+was only provided once I added support for that type of token, I only
+had to worry about the token output changing for the tokens I had already changed.&lt;/p&gt;
+&lt;p&gt;The second change was to modify the constructor for the &lt;code&gt;AtxHeadingMarkdownToken&lt;/code&gt;
+class to accept a &lt;code&gt;position_marker&lt;/code&gt; argument.  That code was implemented as such:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="n"&gt;line_number&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;
+    &lt;span class="n"&gt;column_number&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;position_marker&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="n"&gt;line_number&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;position_marker&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;line_number&lt;/span&gt;
+        &lt;span class="n"&gt;column_number&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
+            &lt;span class="n"&gt;position_marker&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;index_number&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;position_marker&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;index_indent&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
+        &lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Basically, if the &lt;code&gt;position_marker&lt;/code&gt; variable was not present, the default value of 0
+was used for the &lt;code&gt;line_number&lt;/code&gt; and &lt;code&gt;column_number&lt;/code&gt; variables.
+If the &lt;code&gt;position_marker&lt;/code&gt; variable was present, the &lt;code&gt;line_number&lt;/code&gt; was be moved over
+from its &lt;code&gt;position_marker&lt;/code&gt; object into the function’s &lt;code&gt;line_number&lt;/code&gt; variable.  For
+the &lt;code&gt;column_number&lt;/code&gt; variable was assigned the sum of the &lt;code&gt;index_number&lt;/code&gt; member variable,
+the &lt;code&gt;index_indent&lt;/code&gt; variable (at this point, always 0), and &lt;code&gt;1&lt;/code&gt;.  As index values are
+always 0 based and column numbers are always 1 based, the addition of &lt;code&gt;1&lt;/code&gt; to the index
+number ensured it was based properly.&lt;/p&gt;
+&lt;p&gt;Finally, these newly calculated values for the &lt;code&gt;line_number&lt;/code&gt; and the &lt;code&gt;column_number&lt;/code&gt;
+were passed into the newly retooled &lt;code&gt;MarkdownToken&lt;/code&gt; object constructor.  This was the
+point that I was preparing for, where everything came together.  It was now time
+to see how close I got to the actual test results.  If memory serves, I believe I
+actually closed my eyes after saving my changes and started the execution of
+the tests.&lt;/p&gt;
+&lt;h3 id="stage-5-addressing-test-results"&gt;Stage 5 - Addressing Test Results&lt;a class="headerlink" href="#stage-5-addressing-test-results" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Prior to the very end of the previous step, the most frequent test command line that I
+used was:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;pipenv run pytest -m gfm
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;This executed only the parser’s scenario tests, reducing the test area to only those
+tests that were tagged as being part of the &lt;code&gt;gfm&lt;/code&gt; group.  As I was running the tests
+with each change, it was important to keep the scope, and therefore execution time,
+of the tests to a minimum.  And up to this point, it worked well, and the tests were
+solid, passing every time.&lt;/p&gt;
+&lt;p&gt;But as I made the connection between the &lt;code&gt;AtxHeadingMarkdownToken&lt;/code&gt; token’s constructor
+calling the &lt;code&gt;MarkdownToken&lt;/code&gt; token’s constructor, I knew that everything that I had
+just changed was just a good guess.  I hoped that I had wired things up correctly, but
+at that point, I only knew 2 things for sure:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;due to the tests, I had not disrupted any of the parsed tokens for the test cases, including their order and content&lt;/li&gt;
+&lt;li&gt;I was passing some transformation of the base &lt;code&gt;position_marker&lt;/code&gt; into the token’s constructor&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;With everything wired up, I used the above command line multiple times, each time
+picking off one of the failed tests to validate.  With each test, I first calculated
+what I thought the line/column pair should be, noting it down in the function’s
+comments section.  I then validated it against the test results, trying my hardest
+to not peek at the test results before I did my calculations. Once
+I had all those tests cleaned up, I did an extra pass through the changed tokens,
+manually recalculating the line/column pair and checking to make sure they were right.
+Only after all that was addressed did I change the module in the above command
+line from &lt;code&gt;gfm&lt;/code&gt; to &lt;code&gt;rules&lt;/code&gt;, cleaning up any test failures caused by line/column pairs
+that were now being displayed as part of the output.&lt;/p&gt;
+&lt;h3 id="the-importance-of-good-tests"&gt;The Importance of Good Tests&lt;a class="headerlink" href="#the-importance-of-good-tests" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;While I can talk at length about good practices with respect to tests, I hope I can
+convey the
+sincere importance that I associate with having good tests and good test coverage
+on a project.  It is true that I can often “eyeball” a simple change to a project,
+figuring out whether that change is correct.  But in my mind, anything beyond a
+simple change requires solid, repeatable testing.  Without that testing in place, you
+are betting against the risk of something going wrong with your project.&lt;/p&gt;
+&lt;p&gt;Testing is not about finding bugs as much as it is about risk management.  If you have
+a small project that rolls various forms of dice for a Dungeons and Dragons campaign,
+the impact of that risk failing is very light.  Any person I know that would
+use such a project would also have some backup dice for “just in case”.  For the
+PyMarkdown project, the end goal is to have a tool that website owners can trust to keep
+their website’s Markdown documents in a proscribed format and style.  The impact of
+too many failures is a loss of trust in the project, with a certain level of loss in
+trust being associated with those website owners dropping their use of the project.  By
+having good testing of various forms embedded within the project, I can hopefully
+mitigate some amount of the loss of trust that any failure brings with it.&lt;/p&gt;
+&lt;p&gt;Since I have worked so hard to get the project to this state, I did not want to take
+any unnecessary risk to the project’s stability.  The tests are a solid tool that
+I use frequently to keep any such risk to a minimum, and especially during refactoring,
+where I rely on them heavily.  And as I rely on them heavily, I am also continuously
+looking for better ways to test the projects that those tests are in.&lt;/p&gt;
+&lt;h2 id="lather-rinse-repeat"&gt;Lather-Rinse-Repeat&lt;a class="headerlink" href="#lather-rinse-repeat" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;I honestly tried to find another heading for this section.  Try as I might, no other
+section heading seemed to convey the repetition that I went through other than the
+phrase:
+&lt;a href="https://en.wikipedia.org/wiki/Lather,_rinse,_repeat"&gt;Lather, Rinse, and Repeat&lt;/a&gt;
+.  For each of the 10 remaining tokens, the 5 steps outlined above for Atx heading
+were repeated, with only a few changes to the process.  Those changes are outlined
+in the following sections.  Please note that the following sections are ordered with
+respect to the amount of work needed to resolve them, rather than my usual
+chronological ordering.&lt;/p&gt;
+&lt;p&gt;When I encountered questions with respect to whether something with respect to that
+token was done properly or not, those questions were added as action items to the
+&lt;code&gt;readme.md&lt;/code&gt; file to be examined later.  I knew this was going to be a
+&lt;a href="https://www.merriam-webster.com/dictionary/slog"&gt;slog&lt;/a&gt;, and a hard slog at that.
+It just seemed more efficient to me to note them and move on, circling back to deal
+with them later.&lt;/p&gt;
+&lt;h3 id="html-blocks-setext-heading-blocks-and-code-blocks"&gt;HTML Blocks, SetExt Heading Blocks and Code Blocks&lt;a class="headerlink" href="#html-blocks-setext-heading-blocks-and-code-blocks" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;There were no changes introduced to the process for these elements.&lt;/p&gt;
+&lt;h3 id="thematic-breaks"&gt;Thematic Breaks&lt;a class="headerlink" href="#thematic-breaks" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;There was only one small change to the process for this element.  That change was
+the delaying of the cleanup stage until a later time, as I wanted to get more breadth
+of tokens implemented to ensure I had the right foundation for the change.&lt;/p&gt;
+&lt;p&gt;The other change that I made was to the &lt;code&gt;MarkdownToken&lt;/code&gt; class, thereby affecting all
+the other tokens.  For this change, I moved the code to calculate the &lt;code&gt;line_number&lt;/code&gt;
+variable and
+the &lt;code&gt;column_number&lt;/code&gt; variable from the &lt;code&gt;AtxHeadingMarkdownToken&lt;/code&gt; class to the base
+&lt;code&gt;MarkdownToken&lt;/code&gt; class.  Once this code was proven, it just made more sense to keep
+it in the base class than repeating it for each token.&lt;/p&gt;
+&lt;h3 id="blank-line-token"&gt;Blank Line Token&lt;a class="headerlink" href="#blank-line-token" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;The change required to process the blank line token was not with the token itself, but
+with the processing of block quote blocks.  The &lt;code&gt;__handle_blank_line&lt;/code&gt; function was
+changed in the &lt;code&gt;TokenizedMarkdown&lt;/code&gt; class to accommodate the &lt;code&gt;position_marker&lt;/code&gt; argument,
+starting the change for all calls to this function requiring that argument.  Other than
+that change, everything else was normal.&lt;/p&gt;
+&lt;h3 id="block-quote-blocks-and-list-blocks"&gt;Block Quote Blocks and List Blocks&lt;a class="headerlink" href="#block-quote-blocks-and-list-blocks" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Strangely enough, I thought these two types of blocks would take the most amount of
+work to address, but due to the way they were implemented, only a couple of small
+changes were required.  In both cases, the block start algorithms have to deal with
+with the possibility of a tab character (often denoted as &lt;code&gt;\t&lt;/code&gt;) being used as the
+whitespace between the block start sequence and the rest of the block’s data.&lt;/p&gt;
+&lt;p&gt;Having already dealt with tab stops versus tab characters and
+&lt;a href="https://jackdewinter.github.io/2020/04/27/markdown-linter-reducing-the-parsers-technical-debt/#refactor-2-more-fun-with-tabs"&gt;fixing that issue&lt;/a&gt; once,
+I really did not want to fix it again.  I just needed to ensure that the current fix
+and the previous fix were compatible with each other.  To ensure that happened
+correctly, the modified line text and index numbers were passed to a newly created
+&lt;code&gt;PositionMarker&lt;/code&gt; instance, created after the processing of the Block Quote block and
+the List blocks.  This ensured that any line text modified by the processing of
+either container block would be retained, while adding the now normal processing
+using the &lt;code&gt;PositionMarker&lt;/code&gt; class.&lt;/p&gt;
+&lt;h3 id="paragraph-blocks"&gt;Paragraph Blocks&lt;a class="headerlink" href="#paragraph-blocks" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;As the catch-all element for Markdown documents, I had a feeling that these blocks
+would end up near the top of the “most effort” list, although I will admit that I
+guessed the reason
+wrong.  I thought that it would have something to do with lists and block quotes,
+while the actual reason is due to Link Reference Definitions.  More precisely, the
+reason is due to failed or partially failed Link Reference Definitions.&lt;/p&gt;
+&lt;p&gt;Due to its composition, it is impossible to properly determine if a Link Reference
+Definition is valid without reading the next line.  As documented in the article
+&lt;a href="https://jackdewinter.github.io/2020/04/06/markdown-linter-adding-link-reference-definitions/"&gt;Adding Link Reference Definitions&lt;/a&gt;, its multiline
+nature and use of various forms of quoted sections mean that unless the parser
+encounters the end of the closing section or a blank line, it does not know if it
+had reached the end of the Link Reference Definition.  If it reaches the end and
+for any reason that Link Reference Definition is not valid, the logic in the parser
+starts adding lines back on to a list of lines that need to be reparsed without
+them being misinterpreted as a Link Reference Definition.&lt;/p&gt;
+&lt;p&gt;It is precisely that requeuing logic that I needed to alter to work properly with the
+new &lt;code&gt;PositionMarker&lt;/code&gt; class.  While the &lt;code&gt;index_number&lt;/code&gt; remained untouched, I had to
+make sure that the &lt;code&gt;line_number&lt;/code&gt; variable was properly reset to account for the
+length of the &lt;code&gt;lines_to_requeue&lt;/code&gt; variable when any requeuing occurred.  I had a
+bit of a problem with the initial implementation of this code, so I wanted to take
+extra time and really boost my confidence that I was handling the change for this
+token properly.&lt;/p&gt;
+&lt;h3 id="link-reference-definitions"&gt;Link Reference Definitions&lt;a class="headerlink" href="#link-reference-definitions" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;This one should be very obvious… I needed to add the token itself!  When designing
+the parser, I did not see any need for a token that literally has no impact on
+the output, so I did not add a token for it.  While a link element that refers to a
+link reference definition will show up as a link in the HTML output, the link reference
+definition itself is not added to the HTML in any form.  However, now that I was
+adding support for all markdown block elements, I found myself in the position of
+adding the token in to the parser.&lt;/p&gt;
+&lt;p&gt;Adding the token itself was not too difficult. That was accomplished by the usual
+process of finding the right method, the &lt;code&gt;__stop_lrd_continuation&lt;/code&gt; method in this case,
+creating a new instance of the new &lt;code&gt;LinkReferenceDefinitionMarkdownToken&lt;/code&gt; class in
+that function, and properly populating it.  Then the process of adding the support for
+the &lt;code&gt;PositionMarker&lt;/code&gt; class kicked in, and quickly I had a case of a wired-up
+token with the proper data.&lt;/p&gt;
+&lt;p&gt;And then I went to test it… and I noticed that the tests failed in the transformation
+of the tokens into HTML.  Looking, I quickly determined that I needed to make
+some additional changes to the &lt;code&gt;TransformToGfm&lt;/code&gt; module.  This was a simple change, as
+by definition, Link Reference Definitions have no effect on the output.  To accommodate
+the new token, a simple handler was registered for that token that simply returns the
+same string that was given to the handler.&lt;/p&gt;
+&lt;p&gt;And then I went to test it… and the line number and column numbers were incorrect.
+In about half of the tests, the pair of numbers seemed to be widely different than I had
+manually calculated.  Double checking my numbers, I then noticed a pattern.  The
+numbers being reported were for the last line of the Link Reference Definition.
+Because of its multiline nature, the values associated with the &lt;code&gt;position_marker&lt;/code&gt;
+variable were the ones used when that Link Reference Definition was considered both
+valid and complete.  Avoiding the passing of a single use variable around, I added
+the starting position to the &lt;code&gt;LinkDefinitionStackToken&lt;/code&gt; instance at the top of the
+stack, and things looked better.&lt;/p&gt;
+&lt;p&gt;As I looked at the token and its &lt;code&gt;__str__&lt;/code&gt; function output, it looked very lean.  Based
+on other tokens, I expected a lot more information to be stored in that token, to be
+analyzed later.  Slowly going through the information gathered during the processing
+of the token, I ended up figuring out how to properly represent the token.  Between the
+various whitespace
+sequences between parts of the definition, the various parts of the definition
+themselves, and both uninterpreted and interpreted parts, the data called for a
+class with 11 member variables.&lt;/p&gt;
+&lt;p&gt;Slowly but surely, I started working through each of the Link Reference Definition
+scenario tests, starting with the easier  ones and working my way to the more difficult
+ones.  It took me a while to work through each scenario and validate it, but I breathed
+a sigh of relief when I finished going through
+all the tests. In the end, it had taken 2 days to complete, along with countless
+executions of the scenario tests.&lt;/p&gt;
+&lt;p&gt;It was not until I looked at my notes that I remembered something: I had delayed some
+of the cleanup.&lt;/p&gt;
+&lt;h2 id="cleaning-up"&gt;Cleaning Up&lt;a class="headerlink" href="#cleaning-up" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Before calling this round of changes done, there was a decent amount of delayed cleanup
+to be performed.  As part of Stage 3 of the process, there were quite a few times where
+that cleanup was delayed for one reason or another.  As I was about to move on to
+another issue, I wanted to make sure that cleanup was performed.&lt;/p&gt;
+&lt;p&gt;That cleanup itself was easy, as I had repeated the “change-test-check” process
+so many times that I believe I could perform it while sleeping.  Following a variation
+of that same process, the code was cleaned up in short order.&lt;/p&gt;
+&lt;h2 id="what-was-my-experience-so-far"&gt;What Was My Experience So Far?&lt;a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;As I finished the cleanup, I was happy to have the work of adding in the line numbers
+and column numbers behind me.  After 10 days of work, it was now a large task
+that I knew was not on my task list anymore.  But while I was
+happy, I was also concerned about the 20 new issues that I had added to my issues list.
+I was aware that at least a few of those items would be checked out and determined to
+be false alarms, but that probably left somewhere between 16 to 18 issues to research
+and triage.&lt;/p&gt;
+&lt;p&gt;On top of that, there was also the fact that each line number/column number
+pair for the tokens was determined manually by me.  While I have faith that I can
+count accurately for small sets of numbers, I do know that I make mistakes.  Some
+of those mistakes I had already caught while going over the test cases before committing
+the changes for each of the elements.  But it was entirely possible, and indeed
+probable, that I had missed at least 1 or 2 mistakes.  This was not due to lack of
+confidence, but due to a sense of reality.  I know that the project has great coverage
+and great scenarios, but I also know that I do not have every scenario represented,
+just the really important ones.&lt;/p&gt;
+&lt;p&gt;That got me thinking.  If I found that many errors, was there a way to remove the need
+for me to manually count those values?  Could I automate it?  Would it be worth it?
+Would I find anything?&lt;/p&gt;
+&lt;p&gt;The more I thought about those questions, the more I realized that I needed to explore
+this area.  If nothing else, I wanted to make sure I had not missed anything.  But after
+thinking about it for a while, I realized that I did not want to risk that I had missed
+anything important.&lt;/p&gt;
+&lt;h2 id="what-is-next"&gt;What is Next?&lt;a class="headerlink" href="#what-is-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;And here ladies and gentlemen is where I begin to go down the
+&lt;a href="https://www.merriam-webster.com/dictionary/rabbit%20hole"&gt;rabbit hole&lt;/a&gt;
+.&lt;/p&gt;
+&lt;div class="footnote"&gt;
+&lt;hr/&gt;
+&lt;ol&gt;
+&lt;li id="fn:simpleAlg"&gt;
+&lt;p&gt;At the current moment, the &lt;code&gt;transform_to_gfm.py&lt;/code&gt; module is approximately 900 lines long.  About 30% of that module is processing overhead, with about 18% dedicated to handling the &lt;em&gt;somewhat complex&lt;/em&gt; issue of list looseness. The remaining 52% is consumed with the simple &lt;code&gt;handle_*&lt;/code&gt; methods used to translate each token’s start and end tokens into HTML.  While the calculation of list looseness does add some complexity to the translation, the algorithm and implementation are both relatively simple. &lt;a class="footnote-backref" href="#fnref:simpleAlg" title="Jump back to footnote 1 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/div&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry><entry><title>Markdown Linter - Taking Time To Evaluate</title><link href="https://jackdewinter.github.io/2020/06/01/markdown-linter-taking-time-to-evaluate/" rel="alternate"></link><published>2020-06-01T00:00:00-07:00</published><updated>2020-06-01T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-06-01:/2020/06/01/markdown-linter-taking-time-to-evaluate/</id><summary type="html">
 &lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;I have been busy at work on the PyMarkdown project since December 2019, November 2019
 if you include project pre-planning.  During that time, I have established a very
@@ -7531,233 +8006,4 @@ publish weekly posts on Mondays instead of Sundays, and see how that goes.&lt;/p
 &lt;p&gt;Safe travels …&lt;/p&gt;</summary><content type="html">&lt;p&gt;I just wanted to take a quick minute and wish everyone a  happy winter holiday season
 as 2019 winds to a close.  When I resume posts in the new year, I will be trying to
 publish weekly posts on Mondays instead of Sundays, and see how that goes.&lt;/p&gt;
-&lt;p&gt;Safe travels, and well wishes.&lt;/p&gt;</content><category term="Software Quality"></category></entry><entry><title>Markdown Linter - Parser Testing Strategy</title><link href="https://jackdewinter.github.io/2019/12/22/markdown-linter-parser-testing-strategy/" rel="alternate"></link><published>2019-12-22T00:00:00-08:00</published><updated>2019-12-22T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2019-12-22:/2019/12/22/markdown-linter-parser-testing-strategy/</id><summary type="html">
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;In the previous articles in this series, I discussed the requirements for the Markdown
-linter that I am writing.  From a development point of view, the main requirement is
-the need for an accurate stream of tokens emitted by the parser.  Due to the absence of
-any Markdown-to-token parsers …&lt;/p&gt;</summary><content type="html">
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;In the previous articles in this series, I discussed the requirements for the Markdown
-linter that I am writing.  From a development point of view, the main requirement is
-the need for an accurate stream of tokens emitted by the parser.  Due to the absence of
-any Markdown-to-token parsers out there, I need to write a new parser that outputs an
-accurate stream of tokens instead of a stream of HTML text. With the last article
-showing the patterns I am using to test the parser, it is now time to figure out a set
-of good strategies for the project, to ensure I can complete it without losing my
-confidence (and sanity).&lt;/p&gt;
-&lt;h2 id="why-is-strategy-important-when-testing"&gt;Why Is Strategy Important When Testing?&lt;a class="headerlink" href="#why-is-strategy-important-when-testing" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;When my son was younger, like most boys in his age group, he loved playing with LEGO and
-he loved the idea of robots.  I mean, come on!  I am a lot older than him and I still
-like LEGO and the idea of robots!  Anyhow, at his school they advertised for 5th grade
-students that were interested in participating in a local
-&lt;a href="http://firstlegoleague.org/"&gt;FIRST Lego League&lt;/a&gt; robotics team. From the first mention
-of it, he was hooked.  As they needed some parents to help, I participated with him
-as a coach.  That position was a very rewarding, very humbling, and very frustrating
-experience. Rewarding because I got to help 5th graders learn a little taste of what I
-did every day at work.  Humbling because the look in the kid’s eyes when they really
-understood something reminded me of the benefits of being a coach.  Frustrating because
-of almost all the rest of the time between those two types of moments.&lt;/p&gt;
-&lt;p&gt;I am not sure which parent, coach, or teacher helped me with a little gem of wisdom,
-but I remember it as clear as day:  People have problems moving boulders, people
-have success moving pebbles.  The idea behind that phrase is that if a team is
-confronted with a problem, it is like encountering a boulder that you need to move out
-of the way. Upon seeing a big boulder, many people looking at it and say something
-similar to “Wow! That is too big to move!”  But if you take that boulder and break it
-down into smaller rocks, such as pebbles, many people will just laugh with ease at
-moving those rocks, even if they must do it one at a time.  In a similar fashion,
-breaking down a big problem into smaller problems is a necessity in problem solving a
-situation.  The boulders-to-pebbles phrase is a phrase I still use to this day when
-coaching people in both my professional and personal lives.&lt;/p&gt;
-&lt;p&gt;Writing a parser that handles anything more significant than a single line of text is
-definitely “a boulder”.  I have been writing parsers for the better part of 25 years,
-and those parsers are still boulders to me. However, I know from experience that
-breaking down that “boulder-sized” task into more “pebble-sized” tasks is something
-that works and works well.  So here are the various items of my strategy for this
-project.&lt;/p&gt;
-&lt;h2 id="strategy-0-define-and-execute-testing-linting-and-formatting"&gt;Strategy 0: Define and Execute Testing, Linting, and Formatting&lt;a class="headerlink" href="#strategy-0-define-and-execute-testing-linting-and-formatting" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;For me this is a strategy that I bring to almost every project, with very few
-exceptions.  I always start with a workflow template that I apply to the
-project that performs formatting of the source code, linting of the source code, and
-executes the testing framework.  Since I am a stickler for this approach, the setup for
-this workflow usually takes 5 minutes or less, as I usually have at least one example
-project lying around.  By consistently executing this workflow before committing any
-changes, I keep the quality reasonably high as I go.&lt;/p&gt;
-&lt;p&gt;Knowing that I had this framework in place for the Markdown parser was a godsend.  My
-preference is to find frequent small break points during the implementation of a
-feature, and to use those points to run the workflow.  For me, it increases my
-confidence that I am either establishing a new “last known good point” or that I need
-to retrace my steps to the last known good point to address an issue.  That confidence
-helps me go forward with a positive attitude.&lt;/p&gt;
-&lt;h2 id="strategy-0a-suppress-major-issues-until-later"&gt;Strategy 0A: Suppress Major Issues Until Later&lt;a class="headerlink" href="#strategy-0a-suppress-major-issues-until-later" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;This may seem like somewhat of a counter to Strategy 0, but I see it more of allowing
-the project to grow but being reminded that there is work to do.  Minor issues such
-as stylistics and documentation are handled right away, as they have a direct impact
-on the maintainability of the code as it moves forward.  Major issues usually involve
-a larger amount of code and changing that much code usually has a fair amount of side
-effects unless you work to prevent those side effects.&lt;/p&gt;
-&lt;p&gt;Major issues are usually of the “too many/much” type, such as “too much complexity”,
-“too many statements”, or “too many boolean statements”.  When I get to a good
-and stable point in the project, I know I will deal with these.  If I deal with the
-issues before I get to such a point, I am taking a chance that I won’t have the
-stability to make the change, while limiting and dealing with any potential side effects
-in a clean and efficient manner.&lt;/p&gt;
-&lt;p&gt;What is a good and stable point? For me, such a point must have two dominant
-characteristics.  The first is that I need to have a solid collection of tests in place
-that I can execute.  These tests make sure that any refactoring does not negatively
-affect the quality of the code. The second characteristic is that the source code for
-the project is at a point where there is a large degree of confidence that the
-code in the section that I want to refactor is very solid and very well defined.  This
-ensures that I can start looking for commonalities and efficiencies for refactoring
-that will enhance the source code, but not prematurely.&lt;/p&gt;
-&lt;h2 id="strategy-1-break-tests-and-development-into-task-groups"&gt;Strategy 1: Break Tests and Development into Task Groups&lt;a class="headerlink" href="#strategy-1-break-tests-and-development-into-task-groups" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Following the principle of keeping things at a good size, don’t plan the entire project
-out ahead of time, but make sure to break things down into the groups of tasks that are
-needed as you need them.  Following an agile approach, make sure you have a good idea of
-what needs to be done for a given task group, and do not worry about any more details of
-it until you need to.  And when you reach that point, reverify the tasks before going
-forward and flushing out the details.&lt;/p&gt;
-&lt;p&gt;For this parser, the
-&lt;a href="https://github.github.com/gfm"&gt;GitHub Flavored Markdown specification&lt;/a&gt; delineates it’s
-groups by the features in Markdown that are implemented.  Aligning the groups specified
-in that document with the groups for tests and development was a solid choice from a
-tracking point of view.  One of the reasons that I feel this worked well is because
-these feature groups have anywhere between 1 and 50 examples in each group.  While some
-of the larger ones were a tiny bit too big, for the most part it was a manageable
-number of scenarios to handle in each group.&lt;/p&gt;
-&lt;h2 id="strategy-2-organize-those-task-groups-themselves"&gt;Strategy 2: Organize Those Task Groups Themselves&lt;a class="headerlink" href="#strategy-2-organize-those-task-groups-themselves" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Once the task groups have been identified, take a step back and organize those task
-groups themselves.  There are almost always going to be task groups that have a natural
-affinity to be with similar task groups, so do so.  By doing similar tasks in
-groups, it will help identify refactorings that can be accomplished later, as well as
-the efficiency benefits from repeating similar processes.  Especially with a larger
-project, those little efficiency benefits can add up quickly.&lt;/p&gt;
-&lt;p&gt;As with the previous strategy, the GitHub Flavored Markdown specification comes to the
-rescue again.  There are some implementation notes near the end of the specification
-that provide some guidance on grouping.  The groups that I recognized were container
-blocks, normal blocks, and inline parsing.  Normal blocks are the foundation of the
-parsing, so it made sense to schedule those first.  Container blocks (lists and block
-quotes) add nesting requirements, so I scheduled those second.  Finally, once all
-the block level tasks are done, inline parsing (such as for emphasis) can be performed
-on text blocks derived at after the processing of the normal and container blocks.
-After re-reading the end of the specification, the example that they gave seemed to
-indicate that as well, so I was probably on a decent path.&lt;/p&gt;
-&lt;h2 id="strategy-3-kiss"&gt;Strategy 3: K.I.S.S.&lt;a class="headerlink" href="#strategy-3-kiss" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;As I mentioned in the last article, I am a big proponent of the
-&lt;a href="https://en.wikipedia.org/wiki/KISS_principle"&gt;K.I.S.S principle&lt;/a&gt;.
-While I usually arrive at an end project that has lots of nice classes and functions,
-worrying about that at an early stage can often be counter-productive.  Even if it means
-doing ugly string manipulations with variable names that you know you will change, that
-approach can often lead to cleaner code faster.  Worry about getting the logic and the
-algorithms right first, and then worry about making it “look pretty”.&lt;/p&gt;
-&lt;p&gt;A good example of this is my traditional development practice of giving variables and
-functions “garbage names” until I am finished with a set of functions.  Yes, that means
-during development I have variable names like “foobar”, “abc”, “sdf”, and “ghi”, just to
-name a few of them.  When I am creating the function, I maintain a good understanding of
-what the variables are doing, and I want to concentrate on the logic.  Once the logic
-is solid, I can then rename the variables to a descriptive name that accurately
-reflects its purpose and use.&lt;/p&gt;
-&lt;p&gt;I am not sure if this process works for everyone, but for me, not focusing on the names
-helps me focus on the logic itself.  I also find that having a “naming pass” at the
-function when I am done with the work helps me to give each variable a more meaningful
-name before I commit the changes.  Once again, this is one of my development practices
-that helps boost my productivity, and I acknowledge it might not work for everyone.&lt;/p&gt;
-&lt;p&gt;For the parser, I employed this strategy whole-heartedly.  The first couple of groups of
-work on the parser were performed by dealing with strings, with the only class for the
-parser being the single class containing the parsing logic.  Once I got to a good point
-(see above), I moved a few of the parsing functions and html functions into their
-own static helper modules.  Up until that point, it was just simpler to be creative
-with the logic in a raw form.  After that point, it made more sense to identify and
-solidify the logic that encapsulated some obvious patterns, moving those algorithms
-into their own classes for easy identification.&lt;/p&gt;
-&lt;p&gt;As with many things, finding the right points to perform changes like this are difficult
-to describe.  I can only say that “it felt like the right time for that change”.  And as
-I commit and stage code frequently, if I made a mistake, I could easily rewind and
-either retry the change, or abandon it altogether.&lt;/p&gt;
-&lt;h2 id="strategy-4-use-lots-of-debug-output"&gt;Strategy 4: Use Lots of Debug Output&lt;a class="headerlink" href="#strategy-4-use-lots-of-debug-output" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;There is a phrase that we use at work called “TTR” or Time-To-Resolution.
-This is usually measured as the time taken from knowing that you have a problem until
-the time that the problem is resolved and its solution is published.  Added during
-development and debugging, spurious debug output can help provide a journal or log of
-what is happening in the project, allowing for a more comprehensive comparison of the
- output of a passing test with the output of a failing test at the same time.  &lt;/p&gt;
-&lt;p&gt;To be clear, using a debugger to load the code and step through it as it executes is
-another way to debug the code.  In fact, in a decent number of situations I
-recommend that.  However, I find that the downside is that I do not get to see the
-flow through the code in the same way as with lots of debug statements.  As with a
-lot of things, determining the balance between debug output and using a debugger
-will differ for individual developers and for individual projects.&lt;/p&gt;
-&lt;p&gt;Another benefit of the debug output approach is the transition from debug output to
-logging.  Once the project has been sufficiently stabilized and completed, one of the
-tasks that
-arises is usually to output useful log messages at various points throughout the code.
-I personally find that a certain percentage of the debug output that was good enough to
-emit during development can become quality log messages with only small changes.&lt;/p&gt;
-&lt;p&gt;The parser development benefitted from this strategy.  Within a given task
-group, there were often two Markdown patterns that were almost the same.  Sometimes it
-looked like they should be parsed differently and sometimes I couldn’t figure out
-why they weren’t parsed differently.  By examining the debug output for both cases,
-I was able to verify whether the correct paths were followed, and if not, where
-the divergences occurred.  Sure, the debug was cryptic and most of it never made it in
-the final version of the parser. But when I needed to debug or verify during
-development, it was invaluable.&lt;/p&gt;
-&lt;h2 id="strategy-5-run-tests-frequently"&gt;Strategy 5: Run Tests Frequently&lt;a class="headerlink" href="#strategy-5-run-tests-frequently" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Don’t only run tests when a set of changes is ready to commit, run those tests
-frequently during the development of each task.  If done properly, most tests are there
-to verify things are as they should be, and to warn of changes or situations that fall
-outside of the requirements. If something is wrong, it is better to look through the
-last feature added to determine what the problem is, rather than trying to determine
-which of the last 5 features introduced that bad behavior.  Therefore, by executing the
-tests frequently, either the confidence that the project is working properly increases
-or there are early and frequent indications that something is wrong.&lt;/p&gt;
-&lt;p&gt;During the development of the parser, the tests were instrumental in making sure that
-I knew what features were “locked down” and which features needed work.  By keeping
-track of that when adding a new feature, I could easily see when work on a new feature
-caused a previously completed feature to fail its tests.  At that point, I knew I
-did not have the right solution, but I also had confidence that the changes were small
-enough to handle.&lt;/p&gt;
-&lt;p&gt;Also, as the specification is large, there were often cases that were present but not
-always spelled out in the documentation as well as they could have been.  However, time
-and time again, the saving grace for the specification were the examples, now scenarios
-and scenario tests in my project, sterling examples of what to expect.  And as I took
-care to make sure they ran quickly; I was able to run all of the scenario tests in less
-than 10 seconds.  For me, taking 10 seconds to ensure things were not broken was well
-worth the cost.&lt;/p&gt;
-&lt;h2 id="strategy-6-do-small-refactors-only-at-good-points"&gt;Strategy 6: Do Small Refactors Only at Good Points&lt;a class="headerlink" href="#strategy-6-do-small-refactors-only-at-good-points" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;While this strategy may look like a repeat of
-&lt;a href="https://jackdewinter.github.io/2019/12/22/markdown-linter-parser-testing-strategy/#strategy-0a-suppress-major-issues-until-later"&gt;Strategy 0A: Suppress Major Issues Until Later&lt;/a&gt;,
-the scope for this strategy is on a smaller, more local level.  Where Strategy 0A talks
-about refactoring major issues later, there are often obvious minor refactors that can
-be done at a local level.  These changes are often done right after a function is
-written to fulfil a feature and rarely includes more than one function.  A good example
-of this is taking a function that performs a given action twice with small variations
-and rewriting that function by encapsulating that repeated action into its own
-well-named function.  &lt;/p&gt;
-&lt;p&gt;While such refactors almost always improve the code, care must be taken to strike a
-good balance between making each method more readable and trying to optimize the
-function ahead of time.  For myself, it is often more efficient for me to see the raw
-code to recognize patterns from rather than already refactored code.  Unless I am the
-author of the refactored code, I find that I do not see the same patterns as with the
-raw code.  As with many things, “Your Mileage May Vary”.&lt;/p&gt;
-&lt;p&gt;When implementing the parser, this strategy was effectively applied at the local
-level to improve readability and maintainability.  There were quite a few cases where
-the logic to detect a given case and the processing of that case were complicated.
-By assigning the detection of a given case to one function and the processing of that
-case to another function, the border between the two concepts was enhanced, making the
-calling function more readable.  As this kind of refactoring occurred at the local
-level, it employed this strategy quite effectively.&lt;/p&gt;
-&lt;h3 id="how-did-this-help"&gt;How Did This Help?&lt;a class="headerlink" href="#how-did-this-help" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;For one, I had a plan and a strategy to deal with things.  As always, something would
-happen during development which would require me to re-assess something. Given the
-above strategy, I had confidence that I would be able to deal with it, adjusting the
-different parts of the project as I went.&lt;/p&gt;
-&lt;p&gt;Basically, I took a boulder (writing a parser) and not only broke it down into pebbles
-(tasks needed to write the parser), but came up with a set of rules (strategy) on what
-to do if I found some rocks that were previously unknown or larger than a pebble.  As
-I mentioned at the start of the article, it is a fairly simple bit of wisdom that I was
-taught, but what a gem it is!&lt;/p&gt;
-&lt;h2 id="what-comes-next"&gt;What Comes Next?&lt;a class="headerlink" href="#what-comes-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;In the next article, I take the requirements, scenarios,
-and strategies and put them together to start writing the parser.  As one of the
-test groups that I came up with was normal Markdown blocks, I will describe how I
-implemented those blocks as well as the issues I had in doing so cleanly.&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry></feed>
+&lt;p&gt;Safe travels, and well wishes.&lt;/p&gt;</content><category term="Software Quality"></category></entry></feed>

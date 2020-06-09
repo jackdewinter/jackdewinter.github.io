@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="author" content="Jack De Winter" />
+
+        <meta name="description" content="Introduction¶ As I documented at the end of the previous article, having arrived at the decision to improve the linter’s foundation, it was time to tackle the largest issue on the stack: missing support for line numbers and column numbers. While at the time I thought of it as …
+" />
+        <meta property="og:type" content="article" />
+        <meta name="twitter:card" content="summary">
+
+<meta name="keywords" content="markdown linter, core linter, Software Quality, " />
+
+<meta property="og:title" content="Markdown Linter - Adding Line and Column Support "/>
+<meta property="og:url" content="https://jackdewinter.github.io/2020/06/08/markdown-linter-adding-line-and-column-support/" />
+<meta property="og:description" content="Introduction¶ As I documented at the end of the previous article, having arrived at the decision to improve the linter’s foundation, it was time to tackle the largest issue on the stack: missing support for line numbers and column numbers. While at the time I thought of it as …" />
+<meta property="og:site_name" content="Jack&#39;s Digital Workbench" />
+<meta property="og:article:author" content="Jack De Winter" />
+<meta property="og:article:published_time" content="2020-06-08T00:00:00-07:00" />
+<meta name="twitter:title" content="Markdown Linter - Adding Line and Column Support ">
+<meta name="twitter:description" content="Introduction¶ As I documented at the end of the previous article, having arrived at the decision to improve the linter’s foundation, it was time to tackle the largest issue on the stack: missing support for line numbers and column numbers. While at the time I thought of it as …">
+
+        <title>Markdown Linter - Adding Line and Column Support  · Jack&#39;s Digital Workbench
+</title>
+        <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://jackdewinter.github.io/theme/css/style.min.css?bec7d543">
+
+        <link href="https://jackdewinter.github.io/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Jack&#39;s Digital Workbench - Full Atom Feed" />
+
+
+    </head>
+    <body>
+        <div id="content">
+            <div class="navbar navbar-static-top">
+                <div class="navbar-inner">
+                    <div class="container-fluid">
+                        <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                        </a>
+                        <a class="brand" href="https://jackdewinter.github.io/"><span class=site-name>Jack's Digital Workbench</span></a>
+                        <div class="nav-collapse collapse">
+                            <ul class="nav pull-right top-menu">
+                                <li >
+                                    <a href=
+                                       https://jackdewinter.github.io
+                                    >Home</a>
+                                </li>
+                                <li ><a href="https://jackdewinter.github.io/categories">Categories</a></li>
+                                <li ><a href="https://jackdewinter.github.io/tags">Tags</a></li>
+                                <li ><a href="https://jackdewinter.github.io/archives">Archives</a></li>
+                                <li><form class="navbar-search" action="https://jackdewinter.github.io/search.html" onsubmit="return validateForm(this.elements['q'].value);"> <input type="text" class="search-query" placeholder="Search" name="q" id="tipue_search_input"></form></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="container-fluid">
+                <div class="row-fluid">
+                    <div class="span1"></div>
+                    <div class="span10">
+<article itemscope>
+<div class="row-fluid">
+    <header class="page-header span10 offset2">
+        <h1>
+            <a href="https://jackdewinter.github.io/2020/06/08/markdown-linter-adding-line-and-column-support/">
+                Markdown Linter - Adding Line and Column Support
+            </a>
+        </h1>
+    </header>
+</div>
+
+<div class="row-fluid">
+    <div class="span2 table-of-content">
+        <nav>
+        <h4>Contents</h4>
+        <div class="toc">
+<ul>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#what-is-the-audience-for-this-article">What Is the Audience for This Article?</a></li>
+<li><a href="#why-was-reducing-the-scope-good">Why Was Reducing the Scope Good?</a></li>
+<li><a href="#where-to-start">Where to start?</a></li>
+<li><a href="#adding-in-position-markers">Adding in Position Markers</a><ul>
+<li><a href="#creating-the-marker">Creating the marker</a></li>
+<li><a href="#stage-1-integrating-the-marker-locally">Stage 1 - Integrating the Marker Locally</a></li>
+<li><a href="#stage-2-integrating-the-marker-up-the-stack">Stage 2 - Integrating the Marker Up the Stack</a></li>
+<li><a href="#stage-3-cleaning-up-going-back-down">Stage 3 - Cleaning up Going back down</a></li>
+<li><a href="#stage-4-wiring-up-the-token">Stage 4 - Wiring up the Token</a></li>
+<li><a href="#stage-5-addressing-test-results">Stage 5 - Addressing Test Results</a></li>
+<li><a href="#the-importance-of-good-tests">The Importance of Good Tests</a></li>
+</ul>
+</li>
+<li><a href="#lather-rinse-repeat">Lather-Rinse-Repeat</a><ul>
+<li><a href="#html-blocks-setext-heading-blocks-and-code-blocks">HTML Blocks, SetExt Heading Blocks and Code Blocks</a></li>
+<li><a href="#thematic-breaks">Thematic Breaks</a></li>
+<li><a href="#blank-line-token">Blank Line Token</a></li>
+<li><a href="#block-quote-blocks-and-list-blocks">Block Quote Blocks and List Blocks</a></li>
+<li><a href="#paragraph-blocks">Paragraph Blocks</a></li>
+<li><a href="#link-reference-definitions">Link Reference Definitions</a></li>
+</ul>
+</li>
+<li><a href="#cleaning-up">Cleaning Up</a></li>
+<li><a href="#what-was-my-experience-so-far">What Was My Experience So Far?</a></li>
+<li><a href="#what-is-next">What is Next?</a></li>
+</ul>
+</div>
+        </nav>
+    </div>
+    <div class="span8 article-content">
+            
+            
+<h2 id="introduction">Introduction<a class="headerlink" href="#introduction" title="Permanent link">¶</a></h2>
+<p>As I documented at the
+<a href="https://jackdewinter.github.io/2020/06/01/markdown-linter-taking-time-to-evaluate/#what-is-next">end of the previous article</a>,
+having arrived at the decision to improve the linter’s foundation,
+it was time to tackle the largest issue on the stack: missing support for line numbers
+and column numbers.
+While at the time I thought of it as a glaring omission (see
+<a href="https://jackdewinter.github.io/2020/05/11/markdown-linter-rules-the-first-three/#line-numbers-and-column-numbers">this article for more</a>
+), the passage of time since that discovery has helped me see that omission in a
+better light.  On its own, the process of getting the tokenization correct was a large
+enough task but adding the determination of each token’s line number and column
+number to that task would have made that task unbearably larger.
+Knowing myself as I do, even if I had discovered that requirement during the design
+phase, there is a really good chance that I would have relegated the determination of
+each token’s original position into its own task.  Regardless of what happened in the
+past, it was obvious that I needed to start working on that task now.</p>
+<p>Starting to think about this issue, I had no doubt it was going to be a tough task to
+complete, and I knew that I needed to find a way to break things down even further.
+As I figured that
+adding line numbers and column numbers to every token was going to be too much, I
+reduced the scope even further by deciding to limit the scope to only block tokens.  As
+every inline element is rooted in
+a block element, I had
+confidence that this would ensure that the line number and column numbers would be solid
+in each block elements before adding the inline elements into the mix.  It was also a
+solid dividing line for the task that just made sense to me.</p>
+<p>With those decisions on scope dealt with, it was time to delve into the depths of
+line numbers and column numbers.</p>
+<h2 id="what-is-the-audience-for-this-article">What Is the Audience for This Article?<a class="headerlink" href="#what-is-the-audience-for-this-article" title="Permanent link">¶</a></h2>
+<p>While detailed more eloquently in
+<a href="https://jackdewinter.github.io/2020/04/05/what-is-the-audience-for-my-blog/#what-is-the-audience-for-my-blog">this article</a>,
+my goal for this technical article is to focus on the reasoning behind my solutions,
+rather that the solutions themselves.  For a full record of the solutions presented in
+this article, please go to this project’s GitHub repository and consult the
+commits between
+<a href="https://github.com/jackdewinter/pymarkdown/commit/628d6848029c3a2b02c755611455301fdf0fced4">26 May 2020</a> and
+<a href="https://github.com/jackdewinter/pymarkdown/commit/1eb3677506dcefe7562f72082bed5374761f21cc">16 May 2020</a>.</p>
+<h2 id="why-was-reducing-the-scope-good">Why Was Reducing the Scope Good?<a class="headerlink" href="#why-was-reducing-the-scope-good" title="Permanent link">¶</a></h2>
+<p>Each of the implemented and enabled parser test functions includes the list variable
+<code>expected_tokens</code> and the string variable <code>expected_gfm</code>.  The <code>expected_tokens</code>
+variable
+is used to ensure that the tokens that are expected from the Markdown document are
+emitted by the parser.  The <code>expected_gfm</code> variable is used to ensure that those tokens
+can use a simple algorithm<sup id="fnref:simpleAlg"><a class="footnote-ref" href="#fn:simpleAlg">1</a></sup> to transform themselves into the HTML required by
+the specification.  Prior to this work, their focus was simple: enable that forward
+translation from Markdown into HTML.</p>
+<p>Adding in support for line numbers and column numbers was going to be a lot of work,
+but it was working in a different direction: backwards towards the original Markdown
+document.  There was no denying that this was a difficult task to complete, but
+due to circumstances, the reduction in scope would leave me with a far simpler problem
+to solve.  In addition, to protect the work already done in the forward direction, the
+existing battery of tests remained in place, diligently guarding that work.</p>
+<p>With protection for the already completed work in place, and a clear definition of the
+work to be done in mind, it was time for me to figure out how to start the process off.</p>
+<h2 id="where-to-start">Where to start?<a class="headerlink" href="#where-to-start" title="Permanent link">¶</a></h2>
+<p>To help me keep track of things,
+I added each of the block element names to the
+<code>readme.md</code> document where I track my issues.  As I needed to represent
+every Markdown block, I moved the question in the issue document regarding the adding
+of a Link Reference Definition token to the start of this new section and transformed
+it into a statement.  As each block element in the
+Markdown document needed to be tagged with its position, it was a necessity that
+Link Reference Definition tokens be added, even if they did not result in any HTML
+output.</p>
+<p>Having all the blocks elements listed in that document, I then needed to somehow
+pick a good place to start. I was aware that wherever I decided to start, that token
+was going to have a lot more work
+associated with it as I tested out and implemented the foundation used to add line
+numbers and column numbers to the other tokens.  Whatever process and code I used
+for that first block element; the plan was to repeat it in some closely related form
+for each of the other 10 block elements in the list.  But which one to pick?</p>
+<p>In the end, I decided to start with Atx headings.  Unfortunately, I did not keep any
+notes as to why I picked this block element to start. My best guess is that after
+having a lot of exposure to heading code while implementing the last group of rules, I
+figured headings would be a good place to
+start.  Following that line of thought, I believe that I also would have guessed that
+SetExt headings were going to be the more difficult token to change, leaving Atx
+headings as the best place to start.  Either that, or I decided to go alphabetic and
+‘a’ is the first letter of the alphabet.  Either way, Atx headings were first, and it
+was going to be a <em>fun</em> ride.</p>
+<h2 id="adding-in-position-markers">Adding in Position Markers<a class="headerlink" href="#adding-in-position-markers" title="Permanent link">¶</a></h2>
+<p>Taking a good look at the Atx headings and the information that was being passed around,
+the first thing that caught my eye was a good opportunity to refactor.  As I was letting
+parts of the parser grow organically, many functions included the argument
+<code>line_to_parse</code> along with an argument that was usually named <code>start_index</code>.  This
+organic pairing made sense in a lot of places, allowing for the easy manipulation of
+the current index, and occasionally the <code>line_to_parse</code>.  However, when adding in
+support for line numbers, I was going to have to pass in a third variable, meaning it
+was time to refactor this.  As I have said
+<a href="https://jackdewinter.github.io/2020/05/04/markdown-linter-core-pre-rule-improvements/#source-providers">previously</a>:</p>
+<blockquote>
+<p>Write it once, write it neat.  Write it twice, think about extracting it.  Write it three times, extract it without a second thought.</p>
+</blockquote>
+<p>And that is where I started to work on replacing the <code>line_to_parse</code> variable and the
+<code>start_index</code> like variables with the <code>position_marker</code> variable and the
+<code>PositionMarker</code> class.  This class was, and remains, very simple:</p>
+<div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">PositionMarker</span><span class="p">:</span>
+    <span class="sd">"""</span>
+<span class="sd">    Class to provide an encapsulation of the location within the Markdown document.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">line_number</span><span class="p">,</span> <span class="n">index_number</span><span class="p">,</span> <span class="n">text_to_parse</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">line_number</span> <span class="o">=</span> <span class="n">line_number</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">index_number</span> <span class="o">=</span> <span class="n">index_number</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">text_to_parse</span> <span class="o">=</span> <span class="n">text_to_parse</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">index_indent</span> <span class="o">=</span> <span class="mi">0</span>
+</pre></div>
+<p>The <code>line_to_parse</code> variable was replaced by the <code>text_to_parse</code> member variable, the
+index-type variable was replaced with the <code>index_number</code> member variable, with the
+<code>line_number</code> member variable being introduced.  As I knew I would have to support
+“indented” text, such as text after a block quote character or a list start sequence,
+I added <code>index_indent</code> at the same time.</p>
+<p>And with that, the easy stuff was ended.  It was time to move on to the tougher stuff.</p>
+<h3 id="creating-the-marker">Creating the marker<a class="headerlink" href="#creating-the-marker" title="Permanent link">¶</a></h3>
+<p>Wanting to start at the beginning, I made some modifications to the
+<code>__parse_blocks_pass</code> function in the <code>TokenizedMarkdown</code> class to track the line
+number.  As I did not have to deal with Link Reference Definition tokens yet
+(spoilers!), this was a straight forward change, with the local <code>line_number</code> variable
+being initialized
+before the main loop and that same variable being incremented at the end of the loop.
+To encapsulate this information, I created a new position marker as follows:</p>
+<div class="highlight"><pre><span></span><span class="n">position_marker</span> <span class="o">=</span> <span class="n">PositionMarker</span><span class="p">(</span><span class="n">line_number</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">token_to_use</span><span class="p">)</span>
+</pre></div>
+<p>Instead of passing <code>token_to_use</code> to the <code>parse_line_for_container_blocks</code> function, I
+instead passed in the expression <code>position_marker.text_to_parse</code>.  While I wanted to
+pass in <code>position_marker</code> by itself, I knew I had some important work to do before
+getting that would be possible.</p>
+<h3 id="stage-1-integrating-the-marker-locally">Stage 1 - Integrating the Marker Locally<a class="headerlink" href="#stage-1-integrating-the-marker-locally" title="Permanent link">¶</a></h3>
+<p>Using my knowledge of the project, I knew that the path between the
+<code>__parse_blocks_pass</code> function in the <code>TokenizedMarkdown</code> class and the
+<code>parse_atx_headings</code> function in the <code>LeafBlockProcessor</code> class was going to go through
+a number of functions in the <code>ContainerBlockProcessor</code> class.  Instead of
+using a lot of guesswork to determine what that path was, I decided to start at the
+<code>parse_atx_headings</code> function itself and work my way backwards to the
+<code>parse_line_for_container_blocks</code> function.</p>
+<p>In the place of adapting the entire function in one pass, I decided to start with
+focusing
+on the passing of the position marker into the function.  To facilitate this decision,
+in the <code>parse_atx_headings</code> function, I wrote some simple
+<a href="https://en.wikipedia.org/wiki/Glue_code">glue code</a> to interface between the old style
+code and the new style code. Before the change, the code looked like this:</p>
+<div class="highlight"><pre><span></span>    <span class="k">def</span> <span class="nf">parse_atx_headings</span><span class="p">(</span>
+        <span class="n">line_to_parse</span><span class="p">,</span> <span class="n">start_index</span><span class="p">,</span> <span class="n">extracted_whitespace</span><span class="p">,</span> <span class="n">close_open_blocks_fn</span>
+    <span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Handle the parsing of an atx heading.</span>
+<span class="sd">        """</span>
+        <span class="n">new_tokens</span> <span class="o">=</span> <span class="p">[]</span>
+</pre></div>
+<p>After the change, the code looked like this:</p>
+<div class="highlight"><pre><span></span>    <span class="k">def</span> <span class="nf">parse_atx_headings</span><span class="p">(</span><span class="n">position_marker</span><span class="p">,</span> <span class="n">extracted_whitespace</span><span class="p">,</span> <span class="n">close_open_blocks_fn</span>
+    <span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Handle the parsing of an atx heading.</span>
+<span class="sd">        """</span>
+        <span class="n">line_to_parse</span> <span class="o">=</span> <span class="n">position_marker</span><span class="o">.</span><span class="n">text_to_parse</span>
+        <span class="n">start_index</span> <span class="o">=</span> <span class="n">position_marker</span><span class="o">.</span><span class="n">index_number</span>
+        <span class="n">new_tokens</span> <span class="o">=</span> <span class="p">[]</span>
+</pre></div>
+<p>In the <code>__parse_line_for_leaf_blocks</code> function where the <code>parse_atx_headings</code> function
+was called from, I created a new <code>PositionMarker</code> instance named <code>temp_marker</code>, with
+the information from the local function.  That new <code>temp_marker</code> variable was then
+passed into the <code>parse_atx_headings</code> function instead of the previously used
+<code>line_to_parse</code> and <code>start_index</code> arguments.</p>
+<p>I knew from the start that this approach was going to be more work.  However, by
+isolating the change
+to the function’s signature, I knew I could keep the parser stable and usable at any
+point.  By keeping the parser in that good state, I knew I could depend on the
+large bank of tests used by the project to verify any change was a successful change
+with no unintended side effects.  The process was indeed slower than some other
+methods, but it was a process that I had absolute confidence that I could rely on.</p>
+<h3 id="stage-2-integrating-the-marker-up-the-stack">Stage 2 - Integrating the Marker Up the Stack<a class="headerlink" href="#stage-2-integrating-the-marker-up-the-stack" title="Permanent link">¶</a></h3>
+<p>In this stage, the process that was applied to the <code>parse_atx_headings</code> function was
+applied again and again until the <code>__parse_blocks_pass</code> function was
+reached.  With every step going back towards that function, I repeated the same actions
+that I performed in stage 1, but with the calling function: add glue code, change
+function arguments, create a temporary position marker, and pass that position marker
+into the newly changed function.</p>
+<p>The almost continuous execution of tests at this point was essential.  As with any
+parser, even slight changes in the content or interpretations of the content can cause
+small ripples in the output that may escape detection if not quickly located and
+addressed.  While I was doing my best to try and ensure that all changes were kept as
+isolated as possible, it was only the rapid battery of tests that kept my confidence
+high that I was going in the right direction with no ripples.</p>
+<p>Another thing that helped me immensely was using Git’s staging ability.  To facilitate
+clean commits, Git has a nice feature called a
+<a href="https://git-scm.com/about/staging-area">staging area</a>,
+with the moving changes into this area being commonly referred to as staging.  The nice
+part about Git staging is that,
+<a href="https://www.freecodecamp.org/forum/t/how-to-discard-unstaged-changes-in-git/13214">as this article describes</a>,
+it is very easy to discard any changes made to your local files in favor of the state of
+that file with any committed changes and staged changes applied.  As such, each time I
+applied this process to another function, I ensured that once the tests were all
+passing that I staged those changes in the repository.  In the cases where I made
+mistakes, which did happen frequently, I had the knowledge that I was able to revert
+the relevant files back to their pre-change states, and resume work from there.  When
+it was time to commit those changes, they were already isolated in the staging area,
+ready to be committed.</p>
+<h3 id="stage-3-cleaning-up-going-back-down">Stage 3 - Cleaning up Going back down<a class="headerlink" href="#stage-3-cleaning-up-going-back-down" title="Permanent link">¶</a></h3>
+<p>Once I reached the <code>__parse_blocks_pass</code> function, I was able to connect
+with the real <code>position_marker</code> variable, using that variable instead of creating a
+new <code>temp_marker</code> variable.  I then started working back towards the
+<code>parse_atx_headings</code> function, replacing <code>temp_marker</code> with <code>position_marker</code> as
+I went.</p>
+<p>When I got to the
+<code>parse_atx_headings</code> function, I then proceeded to replace instances of <code>line_to_parse</code>
+within that function with <code>position_marker.text_to_parse</code> and instances of <code>start_index</code>
+with <code>position_marker.index_number</code>.  As these changes were localized, they were
+easy to make, but I still ran frequent test passes just to make sure I was making
+the right changes.  I do acknowledge that some of those test passes were executed out
+of paranoia, but in my mind, if running the
+tests an extra time allowed me to step forward with no reservations, it was worth it.</p>
+<p>Finally, at the end of all this process, I removed the <code>line_to_parse</code> variable and
+the <code>start_index</code> variable from the function, as they were no longer being used.
+There was no benefit to keeping those two variables around, so I just removed them.
+I now had a solid function to parse for Atx headings, referencing the line number and
+index number in a nice compact object.  In addition, I was able to easily trace this
+compact object from the main processing line of the parser directly to the function
+itself. The only thing left to complete the change was to wire up the token.</p>
+<h3 id="stage-4-wiring-up-the-token">Stage 4 - Wiring up the Token<a class="headerlink" href="#stage-4-wiring-up-the-token" title="Permanent link">¶</a></h3>
+<p>Now that I had the <code>position_marker</code> object being passed properly into the
+<code>parse_atx_headings</code> function, I needed to pass that object into the token’s
+constructor.</p>
+<p>The first change I made was to the base <code>MarkdownToken</code> object, changing its constructor
+to allow the passing in of a <code>line_number</code> argument and a <code>column_number</code> argument to be
+stored in the instance.  To complement this change, I made some
+modifications to the <code>__str__</code> method to add the line number and column number to
+the returned string, but only if at least one of those two numbers was not 0.  The
+benefit of this slight change was that the line number/column number pair would only
+show up in the function’s output if that information were provided.  As that information
+was only provided once I added support for that type of token, I only
+had to worry about the token output changing for the tokens I had already changed.</p>
+<p>The second change was to modify the constructor for the <code>AtxHeadingMarkdownToken</code>
+class to accept a <code>position_marker</code> argument.  That code was implemented as such:</p>
+<div class="highlight"><pre><span></span>    <span class="n">line_number</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">column_number</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">if</span> <span class="n">position_marker</span><span class="p">:</span>
+        <span class="n">line_number</span> <span class="o">=</span> <span class="n">position_marker</span><span class="o">.</span><span class="n">line_number</span>
+        <span class="n">column_number</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">position_marker</span><span class="o">.</span><span class="n">index_number</span> <span class="o">+</span> <span class="n">position_marker</span><span class="o">.</span><span class="n">index_indent</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="p">)</span>
+</pre></div>
+<p>Basically, if the <code>position_marker</code> variable was not present, the default value of 0
+was used for the <code>line_number</code> and <code>column_number</code> variables.
+If the <code>position_marker</code> variable was present, the <code>line_number</code> was be moved over
+from its <code>position_marker</code> object into the function’s <code>line_number</code> variable.  For
+the <code>column_number</code> variable was assigned the sum of the <code>index_number</code> member variable,
+the <code>index_indent</code> variable (at this point, always 0), and <code>1</code>.  As index values are
+always 0 based and column numbers are always 1 based, the addition of <code>1</code> to the index
+number ensured it was based properly.</p>
+<p>Finally, these newly calculated values for the <code>line_number</code> and the <code>column_number</code>
+were passed into the newly retooled <code>MarkdownToken</code> object constructor.  This was the
+point that I was preparing for, where everything came together.  It was now time
+to see how close I got to the actual test results.  If memory serves, I believe I
+actually closed my eyes after saving my changes and started the execution of
+the tests.</p>
+<h3 id="stage-5-addressing-test-results">Stage 5 - Addressing Test Results<a class="headerlink" href="#stage-5-addressing-test-results" title="Permanent link">¶</a></h3>
+<p>Prior to the very end of the previous step, the most frequent test command line that I
+used was:</p>
+<div class="highlight"><pre><span></span>pipenv run pytest -m gfm
+</pre></div>
+<p>This executed only the parser’s scenario tests, reducing the test area to only those
+tests that were tagged as being part of the <code>gfm</code> group.  As I was running the tests
+with each change, it was important to keep the scope, and therefore execution time,
+of the tests to a minimum.  And up to this point, it worked well, and the tests were
+solid, passing every time.</p>
+<p>But as I made the connection between the <code>AtxHeadingMarkdownToken</code> token’s constructor
+calling the <code>MarkdownToken</code> token’s constructor, I knew that everything that I had
+just changed was just a good guess.  I hoped that I had wired things up correctly, but
+at that point, I only knew 2 things for sure:</p>
+<ul>
+<li>due to the tests, I had not disrupted any of the parsed tokens for the test cases, including their order and content</li>
+<li>I was passing some transformation of the base <code>position_marker</code> into the token’s constructor</li>
+</ul>
+<p>With everything wired up, I used the above command line multiple times, each time
+picking off one of the failed tests to validate.  With each test, I first calculated
+what I thought the line/column pair should be, noting it down in the function’s
+comments section.  I then validated it against the test results, trying my hardest
+to not peek at the test results before I did my calculations. Once
+I had all those tests cleaned up, I did an extra pass through the changed tokens,
+manually recalculating the line/column pair and checking to make sure they were right.
+Only after all that was addressed did I change the module in the above command
+line from <code>gfm</code> to <code>rules</code>, cleaning up any test failures caused by line/column pairs
+that were now being displayed as part of the output.</p>
+<h3 id="the-importance-of-good-tests">The Importance of Good Tests<a class="headerlink" href="#the-importance-of-good-tests" title="Permanent link">¶</a></h3>
+<p>While I can talk at length about good practices with respect to tests, I hope I can
+convey the
+sincere importance that I associate with having good tests and good test coverage
+on a project.  It is true that I can often “eyeball” a simple change to a project,
+figuring out whether that change is correct.  But in my mind, anything beyond a
+simple change requires solid, repeatable testing.  Without that testing in place, you
+are betting against the risk of something going wrong with your project.</p>
+<p>Testing is not about finding bugs as much as it is about risk management.  If you have
+a small project that rolls various forms of dice for a Dungeons and Dragons campaign,
+the impact of that risk failing is very light.  Any person I know that would
+use such a project would also have some backup dice for “just in case”.  For the
+PyMarkdown project, the end goal is to have a tool that website owners can trust to keep
+their website’s Markdown documents in a proscribed format and style.  The impact of
+too many failures is a loss of trust in the project, with a certain level of loss in
+trust being associated with those website owners dropping their use of the project.  By
+having good testing of various forms embedded within the project, I can hopefully
+mitigate some amount of the loss of trust that any failure brings with it.</p>
+<p>Since I have worked so hard to get the project to this state, I did not want to take
+any unnecessary risk to the project’s stability.  The tests are a solid tool that
+I use frequently to keep any such risk to a minimum, and especially during refactoring,
+where I rely on them heavily.  And as I rely on them heavily, I am also continuously
+looking for better ways to test the projects that those tests are in.</p>
+<h2 id="lather-rinse-repeat">Lather-Rinse-Repeat<a class="headerlink" href="#lather-rinse-repeat" title="Permanent link">¶</a></h2>
+<p>I honestly tried to find another heading for this section.  Try as I might, no other
+section heading seemed to convey the repetition that I went through other than the
+phrase:
+<a href="https://en.wikipedia.org/wiki/Lather,_rinse,_repeat">Lather, Rinse, and Repeat</a>
+.  For each of the 10 remaining tokens, the 5 steps outlined above for Atx heading
+were repeated, with only a few changes to the process.  Those changes are outlined
+in the following sections.  Please note that the following sections are ordered with
+respect to the amount of work needed to resolve them, rather than my usual
+chronological ordering.</p>
+<p>When I encountered questions with respect to whether something with respect to that
+token was done properly or not, those questions were added as action items to the
+<code>readme.md</code> file to be examined later.  I knew this was going to be a
+<a href="https://www.merriam-webster.com/dictionary/slog">slog</a>, and a hard slog at that.
+It just seemed more efficient to me to note them and move on, circling back to deal
+with them later.</p>
+<h3 id="html-blocks-setext-heading-blocks-and-code-blocks">HTML Blocks, SetExt Heading Blocks and Code Blocks<a class="headerlink" href="#html-blocks-setext-heading-blocks-and-code-blocks" title="Permanent link">¶</a></h3>
+<p>There were no changes introduced to the process for these elements.</p>
+<h3 id="thematic-breaks">Thematic Breaks<a class="headerlink" href="#thematic-breaks" title="Permanent link">¶</a></h3>
+<p>There was only one small change to the process for this element.  That change was
+the delaying of the cleanup stage until a later time, as I wanted to get more breadth
+of tokens implemented to ensure I had the right foundation for the change.</p>
+<p>The other change that I made was to the <code>MarkdownToken</code> class, thereby affecting all
+the other tokens.  For this change, I moved the code to calculate the <code>line_number</code>
+variable and
+the <code>column_number</code> variable from the <code>AtxHeadingMarkdownToken</code> class to the base
+<code>MarkdownToken</code> class.  Once this code was proven, it just made more sense to keep
+it in the base class than repeating it for each token.</p>
+<h3 id="blank-line-token">Blank Line Token<a class="headerlink" href="#blank-line-token" title="Permanent link">¶</a></h3>
+<p>The change required to process the blank line token was not with the token itself, but
+with the processing of block quote blocks.  The <code>__handle_blank_line</code> function was
+changed in the <code>TokenizedMarkdown</code> class to accommodate the <code>position_marker</code> argument,
+starting the change for all calls to this function requiring that argument.  Other than
+that change, everything else was normal.</p>
+<h3 id="block-quote-blocks-and-list-blocks">Block Quote Blocks and List Blocks<a class="headerlink" href="#block-quote-blocks-and-list-blocks" title="Permanent link">¶</a></h3>
+<p>Strangely enough, I thought these two types of blocks would take the most amount of
+work to address, but due to the way they were implemented, only a couple of small
+changes were required.  In both cases, the block start algorithms have to deal with
+with the possibility of a tab character (often denoted as <code>\t</code>) being used as the
+whitespace between the block start sequence and the rest of the block’s data.</p>
+<p>Having already dealt with tab stops versus tab characters and
+<a href="https://jackdewinter.github.io/2020/04/27/markdown-linter-reducing-the-parsers-technical-debt/#refactor-2-more-fun-with-tabs">fixing that issue</a> once,
+I really did not want to fix it again.  I just needed to ensure that the current fix
+and the previous fix were compatible with each other.  To ensure that happened
+correctly, the modified line text and index numbers were passed to a newly created
+<code>PositionMarker</code> instance, created after the processing of the Block Quote block and
+the List blocks.  This ensured that any line text modified by the processing of
+either container block would be retained, while adding the now normal processing
+using the <code>PositionMarker</code> class.</p>
+<h3 id="paragraph-blocks">Paragraph Blocks<a class="headerlink" href="#paragraph-blocks" title="Permanent link">¶</a></h3>
+<p>As the catch-all element for Markdown documents, I had a feeling that these blocks
+would end up near the top of the “most effort” list, although I will admit that I
+guessed the reason
+wrong.  I thought that it would have something to do with lists and block quotes,
+while the actual reason is due to Link Reference Definitions.  More precisely, the
+reason is due to failed or partially failed Link Reference Definitions.</p>
+<p>Due to its composition, it is impossible to properly determine if a Link Reference
+Definition is valid without reading the next line.  As documented in the article
+<a href="https://jackdewinter.github.io/2020/04/06/markdown-linter-adding-link-reference-definitions/">Adding Link Reference Definitions</a>, its multiline
+nature and use of various forms of quoted sections mean that unless the parser
+encounters the end of the closing section or a blank line, it does not know if it
+had reached the end of the Link Reference Definition.  If it reaches the end and
+for any reason that Link Reference Definition is not valid, the logic in the parser
+starts adding lines back on to a list of lines that need to be reparsed without
+them being misinterpreted as a Link Reference Definition.</p>
+<p>It is precisely that requeuing logic that I needed to alter to work properly with the
+new <code>PositionMarker</code> class.  While the <code>index_number</code> remained untouched, I had to
+make sure that the <code>line_number</code> variable was properly reset to account for the
+length of the <code>lines_to_requeue</code> variable when any requeuing occurred.  I had a
+bit of a problem with the initial implementation of this code, so I wanted to take
+extra time and really boost my confidence that I was handling the change for this
+token properly.</p>
+<h3 id="link-reference-definitions">Link Reference Definitions<a class="headerlink" href="#link-reference-definitions" title="Permanent link">¶</a></h3>
+<p>This one should be very obvious… I needed to add the token itself!  When designing
+the parser, I did not see any need for a token that literally has no impact on
+the output, so I did not add a token for it.  While a link element that refers to a
+link reference definition will show up as a link in the HTML output, the link reference
+definition itself is not added to the HTML in any form.  However, now that I was
+adding support for all markdown block elements, I found myself in the position of
+adding the token in to the parser.</p>
+<p>Adding the token itself was not too difficult. That was accomplished by the usual
+process of finding the right method, the <code>__stop_lrd_continuation</code> method in this case,
+creating a new instance of the new <code>LinkReferenceDefinitionMarkdownToken</code> class in
+that function, and properly populating it.  Then the process of adding the support for
+the <code>PositionMarker</code> class kicked in, and quickly I had a case of a wired-up
+token with the proper data.</p>
+<p>And then I went to test it… and I noticed that the tests failed in the transformation
+of the tokens into HTML.  Looking, I quickly determined that I needed to make
+some additional changes to the <code>TransformToGfm</code> module.  This was a simple change, as
+by definition, Link Reference Definitions have no effect on the output.  To accommodate
+the new token, a simple handler was registered for that token that simply returns the
+same string that was given to the handler.</p>
+<p>And then I went to test it… and the line number and column numbers were incorrect.
+In about half of the tests, the pair of numbers seemed to be widely different than I had
+manually calculated.  Double checking my numbers, I then noticed a pattern.  The
+numbers being reported were for the last line of the Link Reference Definition.
+Because of its multiline nature, the values associated with the <code>position_marker</code>
+variable were the ones used when that Link Reference Definition was considered both
+valid and complete.  Avoiding the passing of a single use variable around, I added
+the starting position to the <code>LinkDefinitionStackToken</code> instance at the top of the
+stack, and things looked better.</p>
+<p>As I looked at the token and its <code>__str__</code> function output, it looked very lean.  Based
+on other tokens, I expected a lot more information to be stored in that token, to be
+analyzed later.  Slowly going through the information gathered during the processing
+of the token, I ended up figuring out how to properly represent the token.  Between the
+various whitespace
+sequences between parts of the definition, the various parts of the definition
+themselves, and both uninterpreted and interpreted parts, the data called for a
+class with 11 member variables.</p>
+<p>Slowly but surely, I started working through each of the Link Reference Definition
+scenario tests, starting with the easier  ones and working my way to the more difficult
+ones.  It took me a while to work through each scenario and validate it, but I breathed
+a sigh of relief when I finished going through
+all the tests. In the end, it had taken 2 days to complete, along with countless
+executions of the scenario tests.</p>
+<p>It was not until I looked at my notes that I remembered something: I had delayed some
+of the cleanup.</p>
+<h2 id="cleaning-up">Cleaning Up<a class="headerlink" href="#cleaning-up" title="Permanent link">¶</a></h2>
+<p>Before calling this round of changes done, there was a decent amount of delayed cleanup
+to be performed.  As part of Stage 3 of the process, there were quite a few times where
+that cleanup was delayed for one reason or another.  As I was about to move on to
+another issue, I wanted to make sure that cleanup was performed.</p>
+<p>That cleanup itself was easy, as I had repeated the “change-test-check” process
+so many times that I believe I could perform it while sleeping.  Following a variation
+of that same process, the code was cleaned up in short order.</p>
+<h2 id="what-was-my-experience-so-far">What Was My Experience So Far?<a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link">¶</a></h2>
+<p>As I finished the cleanup, I was happy to have the work of adding in the line numbers
+and column numbers behind me.  After 10 days of work, it was now a large task
+that I knew was not on my task list anymore.  But while I was
+happy, I was also concerned about the 20 new issues that I had added to my issues list.
+I was aware that at least a few of those items would be checked out and determined to
+be false alarms, but that probably left somewhere between 16 to 18 issues to research
+and triage.</p>
+<p>On top of that, there was also the fact that each line number/column number
+pair for the tokens was determined manually by me.  While I have faith that I can
+count accurately for small sets of numbers, I do know that I make mistakes.  Some
+of those mistakes I had already caught while going over the test cases before committing
+the changes for each of the elements.  But it was entirely possible, and indeed
+probable, that I had missed at least 1 or 2 mistakes.  This was not due to lack of
+confidence, but due to a sense of reality.  I know that the project has great coverage
+and great scenarios, but I also know that I do not have every scenario represented,
+just the really important ones.</p>
+<p>That got me thinking.  If I found that many errors, was there a way to remove the need
+for me to manually count those values?  Could I automate it?  Would it be worth it?
+Would I find anything?</p>
+<p>The more I thought about those questions, the more I realized that I needed to explore
+this area.  If nothing else, I wanted to make sure I had not missed anything.  But after
+thinking about it for a while, I realized that I did not want to risk that I had missed
+anything important.</p>
+<h2 id="what-is-next">What is Next?<a class="headerlink" href="#what-is-next" title="Permanent link">¶</a></h2>
+<p>And here ladies and gentlemen is where I begin to go down the
+<a href="https://www.merriam-webster.com/dictionary/rabbit%20hole">rabbit hole</a>
+.</p>
+<div class="footnote">
+<hr/>
+<ol>
+<li id="fn:simpleAlg">
+<p>At the current moment, the <code>transform_to_gfm.py</code> module is approximately 900 lines long.  About 30% of that module is processing overhead, with about 18% dedicated to handling the <em>somewhat complex</em> issue of list looseness. The remaining 52% is consumed with the simple <code>handle_*</code> methods used to translate each token’s start and end tokens into HTML.  While the calculation of list looseness does add some complexity to the translation, the algorithm and implementation are both relatively simple. <a class="footnote-backref" href="#fnref:simpleAlg" title="Jump back to footnote 1 in the text">↩</a></p>
+</li>
+</ol>
+</div>
+
+
+             
+ 
+                <p id="post-share-links">
+    Like this post? Share on:
+    <a href="https://twitter.com/intent/tweet?text=Markdown%20Linter%20-%20Adding%20Line%20and%20Column%20Support&url=https%3A//jackdewinter.github.io/2020/06/08/markdown-linter-adding-line-and-column-support/&hashtags=markdown-linter,core-linter" target="_blank" rel="nofollow noopener noreferrer" title="Share on Twitter">Twitter</a>
+    ❄
+    <a href="https://www.facebook.com/sharer/sharer.php?u=https%3A//jackdewinter.github.io/2020/06/08/markdown-linter-adding-line-and-column-support/" target="_blank" rel="nofollow noopener noreferrer" title="Share on Facebook">Facebook</a>
+    ❄
+    <a href="mailto:?subject=Markdown%20Linter%20-%20Adding%20Line%20and%20Column%20Support&amp;body=https%3A//jackdewinter.github.io/2020/06/08/markdown-linter-adding-line-and-column-support/" target="_blank" rel="nofollow noopener noreferrer" title="Share via Email">Email</a>
+    </p>
+
+            
+            
+
+
+
+
+
+
+<section>
+    <h6 style="display:none;">Comments</h6>
+    <p id="comment-message">So what do you think? Did I miss something? Is any part unclear? Leave your comments below. </p>
+
+    <div class="accordion" id="accordion2">
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                <a class="accordion-toggle disqus-comment-count comment-count"
+                   data-toggle="collapse"
+                   data-parent="#accordion2"
+                   href="https://jackdewinter.github.io/2020/06/08/markdown-linter-adding-line-and-column-support/#comment_thread"
+                   id="comment-accordion-toggle">
+                    Comments
+                </a>
+            </div>
+            <div id="comment_thread" class="accordion-body collapse">
+                <div class="accordion-inner">
+                    <div class="comments">
+
+                        <script src="https://utteranc.es/client.js"
+        data-repo="jackdewinter/jackdewinter.github.io"
+        data-issue-term="markdown-linter-adding-time-and-column-support"
+        data-label="Comments"
+        data-theme="github-light"
+        crossorigin="anonymous"
+        async>
+</script>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+            <hr/>
+            <aside>
+            <nav>
+            <ul class="articles-timeline">
+                <li class="previous-article">« <a href="https://jackdewinter.github.io/2020/06/01/markdown-linter-taking-time-to-evaluate/" title="Previous: Markdown Linter - Taking Time To Evaluate">Markdown Linter - Taking Time To Evaluate</a></li>
+            </ul>
+            </nav>
+            </aside>
+        </div>
+        <section id="article-sidebar" class="span2">
+    <h4>Reading Time</h4>
+    <p>~21 min read</p>
+            <h4>Published</h4>
+            <time itemprop="dateCreated" datetime="2020-06-08T00:00:00-07:00">Jun 8, 2020</time>
+        <h4>Markdown Linter Core</h4>
+    <ul class="multi-parts-list">
+            <li >
+            <a href="https://jackdewinter.github.io/2020/05/04/markdown-linter-core-pre-rule-improvements/" title="Markdown Linter - Core - Pre-Rule Improvements">Part 1: Markdown Linter - Core - Pre-Rule Improvements</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/06/01/markdown-linter-taking-time-to-evaluate/" title="Markdown Linter - Taking Time To Evaluate">Part 2: Markdown Linter - Taking Time To Evaluate</a>
+            </li>
+            <li  class="active-part">
+            Part 3: Markdown Linter - Adding Line and Column Support
+            </li>
+    </ul>
+            <h4>Category</h4>
+            <a class="category-link" href="https://jackdewinter.github.io/categories#software-quality-ref">Software Quality</a>
+            <h4>Tags</h4>
+            <ul class="list-of-tags tags-in-article">
+                <li><a href="https://jackdewinter.github.io/tags#core-linter-ref">core linter
+                    <span>6</span>
+</a></li>
+                <li><a href="https://jackdewinter.github.io/tags#markdown-linter-ref">markdown linter
+                    <span>24</span>
+</a></li>
+            </ul>
+<h4>Stay in Touch</h4>
+<div id="sidebar-social-link">
+    <a href="https://github.com/jackdewinter" title="github-alt" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="GitHub" role="img" viewBox="0 0 512 512"><rect width="512" height="512" rx="15%" fill="#1B1817"/><path fill="#fff" d="M335 499c14 0 12 17 12 17H165s-2-17 12-17c13 0 16-6 16-12l-1-50c-71 16-86-28-86-28-12-30-28-37-28-37-24-16 1-16 1-16 26 2 40 26 40 26 22 39 59 28 74 22 2-17 9-28 16-35-57-6-116-28-116-126 0-28 10-51 26-69-3-6-11-32 3-67 0 0 21-7 70 26 42-12 86-12 128 0 49-33 70-26 70-26 14 35 6 61 3 67 16 18 26 41 26 69 0 98-60 120-117 126 10 8 18 24 18 48l-1 70c0 6 3 12 16 12z"/></svg>
+    </a>
+    <a href="https://www.linkedin.com/in/jackdewinter/" title="linkedin" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="LinkedIn" role="img" viewBox="0 0 512 512" fill="#fff"><rect width="512" height="512" rx="15%" fill="#0077b5"/><circle cx="142" cy="138" r="37"/><path stroke="#fff" stroke-width="66" d="M244 194v198M142 194v198"/><path d="M276 282c0-20 13-40 36-40 24 0 33 18 33 45v105h66V279c0-61-32-89-76-89-34 0-51 19-59 32"/></svg>
+    </a>
+    <a href="https://jackdewinter.github.io/feeds/all.atom.xml" title="" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="RSS" role="img" viewBox="0 0 512 512"><rect width="512" height="512" rx="15%" fill="#f80"/><circle cx="145" cy="367" r="35" fill="#fff"/><path fill="none" stroke="#fff" stroke-width="60" d="M109 241c89 0 162 73 162 162M109 127c152 0 276 124 276 276"/></svg>
+    </a>
+</div>
+            
+
+
+
+
+
+            
+
+
+
+
+
+        </section>
+</div>
+</article>
+                    </div>
+                    <div class="span1"></div>
+                </div>
+            </div>
+        </div>
+<footer>
+    <div>
+        
+&copy; Copyright 2019 by Jack De Winter and licensed under a <a rel="license"
+  href="http://creativecommons.org/licenses/by/4.0/">
+  <img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/80x15.png" />
+  Creative Commons Attribution 4.0 International License</a>.
+
+    </div>
+
+
+
+
+    <div id="fpowered">
+        Powered by: <a href="http://getpelican.com/" title="Pelican Home Page" target="_blank" rel="nofollow noopener noreferrer">Pelican</a>
+        Theme: <a href="https://elegant.oncrashreboot.com/" title="Theme Elegant Home Page" target="_blank" rel="nofollow noopener noreferrer">Elegant</a>
+    </div>
+</footer>            <script src="//code.jquery.com/jquery.min.js"></script>
+        <script src="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>
+        <script>
+            function validateForm(query)
+            {
+                return (query.length > 0);
+            }
+        </script>
+
+    <script>
+    (function () {
+        if (window.location.hash.match(/^#comment-\d+$/)) {
+            $('#comment_thread').collapse('show');
+        }
+    })();
+    window.onhashchange=function(){
+        if (window.location.hash.match(/^#comment-\d+$/))
+            window.location.reload(true);
+    }
+    $('#comment_thread').on('shown', function () {
+        var link = document.getElementById('comment-accordion-toggle');
+        var old_innerHTML = link.innerHTML;
+        $(link).fadeOut(200, function() {
+            $(this).text('Click here to hide comments').fadeIn(200);
+        });
+        $('#comment_thread').on('hidden', function () {
+            $(link).fadeOut(200, function() {
+                $(this).text(old_innerHTML).fadeIn(200);
+            });
+        })
+    })
+</script>
+
+    </body>
+    <!-- Theme: Elegant built for Pelican
+        License : MIT -->
+</html>
