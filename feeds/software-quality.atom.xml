@@ -1,5 +1,459 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench - Software Quality</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/software-quality.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2020-06-08T00:00:00-07:00</updated><entry><title>Markdown Linter - Adding Line and Column Support</title><link href="https://jackdewinter.github.io/2020/06/08/markdown-linter-adding-line-and-column-support/" rel="alternate"></link><published>2020-06-08T00:00:00-07:00</published><updated>2020-06-08T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-06-08:/2020/06/08/markdown-linter-adding-line-and-column-support/</id><summary type="html">
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench - Software Quality</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/software-quality.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2020-06-15T00:00:00-07:00</updated><entry><title>Markdown Linter - Rabbit Hole 1 - Adding Consistency Checks</title><link href="https://jackdewinter.github.io/2020/06/15/markdown-linter-rabbit-hole-1-adding-consistency-checks/" rel="alternate"></link><published>2020-06-15T00:00:00-07:00</published><updated>2020-06-15T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-06-15:/2020/06/15/markdown-linter-rabbit-hole-1-adding-consistency-checks/</id><summary type="html">
+&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;At the end of my
+&lt;a href="https://jackdewinter.github.io/2020/06/08/markdown-linter-adding-line-and-column-support/"&gt;last article&lt;/a&gt;,
+I talked about how I felt a lack of confidence in the work that I had just completed,
+primarily due to the large number of scenario tokens that I added line/column numbers
+to. This article documents the work to increase my …&lt;/p&gt;</summary><content type="html">
+&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;At the end of my
+&lt;a href="https://jackdewinter.github.io/2020/06/08/markdown-linter-adding-line-and-column-support/"&gt;last article&lt;/a&gt;,
+I talked about how I felt a lack of confidence in the work that I had just completed,
+primarily due to the large number of scenario tokens that I added line/column numbers
+to. This article documents the work to increase my confidence in those line/column
+numbers
+by starting to add consistency checks to all the scenario tests.  Additionally, I talk
+about the bad line/column numbers that were found by the new consistency checks and how
+I addressed those issues.&lt;/p&gt;
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Why am I referring to this work as a
+&lt;a href="https://www.merriam-webster.com/dictionary/rabbit%20hole"&gt;rabbit hole&lt;/a&gt;?
+It is because this kind of verification can be easy, but if things are not done right,
+the verification itself can be very messy and seemingly endless.  As with many things
+in this project, whether or not to do this is a balancing act between the risk of doing
+(or not doing) it, the
+cost of doing it, and the impact if the risk comes to pass. The risk of not doing this
+type of verification is that I may have miscalculated one of the line number/column
+number pairs for one of the tokens in the 700+ examples that make up the scenario
+tests. The cost of doing this is a small amount of code for the verification part of
+the code, but it could also add tons of code to the actual parser to track additional
+elements.  The impact is even more difficult to pin down.&lt;/p&gt;
+&lt;p&gt;While part of the impact is measurable, namely the number of line number and column
+number errors found, the other part of the impact is not measurable: confidence.
+There is my confidence that I have those numbers right and there is the confidence of
+any users that I have those numbers right.  And if I do not reach the minimum confidence
+level for any users of the project, I am certain that I will lose those users.  It will
+be a balancing act that I will need to be aware of, and to monitor going forward, even
+after this work is finished.&lt;/p&gt;
+&lt;h2 id="what-is-the-audience-for-this-article"&gt;What Is the Audience for This Article?&lt;a class="headerlink" href="#what-is-the-audience-for-this-article" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;While detailed more eloquently in
+&lt;a href="https://jackdewinter.github.io/2020/04/05/what-is-the-audience-for-my-blog/#what-is-the-audience-for-my-blog"&gt;this article&lt;/a&gt;,
+my goal for this technical article is to focus on the reasoning behind my solutions,
+rather that the solutions themselves.  For a full record of the solutions presented in
+this article, please go to this project’s GitHub repository and consult the
+commits between
+&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/2ff1a83a089fb9e7245751910def9e7301338a4a"&gt;30 May 2020&lt;/a&gt; and
+&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/9a2196b4dfd9948ef188e40c2619346bc4e673be"&gt;26 May 2020&lt;/a&gt;.&lt;/p&gt;
+&lt;h2 id="a-quick-aside"&gt;A Quick Aside&lt;a class="headerlink" href="#a-quick-aside" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Yes, one of these again!  I have been trying to figure out a good way to talk about
+the line number and column numbers as a pair, trying out various combinations over
+the last article and during the writing of this article.  The most descriptive and most
+compact wording that I believe captures the information is: line/column number.  It
+both indicates that they are a pair and that the pair has two distinct parts.  From
+this point forward, I am going to strive to consistently use this format.&lt;/p&gt;
+&lt;h2 id="starting-with-some-refactoring"&gt;Starting with Some Refactoring&lt;a class="headerlink" href="#starting-with-some-refactoring" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;I am always looking for ways to make the project better, and this was no exception.
+During the addition of the &lt;code&gt;position_marker&lt;/code&gt; variables throughout the parsing code,
+I noticed there were four variables that were usually getting passed around together:
+&lt;code&gt;token_stack&lt;/code&gt;, &lt;code&gt;token_document&lt;/code&gt;, &lt;code&gt;close_open_blocks_fn&lt;/code&gt; and &lt;code&gt;handle_blank_line_fn&lt;/code&gt;.
+While these variables might have slightly different names in the functions that used
+them, their usage pattern was very consistent.  In each case, they were defined once in
+the &lt;code&gt;TokenizedMarkdown&lt;/code&gt; class, and passed without change down throughout the rest of the
+parser.  If Python had a good concept of a read-only variable, I would have used that
+concept to decorate these variables.  Another alternative was to make these variables
+static variables, but it did not feel right to me to make them into 4 different
+static variables.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;class&lt;/span&gt; &lt;span class="nc"&gt;ParserState&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+    &lt;span class="sd"&gt;"""&lt;/span&gt;
+&lt;span class="sd"&gt;    Class to provide for an encapsulation of the high level state of the parser.&lt;/span&gt;
+&lt;span class="sd"&gt;    """&lt;/span&gt;
+
+    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="fm"&gt;__init__&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;token_stack&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;token_document&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;close_open_blocks_fn&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;handle_blank_line_fn&lt;/span&gt;
+    &lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_stack&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;token_stack&lt;/span&gt;
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_document&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;token_document&lt;/span&gt;
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;close_open_blocks_fn&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;close_open_blocks_fn&lt;/span&gt;
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;handle_blank_line_fn&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;handle_blank_line_fn&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;As I did want to reduce the overhead of passing these around, I created a new class
+&lt;code&gt;ParserState&lt;/code&gt;, initialized an instance of it in the &lt;code&gt;__parse_blocks_pass&lt;/code&gt; function of
+the &lt;code&gt;TokenizedMarkdown&lt;/code&gt; class, and added those four variables to that class as member
+variables.  Then I worked my way through the parser, passing that object down further
+and further into the parser.  Along the way, where possible, I removed PyLint
+&lt;code&gt;too-many-arguments&lt;/code&gt; warnings and a couple of &lt;code&gt;too-many-locals&lt;/code&gt; warnings as well.  To
+me, it just left things a bit cleaner, and ready for the next
+step: starting to add the consistency checks.&lt;/p&gt;
+&lt;h3 id="why-not-static-variables"&gt;Why not static variables?&lt;a class="headerlink" href="#why-not-static-variables" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Perhaps it is my object-oriented background or perhaps it is
+my test automation background, but both of those backgrounds note that static variables
+are bad.  From the object-oriented point of view, static variables cause issues because
+you must be very aware of what is changing and observing those variables at every
+moment.  From the test automation point of view, static variables are just hard to
+test.  Because
+everything in the project that uses that static variable has access to it, it can be
+the result of a direct or indirect change from almost anywhere in that project.  If it
+is only accessible from a static method, then there are problems with clearing out the
+value of that variable so it can be properly tested under all circumstances.  Basically,
+most of my experience tells me to stay away from static variables if possible.&lt;/p&gt;
+&lt;h2 id="starting-with-the-plumbing"&gt;Starting with the Plumbing&lt;a class="headerlink" href="#starting-with-the-plumbing" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;With any sort of verification code, it is always a good idea to start with something
+simple, slowly building on top of that work.  As this was just normal verification code,
+the first thing I did was to add this function to the &lt;code&gt;utils.py&lt;/code&gt; module:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;assert_token_consistency&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;source_markdown&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;expected_tokens&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="k"&gt;pass&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Just a simple function that could be called from each of the scenario tests, starting
+out with a skeleton function that does nothing.  With that in place, I started the
+laborious task of going to each of the &lt;code&gt;test_markdown_*.py&lt;/code&gt; files and changing the
+tests at the end of each scenario test from:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="c1"&gt;# Assert&lt;/span&gt;
+    &lt;span class="n"&gt;assert_if_lists_different&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;expected_tokens&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;actual_tokens&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;assert_if_strings_different&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;expected_gfm&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;actual_gfm&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;to:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="c1"&gt;# Assert&lt;/span&gt;
+    &lt;span class="n"&gt;assert_if_lists_different&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;expected_tokens&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;actual_tokens&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;assert_if_strings_different&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;expected_gfm&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;actual_gfm&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;assert_token_consistency&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;source_markdown&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;actual_tokens&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;This was a simple task, but by making sure it was completed, I was able to go ahead
+and add in any consistency checks between the Markdown and the tokens without wondering
+if I had missed any of the tests.  And yes, I was paranoid and double checked all
+the scenario tests at least one more time to make sure I did not miss any of the tests.&lt;/p&gt;
+&lt;p&gt;Why did I take such a small step?  While other people’s mileage may vary, I find that
+adding multiple consistency checks in a single step compounds the errors that
+can occur if you get that check wrong.  Unless I can avoid it, I choose small changes
+to the verification that I can easily validate manually, getting those changes addressed
+solidly before moving on.  The base calculus that I am betting on is that the time
+taken to complete multiple steps independently is less than the time taken to combine
+them together.  Based on my experience, including implementing, testing, debugging, and
+maintenance as factors into that equation usually favors the independent steps.&lt;/p&gt;
+&lt;h2 id="verifying-the-line-numbers-start-at-1"&gt;Verifying the Line Numbers Start At 1&lt;a class="headerlink" href="#verifying-the-line-numbers-start-at-1" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;I was sure that verifying column numbers was going to be messy, but I was confident
+that verifying line numbers would be more simplistic.  When it comes down to it, the
+base part of verifying line numbers is making sure that each block token starts on
+its own new line, except for a block that is within a container block.  In those cases,
+and only those cases, can the line number be the same.&lt;/p&gt;
+&lt;p&gt;But even before I started down that path, the first verification that I wanted to do
+was to make sure that each array of tokens started with a block token on line 1.  It
+was the simplest verification that I could think of, and from previously discovered
+issues, I knew there were at least a couple of reported issues in this area.  If I
+coded it properly, not only would I validate that the verification was working, but
+I could also detect and fix an issue or two at the same time.&lt;/p&gt;
+&lt;h3 id="classifying-the-tokens"&gt;Classifying the Tokens&lt;a class="headerlink" href="#classifying-the-tokens" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Up to this point in the project, I had little need to classify any of the Markdown
+tokens as anything other than Markdown tokens.  When I addressed a block of tokens,
+those tokens were always as a single token or as a small group of 2-3 tokens.  But,
+to verify the line numbers properly, I was going to need to group the tokens on a
+larger scale.  To accomplish that, I was going to have to add classification to the
+tokens.&lt;/p&gt;
+&lt;p&gt;In re-reading the verification steps outlined at the start of the previous section, I
+realized at the minimum I was going to need to add the concept of each token belonging
+to a specific class of token.
+In this context, I was defining the class of the token as the grouping assigned to the
+Markdown element in the GFM specification.  Using that as a template, along with some
+previous work with Python enumerations, I was able to quickly set up this enumeration:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;class&lt;/span&gt; &lt;span class="nc"&gt;MarkdownTokenClass&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;Enum&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="sd"&gt;"""&lt;/span&gt;
+&lt;span class="sd"&gt;    Enumeration to provide guidance on what class of token the token is.&lt;/span&gt;
+&lt;span class="sd"&gt;    """&lt;/span&gt;
+
+    &lt;span class="n"&gt;CONTAINER_BLOCK&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;
+    &lt;span class="n"&gt;LEAF_BLOCK&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
+    &lt;span class="n"&gt;INLINE_BLOCK&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;2&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;While Python supports four types of enumerations, I was confident that the simple
+type of enumeration was the right fit to solve this issue.  I did not need the
+enumeration to do anything fancy, just provide a simple property value for each token
+that specifies what the class of that token is: container block, leaf block, or inline.
+With the enumeration in place, it was a simple task to go through all the tokens in the
+&lt;code&gt;markdown_token.py&lt;/code&gt; module and associate each token with its respective class. Using
+the GFM specification as a guide, each token was matched up to its owning element and
+assigned the proper class instance for that element.&lt;/p&gt;
+&lt;h3 id="adding-the-first-verification"&gt;Adding the First Verification&lt;a class="headerlink" href="#adding-the-first-verification" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;With each token classified, the first part of the token verification was to only focus
+on the blocks, as inline line/column numbers were not yet implemented.  Using the new
+classification variable &lt;code&gt;token_class&lt;/code&gt; this was easily accomplished by adding a simple
+loop over all the non-inline tokens:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;current_token&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;expected_tokens&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;current_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_class&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="n"&gt;MarkdownTokenClass&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;INLINE_BLOCK&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="k"&gt;continue&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Next, this was expanded to remember the last token, as such:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="n"&gt;last_token&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;
+    &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;current_token&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;expected_tokens&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;current_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_class&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="n"&gt;MarkdownTokenClass&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;INLINE_BLOCK&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="k"&gt;continue&lt;/span&gt;
+
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;last_token&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="k"&gt;pass&lt;/span&gt;
+        &lt;span class="k"&gt;else&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="k"&gt;assert&lt;/span&gt; &lt;span class="n"&gt;current_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;line_number&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
+
+        &lt;span class="n"&gt;last_token&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;current_token&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;While these were not big changes, it was a good start.  It made sure that the first
+token in the document was always positioned on line number 1, which it should always
+be.  If not,
+the verification code asserts on the failure.  Simple.  And while I could have added
+more
+checks, I decided that was complex enough for now, and stopped there.  As I mentioned
+above, taking small steps with the verification is a far safer bet.  And as I would
+soon discover, it was already bearing fruit!&lt;/p&gt;
+&lt;h3 id="looking-for-issues-link-reference-definitions"&gt;Looking for Issues - Link Reference Definitions&lt;a class="headerlink" href="#looking-for-issues-link-reference-definitions" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;When implementing the line/column numbers for each block tokens, as documented in the
+&lt;a href="https://jackdewinter.github.io/2020/06/08/markdown-linter-adding-line-and-column-support/#lather-rinse-repeat"&gt;last article&lt;/a&gt;,
+I noted down scenario
+tests that looked dodgy for later examination.  At that time, I tagged the scenario
+tests for examples 166 and 168 as being incorrect as they started off with an
+extra blank line that started on line 2.  With this new verification code in place, when
+those scenario tests were executed again, those new verification tests failed right
+away.&lt;/p&gt;
+&lt;p&gt;The output of the test was not an issue, as the HTML output for a blank line token in
+the current output formatter is to output nothing.  However, when I added in the
+line/column number check, it failed as it was the first block token in the output, and
+it reported that it started on line 2.  The blank line was indeed on line 2, but the
+token was being output at the start of the token array, and then again in the middle of
+the &lt;code&gt;actual_tokens&lt;/code&gt; array.&lt;/p&gt;
+&lt;p&gt;After some digging, I was able to find the error. During the processing of the blank
+line, the parser checks to see whether there is an active link reference definition,
+and if so, stops the definition.  However, regardless of whether a definition
+was found, that blank line token is appended to the &lt;code&gt;token_document&lt;/code&gt; array.  With any
+other token, this would be the correct thing to do.  However, as the processing of
+the link reference definition
+&lt;a href="https://jackdewinter.github.io/2020/04/06/markdown-linter-adding-link-reference-definitions/#hitting-implementation-issues"&gt;requires rewinding on failures&lt;/a&gt;,
+the blank line was output, the parsing was rewound for the failed link reference
+definition, and then the blank line was output again.  Once I figured out what the
+problem was, it was easily remedied by seeing if a rewind was in progress by checking
+the &lt;code&gt;force_ignore_first_as_lrd&lt;/code&gt; variable, and only emitting the token if it was not set.&lt;/p&gt;
+&lt;p&gt;After some double checking, the scenario tests for example 166 and 168 were executed
+again, verifying that they were indeed fixed.  I then ran the tests again to see what
+other tests were failing, and it was a mass of SetExt heading failures that caught
+my eye right away.&lt;/p&gt;
+&lt;h3 id="looking-for-issues-setext-headings"&gt;Looking For Issues - SetExt Headings&lt;a class="headerlink" href="#looking-for-issues-setext-headings" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;It was very evident that more than half of the SetExt heading tests were failing
+from the scenario test summary line.  Performing a quick count of the failing tests,
+there were 13 SetExt heading tests failures out of a total 25 scenario tests.  As I
+have put significant time into making sure that both the SetExt and Atx headings are
+working properly, I was surprised to see that there were any verification failures, let
+alone 13 of them.&lt;/p&gt;
+&lt;p&gt;Within seconds of looking at the first of those tests, it was easy to see why the
+verification was failing.  In the scenario test for example 50, the first part of
+the Markdown text is:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;Foo&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="n"&gt;bar&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt;
+&lt;span class="o"&gt;=========&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;but the tokens being output by that block of Markdown text was:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;        "[setext(2,1):=:]",
+        "[text:Foo :]",
+        "[emphasis:1]",
+        "[text:bar:]",
+        "[end-emphasis::1]",
+        "[end-setext::]",
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;From an HTML point of view, the tokens were correct, as the HTML output for that text:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;h1&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;Foo &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;em&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;bar&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;em&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;h1&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;was correct.  But it was also obvious that the line/column number for the first token
+was wrong.  As the first token, it should start on line 1, not line 2.  Even more
+interesting is that if you visually look at the Markdown, it is obvious that it indeed
+is the first Markdown element in the document.&lt;/p&gt;
+&lt;p&gt;Starting to debug this scenario test, the answer was quick to come.  In the processing
+of a SetExt heading, as
+&lt;a href="https://jackdewinter.github.io/2020/06/01/markdown-linter-taking-time-to-evaluate/#adjusting-the-parsing-of-whitespace-in-setext-tokens"&gt;talked about previously&lt;/a&gt;,
+the Markdown for a SetExt heading occurs after a paragraph has completed, transforming
+that paragraph into a SetExt heading.  At the time that the SetExt heading token is
+added to the markdown token array, the position that is associated with the token is
+the start of the SetExt Markdown indicator.  As such, that is the position that is used
+for the token.  And it does make sense that for every token, the position should
+indicate where that token occurs.&lt;/p&gt;
+&lt;h3 id="adapting-the-token-to-properly-represent-its-data"&gt;Adapting the Token to Properly Represent Its Data&lt;a class="headerlink" href="#adapting-the-token-to-properly-represent-its-data" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Despite the token position being technically correct, from a line/column number
+verification point of view it did not make sense, and line/column numbers were what
+was being verified.  As I thought about this, I vacillated between
+representing the token with the position of the SetExt Markdown element and
+the position of the block of text contained within the SetExt heading.  To me, there
+just was not a good answer.  They both had a valid use and a valid reason to be the
+one position that represented the token.&lt;/p&gt;
+&lt;p&gt;Battling back and forth, I finally came to the realization that I needed to break out
+of my current thinking that a token must have only one position.  While it is
+not a feature I want to use frequently, this was an honest case where the token
+should contain two positions: the primary position to contain the location of the
+SetExt element itself and the secondary position to contain the location of the block
+of text contained within the SetExt heading.&lt;/p&gt;
+&lt;p&gt;To accomplish this, I added two new variables to the &lt;code&gt;SetExtHeadingMarkdownToken&lt;/code&gt; class:
+&lt;code&gt;original_line_number&lt;/code&gt; and &lt;code&gt;original_column_number&lt;/code&gt;.  These two variables would be used
+independently of the &lt;code&gt;line_number&lt;/code&gt; and &lt;code&gt;column_number&lt;/code&gt; variables to track the position
+of the block of text contained within the SetExt heading.  I wired up the necessary
+code to pass in the correct values for the two new variables, included adjusting the
+&lt;code&gt;__str__&lt;/code&gt; function to present them as part of the token.&lt;/p&gt;
+&lt;p&gt;When I reran the scenario test for example 50, I was pleasantly greeted with the
+following new set of tokens:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;        "[setext(2,1):=::(1,1)]",
+        "[text:Foo :]",
+        "[emphasis:1]",
+        "[text:bar:]",
+        "[end-emphasis::1]",
+        "[end-setext::]",
+&lt;/pre&gt;&lt;/div&gt;
+&lt;h3 id="changing-the-scenario-tests"&gt;Changing the Scenario Tests&lt;a class="headerlink" href="#changing-the-scenario-tests" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Now that the SetExt heading token contained a good set of information, I needed to
+change the scenario tests to understand the new information.  Without any change, those
+tests would still only know about the primary position.  To address this issue, I added
+the following code:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;__calc_adjusted_position&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;markdown_token&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;markdown_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_name&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="n"&gt;MarkdownToken&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_setext_heading&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="n"&gt;line_number&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;markdown_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;original_line_number&lt;/span&gt;
+        &lt;span class="n"&gt;index_number&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;markdown_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;original_column_number&lt;/span&gt;
+    &lt;span class="k"&gt;else&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="n"&gt;line_number&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;markdown_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;line_number&lt;/span&gt;
+        &lt;span class="n"&gt;index_number&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;markdown_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;column_number&lt;/span&gt;
+    &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;PositionMarker&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;line_number&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;index_number&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;""&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;While it may seem like overkill to some people, the purpose of this function is to
+keep the addition of this new logic contained within a single function.  This
+encapsulation came in useful when I added it in to the consistency function:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="n"&gt;last_token&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;
+    &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;current_token&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;expected_tokens&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="n"&gt;current_position&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;__calc_adjusted_position&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;current_token&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;current_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_class&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="n"&gt;MarkdownTokenClass&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;INLINE_BLOCK&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="k"&gt;continue&lt;/span&gt;
+
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;last_token&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="n"&gt;last_position&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;__calc_adjusted_position&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;last_token&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="k"&gt;else&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="k"&gt;assert&lt;/span&gt; &lt;span class="n"&gt;current_position&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;line_number&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
+
+        &lt;span class="n"&gt;last_token&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;current_token&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Used for both the &lt;code&gt;current_token&lt;/code&gt; and the &lt;code&gt;last_token&lt;/code&gt;, the new function easily provides
+the right position for both tokens, with only a small change to the target function. In
+addition, the adding of the &lt;code&gt;last_position&lt;/code&gt; variable gave me a bit of a reminder of the
+direction that I needed to go in with the consistency checks.  More on that in a minute.&lt;/p&gt;
+&lt;p&gt;Refocusing myself on the work directly ahead of me, running all the scenario tests
+yielded 20 test failures, the original 13 tests plus another 7 tests that contained
+SetExt heading tokens, just not at the start of the array.  For each of those 20 tests,
+I manually checked the new tokens against the Markdown sample, and once I was satisfied
+that they were accurate, I adjusted the expected tokens for that test to match the new
+tokens.&lt;/p&gt;
+&lt;p&gt;And this time, when I ran all the scenario tests, I was greeted with a clean slate
+of no test failures.&lt;/p&gt;
+&lt;h3 id="before-going-on"&gt;Before Going On&lt;a class="headerlink" href="#before-going-on" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Up to this point, when adding the consistency checks, I was mostly invoking the
+tests with the following line:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;pipenv run pytest -m gfm
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;As the new consistency checks were only concerned with the scenario tests, this was
+the fastest method to run all those tests.  However, before continuing, I wanted
+to make sure those changes did not have any adverse side effects, so I ran the all
+the tests in the project using:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;pipenv run pytest
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;While running all the tests may not have been necessary, I wanted to run them to
+be confident that I did not introduce any bad side effects.  As the complete group of
+tests can be executed in less than half a minute, the cost of the little bit of extra
+confidence was easy for me to justify.&lt;/p&gt;
+&lt;h2 id="adding-more-consistency-checks"&gt;Adding More Consistency Checks&lt;a class="headerlink" href="#adding-more-consistency-checks" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;With the SetExt heading tokens addressed and all the scenario tests passing again,
+it was time to add more consistency checking.  As alluded to in the last section,
+now that the line numbers are being verified for the first token, it was time to
+add verification of container blocks and leaf blocks on the same line.&lt;/p&gt;
+&lt;p&gt;In this case, the smallest step I could take was to check for two blocks that had the
+same line number.  When this condition is true, the previous block must be a container
+block, otherwise some error has just occurred.  In addition, without worrying about
+column number accuracy yet, I can also state that that the current position must be to
+the right of the enclosing block.  Adding those changes into the consistency checking
+was therefore just as easy as its description:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;last_token&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="n"&gt;last_position&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;__calc_adjusted_position&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;last_token&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+            &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;last_position&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;line_number&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="n"&gt;current_position&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;line_number&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+                &lt;span class="k"&gt;assert&lt;/span&gt; &lt;span class="n"&gt;last_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_class&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="n"&gt;MarkdownTokenClass&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;CONTAINER_BLOCK&lt;/span&gt;
+                &lt;span class="k"&gt;assert&lt;/span&gt; &lt;span class="n"&gt;current_position&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;index_number&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;last_position&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;index_number&lt;/span&gt;
+        &lt;span class="k"&gt;else&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="k"&gt;assert&lt;/span&gt; &lt;span class="n"&gt;current_position&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;line_number&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;While this was not checking everything yet, it was a good step forward.  While I was
+certain that I did not mess anything up with the container tokens, it was
+good to have the validation that I did not miss anything.  It was to my surprise
+that when ran the scenario tests again, two failures were reported.&lt;/p&gt;
+&lt;h3 id="duplicated-tokens"&gt;Duplicated Tokens&lt;a class="headerlink" href="#duplicated-tokens" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;After I got over my surprise at there being two possible container block failures, I
+started to investigate those two tests.  It was with relief that I noticed that both
+tests, 218 and 219, were noted as being suspicious during the work from my last
+article. From a quick glance at the test output, it was easy to spot that the check
+was not failing due to container block issues, but due to almost duplicate blank line
+tokens present in the
+&lt;code&gt;actual_tokens&lt;/code&gt; array.  Because the line number was the same in both tokens,
+it looked like a case of a leaf block within a leaf block instead of a duplicated
+token.&lt;/p&gt;
+&lt;p&gt;Debugging through this, it took me a while to figure this issue out.  After a lot
+of head scratching, I finally had added enough debug information that I noticed that
+in the code for the &lt;code&gt;parse_line_for_container_blocks&lt;/code&gt; function, once the calling of the
+&lt;code&gt;handle_block_quote_block&lt;/code&gt; function was completed, the blank line had already been
+handled, but the processing continued.  After verifying this a couple of times, I tried
+removing the first call to process the blank line, but some of the other cases where
+I handled blank lines stopped working.  While it did seem a bit of a kludge&lt;sup id="fnref:kludge"&gt;&lt;a class="footnote-ref" href="#fn:kludge"&gt;1&lt;/a&gt;&lt;/sup&gt;,
+on the return from the &lt;code&gt;handle_block_quote_block&lt;/code&gt; function, I simply verified that the
+blank line process was handled already.  If that, then the tokens were added to the
+markdown token array, and the function was returned from.&lt;/p&gt;
+&lt;p&gt;As the scenario test for example 261 was also flagged in the same line as 218 and 219,
+I took a similar look at the output, of that, but did not notice any issues.  I even
+tried some variations on the data to see if there was an error that was previously
+exposed, and now fixed, and I was not able to reproduce it.  Confident that 218 and 219
+were fixed and that I could not reproduce 261, I removed those issues from my
+issues list.&lt;/p&gt;
+&lt;p&gt;Once again, I re-ran the scenario tests, and all the test passed.  Executing the
+entire batch of tests for the project, I was also greeted with a clean set of tests,
+each one of them passing.  Now to figure out what to do next.&lt;/p&gt;
+&lt;h2 id="adding-in-more-line-number-checks"&gt;Adding in More Line Number Checks?&lt;a class="headerlink" href="#adding-in-more-line-number-checks" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Taking a good look at adding more line number verification, I had a hard choice to
+make.  Either I could try and add more line number verification, or I could start
+working on column number verification.  There were good reasons for both paths, but
+I had to make a choice.&lt;/p&gt;
+&lt;p&gt;I went back and forth on this decision before taking another look at the existing
+scenario tests, trying to figure out what I was most concerned about.  I decided that
+while
+it would be nice to get the line numbers completed, I was more concerned about the
+column numbers.  In the token array for each scenario tests, I was able to track
+the lines and line numbers more easily that I was able to track the column numbers.
+In the end, that one observation is what affected my decision: I needed to start
+verifying the column numbers next.&lt;/p&gt;
+&lt;h2 id="what-was-my-experience-so-far"&gt;What Was My Experience So Far?&lt;a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;For any consistency checking being implemented, it is often useful to have a handful
+of issues that you know should fail, and then see the new consistency logic
+failing.  The new checks passed that part of the test.  In addition, the
+consistency checks add so far pointed out an issue with how I assigned line/column
+numbers to the SetExt heading token.  Having caught and
+reported failures on those issues, I was confident that adding consistency checking
+for the line/column numbers was a good thing to do.  Seeing as the cost was still
+very low, it seemed that the cost:benefit ratio was still heavily in favor of
+continuing, so that is what I decided to do.&lt;/p&gt;
+&lt;p&gt;Going back to my main issue regarding my confidence with line/column numbers and
+their accuracy, if anything, I think I believed that I had lost ground.  With each
+check finding something, it was both an affirmation that I was right to question
+my manual verification abilities and a challenge to find more issues with more
+consistency checking.  Basically, it was both “good job” and “what else ya got?” in
+the same sentence.&lt;/p&gt;
+&lt;p&gt;If I am honest, I felt it was a bit of a setback.  I had hoped it was going to lift
+my confidence a bit, instead of a give-and-take that balanced each other out.  I
+knew I needed to do something to boost my confidence, and I just hoped that adding
+column number consistency checks would be the key to that.&lt;/p&gt;
+&lt;h2 id="what-is-next"&gt;What is Next?&lt;a class="headerlink" href="#what-is-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Having reached a good point in my verification for line numbers, it was time to proceed
+further down the
+&lt;a href="https://www.merriam-webster.com/dictionary/rabbit%20hole"&gt;rabbit hole&lt;/a&gt;
+that is consistency checking by starting to verify the column numbers.  And what a
+rabbit hole it would end up being!&lt;/p&gt;
+&lt;div class="footnote"&gt;
+&lt;hr/&gt;
+&lt;ol&gt;
+&lt;li id="fn:kludge"&gt;
+&lt;p&gt;According to Merriam-Webster: “a haphazard or makeshift solution to a problem and especially to a computer or programming problem” &lt;a class="footnote-backref" href="#fnref:kludge" title="Jump back to footnote 1 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/div&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry><entry><title>Markdown Linter - Adding Line and Column Support</title><link href="https://jackdewinter.github.io/2020/06/08/markdown-linter-adding-line-and-column-support/" rel="alternate"></link><published>2020-06-08T00:00:00-07:00</published><updated>2020-06-08T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-06-08:/2020/06/08/markdown-linter-adding-line-and-column-support/</id><summary type="html">
 &lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;As I documented at the
 &lt;a href="https://jackdewinter.github.io/2020/06/01/markdown-linter-taking-time-to-evaluate/#what-is-next"&gt;end of the previous article&lt;/a&gt;,
@@ -8000,10 +8454,4 @@ with ease.&lt;/p&gt;
 &lt;p&gt;To keep things simple for the article, the &lt;code&gt;additional_error&lt;/code&gt; parameter from a number of the functions has been removed.  This parameter is used in the PyMarkdown project and will be documented as part of my articles on that project. &lt;a class="footnote-backref" href="#fnref:1" title="Jump back to footnote 1 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
 &lt;/li&gt;
 &lt;/ol&gt;
-&lt;/div&gt;</content><category term="Software Quality"></category><category term="pytest"></category><category term="scenario testing"></category></entry><entry><title>Have a Happy Winter Holiday 2019</title><link href="https://jackdewinter.github.io/2019/12/29/have-a-happy-winter-holiday-2019/" rel="alternate"></link><published>2019-12-29T00:00:00-08:00</published><updated>2019-12-29T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2019-12-29:/2019/12/29/have-a-happy-winter-holiday-2019/</id><summary type="html">&lt;p&gt;I just wanted to take a quick minute and wish everyone a  happy winter holiday season
-as 2019 winds to a close.  When I resume posts in the new year, I will be trying to
-publish weekly posts on Mondays instead of Sundays, and see how that goes.&lt;/p&gt;
-&lt;p&gt;Safe travels …&lt;/p&gt;</summary><content type="html">&lt;p&gt;I just wanted to take a quick minute and wish everyone a  happy winter holiday season
-as 2019 winds to a close.  When I resume posts in the new year, I will be trying to
-publish weekly posts on Mondays instead of Sundays, and see how that goes.&lt;/p&gt;
-&lt;p&gt;Safe travels, and well wishes.&lt;/p&gt;</content><category term="Software Quality"></category></entry></feed>
+&lt;/div&gt;</content><category term="Software Quality"></category><category term="pytest"></category><category term="scenario testing"></category></entry></feed>
