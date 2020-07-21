@@ -1,5 +1,610 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/all.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2020-07-13T00:00:00-07:00</updated><entry><title>Markdown Linter - Improving Consistency</title><link href="https://jackdewinter.github.io/2020/07/13/markdown-linter-improving-consistency/" rel="alternate"></link><published>2020-07-13T00:00:00-07:00</published><updated>2020-07-13T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-07-13:/2020/07/13/markdown-linter-improving-consistency/</id><summary type="html">
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/all.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2020-07-20T00:00:00-07:00</updated><entry><title>Markdown Linter - Transforming Back to Markdown</title><link href="https://jackdewinter.github.io/2020/07/20/markdown-linter-transforming-back-to-markdown/" rel="alternate"></link><published>2020-07-20T00:00:00-07:00</published><updated>2020-07-20T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-07-20:/2020/07/20/markdown-linter-transforming-back-to-markdown/</id><summary type="html">
+&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In my
+&lt;a href="https://jackdewinter.github.io/2020/07/13/markdown-linter-improving-consistency/"&gt;last article&lt;/a&gt;,
+I talked about how I believe that the benefit of adding consistency checks to the
+project outweighed the costs of developing those tests and maintaining them.  In this
+article, I talk about how I decided to double down on the consistency checks by adding
+a …&lt;/p&gt;</summary><content type="html">
+&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In my
+&lt;a href="https://jackdewinter.github.io/2020/07/13/markdown-linter-improving-consistency/"&gt;last article&lt;/a&gt;,
+I talked about how I believe that the benefit of adding consistency checks to the
+project outweighed the costs of developing those tests and maintaining them.  In this
+article, I talk about how I decided to double down on the consistency checks by adding
+a token transformer that transforms the tokenized document back into its original
+Markdown.&lt;/p&gt;
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Since implementing the consistency checks for the line numbers and column numbers in
+the tokens produced by PyMarkdown’s parser, I have found enough errors to
+remove any questions in my mind regarding their usefulness.  From my point of view,
+adding those consistency checks is not a “pull the fire alarm” concern, but more of a
+“let’s put some extra water on the campfire and wait to be sure” concern.  These checks
+are an important tool in a collection of tools that I use with each build to help me
+ensure that my desired level of quality for the project is maintained.&lt;/p&gt;
+&lt;p&gt;But while I have made great progress on the automated validation of those line numbers
+and column numbers, validating the content of those tokens was a different story.
+Each test already includes a comparison of the output text to the reference
+implementation’s output, but I felt that it was only testing the scenario’s output, not
+the input.  After all, there were times when I introduced a small change to the
+structure of the token and token itself changed, but the HTML did not change one bit.
+While I knew I had 100% coverage for the token’s output, I did not feel that I had the
+right amount of coverage for the tokens themselves.&lt;/p&gt;
+&lt;p&gt;The only way to really test this out?  Use the tokens themselves to generate the
+Markdown that created them.  If the tokens contained all the needed information,
+the regenerated input text should match the actual input text.&lt;/p&gt;
+&lt;h2 id="what-is-the-audience-for-this-article"&gt;What Is the Audience for This Article?&lt;a class="headerlink" href="#what-is-the-audience-for-this-article" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;While detailed more eloquently in
+&lt;a href="https://jackdewinter.github.io/2020/04/05/what-is-the-audience-for-my-blog/#what-is-the-audience-for-my-blog"&gt;this article&lt;/a&gt;,
+my goal for this technical article is to focus on the reasoning behind my solutions,
+rather that the solutions themselves.  For a full record of the solutions presented in
+this article, please go to this project’s GitHub repository and consult the
+commit of
+&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/20b129ee1b2058b4495395251d25a8fafa88bfa3"&gt;16 Jul 2020&lt;/a&gt;.&lt;/p&gt;
+&lt;h3 id="a-small-note-on-the-commit"&gt;A Small Note on the Commit&lt;a class="headerlink" href="#a-small-note-on-the-commit" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;We all have weeks that are busier than others, and the week of 12 Jul 2020 was one of
+those weeks for me.  All the substantial work on the commit was completed and
+tested on 12 Jul 2020 before I started writing the last article.  However, it was not
+until that Thursday that I was able to complete the usual cleanup and refactoring that
+I require before I submit a normal commit.&lt;/p&gt;
+&lt;p&gt;While this does not affect the work that was done, the timing of the actual work was
+important to me, for reasons described in the next section.&lt;/p&gt;
+&lt;h2 id="beware-of-rabbit-holes"&gt;Beware of Rabbit Holes&lt;a class="headerlink" href="#beware-of-rabbit-holes" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;While I feel that I both wanted and needed to add these new checks, I also knew that I
+needed to be cautious.  It was less than a month ago when
+&lt;a href="https://jackdewinter.github.io/2020/06/22/markdown-linter-rabbit-hole-2-losing-my-way/"&gt;I lost my way&lt;/a&gt;
+trying to add tab support to the consistency checks, and I was still smarting from that
+experience.  Instead of hitting a difficult problem and taking a step back
+to reevaluate the situation, I just kept on going, not realizing how much time had
+passed on that one problem.  When I did stop and look up at where I was, it was almost
+immediately evident that I got lost in the problem… again.&lt;/p&gt;
+&lt;p&gt;As this was another major task for consistency checks, I was keenly aware that I was
+going to need to take better precautions this time around.  If I did not, I was likely
+to fall into the same pattern and get lost again.  As such, I was determined to come up
+with a firm set of rules that I would follow for this task.  After some thought on
+those rules, the rules that I came up with are as follows:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;no tab support&lt;ul&gt;
+&lt;li&gt;no need to go down that path again so soon!&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;no container block support&lt;ul&gt;
+&lt;li&gt;get the basics down, then complicate things!&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;primary support for the text token, the paragraph token, and the blank line token&lt;ul&gt;
+&lt;li&gt;these are the primary building blocks for the document&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;no other leaf block support except for the thematic break and the indented code block tokens&lt;ul&gt;
+&lt;li&gt;the indented code block token modifies the output from the text tokens, thus making sure that changing that output&lt;/li&gt;
+&lt;li&gt;the thematic break token provides another external touchpoint that non-text related tokens are possible&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;no inline support except for the hard break token&lt;ul&gt;
+&lt;li&gt;one inline token would prove that the others would be possible&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;proper support for the character sequences and the backslash escape character&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;In addition, I decided to help mitigate the risk of going down a rabbit hole for this
+new feature by
+&lt;a href="https://en.wikipedia.org/wiki/Timeboxing"&gt;timeboxing&lt;/a&gt;
+the work on the task to approximately 36 hours clock time.  While I did do a bit of
+research before that Friday night, the time I allocated for this task was from Friday
+after work until I started writing my article on Sunday morning.  As I have never been
+late with an article, despite coming close a couple of times, I knew that it would be a
+good stopping point that I would not ignore easily.&lt;/p&gt;
+&lt;h2 id="starting-down-the-path"&gt;Starting Down the Path&lt;a class="headerlink" href="#starting-down-the-path" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;While I have plans to simplify it later, as I did with my work on
+&lt;a href="https://jackdewinter.github.io/2020/03/16/markdown-linter-verifying-base-scenarios/#adding-translating-into-html"&gt;validating the base scenarios&lt;/a&gt;,
+the
+first iteration of this code was going to be somewhat messy while I figured
+things out.  But the base bones of the transformer started out very cleanly with the
+following code:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;transform&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;actual_tokens&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="sd"&gt;"""&lt;/span&gt;
+&lt;span class="sd"&gt;        Transform the incoming token stream back into Markdown.&lt;/span&gt;
+&lt;span class="sd"&gt;        """&lt;/span&gt;
+        &lt;span class="n"&gt;transformed_data&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;""&lt;/span&gt;
+        &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;next_token&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;actual_tokens&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="c1"&gt;# do stuff&lt;/span&gt;
+
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;transformed_data&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Not very glamorous, but a good starting point.  As with anything that transforms
+something list related, I needed to perform some action on each token, that action
+being represented by the comment &lt;code&gt;do stuff&lt;/code&gt;.  Just a good and solid place to start.&lt;/p&gt;
+&lt;h3 id="baby-steps-setting-up-for-token-discovery"&gt;Baby Steps - Setting up for Token Discovery&lt;a class="headerlink" href="#baby-steps-setting-up-for-token-discovery" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;The next step was a simple one: discover all the tokens I would need to eventually
+transform.  As I took this same approach with the &lt;code&gt;TransformToGfm&lt;/code&gt; class, and that
+approach was successful, I decided to adopt the same process with this new class.
+I started by adding this code in place of the &lt;code&gt;# do stuff&lt;/code&gt; comment:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;            &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="bp"&gt;False&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+                &lt;span class="k"&gt;pass&lt;/span&gt;
+            &lt;span class="k"&gt;else&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+                &lt;span class="k"&gt;assert&lt;/span&gt; &lt;span class="bp"&gt;False&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;"next_token&amp;gt;&amp;gt;"&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="nb"&gt;str&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;next_token&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Once that was done, I then modified it to take care of the end tokens:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;            &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="bp"&gt;False&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+                &lt;span class="k"&gt;pass&lt;/span&gt;
+            &lt;span class="k"&gt;elif&lt;/span&gt; &lt;span class="n"&gt;next_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_name&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;startswith&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;EndMarkdownToken&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;type_name_prefix&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+                &lt;span class="n"&gt;adjusted_token_name&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;next_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_name&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;
+                    &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;EndMarkdownToken&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;type_name_prefix&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;:&lt;/span&gt;
+                &lt;span class="p"&gt;]&lt;/span&gt;
+                &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="bp"&gt;False&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+                    &lt;span class="k"&gt;pass&lt;/span&gt;
+                &lt;span class="k"&gt;else&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+                    &lt;span class="k"&gt;assert&lt;/span&gt; &lt;span class="bp"&gt;False&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;"end_next_token&amp;gt;&amp;gt;"&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="nb"&gt;str&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;adjusted_token_name&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+            &lt;span class="k"&gt;else&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+                &lt;span class="k"&gt;assert&lt;/span&gt; &lt;span class="bp"&gt;False&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;"next_token&amp;gt;&amp;gt;"&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="nb"&gt;str&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;next_token&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Once again, this code is not glamorous, but it is setting up a good solid framework for
+later.  The purpose of this code is to make sure that when I start dealing with actual
+tokens, I get a clear indication of whether an if statement and a handler function
+exist for that token.  If not, the appropriate assert fails and lets me know which
+token is not being handled properly.  In this way, any encountered token must have
+a matching if statement and handler, or the transformation fails quickly.&lt;/p&gt;
+&lt;h3 id="setting-up-the-test"&gt;Setting Up the Test&lt;a class="headerlink" href="#setting-up-the-test" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;With that in place, I started with a very simple test function,
+&lt;code&gt;verify_markdown_roundtrip&lt;/code&gt;.  This function started with the code:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;verify_markdown_roundtrip&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;source_markdown&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;actual_tokens&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="se"&gt;\t&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;source_markdown&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="k"&gt;return&lt;/span&gt;
+
+    &lt;span class="n"&gt;transformer&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;TransformToMarkdown&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+    &lt;span class="n"&gt;original_markdown&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;transformer&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;transform&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;actual_tokens&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+    &lt;span class="k"&gt;print&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;-=-=-&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;Expected&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;-=-=-&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;source_markdown&lt;/span&gt;
+        &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;-=-=-&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;Actual&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;-=-=-&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;original_markdown&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;-=-=-&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="k"&gt;assert&lt;/span&gt; &lt;span class="n"&gt;source_markdown&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="n"&gt;original_markdown&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;"Strings are not equal."&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;While I added better error reporting over the course of this work, it started
+with a simple test and simple error reporting.  The first two lines of this function
+check for a tab character and, if present, exit quickly before any real processing is
+done, as tab handling is out of scope.  With that check accomplished, the next 2 lines
+create an instance of the transformer
+and invoke the &lt;code&gt;transform&lt;/code&gt; function on the list of tokens.  Finally, after printing
+some debug information, the &lt;code&gt;source_markdown&lt;/code&gt; variable is compared to the
+&lt;code&gt;original_markdown&lt;/code&gt; variable containing the regenerated Markdown.  If the two strings
+match, the validation passes, and control is passed back to the caller for more
+validation.  If not, the assert fails, and the test is halted.&lt;/p&gt;
+&lt;p&gt;The invoking of this function was easily added at the top of the
+&lt;code&gt;assert_token_consistency&lt;/code&gt; function, which conveniently was already in place and being
+called by each of the scenario tests.  As such, the extra consistency checking was
+added to the consistency checks with only a single line change to invoke the
+&lt;code&gt;verify_markdown_roundtrip&lt;/code&gt;.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;assert_token_consistency&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;source_markdown&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;actual_tokens&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="sd"&gt;"""&lt;/span&gt;
+&lt;span class="sd"&gt;    Compare the markdown document against the tokens that are expected.&lt;/span&gt;
+&lt;span class="sd"&gt;    """&lt;/span&gt;
+
+    &lt;span class="n"&gt;verify_markdown_roundtrip&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;source_markdown&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;actual_tokens&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;split_lines&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;source_markdown&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;split&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="o"&gt;...&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;After running the tests a couple of times, it was obvious that some work needed to be
+done to add if statements and handlers.  And as it is the most central part of most
+Markdown documents, it made sense to start with the paragraph token.&lt;/p&gt;
+&lt;h3 id="starting-to-discover-tokens"&gt;Starting to Discover Tokens&lt;a class="headerlink" href="#starting-to-discover-tokens" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Once that foundational work was done, I started running the tests and dealing with the
+asserts that fired. Each time I encountered an assert failure, I added an if statement
+to the normal token or end token block as shown here with the paragraph token:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;            &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;next_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_name&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="n"&gt;MarkdownToken&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_paragraph&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+                &lt;span class="k"&gt;pass&lt;/span&gt;
+            &lt;span class="k"&gt;elif&lt;/span&gt; &lt;span class="n"&gt;next_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_name&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;startswith&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;EndMarkdownToken&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;type_name_prefix&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+                &lt;span class="n"&gt;adjusted_token_name&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;next_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_name&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;
+                    &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;EndMarkdownToken&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;type_name_prefix&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;:&lt;/span&gt;
+                &lt;span class="p"&gt;]&lt;/span&gt;
+                &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;adjusted_token_name&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="n"&gt;MarkdownToken&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_paragraph&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+                    &lt;span class="k"&gt;pass&lt;/span&gt;
+                &lt;span class="k"&gt;else&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+                    &lt;span class="k"&gt;assert&lt;/span&gt; &lt;span class="bp"&gt;False&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;"end_next_token&amp;gt;&amp;gt;"&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="nb"&gt;str&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;adjusted_token_name&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+            &lt;span class="k"&gt;else&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+                &lt;span class="k"&gt;assert&lt;/span&gt; &lt;span class="bp"&gt;False&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;"next_token&amp;gt;&amp;gt;"&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="nb"&gt;str&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;next_token&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Once I was no longer getting failures from one of the two asserts, I was faced with
+another issue.  There were tokens that I recognized with an if statement, but any
+handler for that token was out of scope for the time being.  To deal with this,
+I made a small modification to the &lt;code&gt;transform&lt;/code&gt; function to allow me to skip those
+tokens that were not yet supported by setting the &lt;code&gt;avoid_processing&lt;/code&gt; variable to &lt;code&gt;True&lt;/code&gt;.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;transform&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;actual_tokens&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="sd"&gt;"""&lt;/span&gt;
+&lt;span class="sd"&gt;        Transform the incoming token stream back into Markdown.&lt;/span&gt;
+&lt;span class="sd"&gt;        """&lt;/span&gt;
+        &lt;span class="n"&gt;transformed_data&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;""&lt;/span&gt;
+        &lt;span class="n"&gt;avoid_processing&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;False&lt;/span&gt;
+
+        &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;next_token&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;actual_tokens&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;next_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_name&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="n"&gt;MarkdownToken&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_paragraph&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+                &lt;span class="k"&gt;pass&lt;/span&gt;
+            &lt;span class="k"&gt;elif&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt; &lt;span class="n"&gt;next_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_name&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="n"&gt;MarkdownToken&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_thematic_break&lt;/span&gt; &lt;span class="ow"&gt;or&lt;/span&gt;
+                &lt;span class="o"&gt;...&lt;/span&gt;
+            &lt;span class="p"&gt;):&lt;/span&gt;
+                &lt;span class="n"&gt;avoid_processing&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;True&lt;/span&gt;
+                &lt;span class="k"&gt;break&lt;/span&gt;
+            &lt;span class="k"&gt;elif&lt;/span&gt; &lt;span class="n"&gt;next_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_name&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;startswith&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;EndMarkdownToken&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;type_name_prefix&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+
+                &lt;span class="n"&gt;adjusted_token_name&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;next_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_name&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;
+                    &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;EndMarkdownToken&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;type_name_prefix&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;:&lt;/span&gt;
+                &lt;span class="p"&gt;]&lt;/span&gt;
+                &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;adjusted_token_name&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="n"&gt;MarkdownToken&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_paragraph&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+                    &lt;span class="o"&gt;...&lt;/span&gt;
+                &lt;span class="k"&gt;else&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+                    &lt;span class="k"&gt;assert&lt;/span&gt; &lt;span class="bp"&gt;False&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;"end_next_token&amp;gt;&amp;gt;"&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="nb"&gt;str&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;adjusted_token_name&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+            &lt;span class="k"&gt;else&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+                &lt;span class="k"&gt;assert&lt;/span&gt; &lt;span class="bp"&gt;False&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;"next_token&amp;gt;&amp;gt;"&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="nb"&gt;str&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;next_token&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;transformed_data&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;avoid_processing&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Basically, the &lt;code&gt;avoid_processing&lt;/code&gt; flag was set to &lt;code&gt;True&lt;/code&gt; for any token that was
+recognized by the function but did not have a handler implemented.  Then, with a small
+change to the &lt;code&gt;verify_markdown_roundtrip&lt;/code&gt; function, that function could then be
+instructed to avoid comparing the two markdown variables.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;verify_markdown_roundtrip&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;source_markdown&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;actual_tokens&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="se"&gt;\t&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;source_markdown&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="k"&gt;return&lt;/span&gt;
+
+    &lt;span class="n"&gt;transformer&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;TransformToMarkdown&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+    &lt;span class="n"&gt;original_markdown&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;avoid_processing&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;transformer&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;transform&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;actual_tokens&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;avoid_processing&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="k"&gt;print&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"Processing of token avoided."&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="k"&gt;else&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="k"&gt;print&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;-=-=-&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;Expected&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;-=-=-&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;source_markdown&lt;/span&gt;
+            &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;-=-=-&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;Actual&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;-=-=-&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;original_markdown&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;-=-=-&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="k"&gt;assert&lt;/span&gt; &lt;span class="n"&gt;source_markdown&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="n"&gt;original_markdown&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;"Strings are not equal."&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;While this sometimes felt like cheating to me, it was a solid plan.  If any
+token in the token list was not supported, it clearly stated it was avoiding
+processing.  If that statement was not present and the debug output was present,
+I was sure that the comparison was made cleanly.&lt;/p&gt;
+&lt;h3 id="why-was-this-a-clear-stop-gap-solution"&gt;Why Was This a Clear Stop-gap Solution?&lt;a class="headerlink" href="#why-was-this-a-clear-stop-gap-solution" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;I believe it is a very clean solution. As I knew from the start that I was going to be
+implementing this check in stages, returning a boolean value from the &lt;code&gt;transform&lt;/code&gt;
+function allows the transformer to specify if it has any trust in the results. But
+unlike my emotion-based trust in the code base for the project, this trust was binary:
+it was &lt;code&gt;True&lt;/code&gt; if I encountered any tokens that I had not yet accounted for, otherwise
+it was &lt;code&gt;False&lt;/code&gt;.  Basically, if there was no code to handle the token, the function
+returned &lt;code&gt;True&lt;/code&gt; to indicated that it was confident that the &lt;code&gt;transformed_data&lt;/code&gt; value
+was incorrect.&lt;/p&gt;
+&lt;p&gt;Given the situation, and wanting to handle the tokens in stages, I believe this is
+the cleanest solution that I could come up with.  No hidden parts, a very small
+area of code to determine if the check would be skipped, and almost no code to trip
+out when handling for all the tokens was completed.&lt;/p&gt;
+&lt;h3 id="leaving-the-foundational-work-behind"&gt;Leaving the Foundational Work Behind&lt;a class="headerlink" href="#leaving-the-foundational-work-behind" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;This foundational work put me in a good position to start transforming the tokens back
+into their original Markdown.  While I was sure that this was not going to be easy,
+I was sure that I had taken the right foundational steps to make this effort as easy
+as it could be.  And if I was slightly wrong and needed a couple more things added to
+the foundational code, I was sure that I could easily add them.&lt;/p&gt;
+&lt;h2 id="terminology"&gt;Terminology&lt;a class="headerlink" href="#terminology" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;As I start to talk about actual work to reconstruct the original Markdown text from the
+parsed tokens, I found out that I needed a simple name to describe the process to
+myself.  I prefer to have functions named descriptively after the action they are coded for, preferably with at least one verb describing the action.  Repeating the last half
+of the first sentence in each function name did not seem to be a sustainable solution,
+especially not for the naming of Python variables.  I needed something more compact.&lt;/p&gt;
+&lt;p&gt;After a certain amount of thinking, the process that I feel the comes closest to what
+this transformation is accomplishing is rehydration.  Possibly taking influence from my
+Java experience, the word &lt;code&gt;serialize&lt;/code&gt; means, according to
+&lt;a href="https://en.wikipedia.org/wiki/Serialization"&gt;Wikipedia&lt;/a&gt;:&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;translating data structures or object state into a format that can be stored […] and reconstructed later in the same or another computer environment&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;Since the word is overused a lot, I looked up synonyms for serialize and &lt;code&gt;hydrate&lt;/code&gt;
+was one of the words that was in the list.  In my mind, I was “just adding water” to the
+data to get the original Markdown text back, so the new word &lt;code&gt;hydrate&lt;/code&gt; fit pretty wel.&lt;/p&gt;
+&lt;p&gt;Therefore, I will use the word &lt;code&gt;hydrate&lt;/code&gt; in the rest of the article and in the
+transformer code to signal that the transformer is reconstituting the Markdown.&lt;/p&gt;
+&lt;h2 id="starting-with-the-paragraph-scenarios"&gt;Starting with The Paragraph Scenarios&lt;a class="headerlink" href="#starting-with-the-paragraph-scenarios" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In terms of picking a good place to start, I feel that the paragraph tokens were the
+best place to start.  As paragraphs are usually the foundation of any Markdown
+document, I was confident that cleaning up all the scenario tests in the
+&lt;code&gt;test_markdown_paragraph_blocks.py&lt;/code&gt; module would be a good initial case.  Being simple
+in their nature, that set of tests would cover the following types of tokens:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;paragraph token (start and end) - all tests&lt;/li&gt;
+&lt;li&gt;text token - all tests&lt;/li&gt;
+&lt;li&gt;blank line tokens - 3 of 7 tests&lt;/li&gt;
+&lt;li&gt;hard line break token - 2 of 7 tests&lt;/li&gt;
+&lt;li&gt;indented code block token (start and end) - 1 of 7 tests&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;It was a small set of tokens, easily constrained, and built on afterwards.&lt;/p&gt;
+&lt;h3 id="paragraph-tokens-text-tokens-and-blank-line-tokens"&gt;Paragraph Tokens, Text Tokens, and Blank line Tokens&lt;a class="headerlink" href="#paragraph-tokens-text-tokens-and-blank-line-tokens" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;In this group of tests, the simple tests were the easiest to verify, but the most
+important to get right. With a grand total of 7 tests, 5 complete tests were simply
+around the handling of these 3 basic tokens.  But it was early in the coding of
+their handlers when I recognized that I needed to implement a simple stack to process
+these tokens properly.&lt;/p&gt;
+&lt;h3 id="simple-token-stack"&gt;Simple Token Stack&lt;a class="headerlink" href="#simple-token-stack" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;The reason for the token stack was simple.  While I was just dealing with paragraph
+tokens around the text token for the first 6 tests, the last test would require that I
+handle a different leaf token around the text token: the indented code block token.
+Instead of doing the work twice, once to just save the paragraph token somewhere and
+second to implement a proper token stack, I decided to skip right to the stack
+implementation.&lt;/p&gt;
+&lt;p&gt;This stack was created to be simple in its nature.  The current block would remain at
+the top of the stack, to be removed when it went out of scope with the end block token.
+The initial test was to make sure that the text tokens for the examples can extract
+information from the encompassing paragraph token as needed.  This is important because
+any whitespace at the start or end of each paragraph-text line is removed for the HTML
+presentation but stored for other uses in the paragraph token.&lt;/p&gt;
+&lt;p&gt;Therefore, the following functions were added to handle the task of keeping the stack
+synchronized with the paragraph tokens:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;rehydrate_paragraph&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;next_token&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;block_stack&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;append&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;next_token&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="s2"&gt;""&lt;/span&gt;
+
+    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;rehydrate_paragraph_end&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;next_token&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="n"&gt;top_stack_token&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;block_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+        &lt;span class="k"&gt;del&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;block_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="s2"&gt;""&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;h3 id="back-to-the-text-token"&gt;Back to the Text Token&lt;a class="headerlink" href="#back-to-the-text-token" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Getting back to the actual hydration cases, the rehydration of the basic text block
+is simple to explain but takes a lot of code to accomplish.  The general algorithm
+at this stage was as follows:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;rehydrate_text&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;next_token&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="n"&gt;leading_whitespace&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;next_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;extracted_whitespace&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;block_stack&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="c1"&gt;# Get whitespace from last token on the stack and split it on new lines&lt;/span&gt;
+            &lt;span class="c1"&gt;# Get the text from the current token and split it on new lines&lt;/span&gt;
+            &lt;span class="c1"&gt;# Properly recombine the whitespace with the text&lt;/span&gt;
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;leading_whitespace&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;combined_text&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;For basic paragraphs, because of the GFM specification, any leading or trailing
+whitespace on a line is removed from the text before that text transformed into HTML.
+However, as I thought there was a rule about excess space at the start and end of a
+line in a paragraph, I made sure to append that text to the owning paragraph token.
+In addition, when the paragraph itself starts but before the text token takes over,
+there is a potential for leading whitespace that must also be considered.&lt;/p&gt;
+&lt;p&gt;So, in addition to the above code to rehydrate the text token, the following changes
+were needed to handle the start and end paragraph tokens properly.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;rehydrate_paragraph&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;next_token&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;block_stack&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;append&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;next_token&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="n"&gt;extracted_whitespace&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;next_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;extracted_whitespace&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;extracted_whitespace&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="n"&gt;line_end_index&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;extracted_whitespace&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;index&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+            &lt;span class="n"&gt;extracted_whitespace&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;extracted_whitespace&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="n"&gt;line_end_index&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;extracted_whitespace&lt;/span&gt;
+
+    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;rehydrate_paragraph_end&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;next_token&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="n"&gt;top_stack_token&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;block_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+        &lt;span class="k"&gt;del&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;block_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;top_stack_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;final_whitespace&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;With that done, the text within the paragraph and around the paragraph was being
+rehydrated properly.  At that point, I raised my glass of water and toasted the
+project as the first 2 scenarios were now checking their content and passing. Yes!
+From there, it was a short journey to add a 3 more tests to that roster by adding the
+handling of the blank line token, as such:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;rehydrate_blank_line&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;next_token&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;next_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;extracted_whitespace&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;While it was not a running start, this was the first time the entire content of those
+5 scenario tests was validated!  It was enough to make me go for number 6!&lt;/p&gt;
+&lt;h3 id="hard-line-breaks"&gt;Hard Line Breaks&lt;a class="headerlink" href="#hard-line-breaks" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;From there, the scenario test for
+&lt;a href="https://github.github.com/gfm/#example-196"&gt;example 196&lt;/a&gt;,
+was the next test to be enabled, adding
+support for hard line breaks.  Interestingly, when I wrote the algorithm for coalescing
+the text tokens where possible, the new line character for the hard break was already
+setup to be added to the following text token.  This leaves the hard line token
+primarily as a “marker” token, with some additional information on the extra whitespace
+from the end of the line.  As such, rehydrating the hard break properly was
+accomplished by adding the following text.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;rehydrate_hard_break&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;next_token&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;next_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;line_end&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;And that made 6 tests that were now fully enabled!  But knowing that the last test in
+that group dealt with indented code blocks, I decided to take a bit of a break before
+proceeding with that token.  I needed some extra confidence.&lt;/p&gt;
+&lt;h2 id="handling-backslash-characters"&gt;Handling Backslash Characters&lt;a class="headerlink" href="#handling-backslash-characters" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;The interesting part about the parsing of this Markdown character is
+that once it is dealt with, the original backslash character disappears, having
+done its job.  While that was fine for generating HTML, rehydrating the original text
+from a tokenized version of a string that originally contained a backslash was a
+problem.  If it disappears, how does the code know it was there in the first place?&lt;/p&gt;
+&lt;p&gt;To solve this issue, I had to resolve to a bit of trickery.  I needed to
+determine a way to make the backslash character visible in the token without it being
+visible in the HTML output.  But anything obvious would show up in the HTML output, so
+I had to take a preprocessing step on the data and remove whatever it was that I would
+add to denote the backslash.&lt;/p&gt;
+&lt;h3 id="thinking-inside-of-the-outside-box"&gt;Thinking Inside of the Outside Box&lt;a class="headerlink" href="#thinking-inside-of-the-outside-box" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Trying a couple of solutions out, the one that held the most promise for me was to use
+(or misuse) the backspace character.  In Python, I can easily add the sequence &lt;code&gt;\b&lt;/code&gt; to
+a string to denote the backspace character.  When use this format to write out the text
+for the token containing a backslash, I would now add &lt;code&gt;\\\b&lt;/code&gt; in place of the backslash
+to allow it to be placed in the token.&lt;/p&gt;
+&lt;p&gt;To show an example of this, consider the Markdown text &lt;code&gt;a\\*b\\*&lt;/code&gt;, used to create HTML
+output of &lt;code&gt;a*b*&lt;/code&gt; without the asterisk character getting misinterpreted as emphasis.
+Before this change, the text in the token would have been &lt;code&gt;a*b*&lt;/code&gt;, without the inline
+processor splitting the emphasis sequences into their own tokens for interpretation.
+After this change, the text in the token is &lt;code&gt;a\\\b*b\\\b*&lt;/code&gt;, keeping the backslashes
+in the data, but with the backspace character following them.&lt;/p&gt;
+&lt;p&gt;But now that I had a special character in there, I would need to preprocess those
+strings.&lt;/p&gt;
+&lt;h3 id="dealing-with-the-complications"&gt;Dealing with the Complications&lt;a class="headerlink" href="#dealing-with-the-complications" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;How does the preprocessing work?  In the case of the HTML transformer, the
+preprocessing uses the new &lt;code&gt;resolve_backspaces_from_text&lt;/code&gt; function to scan the incoming
+string for any backspace characters.  When a backspace characters are encountered, it
+is removed along with the character proceeding that backspace character.  In this
+manner,
+the HTML output is identical to how it was before this change.  Using the above example
+of &lt;code&gt;a\\\b*b\\\b*&lt;/code&gt;, this preprocessing would render that string as &lt;code&gt;a*b*&lt;/code&gt;, removing
+each of the backspace characters and the backslash characters before them.&lt;/p&gt;
+&lt;p&gt;In the case of the new Markdown transformer, a similar algorithm is used that simply
+replaces any backspace characters with the empty string.  Because the end effect is to
+restore the data to the way it was
+before, removing the backspace character by itself leaves the data in its original
+form. Once again using the above example of &lt;code&gt;a\\\b*b\\\b*&lt;/code&gt;, when the backspace
+characters are removed from the string, the string is changed into &lt;code&gt;a\\*b\\*&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;While it took me a while to arrive at this preprocessing solution, it worked flawlessly
+without any modifications.  It was just a simple way to handle the situation. And
+because it is a simple way, it is also simple to read and understand when dealing
+with the data for the scenarios.  After all,
+when I type in code or a document, I use the backspace key to erase the last character
+I typed.  This just extends that same paradigm a small amount, but to good use.&lt;/p&gt;
+&lt;h3 id="the-fallout"&gt;The Fallout&lt;a class="headerlink" href="#the-fallout" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;As this change affects everywhere that a backspace character can be used, there were
+some sweeping changes needed in multiple locations to deal with the now escaped
+backslash characters.  The &lt;code&gt;InlineHelper&lt;/code&gt; module’s &lt;code&gt;handle_inline_backslash&lt;/code&gt; function
+was changed to take an optional parameter &lt;code&gt;add_text_signature&lt;/code&gt; to determine whether
+the new &lt;code&gt;\\\b&lt;/code&gt; sequence was added when a backslash was seen in the Markdown.
+That was the easy part.&lt;/p&gt;
+&lt;p&gt;In any of the places where that function was called, I traced back and figured
+out if there was a valid escape for adding the new text signature.  In a handful of
+cases, the original string was already present, so no new transformations were
+required, passing in a &lt;code&gt;False&lt;/code&gt; for the &lt;code&gt;add_text_signature&lt;/code&gt;.  But the more prevalent
+case was for the calls that passed in &lt;code&gt;True&lt;/code&gt;.  And it did not end there.  This process
+needed to be repeated with each function that called each of those functions, and so
+on.&lt;/p&gt;
+&lt;p&gt;In the end, it was worth it.  It was a clean way to deal with having the backslash in
+the token if needed and removing the backslash when it was not needed.&lt;/p&gt;
+&lt;h2 id="indented-code-block-tokens"&gt;Indented Code Block Tokens&lt;a class="headerlink" href="#indented-code-block-tokens" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;For the most part, the indented code blocks were simple.  Like how the
+text tokens were handled for paragraphs, the trick was to make sure that the right
+whitespace was added to the text tokens.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;reconstitute_indented_text&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;main_text&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;prefix_text&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;leading_whitespace&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="n"&gt;split_main_text&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;main_text&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;split&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="n"&gt;recombined_text&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;""&lt;/span&gt;
+        &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;next_split&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;split_main_text&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;next_split&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+                &lt;span class="n"&gt;recombined_text&lt;/span&gt; &lt;span class="o"&gt;+=&lt;/span&gt; &lt;span class="n"&gt;prefix_text&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;leading_whitespace&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;next_split&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;
+                &lt;span class="n"&gt;leading_whitespace&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;""&lt;/span&gt;
+            &lt;span class="k"&gt;else&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+                &lt;span class="n"&gt;recombined_text&lt;/span&gt; &lt;span class="o"&gt;+=&lt;/span&gt; &lt;span class="n"&gt;next_split&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;recombined_text&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;The nice thing about the new &lt;code&gt;reconstitute_indented_text&lt;/code&gt; function was that it was
+simple to start with, as shown above.  Take the text from the text token, and put
+it back together, keeping in mind the extra whitespaces at the start of each line.
+In short order, the single scenario test in the &lt;code&gt;test_markdown_paragraph_blocks.py&lt;/code&gt;
+module dealing with indented code block tokens was passing, and most of the
+indented code block scenario tests were also passing.  It was then down to 2
+scenario tests to get enabled.&lt;/p&gt;
+&lt;h3 id="handling-character-references"&gt;Handling Character References&lt;a class="headerlink" href="#handling-character-references" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Character references on their own are a vital part of Markdown.  When you want to
+be specific about a character to use, there is no substitute for using the ampersand
+character and the semi-colon character and specifying the specifics of the character
+you want between the two.  But as with backslashes, these character references
+represented an issue.&lt;/p&gt;
+&lt;p&gt;Like the backslash disappearing after it is used, the character references also
+disappear once used.  But in this case, the mechanics were slightly different. If
+the resultant token and HTML contains the copyright character &lt;code&gt;©&lt;/code&gt;, there are three
+paths to getting that Unicode character into the document.  The first is simply to use a
+Unicode aware editor that allows the typing of the &lt;code&gt;©&lt;/code&gt; character itself.  If that
+fails, the next best approach is to use a named character entity, adding &lt;code&gt;&amp;amp;copy;&lt;/code&gt;
+to the document.  Finally, the numeric character reference of &lt;code&gt;&amp;amp;#xA9&lt;/code&gt; or &lt;code&gt;&amp;amp;%169;&lt;/code&gt;
+can also be used to insert that character into the token.  The problem is, if the
+token contains the character &lt;code&gt;©&lt;/code&gt;, which of the 4 forms were used to place it there?&lt;/p&gt;
+&lt;p&gt;Similar to the way I used the backspace character with the backslash character, in
+this case I used the alert character (&lt;code&gt;\a&lt;/code&gt;) as a way to specify that a series of
+characters have been replaced with another series of characters.  Using the previous
+example of the copyright character, if the character was specified by using the
+actual Unicode character itself, no alert characters were needed as nothing changed.&lt;/p&gt;
+&lt;p&gt;But in the cases where the character entities were used, to indicate “I saw this
+entity, and I replaced it with this text”.  For example, if the Markdown contained
+the text &lt;code&gt;&amp;amp;copy; 2020&lt;/code&gt;, the text would be replaced with &lt;code&gt;\a&amp;amp;copy;\a©\a 2020&lt;/code&gt;. While
+it takes a bit of getting used to, reading this in the samples quickly became easy
+to read.  For the HTML output, all 3 occurrences of the alert character were searched
+for, and the text between the second and third alert was output, and the rest ignored.
+In the case of rehydrating the Markdown text, the text between the first and the second
+alert was output, and the rest of that text was ignored.&lt;/p&gt;
+&lt;p&gt;The fallout of this change was of a similar scope to that of the fallout for the
+backspace character changes.  There were a few places where this change had to be
+turned off, but due to sheer luck, most of those places were the same for the backspace
+character and for the alert character.  While it took a small amount of time to get
+things right, once again it was a clean solution.&lt;/p&gt;
+&lt;h3 id="indented-code-blocks-and-blank-lines"&gt;Indented Code Blocks and Blank Lines&lt;a class="headerlink" href="#indented-code-blocks-and-blank-lines" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;All the other scenarios down, and one to go!  And… I hit a wall.  But unlike some of
+the other walls that I hit, this one was a good one.  When I looked at this remaining
+case, the scenario test for
+&lt;a href="https://github.github.com/gfm/#example-81"&gt;example 81&lt;/a&gt;,
+I knew that there was going to be a cost to
+getting this test to pass its consistency check. And while I could go ahead and
+work on it, I made the decision that the work to get this one case passing was out of
+the present cope of work that I agreed to do.&lt;/p&gt;
+&lt;p&gt;The scenario?  &lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="n"&gt;chunk1&lt;/span&gt;
+
+    &lt;span class="n"&gt;chunk2&lt;/span&gt;
+&lt;span class="err"&gt;{&lt;/span&gt;&lt;span class="k"&gt;space&lt;/span&gt;&lt;span class="err"&gt;}{&lt;/span&gt;&lt;span class="k"&gt;space&lt;/span&gt;&lt;span class="err"&gt;}&lt;/span&gt;
+&lt;span class="err"&gt;{&lt;/span&gt;&lt;span class="k"&gt;space&lt;/span&gt;&lt;span class="err"&gt;}&lt;/span&gt;
+&lt;span class="err"&gt;{&lt;/span&gt;&lt;span class="k"&gt;space&lt;/span&gt;&lt;span class="err"&gt;}&lt;/span&gt;
+    &lt;span class="n"&gt;chunk3&lt;/span&gt;&lt;span class="ss"&gt;""&lt;/span&gt;&lt;span class="err"&gt;"&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;(To make the spaces visible on the blank lines, I replaced them in the above Markdown
+sample with the text &lt;code&gt;{space}&lt;/code&gt;.)&lt;/p&gt;
+&lt;p&gt;Double checking the code for the indented code blocks,
+if the blank lines contained at least 4 or more space characters, the tokenization
+proceeded properly, and the rehydration of the text was fine.  But in the case where
+the blank lines did not contain enough spaces, that was another issue.&lt;/p&gt;
+&lt;p&gt;While it is not specifically spelled out in the GFM specification, example 81 makes it
+clear that blank lines do not end indented code blocks, regardless of whether they
+start with 4 space characters.  But looking at the tokens, the only way that I
+could think of to address this issue was to put any extracted spaces in the
+indented code block token itself.  This would allow them to be used later, if needed,
+by transformers such as the Markdown transformer.&lt;/p&gt;
+&lt;p&gt;But thinking about it clearly, I felt that this work was beyond the scope of the
+current rules for this task. I figured that I had a choice between finishing up the
+task with thematic break token support completed or getting mired down with this
+one scenario and not properly completing the task.  While I was not initially happy
+about the idea, I noted the item down in the issues list, disabled the consistency
+checks for the test, and continued.&lt;/p&gt;
+&lt;h2 id="thematic"&gt;Thematic&lt;a class="headerlink" href="#thematic" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;To wrap up this block of work, I just needed to complete the handling of the thematic
+break token.  As this is a simple token, I expected a simple implementation to
+rehydrate it, and I was not disappointed.  The text that it took to complete
+the rehydration of the thematic breaks was as follows:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;rehydrate_thematic_break&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;next_token&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;next_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;extracted_whitespace&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;next_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;rest_of_line&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Simple, short, and sweet.  No surprises.  A nice way to end.&lt;/p&gt;
+&lt;h2 id="along-the-way"&gt;Along the way…&lt;a class="headerlink" href="#along-the-way" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In total, I added 6 items to the issue list because of things I noticed during this
+work.  While I was
+sure that 4-5 were actual issues, I was okay with the remaining issues being good
+questions for me to answer later.  It just felt good to be able to write a new item
+down and clear it from my mind.  It helped me stay on track and keep my focus.
+And that is a good thing!&lt;/p&gt;
+&lt;h2 id="what-was-my-experience-so-far"&gt;What Was My Experience So Far?&lt;a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;To be honest, I believe I was so worried about going down another rabbit hole that it
+got in the way of my creativity a bit.  Not so much that I could not get the work done,
+but it was there.  And thinking back to that time, I am not sure if that was a good
+thing or a bad thing.&lt;/p&gt;
+&lt;p&gt;On the bad side, it caused me to question myself a lot more.  With each decision
+I made, I reviewed it against the goals that I specified at the start of this article.
+Did it pass?  If no, then try again.  If yes, what was the scope?  If depth of the
+scope was too unexpected or too large, then try again.  If yes, start working on it.
+At various points within the task, stop to reevaluate those same questions and make sure
+I was staying within the scope.   It definitely was annoying at first.&lt;/p&gt;
+&lt;p&gt;On the good side, it was probably what I needed. And I hate to say it, it probably was a
+good annoying.  I do not need to continue to have this internal conversation for smaller
+tasks. But for this big task, that frequent dialogue helped me focus on keeping the
+task on track.  If I noticed something that was not in scope, I just added it to the
+issues list and moved on.  If I had a question about whether something was written
+properly, I just added it to the issues list and moved on.  It is not that I do not care
+about these issues, it is that I can more about completing the task and not getting
+lost on something that is off task.  There will be time later to deal with those.&lt;/p&gt;
+&lt;p&gt;All in all, I believe this chunk of work went well.  Sure, I pushed my 36 hour time
+limit to the max, resulting in my article getting written later than I am usually
+comfortable with.  I also pushed my definition of “complete” to the max, as I noted in
+the section on
+&lt;a href="https://jackdewinter.github.io/2020/07/20/markdown-linter-transforming-back-to-markdown/#a-small-note-on-the-commit"&gt;A Small Note on the Commit&lt;/a&gt;.
+All the work
+was completed before I started that week’s article, even if I took me another 3-4 hours
+to clean it up enough before committing it to the repository. After all an agreed upon
+rule is a rule, and I kept to each of them.  Even if I strained them a bit.&lt;/p&gt;
+&lt;p&gt;I was happy with how I handled myself with this task.  I did not get too bogged down
+that I got nothing done, and I did not go down any rabbit holes.  It was a good week!&lt;/p&gt;
+&lt;h2 id="what-is-next"&gt;What is Next?&lt;a class="headerlink" href="#what-is-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Having encountered a number of bugs and possible logs that were logged in the issue’s
+list, it just made sense to tackle those right away.  Especially for something that is
+meant to track the consistency of the tokens, does not look good to have bugs against
+it.&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry><entry><title>Markdown Linter - Improving Consistency</title><link href="https://jackdewinter.github.io/2020/07/13/markdown-linter-improving-consistency/" rel="alternate"></link><published>2020-07-13T00:00:00-07:00</published><updated>2020-07-13T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-07-13:/2020/07/13/markdown-linter-improving-consistency/</id><summary type="html">
 &lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;In my
 &lt;a href="https://jackdewinter.github.io/2020/07/06/markdown-linter-weeding-the-projects-issue-list/"&gt;last article&lt;/a&gt;,
@@ -8432,290 +9037,4 @@ quality meter much, each change helps.&lt;/p&gt;
 &lt;h2 id="what-is-next"&gt;What is Next?&lt;a class="headerlink" href="#what-is-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;Having teased the addition of inline processing to the project for most of this
 article, the next article will be on the implementation of the first 3 aspects of
-inline processing that I tackled.&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="linter tokenizer"></category></entry><entry><title>Markdown Linter - Adding HTML Blocks</title><link href="https://jackdewinter.github.io/2020/02/10/markdown-linter-adding-html-blocks/" rel="alternate"></link><published>2020-02-10T00:00:00-08:00</published><updated>2020-02-10T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-02-10:/2020/02/10/markdown-linter-adding-html-blocks/</id><summary type="html">
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Having completed most of the Markdown block elements, as documented
-in the last two articles on
-&lt;a href="https://jackdewinter.github.io/2020/01/27/markdown-linter-parsing-normal-markdown-blocks/"&gt;leaf blocks&lt;/a&gt; and
-&lt;a href="https://jackdewinter.github.io/2020/02/03/markdown-linter-adding-block-quotes-and-lists/"&gt;container blocks&lt;/a&gt;,
-I wanted to go back and revisit the HTML blocks that I deferred.  For anyone following
-this series, in the
-&lt;a href="https://jackdewinter.github.io/2020/01/27/markdown-linter-parsing-normal-markdown-blocks/#group-4-stopping-at-a-good-place"&gt;Stopping At A Good Place section&lt;/a&gt;
-of the …&lt;/p&gt;</summary><content type="html">
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Having completed most of the Markdown block elements, as documented
-in the last two articles on
-&lt;a href="https://jackdewinter.github.io/2020/01/27/markdown-linter-parsing-normal-markdown-blocks/"&gt;leaf blocks&lt;/a&gt; and
-&lt;a href="https://jackdewinter.github.io/2020/02/03/markdown-linter-adding-block-quotes-and-lists/"&gt;container blocks&lt;/a&gt;,
-I wanted to go back and revisit the HTML blocks that I deferred.  For anyone following
-this series, in the
-&lt;a href="https://jackdewinter.github.io/2020/01/27/markdown-linter-parsing-normal-markdown-blocks/#group-4-stopping-at-a-good-place"&gt;Stopping At A Good Place section&lt;/a&gt;
-of the “Parsing Normal Markdown Blocks” article, I determined that there were 3 types
-of leaf blocks that would be difficult to implement, so I deferred them.  Between
-my lack of use most of those deferred features and my distinct status as the first
-user of the parser, I thought this was a decent trade off in the short run.  With
-increased confidence from implementing the other block types, I thought it was
-a good time to deal with this block type.&lt;/p&gt;
-&lt;p&gt;Before continuing, I believe it is important for me to highlight some information about
-HTML blocks in Markdown.  I have never needed to use HTML
-blocks or raw HTML (covered in a later article) in any of my own Markdown documents.
-Quick research revealed that there are some interesting cases where injecting HTML
-blocks is a benefit.  However, that same research also noted that allowing either type
-of HTML in Markdown is a potential security issue, and as such, may be disabled for a
-given Markdown-to-HTML generator.  Regardless of my usage patterns or security patterns,
-I wanted to be sure to include it in the PyMarkdown project for completeness.&lt;/p&gt;
-&lt;h2 id="what-is-the-audience-for-this-article"&gt;What Is the Audience For This Article?&lt;a class="headerlink" href="#what-is-the-audience-for-this-article" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;While detailed more eloquently in
-&lt;a href="https://jackdewinter.github.io/2020/04/05/what-is-the-audience-for-my-blog/#what-is-the-audience-for-my-blog"&gt;this article&lt;/a&gt;,
-my goal for this technical article is to focus on the reasoning behind my solutions,
-rather that the solutions themselves.  For a full record of the solutions presented in
-this article, please go to this project’s GitHub repository and consult the
-commit of
-&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/24fd972aef725bc55659ad3c2e7c1b93737a1874"&gt;20 December 2019&lt;/a&gt;.
-This work includes implementing the parsing logic for the HTML Blocks as documented in
-the GFM specification and implementing the parsing to pass all the scenario tests
-for HTML blocks that were previous entered.&lt;/p&gt;
-&lt;h2 id="why-did-i-defer-html-blocks"&gt;Why Did I Defer HTML Blocks?&lt;a class="headerlink" href="#why-did-i-defer-html-blocks" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;The HTML blocks were one of those 3 deferred types because a quick reading of the
-specification lead me to believe the HTML block implementation would be tricky.&lt;/p&gt;
-&lt;p&gt;Why?  Take a minute and read or browse the
-&lt;a href="https://github.github.com/gfm/#html-blocks"&gt;HTML blocks section&lt;/a&gt; of the
-GitHub Flavored Markdown (GFM) Specification.  Don’t worry, I’ll wait while you do that.&lt;/p&gt;
-&lt;p&gt;Done?  What did you think?  My initial read of the specification made me think that it
-was going to be a complete mess to figure out properly.  After a walk to clear my head,
-I took another look at the section.  When I factored in the work, I did to implement the
-container blocks, this section looked like it would be tedious, but not too bad.  After
-handling container blocks within container blocks, the straight parsing of a leaf block
-would not be too bad. Right?&lt;/p&gt;
-&lt;p&gt;I admit, it still looked kind of daunting to me.  From my observations, the 42 use
-cases for
-the HTML blocks was far more than the count for all of the other block groups
-&lt;sup id="fnref:countScenarios"&gt;&lt;a class="footnote-ref" href="#fn:countScenarios"&gt;1&lt;/a&gt;&lt;/sup&gt; except for the list items group, at 47 use cases. And yes, the count
-is mostly larger than the count for container blocks (with block quotes at 22 use
-cases) and one half of the use cases for list blocks (with lists at 25 use cases and
-list items at 47 use cases).  The data
-backed my daunting feeling up, which was a relief.  Thinking about how I got to that
-feeling, I realized that in reading the specification, I was telling myself a
-story about how hard it would be to implement based on the sheer number of use cases.
-So how was I going to change that narrative I was telling myself?&lt;/p&gt;
-&lt;h2 id="changing-the-narrative"&gt;Changing the Narrative&lt;a class="headerlink" href="#changing-the-narrative" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;In &lt;a href="https://jackdewinter.github.io/2020/02/03/markdown-linter-adding-block-quotes-and-lists/#what-was-my-experience-so-far"&gt;the last article&lt;/a&gt;,
-I mentioned that one of my family’s favorite sayings is: “Stuff happens, pick yourself
-up, dust yourself off, and figure out what to do next.”  “Stuff happens” was the
-decision to defer the HTML blocks, “pick yourself up” was the decision to pick them up
-again, “dust yourself off” was figuring out why I deferred the blocks, leaving the
-“figure out what to do next” part.  One of my favorite tools to figure out what to do
-next is to see if I can change the narrative, or story, with whatever it is that
-I am doing.&lt;/p&gt;
-&lt;p&gt;Why is this important?&lt;/p&gt;
-&lt;p&gt;There are facts and opinions
-that are part of every story.  Did the main character go to the cantina before boarding
-the freighter with the smuggler?  That is a fact.  Whether or not the captain of that
-freighter is a smuggler can be an opinion, depending on supporting facts.  How much
-trust the main character had in that smuggler when boarding the freighter is mostly an
-opinion.  The closer something is to a fact, the harder it is to change. Opinions can
-be changed in many cases if you can find the right story to tell.&lt;/p&gt;
-&lt;p&gt;The HTML blocks having 42 use cases to define its behavior is a fact, and facts do not
-change easily.  Taking a deeper look at the 7 categories at the
-start of the specification’s section on HTML blocks, I can make a good argument that
-there are 3 sets of HTML tags instead of the 7 presented:  the meta tags, the special
-tags, and everything else.  Furthermore, the first 20 use cases present general cases
-while the next 18 use cases, and the last 4 use cases talk about specific rules and why
-they were specified.&lt;/p&gt;
-&lt;p&gt;Given this information, I can change the story I am telling myself by breaking down
-the previous story into smaller stories, each with a specific focus.  Instead of one
-group of 42 use cases, I can
-have 3 smaller groups: 1 for general HTML blocks with 20 use cases, 1 for specific
-HTML blocks with 18 use cases, and finally a “wrap-up” group of 4 use cases that better
-explains why the specified rules are important.&lt;/p&gt;
-&lt;p&gt;Why is this better?&lt;/p&gt;
-&lt;p&gt;At 42 use cases for HTML blocks, it is the second biggest block
-of use cases, and is somewhat scary.  Breaking that group up into 2 groups of about 20
-use cases followed by a small group with 4 example use cases is something I can
-comprehend better, implement better, therefore removing my concerns about the large
-scope.&lt;/p&gt;
-&lt;p&gt;In addition, experience has taught me that when translating use cases to scenario tests,
-the last 2 to 3 translations are frequently show-stoppers or require major reworking to
-properly translate and get working.
-With a big group of 42 use cases, I know I would be expecting that behavior to happen,
-with a large amount of rework to do when it happened.  After breaking down the problem
-into the 3 smaller groups, I was somewhat confident that if the same situation occurs,
-the amount of rework will be limited to approximately 20 scenario tests.  For me,
-reducing that perceived effort helped me keep my confidence up instead of having it
-take a hit. Instead of “when it happens” with the 42 use cases, it became “if it
-happens” with the smaller groups of 20 use cases.&lt;/p&gt;
-&lt;h2 id="let-the-implementation-begin"&gt;Let the Implementation Begin!&lt;a class="headerlink" href="#let-the-implementation-begin" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;With a boost to my confidence in place, I was able to get a decent amount of work
-completed on the HTML blocks, wedged between shopping and work during the end of the
-holiday season.  Despite my initial concerns
-about the size and complexity of this feature, the development went smoothly.
-Given how it went, I believe it lends support to my opinion that breaking down the use
-cases into the 3 groups was the right thing to do.&lt;/p&gt;
-&lt;p&gt;For those not familiar with Markdown and HTML, there some basic rules for HTML blocks,
-and then the 3 categories of HTML blocks themselves: the meta tags, the special tags,
-and everything else.  The basic rules are simple.  HTML blocks are always
-started with tags that start at the beginning of a new line, and once the start
-condition is met for one of the 7 block types, only the matching end condition finishes
-off the HTML block.  In some cases, the end conditions can be met on the same line, and
-in some cases, the end conditions make sense… and in some they do not. At least not
-without understanding the rules!&lt;/p&gt;
-&lt;h3 id="meta-tags"&gt;Meta Tags&lt;a class="headerlink" href="#meta-tags" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;Block type 1 contains what I refer to as the “meta tags”, because those tags usually
-contain information that is at a higher level than normal tags, such as script
-information or style information.  For anyone familiar with authoring HTML, the
-Markdown interpretation of these tags is almost the same as in a raw HTML document.
-The start
-condition is that one of the strings &lt;code&gt;&amp;lt;script&lt;/code&gt;, &lt;code&gt;&amp;lt;pre&lt;/code&gt;, or &lt;code&gt;&amp;lt;style&lt;/code&gt; is present,
-followed by whitespace, the string &lt;code&gt;&amp;gt;&lt;/code&gt; or the end of the line.  The end condition is
-that one of the strings &lt;code&gt;&amp;lt;/script&amp;gt;&lt;/code&gt;, &lt;code&gt;&amp;lt;/pre&amp;gt;&lt;/code&gt;, or &lt;code&gt;&amp;lt;/style&amp;gt;&lt;/code&gt; are present, though the
-tags specified in the start condition and end condition do not need to match each
-other.&lt;/p&gt;
-&lt;p&gt;As such, the following text is considered a complete HTML block:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nt"&gt;&amp;lt;style&lt;/span&gt; &lt;span class="na"&gt;type=&lt;/span&gt;&lt;span class="s"&gt;"text/css"&lt;/span&gt;&lt;span class="nt"&gt;&amp;gt;&lt;/span&gt;
-h1 { font-size: 140%; font-weight: bold; border-top: 1px solid gray; padding-top: 0.5em; }
-&lt;span class="nt"&gt;&amp;lt;/style&amp;gt;&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;as is:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nt"&gt;&amp;lt;script&lt;/span&gt; &lt;span class="na"&gt;src=&lt;/span&gt;&lt;span class="s"&gt;"jquery.min.js"&lt;/span&gt;&lt;span class="nt"&gt;&amp;gt;&amp;lt;/script&amp;gt;&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;and:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nt"&gt;&amp;lt;script&lt;/span&gt; &lt;span class="na"&gt;src=&lt;/span&gt;&lt;span class="s"&gt;"jquery.min.js"&lt;/span&gt;&lt;span class="nt"&gt;&amp;gt;&amp;lt;/pre&amp;gt;&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Note that in the last example, while the Markdown specification considers it a complete
-HTML block, it is not a valid HTML snippet.  The Markdown specification does not
-specify any validation of the produced output, so beware of garbage-in, garbage-out.&lt;/p&gt;
-&lt;p&gt;This HTML block type was easy to figure out, hence it was easy to implement.
-Pretty straight forward: Look for one of the start strings, capture everything until
-we find one of the end strings.  Quick and painless.&lt;/p&gt;
-&lt;h3 id="special-tags"&gt;Special Tags&lt;a class="headerlink" href="#special-tags" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;Block types 2 to 5 are what I refer to as the special tags.  In order, the HTML
-specification refers to these as the comment tag, the processing instruction tag,
-the declaration tag, and the CDATA tag.  Each of these tags is authored exactly as
-would be expected in a normal HTML document and has its own distinct purpose.  In
-each case, the start condition is a simple string, and the end condition is the
-inversion of that string.&lt;/p&gt;
-&lt;p&gt;While most of these tags have seldom used or esoteric purposes, the comment tag is used
-frequently in HTML code, and is common in HTML documents.  Similar to block type 1
-above, the following text is considered a complete HTML block:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="c"&gt;&amp;lt;!--&lt;/span&gt;
-&lt;span class="c"&gt;    style type="text/css"&amp;gt;&lt;/span&gt;
-&lt;span class="c"&gt;h1 { font-size: 140%; font-weight: bold; border-top: 1px solid gray; padding-top: 0.5em; }&lt;/span&gt;
-&lt;span class="c"&gt;&amp;lt;/style&amp;gt;&lt;/span&gt;
-&lt;span class="c"&gt;--&amp;gt;&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;as is:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;&amp;lt;!&lt;/span&gt;&lt;span class="c1"&gt;-- this is a comment --&amp;gt;&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Like the previous HTML block type, these HTML block types were also easy to
-figure out and implement.  Just like before: look for one of the start strings, capture
-everything until we find one of the end strings.  Just as quick and just as painless.&lt;/p&gt;
-&lt;h3 id="everything-else-tags"&gt;“Everything Else” Tags&lt;a class="headerlink" href="#everything-else-tags" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;With block types 1 to 5 out of the way, the work focused in on the remaining
-block types 6 and 7.  These two block types are different than the other blocks, with
-their most prominent difference being that their end condition is a simple blank line.
-Another difference is that there is a long list of tag names that are eligible for block
-type 6, while any other tag is relegated to block type 7.  This becomes important as the
-start conditions of block type 6 are the string &lt;code&gt;&amp;lt;&lt;/code&gt; or &lt;code&gt;&amp;lt;/&lt;/code&gt;, followed by the tag name,
-and then followed by whitespace, the string &lt;code&gt;&amp;gt;&lt;/code&gt;, the string &lt;code&gt;/&amp;gt;&lt;/code&gt; or the end of the line.
-In contrast, the start conditions for block type 7 are that the HTML must either be a
-complete open tag or a complete close tag, followed by optional whitespace and the end
-of the line.  As an additional requirement, a block type 7 HTML block cannot interrupt
-a paragraph.&lt;/p&gt;
-&lt;p&gt;To me, these rules are confusing to anyone authoring even a small piece of HTML in
-Markdown, adding to the reasons for me to suggest to people not to use HTML in Markdown.
-While this confusion is not evident in the examples for the block types 1 to 5,
-consider this sample:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nt"&gt;&amp;lt;canvas&lt;/span&gt;
-    &lt;span class="na"&gt;class=&lt;/span&gt;&lt;span class="s"&gt;"my-canvas"&lt;/span&gt;&lt;span class="nt"&gt;&amp;gt;&lt;/span&gt;
-&lt;span class="nt"&gt;&amp;lt;pre&amp;gt;&lt;/span&gt;
-**Hello**,
-
-_world_.
-&lt;span class="nt"&gt;&amp;lt;/pre&amp;gt;&lt;/span&gt;
-&lt;span class="nt"&gt;&amp;lt;/canvas&amp;gt;&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;and this sample:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nt"&gt;&amp;lt;table&lt;/span&gt;
-    &lt;span class="na"&gt;class=&lt;/span&gt;&lt;span class="s"&gt;"column"&lt;/span&gt;&lt;span class="nt"&gt;&amp;gt;&amp;lt;tr&amp;gt;&amp;lt;td&amp;gt;&lt;/span&gt;
-&lt;span class="nt"&gt;&amp;lt;pre&amp;gt;&lt;/span&gt;
-**Hello**,
-
-_world_.
-&lt;span class="nt"&gt;&amp;lt;/pre&amp;gt;&lt;/span&gt;
-&lt;span class="nt"&gt;&amp;lt;/td&amp;gt;&amp;lt;/tr&amp;gt;&amp;lt;/table&amp;gt;&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Without looking at the information in the specification, how easy is it to tell what the
-output of each sample is?  To be honest, I had to refer back to the
-&lt;a href="https://github.github.com/gfm/#html-blocks"&gt;HTML block definitions&lt;/a&gt; in the GFM
-specification twice when I was writing these samples and three times when I was
-verifying the samples before publishing this article.  That does not bode well, does it?&lt;/p&gt;
-&lt;p&gt;For the first example, the &lt;code&gt;canvas&lt;/code&gt; tag name is not in the list for block type 6, and a
-block type 7 evaluation fails as the tag is neither a complete start tag nor a complete
-end tag.  As such, the &lt;code&gt;canvas&lt;/code&gt; start tag ends up being normal text, to be wrapped in a
-paragraph.  The next tag, the &lt;code&gt;pre&lt;/code&gt; start tag, gets identified as a block type 1 start,
-finishing at its own &lt;code&gt;pre&lt;/code&gt; end tag, with the remaining &lt;code&gt;canvas&lt;/code&gt; end tag going into its
-own paragraph.  I know that was not what I expected at first glance.&lt;/p&gt;
-&lt;p&gt;The second example has different issues.  Because the &lt;code&gt;table&lt;/code&gt; tag name is in the block
-type 6 list of allowable tag names, the start conditions only state that it needs to
-start with the first part of a start tag or end tag, which the string &lt;code&gt;&amp;lt;table&lt;/code&gt;
-satisfies.  However, as the end condition for block type 6 HTML blocks is a blank
-line, the HTML block ends after &lt;code&gt;**Hello**,&lt;/code&gt; and before &lt;code&gt;_world_.&lt;/code&gt;.  At this point,
-the text &lt;code&gt;_world_.&lt;/code&gt; is parsed as normal text, and the text &lt;code&gt;&amp;lt;/pre&amp;gt;&lt;/code&gt; is interpreted as
-a complete end tag by the block type 7 rules, carrying a block type 7 HTML block to
-the end of the sample.  When reading a similar example as part of
-&lt;a href="https://github.github.com/gfm/#example-118"&gt;example 118&lt;/a&gt;, it did take several tries
-to figure out what was going on.&lt;/p&gt;
-&lt;p&gt;These block types provided a bit of complexity that was different than the previous
-blocks.  As such, I hit a couple of roadblocks that I had to work through.  It wasn’t
-that the implementation was much more complicated than the previous HTML block types,
-they weren’t.  It is
-almost the same process: find one of the start conditions, and capture everything
-until a blank line.  Sure, the start conditions were a bit meatier, but other than
-that, it was relatively simple.  It was that they start conditions and end conditions
-were different for these 2 HTML block types that made me look back at the use cases and
-scenario tests with a couple of “huh”s until I that difference registered in my head.
-And that list separating HTML block type 6 from 7… sheesh.&lt;/p&gt;
-&lt;h2 id="my-recommendation"&gt;My Recommendation&lt;a class="headerlink" href="#my-recommendation" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;When it comes to HTML blocks, I implemented them as part of the parser because they
-are part of the specification.  But because of the complexity in understanding
-HTML blocks, I whole heartedly recommend avoiding using HTML blocks if possible.&lt;/p&gt;
-&lt;h2 id="what-was-my-experience-so-far"&gt;What Was My Experience So Far?&lt;a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;I took my time with the implementation for HTML blocks due to the complexities stated
-above.  For the most part, the code I implemented worked on the first or second try,
-with few cases where it took more tries and debugging than that.  I believe the key
-to the relatively easy implementation was breaking the groups and tasks down into
-multiple, smaller groups and smaller tasks.  In retrospect, I believe this enabled me to
-more readily get my mind around the task to accomplish, and not get overwhelmed by
-the size of the problem.&lt;/p&gt;
-&lt;p&gt;Implementing that thinking for the project, while not concrete, helped me see other
-things for the project in a better perspective. Most of the things I initially thought
-would be complex turned out to not be that complex.  The long list of tag names for
-block type 6?  Strings in a list object. The end conditions?  Either looking for a
-blank line or one of a set of strings in one of the following lines.  Getting the use
-cases right in the scenario tests?  Really simple.  I still contend that authoring HTML
-in Markdown is complex, but the implementation was easy.&lt;/p&gt;
-&lt;p&gt;Another boost to my confidence was tackling the HTML blocks and getting them out of
-my “technical debt column”.  While I believe that I made the right decision to defer
-the HTML blocks for the right reasons, it still felt good to get them dealt with.
-Like my experience with translating the last 2-3 uses cases into scenario
-tests, thinking about revisiting any technical debt also triggers similar expectations
-of the reworking of existing code, if that revisiting is actually possible at all.
-Taking something out of technical debt and being able to remove that uncertainty
-helped my confidence towards the completion of the parser for this project.&lt;/p&gt;
-&lt;p&gt;All in all, I believe things are still headed in the right direction!&lt;/p&gt;
-&lt;h2 id="what-is-next"&gt;What is Next?&lt;a class="headerlink" href="#what-is-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;During the implementation of the PyMarkdown parser, I have been using my PyScan script
-to great benefit.  As such, I decided to take the time to polish it up a bit and
-document it in
-&lt;a href="https://jackdewinter.github.io/2020/01/13/measuring-testing-in-python-scripts/"&gt;this article&lt;/a&gt; on Software Quality.
-While doing that, I took some time to refactor the PyMarkdown code to make it easier to
-work with, preparing it for the inline processing that was to come next.  The
-next article will go over the refactoring that I did, and how it helped the project.&lt;/p&gt;
-&lt;div class="footnote"&gt;
-&lt;hr/&gt;
-&lt;ol&gt;
-&lt;li id="fn:countScenarios"&gt;
-&lt;p&gt;The totals are as follows: paragraphs (9), tabs (11), indented code blocks (15), atx headings (18), thematic breaks (19), block quotes (22), lists (25),setext headings (27), and fenced code blocks (29). &lt;a class="footnote-backref" href="#fnref:countScenarios" title="Jump back to footnote 1 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
-&lt;/li&gt;
-&lt;/ol&gt;
-&lt;/div&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="linter tokenizer"></category></entry></feed>
+inline processing that I tackled.&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="linter tokenizer"></category></entry></feed>
