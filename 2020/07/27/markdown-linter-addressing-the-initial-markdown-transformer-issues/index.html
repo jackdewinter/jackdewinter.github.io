@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="author" content="Jack De Winter" />
+
+        <meta name="description" content="Summary¶ In my last article, I started to work on the token transformer, a transformer specifically used to verify the PyMarkdown tokens by rehydrating or reconstituting the original Markdown document from them. In this article, I talk about how I went through the items that I added to the issues …
+" />
+        <meta property="og:type" content="article" />
+        <meta name="twitter:card" content="summary">
+
+<meta name="keywords" content="markdown linter, core linter, Software Quality, " />
+
+<meta property="og:title" content="Markdown Linter - Addressing the Initial Markdown Transformer Issues "/>
+<meta property="og:url" content="https://jackdewinter.github.io/2020/07/27/markdown-linter-addressing-the-initial-markdown-transformer-issues/" />
+<meta property="og:description" content="Summary¶ In my last article, I started to work on the token transformer, a transformer specifically used to verify the PyMarkdown tokens by rehydrating or reconstituting the original Markdown document from them. In this article, I talk about how I went through the items that I added to the issues …" />
+<meta property="og:site_name" content="Jack&#39;s Digital Workbench" />
+<meta property="og:article:author" content="Jack De Winter" />
+<meta property="og:article:published_time" content="2020-07-27T00:00:00-07:00" />
+<meta name="twitter:title" content="Markdown Linter - Addressing the Initial Markdown Transformer Issues ">
+<meta name="twitter:description" content="Summary¶ In my last article, I started to work on the token transformer, a transformer specifically used to verify the PyMarkdown tokens by rehydrating or reconstituting the original Markdown document from them. In this article, I talk about how I went through the items that I added to the issues …">
+
+        <title>Markdown Linter - Addressing the Initial Markdown Transformer Issues  · Jack&#39;s Digital Workbench
+</title>
+        <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://jackdewinter.github.io/theme/css/style.min.css?bec7d543">
+
+        <link href="https://jackdewinter.github.io/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Jack&#39;s Digital Workbench - Full Atom Feed" />
+
+
+    </head>
+    <body>
+        <div id="content">
+            <div class="navbar navbar-static-top">
+                <div class="navbar-inner">
+                    <div class="container-fluid">
+                        <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                        </a>
+                        <a class="brand" href="https://jackdewinter.github.io/"><span class=site-name>Jack's Digital Workbench</span></a>
+                        <div class="nav-collapse collapse">
+                            <ul class="nav pull-right top-menu">
+                                <li >
+                                    <a href=
+                                       https://jackdewinter.github.io
+                                    >Home</a>
+                                </li>
+                                <li ><a href="https://jackdewinter.github.io/categories">Categories</a></li>
+                                <li ><a href="https://jackdewinter.github.io/tags">Tags</a></li>
+                                <li ><a href="https://jackdewinter.github.io/archives">Archives</a></li>
+                                <li><form class="navbar-search" action="https://jackdewinter.github.io/search.html" onsubmit="return validateForm(this.elements['q'].value);"> <input type="text" class="search-query" placeholder="Search" name="q" id="tipue_search_input"></form></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="container-fluid">
+                <div class="row-fluid">
+                    <div class="span1"></div>
+                    <div class="span10">
+<article itemscope>
+<div class="row-fluid">
+    <header class="page-header span10 offset2">
+        <h1>
+            <a href="https://jackdewinter.github.io/2020/07/27/markdown-linter-addressing-the-initial-markdown-transformer-issues/">
+                Markdown Linter - Addressing the Initial Markdown Transformer Issues
+            </a>
+        </h1>
+    </header>
+</div>
+
+<div class="row-fluid">
+    <div class="span2 table-of-content">
+        <nav>
+        <h4>Contents</h4>
+        <div class="toc">
+<ul>
+<li><a href="#summary">Summary</a></li>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#what-is-the-audience-for-this-article">What Is the Audience for This Article?</a></li>
+<li><a href="#things-continue-to-be-busy">Things Continue to Be Busy</a></li>
+<li><a href="#nothing-to-worry-about">Nothing to Worry About</a><ul>
+<li><a href="#lone-link-reference-definitions">Lone Link Reference Definitions</a><ul>
+<li><a href="#debugging-and-resolving-the-issue">Debugging and Resolving the Issue</a></li>
+</ul>
+</li>
+<li><a href="#getting-rid-of-extra-blank-line-tokens">Getting Rid of Extra Blank Line Tokens</a><ul>
+<li><a href="#debugging-and-resolving-the-issue_1">Debugging and Resolving the Issue</a></li>
+</ul>
+</li>
+<li><a href="#the-case-of-the-possibly-missing-link-text">The Case of the Possibly Missing Link Text</a><ul>
+<li><a href="#debugging-and-resolving-the-issue_2">Debugging and Resolving the Issue</a></li>
+</ul>
+</li>
+<li><a href="#where-was-that-extra-text-coming-from">Where Was That Extra text Coming From?</a><ul>
+<li><a href="#debugging-and-resolving-the-issue_3">Debugging and Resolving the Issue</a></li>
+</ul>
+</li>
+<li><a href="#where-was-that-extra-not-coming-from">Where Was That Extra not Coming From?</a><ul>
+<li><a href="#debugging-and-resolving-the-issue_4">Debugging and Resolving the Issue</a></li>
+</ul>
+</li>
+<li><a href="#what-to-do-with-backslashes-in-code-spans">What to Do With Backslashes in Code Spans?</a><ul>
+<li><a href="#debugging-and-resolving-the-issue_5">Debugging and Resolving the Issue</a></li>
+<li><a href="#is-it-worth-it">Is It Worth It?</a></li>
+</ul>
+</li>
+<li><a href="#link-labels-and-special-characters">Link Labels and Special Characters</a><ul>
+<li><a href="#researching-the-issue">Researching the Issue</a></li>
+<li><a href="#testing-the-issue">Testing the Issue</a></li>
+<li><a href="#debugging-and-resolving-the-issue_6">Debugging and Resolving the Issue</a></li>
+</ul>
+</li>
+<li><a href="#indented-code-blocks-and-disappearing-leading-spaces">Indented Code Blocks and Disappearing Leading Spaces</a><ul>
+<li><a href="#debugging-and-resolving-the-issue_7">Debugging and Resolving the Issue</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#what-was-my-experience-so-far">What Was My Experience So Far?</a></li>
+<li><a href="#what-is-next">What is Next?</a></li>
+</ul>
+</div>
+        </nav>
+    </div>
+    <div class="span8 article-content">
+            
+            
+<h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">¶</a></h2>
+<p>In my
+<a href="https://jackdewinter.github.io/2020/07/20/markdown-linter-transforming-back-to-markdown/">last article</a>, I started to work on the
+token transformer, a transformer specifically used to verify the PyMarkdown tokens by
+rehydrating or reconstituting the original Markdown document from them.  In this
+article, I talk about how I went through the items that I added to the issues list as
+a result of that work and resolved them.</p>
+<h2 id="introduction">Introduction<a class="headerlink" href="#introduction" title="Permanent link">¶</a></h2>
+<p>Normally, I use this space to explain some of the reasoning behind the work which
+formed the basis for the article.  Without that bit of preamble, I feel that I am just
+dropping the reader off in an unfamiliar location without a compass, a map, or any
+indication of where they are.  While that remains true for this article, the reasoning
+for this article is so simple that I feel that I do not need a lot of words to explain
+it.</p>
+<p>Last week, I added 7 new items to my issues list, with 1 other issue pending from the
+week before.  Plain and simple, I just wanted those issues off the list before I
+continued with the project’s Markdown transformer.</p>
+<h2 id="what-is-the-audience-for-this-article">What Is the Audience for This Article?<a class="headerlink" href="#what-is-the-audience-for-this-article" title="Permanent link">¶</a></h2>
+<p>While detailed more eloquently in
+<a href="https://jackdewinter.github.io/2020/04/05/what-is-the-audience-for-my-blog/#what-is-the-audience-for-my-blog">this article</a>,
+my goal for this technical article is to focus on the reasoning behind my solutions,
+rather that the solutions themselves.  For a full record of the solutions presented in
+this article, please go to this project’s GitHub repository and consult the
+commits between
+<a href="https://github.com/jackdewinter/pymarkdown/commit/20b129ee1b2058b4495395251d25a8fafa88bfa3">16 Jul 2020</a>
+and
+<a href="https://github.com/jackdewinter/pymarkdown/commit/d07237bb4201221d5bcdc88f51a8d8461dfe7c41">18 Jul 2020</a>.</p>
+<h2 id="things-continue-to-be-busy">Things Continue to Be Busy<a class="headerlink" href="#things-continue-to-be-busy" title="Permanent link">¶</a></h2>
+<p>While there are often weeks where I wish something interesting would happen, those types
+of weeks are not showing up in my life this summer.  Instead, I am having the type of
+summer where I wish I had less to do, giving myself some extra time to relax and
+recharge.  Thankfully, I have a spouse that is very supportive of my hobbies and
+writing, giving me time on the evenings and the weekends to make my project and this
+blog happen.  If you check the Git repository for this project, the times when I have
+been able to eke out some time to work should be obvious.</p>
+<p>I am hoping, that as the summer continues, more “free” time comes my way.</p>
+<h2 id="nothing-to-worry-about">Nothing to Worry About<a class="headerlink" href="#nothing-to-worry-about" title="Permanent link">¶</a></h2>
+<p>Looking at the issues list and the items that I added during my last session,
+I did not believe there were any serious issues to address.  Sure, there were some
+questions that I wanted to follow up on, but I did not feel that any of
+them indicated a serious issue. Similarly, there were some possible bugs
+that I had noticed, but I did not feel that any of these possible bugs were severe.  In
+the worst case, I figured that each of these issues would each take a couple hours’
+worth of effort or less to solve.  Nothing I could not handle.</p>
+<p>But adding those items as I was working on the consistency checks was not
+something that I liked doing.  After all, if I was checking the consistency of my work
+and there were problems with those checks, did that mean the checks were faulty?
+It just made sense to me to address those questions right away, ensuring that my
+confidence in the consistency checks remained high.  Besides, if my guesses
+were right about the severity of the items, I should be able to address them quickly.</p>
+<p>And with that mindset in place, I started working on removing those items from the
+issues list.</p>
+<h3 id="lone-link-reference-definitions">Lone Link Reference Definitions<a class="headerlink" href="#lone-link-reference-definitions" title="Permanent link">¶</a></h3>
+<p>Link Reference Definitions are interesting in that they break the mold created by the
+other Markdown tokens.  When these elements are parsed from their original Markdown
+document into Markdown tokens, they do not add any information to the output HTML
+document.  For the elements themselves to be useful, a
+separate link element is required that references them.  The absence of such a distinct
+link element is the basis for
+<a href="https://github.github.com/gfm/#example-176">example 176</a> and
+<a href="https://github.github.com/gfm/#example-188">example 188</a>.  Apparently, this issue was
+so important, that the specification includes it twice with the exact same example text
+for both examples:</p>
+<div class="highlight"><pre><span></span><span class="o">[</span><span class="n">foo</span><span class="o">]</span><span class="err">:</span><span class="w"> </span><span class="o">/</span><span class="n">url</span><span class="w"></span>
+</pre></div>
+<p>These examples deal with the other unique part of the Link Reference Definition: it is
+the only multiline element in the base GFM specification.  This means that the next line
+may need to be parsed to determine if the Link Reference Definition on the current line
+has ended.  In this specific case, the link
+label (<code>[foo]</code>) and link destination (<code>/url</code>) have both been provided, but there is the
+possibility of the link title occurring on the next line.  So, when the end of the
+document is reached, for whatever reason, the partial Link Reference Definition was
+being left partially open, resulting in the token was not being emitted.  But why?</p>
+<h4 id="debugging-and-resolving-the-issue">Debugging and Resolving the Issue<a class="headerlink" href="#debugging-and-resolving-the-issue" title="Permanent link">¶</a></h4>
+<p>Adding some debug statements and doing some research with the scenario tests, the cause
+of this issue was quick to pop out at me.  At first, I thought it was an issue to do
+with the <code>__close_open_blocks</code> function, as it was a likely candidate.  But a quick
+change to example 176 to add a couple of blank lines after the Link Reference Definition
+put a quick end to that.  That modified case worked without any problems.  Doing a bit
+more digging, the problem seemed to be in the handling of the return value from the
+<code>__close_open_blocks</code> function.  At that time, when the
+<code>__close_open_blocks</code> function was called from the main <code>__parse_blocks_pass</code> function
+to close the document, the return value containing any immediately closed tokens was
+discarded.  That definitely did not seem helpful.</p>
+<p>To address this, instead of using the <code>_</code> variable to capture and ignore the list
+returned from the <code>__close_open_blocks</code> function, I replaced it with the variable
+<code>tokens_from_line</code> to capture that value. Making sure that the list was not being
+extended with itself (which caused failures in almost every scenario test) the lines:</p>
+<div class="highlight"><pre><span></span>        <span class="k">if</span> <span class="n">tokens_from_line</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">tokenized_document</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tokenized_document</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">tokens_from_line</span><span class="p">)</span>
+</pre></div>
+<p>were added to extend the document list with the previously missing tokens.  A quick
+run of all the scenario tests to verify that it was fixed, and this issue was removed
+from the issues list!</p>
+<h3 id="getting-rid-of-extra-blank-line-tokens">Getting Rid of Extra Blank Line Tokens<a class="headerlink" href="#getting-rid-of-extra-blank-line-tokens" title="Permanent link">¶</a></h3>
+<p>While
+<a href="https://github.github.com/gfm/#example-559">example 559</a> and
+<a href="https://github.github.com/gfm/#example-560">example 560</a> are the two main recorded
+issues, there were a total of 6 scenario tests that had this same issue.  With a Link
+Reference Definition (or possible Link Reference Definition) being started at the end
+of the document, an extra Blank Line token was being inserted before the document was
+closed.</p>
+<p>Basically, given the source Markdown document for
+<a href="https://github.github.com/gfm/#example-559">example 559</a>:</p>
+<div class="highlight"><pre><span></span><span class="o">[</span><span class="n">foo</span><span class="o">]</span><span class="err">:</span><span class="w"> </span><span class="o">/</span><span class="n">url</span><span class="w"></span>
+</pre></div>
+<p>or a modification of <a href="https://github.github.com/gfm/#example-188">example 188</a>:</p>
+<div class="highlight"><pre><span></span><span class="o">[</span><span class="n">foo</span><span class="o">]</span><span class="w"></span>
+</pre></div>
+<p>an extra Blank Line token appeared in the token array without fault.</p>
+<h4 id="debugging-and-resolving-the-issue_1">Debugging and Resolving the Issue<a class="headerlink" href="#debugging-and-resolving-the-issue_1" title="Permanent link">¶</a></h4>
+<p>The cause of this issue was a bit more subtle than the others, so it took me a bit
+longer to figure it out.  Most of my initial time on this issue was spent trying to
+figure out why this
+issue happened with Link tokens and Link Reference Definition tokens, not just Link
+Reference Definition tokens.  It was not until I took a look at the log output that
+I realized they were the same issue.</p>
+<p>While the text <code>[foo]</code> can be used as a shortcut
+link, that same text can also be used as a link
+label for a Link Reference Definition.  As the Link Reference Definitions are processed
+in the initial phase and links are processed in the final phase, that text is
+considered part of a Link Reference Definition until it can be proven otherwise.  In
+this case, that consideration was dropped quickly, as the link label is not followed by
+the <code>:</code> character.  However, it still underwent the initial consideration before being
+dropped and requeued for further processing.</p>
+<p>With this new insight, I went through the logs for the <code>__parse_blocks_pass</code> function
+again.  I quickly noticed that in these cases, there was a single blank line getting
+requeued. Thinking about it for a while, this did make sense.  At the end of the
+document, when a partial Link Reference Definition is closed, an empty string (<code>""</code>) is
+passed into the Link Reference Definition functions to make sure the Link Reference
+Definition is terminated properly.  As a blank line in a normal document naturally
+closes the element, the passing of the empty string into those functions has proven
+to be a smart and efficient solution.  However, following the flow of data in the log
+statements, it became obvious that these empty strings were surfacing to the
+<code>__parse_blocks_pass</code> function where that blank line was eventually stored as an entry
+in the <code>lines_to_requeue</code> variable.  Once placed in that variable, it was requeued and
+the extra blank line appeared in the array of tokens.</p>
+<p>From this information, I figured out that there were two parts to solving this
+problem.  The first was to add this code near the
+start of the closing code in the <code>__parse_blocks_pass</code> function:</p>
+<div class="highlight"><pre><span></span>                <span class="n">was_link_definition_started_before_close</span> <span class="o">=</span> <span class="bp">False</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">stack</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">was_link_definition_started</span><span class="p">:</span>
+                    <span class="n">was_link_definition_started_before_close</span> <span class="o">=</span> <span class="bp">True</span>
+</pre></div>
+<p>As this problem only ever occurred with a Link Reference Definition in progress, it
+made sense to use that condition as a trigger for the fix.  That change allowed me to
+add the code:</p>
+<div class="highlight"><pre><span></span>                <span class="k">if</span> <span class="n">was_link_definition_started_before_close</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">lines_to_requeue</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+                    <span class="k">del</span> <span class="n">lines_to_requeue</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="n">line_number</span> <span class="o">-=</span> <span class="mi">1</span>
+</pre></div>
+<p>Basically, in the cases where an open Link Reference Definition is closed at the
+end of the document, if there is a blank line at the start of the lines to requeue,
+remove it.  As a side effect of removing that line, it also becomes necessary to adjust
+the line number by 1 to ensure that the line number is pointing at the correct line.</p>
+<p>My initial thought was that this code was a kludge, but in the end, I grew to be okay
+with it.  As the mainline is where the requeued lines are managed, it started to grow
+on me that this was the correct place to address that issue.  Fixing it at any other
+point seemed to me like I was just going to pass a variable around through various
+functions just to handle this one extant case.  This was indeed clearer.</p>
+<h3 id="the-case-of-the-possibly-missing-link-text">The Case of the Possibly Missing Link Text<a class="headerlink" href="#the-case-of-the-possibly-missing-link-text" title="Permanent link">¶</a></h3>
+<p>Sometimes, as with
+<a href="https://github.github.com/gfm/#example-575">example 575</a>,
+I look at an example or its scenario test, and I get a feeling that it does not look
+quite right.  If am in the middle of something else, which I usually am, I note it down
+in the issue list to be worked on later.  When I find the time to start working on it,
+I almost always begin by looking around for other supporting cases or documentation
+to support any possible answers to the asked question.</p>
+<p>This issue was no different than the rest.  To me:</p>
+<div class="highlight"><pre><span></span><span class="o">[</span><span class="n">foo</span><span class="o">]</span><span class="p">()</span><span class="w"></span>
+
+<span class="o">[</span><span class="n">foo</span><span class="o">]</span><span class="err">:</span><span class="w"> </span><span class="o">/</span><span class="n">url1</span><span class="w"></span>
+</pre></div>
+<p>just looked weird.  Should not it be the shortcut link that took precedence?  The
+following example,
+<a href="https://github.github.com/gfm/#example-576">example 576</a>:</p>
+<div class="highlight"><pre><span></span><span class="o">[</span><span class="n">foo</span><span class="o">]</span><span class="p">(</span><span class="ow">not</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">link</span><span class="p">)</span><span class="w"></span>
+
+<span class="o">[</span><span class="n">foo</span><span class="o">]</span><span class="err">:</span><span class="w"> </span><span class="o">/</span><span class="n">url1</span><span class="w"></span>
+</pre></div>
+<p>produced the following HTML:</p>
+<div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">p</span><span class="p">&gt;&lt;</span><span class="nt">a</span> <span class="na">href</span><span class="o">=</span><span class="s">"/url1"</span><span class="p">&gt;</span>foo<span class="p">&lt;/</span><span class="nt">a</span><span class="p">&gt;</span>(not a link)<span class="p">&lt;/</span><span class="nt">p</span><span class="p">&gt;</span>
+</pre></div>
+<p>If that was the case for example 576’s output, in the HTML output for example 575:</p>
+<div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">p</span><span class="p">&gt;&lt;</span><span class="nt">a</span> <span class="na">href</span><span class="o">=</span><span class="s">""</span><span class="p">&gt;</span>foo<span class="p">&lt;/</span><span class="nt">a</span><span class="p">&gt;&lt;/</span><span class="nt">p</span><span class="p">&gt;</span>
+</pre></div>
+<p>where were the parentheses?</p>
+<h4 id="debugging-and-resolving-the-issue_2">Debugging and Resolving the Issue<a class="headerlink" href="#debugging-and-resolving-the-issue_2" title="Permanent link">¶</a></h4>
+<p>It took bit of looking around, but I finally found some good supporting
+documentation.  In the case of example 576, the text <code>not a link</code> does fulfil the
+link destination requirements of an inline link with <code>not</code>, but then fails on the link
+title requirements because of missing enclosing characters, such as <code>"</code>.  In a
+subsequent processing pass through the tokens, the inline processors looks for a
+shortcut link, which it does find with <code>[foo]</code>, ignoring the text <code>(not a link)</code>.
+This leaves that text as normal text to be dealt with outside of the Link element.</p>
+<p>The case for example 575 is slightly different.  Based on
+<a href="https://github.github.com/gfm/#example-495">example 495</a>, this Markdown text:</p>
+<div class="highlight"><pre><span></span><span class="o">[</span><span class="n">link</span><span class="o">]</span><span class="p">()</span><span class="w"></span>
+</pre></div>
+<p>is a valid inline, producing the HTML output:</p>
+<div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">p</span><span class="p">&gt;&lt;</span><span class="nt">a</span> <span class="na">href</span><span class="o">=</span><span class="s">""</span><span class="p">&gt;</span>link<span class="p">&lt;/</span><span class="nt">a</span><span class="p">&gt;&lt;/</span><span class="nt">p</span><span class="p">&gt;</span>
+</pre></div>
+<p>This almost exactly matches the desired output for example 576.  In the previous case,
+the text between the parentheses, <code>(not a link)</code> was determined to be invalid, and
+hence was not
+processed as a valid inline link.  However, in this case, it is perfectly valid for
+an inline link to have no text within its parentheses, as example 495 demonstrates.
+As that text was a valid part of an inline link element, the entire text
+was consumed, leaving nothing else for processing to deal with later.  With nothing
+outside of the inline link left for processing, nothing gets added to the surrounding
+paragraph as “leftover” text.</p>
+<p>Based on that research, the parsing of the above Markdown into the above HTML is 100%
+correct and explainable.  Did it initially look weird? Yes.  But was it correct?  Yes
+again. Question resolved and removed from the issues list.</p>
+<h3 id="where-was-that-extra-text-coming-from">Where Was That Extra <code>text</code> Coming From?<a class="headerlink" href="#where-was-that-extra-text-coming-from" title="Permanent link">¶</a></h3>
+<p>While the 8 scenario tests in which this issue was found were passing, they were only
+passing because I had modified the acceptance data in the tests.  In each case, I
+simply added <code>text</code> at the appropriate place in the token data to match what was
+expected.  The decision to do that never really sat well with me, so I was happy that
+it was time to fix this issue.</p>
+<p>For this issue, I started by looking at the easy (ok, easier) to digest
+<a href="https://github.github.com/gfm/#example-524">example 524</a>.  The Markdown for this
+example is:</p>
+<div class="highlight"><pre><span></span><span class="p">[</span><span class="n">link</span> <span class="o">*</span><span class="n">foo</span> <span class="o">**</span><span class="n">bar</span><span class="o">**</span> <span class="o">`#`*</span><span class="p">](</span><span class="o">/</span><span class="n">uri</span><span class="p">)</span>
+</pre></div>
+<p>and its HTML output is:</p>
+<div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">p</span><span class="p">&gt;&lt;</span><span class="nt">a</span> <span class="na">href</span><span class="o">=</span><span class="s">"/uri"</span><span class="p">&gt;</span>link <span class="p">&lt;</span><span class="nt">em</span><span class="p">&gt;</span>foo <span class="p">&lt;</span><span class="nt">strong</span><span class="p">&gt;</span>bar<span class="p">&lt;/</span><span class="nt">strong</span><span class="p">&gt;</span> <span class="p">&lt;</span><span class="nt">code</span><span class="p">&gt;</span>#<span class="p">&lt;/</span><span class="nt">code</span><span class="p">&gt;&lt;/</span><span class="nt">em</span><span class="p">&gt;&lt;/</span><span class="nt">a</span><span class="p">&gt;&lt;/</span><span class="nt">p</span><span class="p">&gt;</span>
+</pre></div>
+<p>Double checking those two against each other, and against the GFM specification,
+everything looked fine.  However, when I looked at the serialized token for the link:</p>
+<div class="highlight"><pre><span></span>[link:inline:/uri:::::link *foo **bar** text*]
+</pre></div>
+<p>I noticed that the word <code>text</code> was showing up in the output instead of the text <code>#</code>.
+At that time, as noted above, I simply added the token information as-is to the output,
+created an item in the issues list, and planned to deal with it later.  It was not
+that later.  I really wanted to figure out where that <code>text</code> was coming from.</p>
+<h4 id="debugging-and-resolving-the-issue_3">Debugging and Resolving the Issue<a class="headerlink" href="#debugging-and-resolving-the-issue_3" title="Permanent link">¶</a></h4>
+<p>When I looked at the logs, I arrived at the answer within the first 5 minutes of looking
+at the problem.
+It turned out that I forgot to add some functionality to the
+<code>__collect_text_from_blocks</code> function.  This function is used to determine the
+representative text from a list of inline blocks.  That text is then used to create a
+proper record of what the actual text for the link label was before any processing, as
+well as a normalized version being used for looking up link information.  In the case
+of various inline tokens, instead of placing the original text for the inline element
+in the resultant string, the literal text <code>text</code> was added to that string.</p>
+<p>Fixing this was easy, as in most inline tokens use the <code>token_text</code> member
+variable to contain the correct text.  After running the scenario tests for each of the
+failing cases, the <code>__collect_text_from_blocks</code> function was modified to properly handle
+replacement of the text for the various inline cases.  I then manually went through all
+eight cases and verified that they were working properly, without the text <code>text</code>
+showing up in the token unless the string <code>text</code> was in the source Markdown.</p>
+<p>It took a while, but I got it working cleanly, and for all inline tokens.  It just
+felt good to get this “dirty” issue off the books!</p>
+<h3 id="where-was-that-extra-not-coming-from">Where Was That Extra <code>not</code> Coming From?<a class="headerlink" href="#where-was-that-extra-not-coming-from" title="Permanent link">¶</a></h3>
+<p>After working on the last issue, I thought that this issue would take the same level of
+effort and research to resolve.  In the tokenization for the link in
+<a href="https://github.github.com/gfm/#example-576">example 576</a>:</p>
+<div class="highlight"><pre><span></span>link:shortcut:/url1::not:::foo
+</pre></div>
+<p>I wondered why the text <code>not</code> was in the token.  Spotted when I was debugging
+the last issue, that <code>not</code> value just looked out of place.</p>
+<h4 id="debugging-and-resolving-the-issue_4">Debugging and Resolving the Issue<a class="headerlink" href="#debugging-and-resolving-the-issue_4" title="Permanent link">¶</a></h4>
+<p>Thankfully, this was an easy problem to find, debug, and fix.  In the
+<code>handle_link_types</code> function for the <code>link_helper.py</code> module, the Markdown for the
+example:</p>
+<div class="highlight"><pre><span></span><span class="o">[</span><span class="n">foo</span><span class="o">]</span><span class="p">(</span><span class="ow">not</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">link</span><span class="p">)</span><span class="w"></span>
+
+<span class="o">[</span><span class="n">foo</span><span class="o">]</span><span class="err">:</span><span class="w"> </span><span class="o">/</span><span class="n">url1</span><span class="w"></span>
+</pre></div>
+<p>was parsed to see if it could be a shortcut link and failed.  However, before it
+failed, the link label was set to <code>foo</code> and the link destination was set to <code>not</code>.
+In the code for <code>handle_link_types</code>, this meant that the <code>inline_link</code> variable was
+set to the link destination and the <code>pre_inline_link</code> variable was set to the
+original text for the link destination before processing <code>not</code>.  After the failed
+processing, the <code>pre_inline_link</code> variable was never cleared but was passed into
+the constructor for the link token when it was created.</p>
+<p>With that research performed, it was easy to determine out that the statement:</p>
+<div class="highlight"><pre><span></span>            <span class="n">pre_inline_link</span> <span class="o">=</span> <span class="s2">""</span>
+</pre></div>
+<p>was all that was required to resolve this issue quickly and cleanly.</p>
+<h3 id="what-to-do-with-backslashes-in-code-spans">What to Do With Backslashes in Code Spans?<a class="headerlink" href="#what-to-do-with-backslashes-in-code-spans" title="Permanent link">¶</a></h3>
+<p>Sometimes the questions I pose to myself have simple answers.  In this case, the
+question was:</p>
+<div class="highlight"><pre><span></span><span class="o">-</span> <span class="n">backslash</span> <span class="k">in</span> <span class="n">code</span> <span class="n">span</span><span class="o">?</span> <span class="n">what</span> <span class="n">should</span> <span class="n">it</span> <span class="n">look</span> <span class="k">like</span><span class="o">?</span>
+</pre></div>
+<h4 id="debugging-and-resolving-the-issue_5">Debugging and Resolving the Issue<a class="headerlink" href="#debugging-and-resolving-the-issue_5" title="Permanent link">¶</a></h4>
+<p>Doing a quick check in the backslash section of the GFM specification, I did not see
+anything relevant.  However, in the code spans section,
+<a href="https://github.github.com/gfm/#example-348">example 348</a> provided me with the
+information that I needed.</p>
+<p>The preface to the example states simply:</p>
+<blockquote>
+<p>Note that backslash escapes do not work in code spans. All backslashes are treated literally:</p>
+</blockquote>
+<p>This is backed up with example 348, whose Markdown:</p>
+<div class="highlight"><pre><span></span><span class="ss">`foo\`bar`</span>
+</pre></div>
+<p>produces the following HTML:</p>
+<div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">p</span><span class="p">&gt;&lt;</span><span class="nt">code</span><span class="p">&gt;</span>foo\<span class="p">&lt;/</span><span class="nt">code</span><span class="p">&gt;</span>bar`<span class="p">&lt;/</span><span class="nt">p</span><span class="p">&gt;</span>
+</pre></div>
+<p>The answer to my question?  Leave them alone.  They exist as they are, no parsing
+or interpretation needed.  As far as code spans go, they are just another normal
+character.</p>
+<h4 id="is-it-worth-it">Is It Worth It?<a class="headerlink" href="#is-it-worth-it" title="Permanent link">¶</a></h4>
+<p>As I quickly resolved this issue, I paused before moving on to the next issue.  I
+started to wonder whether this practice of noting questions and issues in the
+issues list was worth it.  In this case, this was a question whose answer I should have
+known. The fact that I did not know it right away was somewhat embarrassing.</p>
+<p>Thinking about it some more, I decided to really devote some serious time to
+understand what I felt about this question, and to really think thought through it.
+Doing that, it was only 5 minutes later when I noticed that I had changed how I was
+feeling from embarrassed to proud and confident.</p>
+<p>It took a bit of time, but I mentally reviewed the other times I have used the
+issues list to document questions and possible bugs.  Overwhelmingly, the issues that I
+logged either helped identify an issue or helped me solidify my understanding of the
+project and the GFM specification.  Should I have known that fact about code spans and
+backslashes? Maybe?  While I have a good grasp of the specification, it is also a large
+specification with a decent number of exceptional cases along the way.</p>
+<p>But as I thought about that further, I realized that my sincerity about the quality for
+the PyMarkdown project was not absolute, but ever increasing.  When I started the
+project, I had to look up every fact about every element, just to make sure I had it
+right.  I knew that I was now at a level where I usually only had to look up the more
+esoteric and exceptional parts of the specification.  If I was sincere about the
+quality of the project, I also needed to acknowledge the quality that my learning about
+the specification brought to the project.</p>
+<p>Given that altered point of view, I was confident that it was worth it.  Both as an
+early problem indicator and as a learning tool, it was indeed worth it.  And besides
+folks, I know I am not perfect.  That does not mean I am going to stop trying and stop
+learning.  And to me, that is what made the issue list worth it!</p>
+<h3 id="link-labels-and-special-characters">Link Labels and Special Characters<a class="headerlink" href="#link-labels-and-special-characters" title="Permanent link">¶</a></h3>
+<p>When I add a question to my issues list, it is always with the hope that I have
+forgotten something simple, and some quick research will resolve the issue.  In this
+case, the question was:</p>
+<div class="highlight"><pre><span></span>- backslash and char ent in link label? tests?
+</pre></div>
+<p>Or, for those that do not read native “Jack”:</p>
+<div class="highlight"><pre><span></span>- what about the backslash character and the character entities in link labels?
+    - are they covered by tests?
+</pre></div>
+<p>Reading this now, I believe that this was an honest question to verify how backslashes
+and character entities are handled in link labels.  Based on my current work solving
+these issues, I have a good idea on the answer, but at the time, I probably was not
+as sure. The answer?  From previous issues, both backslashes characters and character
+entities are allowed in most areas, including link labels.</p>
+<p>But as always, it was time to back up my guess with research.  And something told me
+it was not going to be the quick answer I was hoping for.</p>
+<h4 id="researching-the-issue">Researching the Issue<a class="headerlink" href="#researching-the-issue" title="Permanent link">¶</a></h4>
+<p>Starting my search at the beginning, I looked for a scenario test that contained
+a backslash in a link label.  It was tricky, but eventually I found
+<a href="https://github.github.com/gfm/#example-523">example 523</a>
+in the section on inline links:</p>
+<div class="highlight"><pre><span></span><span class="o">[</span><span class="n">link \[bar</span><span class="o">]</span><span class="p">(</span><span class="o">/</span><span class="n">uri</span><span class="p">)</span><span class="w"></span>
+</pre></div>
+<p>Checking the HTML output, it is easy to see that the backslash effectively escapes the
+character following it, even in the link label:</p>
+<div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">p</span><span class="p">&gt;&lt;</span><span class="nt">a</span> <span class="na">href</span><span class="o">=</span><span class="s">"/uri"</span><span class="p">&gt;</span>link [bar<span class="p">&lt;/</span><span class="nt">a</span><span class="p">&gt;&lt;/</span><span class="nt">p</span><span class="p">&gt;</span>
+</pre></div>
+<p>Backslashes?  Check.  One part of the issue down, one to go.</p>
+<p>To start researching the issue of character entities in link labels, I decided to start
+with inline Unicode characters.  Based on my usage of Markdown, I generally use
+character entities
+to represent characters that I cannot find on my keyboard, usually Unicode characters.
+As such, starting with inline Unicode characters seemed like a good first step before
+tackling character entities.  This decision was validated by my ease in finding not 1,
+but 2 examples in the GFM specification,
+<a href="https://github.github.com/gfm/#example-175">example 175</a>:</p>
+<div class="highlight"><pre><span></span><span class="p">[</span><span class="err">ΑΓΩ</span><span class="p">]:</span> <span class="o">/</span><span class="err">φου</span>
+
+<span class="p">[</span><span class="err">αγω</span><span class="p">]</span>
+</pre></div>
+<p>and <a href="https://github.github.com/gfm/#example-548">example 548</a>:</p>
+<div class="highlight"><pre><span></span><span class="k">[ẞ]</span>
+
+<span class="na">[SS]: /url</span>
+</pre></div>
+<p>But try as I might, I could not find an example of a character entity reference within
+a link label.  As I looked, I did find the text above
+<a href="https://github.github.com/gfm/#example-327">example 327</a>
+which backed up my previous research stating:</p>
+<blockquote>
+<p>Entity and numeric character references are recognized in any context besides code spans or code blocks, including URLs, link titles, and fenced code block info strings:</p>
+</blockquote>
+<p>So, while the GFM specification did not explicitly state that character entities in link
+labels were rejected, there were no actual examples of the positive case either.  To
+me, that was not a showstopper… it was just an invitation to be creative!</p>
+<h4 id="testing-the-issue">Testing the Issue<a class="headerlink" href="#testing-the-issue" title="Permanent link">¶</a></h4>
+<p>The first thing I needed to do was to come up with some good examples to test against.
+To do this, I
+started by creating the scenario test <code>test_character_references_328a</code> as a variation
+of scenario test <code>test_character_references_328</code>.  The sole difference between these
+two scenario tests was the specification of the link label as <code>[f&amp;ouml;&amp;ouml;]</code> instead
+of <code>[foo]</code>.</p>
+<p>In a similar fashion, I copied the test <code>test_reference_links_558</code> into the new test
+<code>test_reference_links_558a</code>, altering the link label from <code>[bar\\\\]</code> to <code>[bar&amp;#x5C;]</code>.
+If I understand the specification properly, both <code>\\\\</code> and <code>&amp;#x5C;</code> should produce the
+same <code>\</code> in the HTML output, so to me it was a good test case.  In addition, I added the
+test function <code>test_reference_links_558b</code> with the link label of <code>[bar&amp;beta;]</code> to
+make sure named entities were addressed.</p>
+<p>Finally, before I started debugging and changing code, I created the following Markdown
+document from bits and pieces of those new tests:</p>
+<div class="highlight"><pre><span></span><span class="p">[</span><span class="n">f</span><span class="o">&amp;</span><span class="n">ouml</span><span class="p">;</span><span class="o">&amp;</span><span class="n">ouml</span><span class="p">;](</span><span class="o">/</span><span class="n">f</span><span class="o">&amp;</span><span class="n">ouml</span><span class="p">;</span><span class="o">&amp;</span><span class="n">ouml</span><span class="p">;</span> <span class="ss">"f&amp;ouml;&amp;ouml;"</span><span class="p">)</span>
+<span class="p">[</span><span class="n">bar</span><span class="err">\\</span><span class="p">](</span><span class="o">/</span><span class="n">url</span><span class="p">)</span>
+<span class="p">[</span><span class="n">bar</span><span class="o">&amp;#</span><span class="n">x5C</span><span class="p">;](</span><span class="o">/</span><span class="n">url</span><span class="p">)</span>
+</pre></div>
+<p>Verifying its content, I submitted it to my favorite test harness,
+<a href="https://johnmacfarlane.net/babelmark2/?text=%5Bf%26ouml%3B%26ouml%3B%5D(%2Ff%26ouml%3B%26ouml%3B+%22f%26ouml%3B%26ouml%3B%22)%0A%5Bbar%5C%5C%5D(%2Furl)%0A%5Bbar%26%23x5C%3B%5D(%2Furl)%0A">BabelMark 2</a>,
+getting the following results for reference parser, <code>commonmark.js 0.29.0</code>:</p>
+<div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">p</span><span class="p">&gt;&lt;</span><span class="nt">a</span> <span class="na">href</span><span class="o">=</span><span class="s">"/f%C3%B6%C3%B6"</span> <span class="na">title</span><span class="o">=</span><span class="s">"föö"</span><span class="p">&gt;</span>föö<span class="p">&lt;/</span><span class="nt">a</span><span class="p">&gt;</span>
+<span class="p">&lt;</span><span class="nt">a</span> <span class="na">href</span><span class="o">=</span><span class="s">"/url"</span><span class="p">&gt;</span>bar\<span class="p">&lt;/</span><span class="nt">a</span><span class="p">&gt;</span>
+<span class="p">&lt;</span><span class="nt">a</span> <span class="na">href</span><span class="o">=</span><span class="s">"/url"</span><span class="p">&gt;</span>bar\<span class="p">&lt;/</span><span class="nt">a</span><span class="p">&gt;&lt;/</span><span class="nt">p</span><span class="p">&gt;</span>
+</pre></div>
+<p>Taking the specific HTML lines generated for each scenario test, I inserted that text
+into the owning scenario test, and verified that the proper HTML was being output.
+With that taken care of, it was on to cleaning up the consistency check!</p>
+<h4 id="debugging-and-resolving-the-issue_6">Debugging and Resolving the Issue<a class="headerlink" href="#debugging-and-resolving-the-issue_6" title="Permanent link">¶</a></h4>
+<p>After putting in that hard work to get the scenario tests set up, the resolution to
+this issue was anticlimactic.  In the <code>inline_helper.py</code> module, the
+<code>handle_character_reference</code> was already being called, but its return value was
+being ignored.  That was easily addressed by replacing the line:</p>
+<div class="highlight"><pre><span></span>            <span class="n">current_string_unresolved</span> <span class="o">=</span> <span class="n">InlineHelper</span><span class="o">.</span><span class="n">append_text</span><span class="p">(</span>
+                <span class="n">current_string_unresolved</span><span class="p">,</span> <span class="n">new_string_unresolved</span>
+            <span class="p">)</span>
+</pre></div>
+<p>with the line:</p>
+<div class="highlight"><pre><span></span>            <span class="n">current_string_unresolved</span> <span class="o">+=</span> <span class="n">new_string_unresolved</span>
+</pre></div>
+<p>The other change that happened at the same time was that the <code>new_string_unresolved</code>
+variable was added directly to the <code>current_string_unresolved</code> variable instead of
+using the <code>append_text</code> function.  As the <code>append_text</code> function is used to add
+text to a string while respecting any needed encoding, it was adding a step of extra
+encoding to the text where it was not needed.  With those two changes in place,
+a couple of extra changes were needed to the <code>handle_character_reference</code> function to
+make sure it was returning the correct original string, instead of a mangled version.</p>
+<p>Having made those changes, and a couple of test runs later, the problem was fixed and
+verified.  While the research and setup of the new tests took a while, the actual
+resolution of the issue took less than 20 minutes to complete.  With everything setup,
+the logs were very helpful by showing me where the extra transformation of the text was
+taking place, leading to a quick resolution.  Yeah verbose log files!</p>
+<p>Now on to the last issue for this week!</p>
+<h3 id="indented-code-blocks-and-disappearing-leading-spaces">Indented Code Blocks and Disappearing Leading Spaces<a class="headerlink" href="#indented-code-blocks-and-disappearing-leading-spaces" title="Permanent link">¶</a></h3>
+<p>I knew that the spaces were not disappearing, they just were not being recorded
+properly.  But the phrase “disappearing leading spaces” sounded cool, so that is
+what I called it to myself.  It was also the last thing that I felt I needed to fix
+before getting back to implementing the Markdown transformer.  Having been discovered in
+<a href="core-11.md#indented-code-blocks-and-blank-lines">the last article</a>,
+this was the issue with the Markdown transformer check and
+<a href="https://github.github.com/gfm/#example-81">example 81</a> where leading spaces were not
+always being record for later rehydration.</p>
+<p>Doing a bit of research, I deduced that when a blank line is encountered in an
+indented code block, there are three possibilities: too much whitespace, too little
+whitespace, and just the right amount of whitespace.</p>
+<p>The scenario test for
+<a href="https://github.github.com/gfm/#example-82">example 82</a> was passing without any
+problems:</p>
+<div class="highlight"><pre><span></span>    <span class="n">chunk1</span>
+<span class="err">{</span><span class="k">space</span><span class="err">}{</span><span class="k">space</span><span class="err">}{</span><span class="k">space</span><span class="err">}{</span><span class="k">space</span><span class="err">}{</span><span class="k">space</span><span class="err">}{</span><span class="k">space</span><span class="err">}</span>
+      <span class="n">chunk2</span>
+</pre></div>
+<p>which took care of the “too many” case.  A quick change of this scenario test<sup id="fnref:recent"><a class="footnote-ref" href="#fn:recent">1</a></sup>
+to present 4 spaces on the blank line instead of 6 spaces resulted in the expected
+behavior. That took care of the “just the right amount” case.  Left was the “too little”
+case and the issues demonstrated by example 81.</p>
+<h4 id="debugging-and-resolving-the-issue_7">Debugging and Resolving the Issue<a class="headerlink" href="#debugging-and-resolving-the-issue_7" title="Permanent link">¶</a></h4>
+<p>Originally, my time on this issue was spent looking at the logs with a specific focus
+on how the tokens were created.  I had theorized that most of the issue was going
+to be concerned with how I extracted and stored the whitespace in the text tokens…
+and I was wrong.  Looking at the logs, the tokens looked fine when they exited
+the initial processing phase, containing the right number of space characters and the
+right number of newline characters.</p>
+<p>Debugging further, after the <code>coalesce_text_blocks</code> function was invoked on those
+tokens, the leading whitespace was missing.  Digging deeper, the first thing that I
+noticed is that the variable <code>remove_leading_spaces</code> was being populated with data from
+the text token’s <code>extra_data</code> field, not the <code>extracted_whitespace</code> field.  Fixing that
+issue got me part of the way there.  The next part was to alter the <code>TextMarkdownToken</code>
+code to allow the <code>combine</code> function to return any whitespace that it removed.  This
+change was pivotal in making sure that any removed whitespace was stored somewhere.
+Finally, in the case where the coalescing takes place within an indented code
+block, that removed whitespace is added to the active Indented Code Block token.</p>
+<p>Unlike the previous issue, this one took a bit of effort to arrive at the right
+solution.  Looking back in hindsight, the path to fix it seems as clear as glass,
+but it took getting past a number of failed solutions to get there.  Each one of the
+steps outlined in the last paragraph had to be coded, debugged, and tested before
+going forward. And in most cases, those steps were not the first solution, but the
+third or fourth.</p>
+<p>But still, it was worth it.  Another item off the issues list, and the project’s
+quality was raised just a bit higher than before!</p>
+<h2 id="what-was-my-experience-so-far">What Was My Experience So Far?<a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link">¶</a></h2>
+<p>For any readers that have followed the progression of this project from a simple idea to
+its current form, you may have noticed that my confidence and happiness spikes a bit
+after a round of refactoring.  There is just something about cleaning up the code and
+resolving ambiguity that makes me smile and makes me feel better about the project.
+While I can quantitatively show that the number of possible issues and tasks are
+declining, I believe that I am more affected by the qualitative changes in the project.
+Removing a single large task from the issues list?  Meh.  Removing 6-7 small tasks or
+questions from that same list.  Yeah!</p>
+<p>But the interesting part of this block of work was not the work itself, but the
+writing of the article about the work.  During the writing of this article, it
+suddenly dawned on me.  For the first time
+during this project’s lifetime, I believed that I could see the end of the project.
+There was just this moment where I remember looking at the issues list, and the
+list looked smaller.  That was followed by a moment of clarity that the consistency
+checks were making a significant impact on my perception of the project.  Combined,
+these two perceptions linked together to form a new level of confidence in my mind.</p>
+<p>That new level of confidence spoke to me. The scenario tests were effective.  The
+consistency checks were working.  And in my mind, the project was clearly past the
+half-way point on its journey to the finish line!</p>
+<h2 id="what-is-next">What is Next?<a class="headerlink" href="#what-is-next" title="Permanent link">¶</a></h2>
+<p>With the current round of questions and issues addressed, it was time to get back to
+adding to the consistency checker.  While I knew I had a busy week of personal stuff
+and professional stuff coming up, I also knew that I did not want to lose any momentum
+on the project.  And making progress on the Markdown transformer was just the right
+kind of thing to help boost my spirits in a long week!</p>
+<div class="footnote">
+<hr/>
+<ol>
+<li id="fn:recent">
+<p>As part of writing this article, I added scenario test <code>test_indented_code_blocks_082a</code> which is the result of the number of spaces on the blank line being reduced from 6 to 4. <a class="footnote-backref" href="#fnref:recent" title="Jump back to footnote 1 in the text">↩</a></p>
+</li>
+</ol>
+</div>
+
+
+             
+ 
+                <p id="post-share-links">
+    Like this post? Share on:
+    <a href="https://twitter.com/intent/tweet?text=Markdown%20Linter%20-%20Addressing%20the%20Initial%20Markdown%20Transformer%20Issues&url=https%3A//jackdewinter.github.io/2020/07/27/markdown-linter-addressing-the-initial-markdown-transformer-issues/&hashtags=markdown-linter,core-linter" target="_blank" rel="nofollow noopener noreferrer" title="Share on Twitter">Twitter</a>
+    ❄
+    <a href="https://www.facebook.com/sharer/sharer.php?u=https%3A//jackdewinter.github.io/2020/07/27/markdown-linter-addressing-the-initial-markdown-transformer-issues/" target="_blank" rel="nofollow noopener noreferrer" title="Share on Facebook">Facebook</a>
+    ❄
+    <a href="mailto:?subject=Markdown%20Linter%20-%20Addressing%20the%20Initial%20Markdown%20Transformer%20Issues&amp;body=https%3A//jackdewinter.github.io/2020/07/27/markdown-linter-addressing-the-initial-markdown-transformer-issues/" target="_blank" rel="nofollow noopener noreferrer" title="Share via Email">Email</a>
+    </p>
+
+            
+            
+
+
+
+
+
+
+<section>
+    <h6 style="display:none;">Comments</h6>
+    <p id="comment-message">So what do you think? Did I miss something? Is any part unclear? Leave your comments below. </p>
+
+    <div class="accordion" id="accordion2">
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                <a class="accordion-toggle disqus-comment-count comment-count"
+                   data-toggle="collapse"
+                   data-parent="#accordion2"
+                   href="https://jackdewinter.github.io/2020/07/27/markdown-linter-addressing-the-initial-markdown-transformer-issues/#comment_thread"
+                   id="comment-accordion-toggle">
+                    Comments
+                </a>
+            </div>
+            <div id="comment_thread" class="accordion-body collapse">
+                <div class="accordion-inner">
+                    <div class="comments">
+
+                        <script src="https://utteranc.es/client.js"
+        data-repo="jackdewinter/jackdewinter.github.io"
+        data-issue-term="markdown-linter-addressing-the-initial-markdown-transformer-issues"
+        data-label="Comments"
+        data-theme="github-light"
+        crossorigin="anonymous"
+        async>
+</script>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+            <hr/>
+            <aside>
+            <nav>
+            <ul class="articles-timeline">
+                <li class="previous-article">« <a href="https://jackdewinter.github.io/2020/07/20/markdown-linter-transforming-back-to-markdown/" title="Previous: Markdown Linter - Transforming Back to Markdown">Markdown Linter - Transforming Back to Markdown</a></li>
+            </ul>
+            </nav>
+            </aside>
+        </div>
+        <section id="article-sidebar" class="span2">
+    <h4>Reading Time</h4>
+    <p>~21 min read</p>
+            <h4>Published</h4>
+            <time itemprop="dateCreated" datetime="2020-07-27T00:00:00-07:00">Jul 27, 2020</time>
+        <h4>Markdown Linter Core</h4>
+    <ul class="multi-parts-list">
+            <li >
+            <a href="https://jackdewinter.github.io/2020/05/04/markdown-linter-core-pre-rule-improvements/" title="Markdown Linter - Core - Pre-Rule Improvements">Part 1: Markdown Linter - Core - Pre-Rule Improvements</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/06/01/markdown-linter-taking-time-to-evaluate/" title="Markdown Linter - Taking Time To Evaluate">Part 2: Markdown Linter - Taking Time To Evaluate</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/06/08/markdown-linter-adding-line-and-column-support/" title="Markdown Linter - Adding Line and Column Support">Part 3: Markdown Linter - Adding Line and Column Support</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/06/15/markdown-linter-rabbit-hole-1-adding-consistency-checks/" title="Markdown Linter - Rabbit Hole 1 - Adding Consistency Checks">Part 4: Markdown Linter - Rabbit Hole 1 - Adding Consistency Checks</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/06/22/markdown-linter-rabbit-hole-2-losing-my-way/" title="Markdown Linter - Rabbit Hole 2 - Losing My Way">Part 5: Markdown Linter - Rabbit Hole 2 - Losing My Way</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/07/06/markdown-linter-weeding-the-projects-issue-list/" title="Markdown Linter - Weeding the Project's Issue List">Part 6: Markdown Linter - Weeding the Project's Issue List</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/06/29/markdown-linter-rabbit-hole-3-trying-to-dig-myself-out/" title="Markdown Linter - Rabbit Hole 3 - Trying To Dig Myself Out">Part 7: Markdown Linter - Rabbit Hole 3 - Trying To Dig Myself Out</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/07/13/markdown-linter-improving-consistency/" title="Markdown Linter - Improving Consistency">Part 8: Markdown Linter - Improving Consistency</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/07/20/markdown-linter-transforming-back-to-markdown/" title="Markdown Linter - Transforming Back to Markdown">Part 9: Markdown Linter - Transforming Back to Markdown</a>
+            </li>
+            <li  class="active-part">
+            Part 10: Markdown Linter - Addressing the Initial Markdown Transformer Issues
+            </li>
+    </ul>
+            <h4>Category</h4>
+            <a class="category-link" href="https://jackdewinter.github.io/categories#software-quality-ref">Software Quality</a>
+            <h4>Tags</h4>
+            <ul class="list-of-tags tags-in-article">
+                <li><a href="https://jackdewinter.github.io/tags#core-linter-ref">core linter
+                    <span>13</span>
+</a></li>
+                <li><a href="https://jackdewinter.github.io/tags#markdown-linter-ref">markdown linter
+                    <span>31</span>
+</a></li>
+            </ul>
+<h4>Stay in Touch</h4>
+<div id="sidebar-social-link">
+    <a href="https://github.com/jackdewinter" title="github-alt" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="GitHub" role="img" viewBox="0 0 512 512"><rect width="512" height="512" rx="15%" fill="#1B1817"/><path fill="#fff" d="M335 499c14 0 12 17 12 17H165s-2-17 12-17c13 0 16-6 16-12l-1-50c-71 16-86-28-86-28-12-30-28-37-28-37-24-16 1-16 1-16 26 2 40 26 40 26 22 39 59 28 74 22 2-17 9-28 16-35-57-6-116-28-116-126 0-28 10-51 26-69-3-6-11-32 3-67 0 0 21-7 70 26 42-12 86-12 128 0 49-33 70-26 70-26 14 35 6 61 3 67 16 18 26 41 26 69 0 98-60 120-117 126 10 8 18 24 18 48l-1 70c0 6 3 12 16 12z"/></svg>
+    </a>
+    <a href="https://www.linkedin.com/in/jackdewinter/" title="linkedin" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="LinkedIn" role="img" viewBox="0 0 512 512" fill="#fff"><rect width="512" height="512" rx="15%" fill="#0077b5"/><circle cx="142" cy="138" r="37"/><path stroke="#fff" stroke-width="66" d="M244 194v198M142 194v198"/><path d="M276 282c0-20 13-40 36-40 24 0 33 18 33 45v105h66V279c0-61-32-89-76-89-34 0-51 19-59 32"/></svg>
+    </a>
+    <a href="https://jackdewinter.github.io/feeds/all.atom.xml" title="" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="RSS" role="img" viewBox="0 0 512 512"><rect width="512" height="512" rx="15%" fill="#f80"/><circle cx="145" cy="367" r="35" fill="#fff"/><path fill="none" stroke="#fff" stroke-width="60" d="M109 241c89 0 162 73 162 162M109 127c152 0 276 124 276 276"/></svg>
+    </a>
+</div>
+            
+
+
+
+
+
+            
+
+
+
+
+
+        </section>
+</div>
+</article>
+                    </div>
+                    <div class="span1"></div>
+                </div>
+            </div>
+        </div>
+<footer>
+    <div>
+        
+&copy; Copyright 2019 by Jack De Winter and licensed under a <a rel="license"
+  href="http://creativecommons.org/licenses/by/4.0/">
+  <img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/80x15.png" />
+  Creative Commons Attribution 4.0 International License</a>.
+
+    </div>
+
+
+
+
+    <div id="fpowered">
+        Powered by: <a href="http://getpelican.com/" title="Pelican Home Page" target="_blank" rel="nofollow noopener noreferrer">Pelican</a>
+        Theme: <a href="https://elegant.oncrashreboot.com/" title="Theme Elegant Home Page" target="_blank" rel="nofollow noopener noreferrer">Elegant</a>
+    </div>
+</footer>            <script src="//code.jquery.com/jquery.min.js"></script>
+        <script src="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>
+        <script>
+            function validateForm(query)
+            {
+                return (query.length > 0);
+            }
+        </script>
+
+    <script>
+    (function () {
+        if (window.location.hash.match(/^#comment-\d+$/)) {
+            $('#comment_thread').collapse('show');
+        }
+    })();
+    window.onhashchange=function(){
+        if (window.location.hash.match(/^#comment-\d+$/))
+            window.location.reload(true);
+    }
+    $('#comment_thread').on('shown', function () {
+        var link = document.getElementById('comment-accordion-toggle');
+        var old_innerHTML = link.innerHTML;
+        $(link).fadeOut(200, function() {
+            $(this).text('Click here to hide comments').fadeIn(200);
+        });
+        $('#comment_thread').on('hidden', function () {
+            $(link).fadeOut(200, function() {
+                $(this).text(old_innerHTML).fadeIn(200);
+            });
+        })
+    })
+</script>
+
+    </body>
+    <!-- Theme: Elegant built for Pelican
+        License : MIT -->
+</html>
