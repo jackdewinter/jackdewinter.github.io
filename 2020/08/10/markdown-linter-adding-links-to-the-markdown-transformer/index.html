@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="author" content="Jack De Winter" />
+
+        <meta name="description" content="Summary¶ In my last article, I increased the coverage provided by the token to Markdown transformer by adding support for all tokens except for container related tokens and link related tokens. In this article, I take a large step forward towards complete consistency checks by adding support for link related …
+" />
+        <meta property="og:type" content="article" />
+        <meta name="twitter:card" content="summary">
+
+<meta name="keywords" content="markdown linter, core linter, Software Quality, " />
+
+<meta property="og:title" content="Markdown Linter - Adding Links to the Markdown Transformer "/>
+<meta property="og:url" content="https://jackdewinter.github.io/2020/08/10/markdown-linter-adding-links-to-the-markdown-transformer/" />
+<meta property="og:description" content="Summary¶ In my last article, I increased the coverage provided by the token to Markdown transformer by adding support for all tokens except for container related tokens and link related tokens. In this article, I take a large step forward towards complete consistency checks by adding support for link related …" />
+<meta property="og:site_name" content="Jack&#39;s Digital Workbench" />
+<meta property="og:article:author" content="Jack De Winter" />
+<meta property="og:article:published_time" content="2020-08-10T00:00:00-07:00" />
+<meta name="twitter:title" content="Markdown Linter - Adding Links to the Markdown Transformer ">
+<meta name="twitter:description" content="Summary¶ In my last article, I increased the coverage provided by the token to Markdown transformer by adding support for all tokens except for container related tokens and link related tokens. In this article, I take a large step forward towards complete consistency checks by adding support for link related …">
+
+        <title>Markdown Linter - Adding Links to the Markdown Transformer  · Jack&#39;s Digital Workbench
+</title>
+        <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://jackdewinter.github.io/theme/css/style.min.css?bec7d543">
+
+        <link href="https://jackdewinter.github.io/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Jack&#39;s Digital Workbench - Full Atom Feed" />
+
+
+    </head>
+    <body>
+        <div id="content">
+            <div class="navbar navbar-static-top">
+                <div class="navbar-inner">
+                    <div class="container-fluid">
+                        <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                        </a>
+                        <a class="brand" href="https://jackdewinter.github.io/"><span class=site-name>Jack's Digital Workbench</span></a>
+                        <div class="nav-collapse collapse">
+                            <ul class="nav pull-right top-menu">
+                                <li >
+                                    <a href=
+                                       https://jackdewinter.github.io
+                                    >Home</a>
+                                </li>
+                                <li ><a href="https://jackdewinter.github.io/categories">Categories</a></li>
+                                <li ><a href="https://jackdewinter.github.io/tags">Tags</a></li>
+                                <li ><a href="https://jackdewinter.github.io/archives">Archives</a></li>
+                                <li><form class="navbar-search" action="https://jackdewinter.github.io/search.html" onsubmit="return validateForm(this.elements['q'].value);"> <input type="text" class="search-query" placeholder="Search" name="q" id="tipue_search_input"></form></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="container-fluid">
+                <div class="row-fluid">
+                    <div class="span1"></div>
+                    <div class="span10">
+<article itemscope>
+<div class="row-fluid">
+    <header class="page-header span10 offset2">
+        <h1>
+            <a href="https://jackdewinter.github.io/2020/08/10/markdown-linter-adding-links-to-the-markdown-transformer/">
+                Markdown Linter - Adding Links to the Markdown Transformer
+            </a>
+        </h1>
+    </header>
+</div>
+
+<div class="row-fluid">
+    <div class="span2 table-of-content">
+        <nav>
+        <h4>Contents</h4>
+        <div class="toc">
+<ul>
+<li><a href="#summary">Summary</a></li>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#what-is-the-audience-for-this-article">What Is the Audience for This Article?</a></li>
+<li><a href="#where-to-start">Where to Start?</a></li>
+<li><a href="#inline-links">Inline Links</a><ul>
+<li><a href="#then-why-did-i-think-it-was-difficult">Then Why Did I Think It Was Difficult?</a></li>
+<li><a href="#how-did-those-changes-go">How Did Those Changes Go?</a></li>
+</ul>
+</li>
+<li><a href="#reference-links-and-link-reference-definitions">Reference Links and Link Reference Definitions</a><ul>
+<li><a href="#starting-with-simple-shortcut-links">Starting with Simple Shortcut Links</a></li>
+<li><a href="#moving-over-to-link-reference-definitions">Moving Over to Link Reference Definitions</a></li>
+<li><a href="#back-to-finishing-up-links">Back to Finishing Up Links</a></li>
+</ul>
+</li>
+<li><a href="#images">Images</a></li>
+<li><a href="#code-coverage">Code Coverage</a></li>
+<li><a href="#moving-special-character-support">Moving Special Character Support</a></li>
+<li><a href="#example-528">Example 528</a></li>
+<li><a href="#what-was-my-experience-so-far">What Was My Experience So Far?</a></li>
+<li><a href="#what-is-next">What is Next?</a></li>
+</ul>
+</div>
+        </nav>
+    </div>
+    <div class="span8 article-content">
+            
+            
+<h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">¶</a></h2>
+<p>In my
+<a href="https://jackdewinter.github.io/2020/08/03/markdown-linter-improving-the-markdown-transformer/">last article</a>,
+I increased the coverage provided by the token to Markdown transformer by adding
+support for all tokens except for container related tokens and link related tokens.
+In this article, I take a large step forward towards complete consistency checks by
+adding support for link related tokens.</p>
+<h2 id="introduction">Introduction<a class="headerlink" href="#introduction" title="Permanent link">¶</a></h2>
+<p>Starting with a large group of tokens to implement, I was now down to two smaller
+groups of tokens left to implement in the Markdown transformer: container related
+tokens and link related tokens.  Before starting with the container related tokens, I
+wanted to make sure that all the leaf block tokens were complete, so the link related
+tokens were the solid choice for the next block of work.  But even with confidence in
+that choice I was still concerned.</p>
+<p>Why was I concerned?  Because outside of container related tokens and text tokens, I
+feel that link related tokens are the most used group of tokens.  While a good
+argument can also be made that Atx Heading token is the most used token, I feel that
+the importance of links in any document somewhat overpowers the argument for the Atx
+Heading token, if only a bit. In my own writing, I believe headings are useful,
+but I feel that it is the links that I add to a document that really increase the
+quality of my documents to the next level.  It is possible that others may not agree
+with my reasoning, but it was one of the sources of my concern.</p>
+<p>Another reason for my concern?  Links are complex.  Just on a normal link alone, I
+counted at least 12
+different properties that I am going to have to represent in the token to allow me to
+properly rehydrate it.  And then there are the Link Reference Definitions, the only
+multiline element in the base GFM document.  I hoped that I already had dealt with most
+of the complexity of that token, but I knew that adding support for this group of tokens
+to the Markdown transformer was going to include some serious work.</p>
+<p>Regardless of how often the link related tokens are used or how difficult I thought they would be to be implemented, they needed to be implemented.  And as the last group
+of tokens before the container tokens, the time was now to work on them.</p>
+<h2 id="what-is-the-audience-for-this-article">What Is the Audience for This Article?<a class="headerlink" href="#what-is-the-audience-for-this-article" title="Permanent link">¶</a></h2>
+<p>While detailed more eloquently in
+<a href="https://jackdewinter.github.io/2020/04/05/what-is-the-audience-for-my-blog/#what-is-the-audience-for-my-blog">this article</a>,
+my goal for this technical article is to focus on the reasoning behind my solutions,
+rather that the solutions themselves.  For a full record of the solutions presented in
+this article, please go to this project’s GitHub repository and consult the
+commits between
+<a href="https://github.com/jackdewinter/pymarkdown/commit/73e7634b99bc05c2484f9ce672648170a84beb17">31 Jul 2020</a>
+and
+<a href="https://github.com/jackdewinter/pymarkdown/commit/7151ea88a180bdc4b977940e90e9db4908b13ede">31 Jul 2020</a>.</p>
+<h2 id="where-to-start">Where to Start?<a class="headerlink" href="#where-to-start" title="Permanent link">¶</a></h2>
+<p>Before I started making any changes, I knew I was going to take a significant amount of
+time to complete the work on links.  I also knew that all that work was not going to
+just happen. To get it right, I needed to plan it out properly.</p>
+<p>I started that process by breaking down the Link tokens groups into 4 smaller groups:
+Inline Links, Reference Links, Link Reference Definitions, and Image Links.  The Image
+Link tokens were the first one to get prioritized into the first position, as they had
+no dependencies and could set the foundations for the other groups.  Next, I looked at
+the Image Link
+tokens. As Image Link tokens were normal Link tokens with a couple of differences, it
+made sense to me that they would go last.  By going last, the link token foundations
+would be tested and stable before adding support for the Image tokens on top of that.
+That just left the Link Reference Definition tokens and Reference Link tokens.</p>
+<p>The ordering between Link Reference Definition tokens and Reference Link tokens was
+going to be a bit tricky, but it would be a process that I knew I could manage.  To
+ensure that I could
+properly test the Link Reference Definition tokens, I needed to start with a
+rudimentary rehydration of the Shortcut Link token.  Once that was done, I
+could complete the work for the Link Reference Definition tokens, hopefully not
+hitting any difficult Shortcut Link tokens cases or other link types along the way.  At
+that point, I could switch back to the Shortcut Link token scenario tests before
+completing the other Link scenario tests.</p>
+<p>With research done, the relative ordering of the tasks was easy.
+Start with Inline Link tokens with their lack of dependencies.  Then work on the
+pair of Link Reference Definition tokens and Reference Link tokens, using the Inline
+Link tokens as a foundation.  Finally, work on Image tokens using all that other work
+as a solid foundation to make the changes required of the transformer.</p>
+<p>It was not a complicated plan, but it was a decent plan that I believed in.  And
+with that plan in place, I started to work on Inline links!</p>
+<h2 id="inline-links">Inline Links<a class="headerlink" href="#inline-links" title="Permanent link">¶</a></h2>
+<p>In the same way that I start all my transformer additions, like the addition of
+<a href="https://jackdewinter.github.io/2020/08/03/markdown-linter-improving-the-markdown-transformer/#adding-emphasis-support">emphasis support</a>
+in the last article, I found a
+good, easy example and started with the scenario test for that example.  The needs to
+pass that first scenario test,
+<a href="https://github.github.com/gfm/#example-493">example 493</a>,
+were simple.  The <code>LinkStartMarkdownToken</code> class already had all the necessary fields,
+so no changes were needed there.  I then proceeded to add the
+<code>rehydrate_inline_link_text_from_token</code> function into the transformer, containing a
+simple transformation:</p>
+<div class="highlight"><pre><span></span>    <span class="n">link_text</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">"["</span> <span class="o">+</span> <span class="n">link_token</span><span class="o">.</span><span class="n">text_from_blocks</span> <span class="o">+</span> <span class="s2">"]("</span>
+        <span class="o">+</span> <span class="n">link_token</span><span class="o">.</span><span class="n">link_uri</span> <span class="o">+</span> <span class="s2">" </span><span class="se">\"</span><span class="s2">"</span><span class="o">+</span> <span class="n">link_token</span><span class="o">.</span><span class="n">link_title</span> <span class="o">+</span> <span class="s2">"</span><span class="se">\"</span><span class="s2">)"</span>
+    <span class="p">)</span>
+</pre></div>
+<p>From there, each additional scenario test introduced another variation on
+what an acceptable Link token was.  For example, the scenario test for
+<a href="https://github.github.com/gfm/#example-494">Example 494</a>
+introduced a link title that was not present.  That changed the transformation into:</p>
+<div class="highlight"><pre><span></span>    <span class="n">link_text</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">"["</span> <span class="o">+</span> <span class="n">link_token</span><span class="o">.</span><span class="n">text_from_blocks</span> <span class="o">+</span> <span class="s2">"]("</span> <span class="o">+</span> <span class="n">link_token</span><span class="o">.</span><span class="n">link_uri</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">link_token</span><span class="o">.</span><span class="n">link_title</span><span class="p">:</span>
+        <span class="n">link_text</span> <span class="o">+=</span> <span class="s2">" </span><span class="se">\"</span><span class="s2">"</span> <span class="o">+</span> <span class="n">link_token</span><span class="o">.</span><span class="n">link_title</span> <span class="o">+</span> <span class="s2">"</span><span class="se">\"</span><span class="s2">"</span>
+    <span class="p">)</span>
+    <span class="n">link_text</span> <span class="o">+=</span> <span class="s2">"\)"</span>
+</pre></div>
+<p>And so on, and so on.  For any readers of my articles, this is the same pattern I
+have been following since I started this project: get a simple case working, then keep
+on adding on little changes until the big change is complete.  This set of changes was
+no different in that regard.</p>
+<h3 id="then-why-did-i-think-it-was-difficult">Then Why Did I Think It Was Difficult?<a class="headerlink" href="#then-why-did-i-think-it-was-difficult" title="Permanent link">¶</a></h3>
+<p>The daunting aspect of this group was its volume. To be able to recreate the inline link
+token properly, I needed to ensure that every part of the data was properly catalogued
+and stored in the token.  Doing this exercise for the Inline Link token, I came
+up with the following diagram and mapping:</p>
+<div class="highlight"><pre><span></span>[foo](   &lt;/my url&gt;     "  a title "     )
+|---|||-|||-----|||---|||--------|||---||
+  |  | | |   |   |  |  |     |    |  |  |
+  A  B C D   E   D  F  G     H    G  I  B
+</pre></div>
+<ul>
+<li>A - <code>ex_label</code> and <code>text_from_blocks</code><ul>
+<li>extracted link label, in final and original states</li>
+</ul>
+</li>
+<li>B - <code>self.label_type</code><ul>
+<li>the use of <code>(</code> and <code>)</code> denoting an inline link</li>
+</ul>
+</li>
+<li>C - <code>before_link_whitespace</code><ul>
+<li>whitespace before the link starts</li>
+</ul>
+</li>
+<li>D - <code>did_use_angle_start</code><ul>
+<li><code>True</code> indicating that this URI was encapsulated</li>
+</ul>
+</li>
+<li>E - <code>self.link_uri</code> and <code>self.pre_link_uri</code><ul>
+<li>extracted link URI, in final and original states</li>
+</ul>
+</li>
+<li>F - <code>before_title_whitespace</code><ul>
+<li>whitespace before the title starts</li>
+</ul>
+</li>
+<li>G - <code>inline_title_bounding_character</code><ul>
+<li>character used to bound the title</li>
+</ul>
+</li>
+<li>H - <code>link_title</code> and <code>pre_link_title</code><ul>
+<li>extracted link title, in final and original states</li>
+</ul>
+</li>
+<li>I - <code>after_title_whitespace</code><ul>
+<li>whitespace after the title is completed</li>
+</ul>
+</li>
+</ul>
+<p>While this may seem overly thorough, I felt that without a complete map of the Inline
+Link, any Markdown transformation would be incomplete.  Especially with so many moving
+parts, I was convinced that without a solid plan, I would miss a combination or
+a permutation of the test data.  </p>
+<h3 id="how-did-those-changes-go">How Did Those Changes Go?<a class="headerlink" href="#how-did-those-changes-go" title="Permanent link">¶</a></h3>
+<p>The scenario tests were not really difficult to get working properly, it was just the
+sheer volume of them.  Behind each of those scenario tests were a set of Markdown
+parser functions that needed to be properly exercised.  While those functions had
+already been tested against their HTML output, this work was to add more information in
+each token, to ensure that the data in the tokens are complete.  And that completeness
+came at a cost.</p>
+<p>One of those costs was an increase in the number of results returned by functions,
+such as by the <code>__process_inline_link_body</code> function.  To accomplish the extraction
+requirements of these changes, this function went from returning a tuple containing 5
+variables to returning a tuple containing 10 variables.  And while that may seem
+like a simple refactor to complete, I am still debating with myself on how to handle
+that change.  Do I create a new class that is only used internally in this one case,
+or do I throw it into an instance of the <code>LinkStartMarkdownToken</code> class that I can pass
+around more easily?  While the token data is not complete, the <code>LinkStartMarkdownToken</code>
+class has all the necessary fields, with 2 fields to spare.  Which to choose?
+As I said, still thinking on that one.</p>
+<p>Another function that I want to clean up is the <code>rehydrate_inline_link_text_from_token</code>
+function.  At 57 lines, it is a bit larger than I usually like in my projects.  But in
+this case, maybe it is warranted.  This function does have a single responsibility, the
+rehydration of the token, and it sticks solidly to that purpose.  With the 12 fields
+that it uses to rehydrate, the implementation difficulty is there.  And that
+is only for the Inline Link tokens, not the other 3 types of link tokens.  They will
+need implementations too.</p>
+<p>For me, the really tough part was that I needed to slog<sup id="fnref:slog"><a class="footnote-ref" href="#fn:slog">1</a></sup> through the sheer number
+of combinations presented in the examples.  Using link labels as an example,
+the link label can contain normal text, backslashes, character entities and inline
+tokens.  To make sure I had all these covered, I needed to make sure I had
+representative scenario tests for each of these groups of combinations.  And then there
+are the link URIs and link titles.  It just got to the point where I used a small
+spreadsheet to keep track of things, ticking off combinations as I went… just to be
+sure.</p>
+<h2 id="reference-links-and-link-reference-definitions">Reference Links and Link Reference Definitions<a class="headerlink" href="#reference-links-and-link-reference-definitions" title="Permanent link">¶</a></h2>
+<p>Implementing the transformations for these two tokens was different than the other
+tokens in that I had to develop the transformations in coordination with each other.
+For example, I started adding support for these tokens using the scenario test for
+<a href="https://github.github.com/gfm/#example-161">example 161</a>, which has the following
+Markdown:</p>
+<div class="highlight"><pre><span></span><span class="o">[</span><span class="n">foo</span><span class="o">]</span><span class="err">:</span><span class="w"> </span><span class="o">/</span><span class="n">url</span><span class="w"> </span><span class="ss">"title"</span><span class="w"></span>
+
+<span class="o">[</span><span class="n">foo</span><span class="o">]</span><span class="w"></span>
+</pre></div>
+<p>As I mentioned in a previous section, to properly get this test passing, I needed to
+start by implementing a bare bones version of the
+<a href="https://github.github.com/gfm/#shortcut-reference-link">Shortcut Reference Link</a>.
+After all, if I could not reference the Link Reference Definition, how could I know if
+it was working properly?</p>
+<h3 id="starting-with-simple-shortcut-links">Starting with Simple Shortcut Links<a class="headerlink" href="#starting-with-simple-shortcut-links" title="Permanent link">¶</a></h3>
+<p>Thankfully, after looking at Link Reference Definition examples
+<a href="https://github.github.com/gfm/#example-161">example 161</a> to
+<a href="https://github.github.com/gfm/#example-188">example 188</a>,
+the only extra link requirement in each of these tests was a Shortcut Reference
+Link.  Having already written the transformer to handle Inline Link tokens, adding
+code to deal with Shortcut Link tokens was almost trivial.</p>
+<p>A Shortcut Reference Link is merely an Inline Link without the inline specifier, so
+modifying the <code>rehydrate_inline_link_text_from_token</code> function to handle the extra link
+type was quick and efficient.  Reusing code already in that function, I came up
+with these changes within 5 minutes:</p>
+<div class="highlight"><pre><span></span>         <span class="k">if</span> <span class="n">link_token</span><span class="o">.</span><span class="n">label_type</span> <span class="o">==</span> <span class="s2">"shortcut"</span><span class="p">:</span>
+            <span class="n">link_label</span> <span class="o">=</span> <span class="n">link_token</span><span class="o">.</span><span class="n">text_from_blocks</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span>
+                <span class="n">InlineHelper</span><span class="o">.</span><span class="n">backspace_character</span><span class="p">,</span> <span class="s2">""</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"</span><span class="se">\x08</span><span class="s2">"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span>
+            <span class="n">link_text</span> <span class="o">=</span> <span class="s2">"["</span> <span class="o">+</span> <span class="n">link_label</span> <span class="o">+</span> <span class="s2">"]"</span>
+         <span class="k">elif</span> <span class="n">link_token</span><span class="o">.</span><span class="n">label_type</span> <span class="o">==</span> <span class="s2">"inline"</span><span class="p">:</span>
+         <span class="o">...</span>
+         <span class="k">else</span><span class="p">:</span>
+             <span class="k">assert</span> <span class="bp">False</span>
+</pre></div>
+<p>Everything looked good from the shortcut link point of view.  However, since most of
+the tests that have Shortcut Links also have Link Reference Definitions to provide the
+reference for those links, I needed to switch to get the Link Reference Definition
+tokens done.</p>
+<p>While I was not 100% comfortable with leaving that implementation untested, I understood
+that I would have to wait a while to complete the testing.  To do that, on to
+Link Reference Definitions!</p>
+<h3 id="moving-over-to-link-reference-definitions">Moving Over to Link Reference Definitions<a class="headerlink" href="#moving-over-to-link-reference-definitions" title="Permanent link">¶</a></h3>
+<p>With a good stab at a transformation for Shortcut Links in place, I turned my attention
+to the Link Reference Definition transformation.  When I started putting the code for 
+this transformation together, I was greeted by good news.</p>
+<p>The first bit of good news is that since the support for Link Reference Definition
+tokens was added more recently
+<a href="https://jackdewinter.github.io/2020/06/15/markdown-linter-rabbit-hole-1-adding-consistency-checks/#link-reference-definitions">than the other tokens</a>,
+I had created that token with a better idea of what information I might need later.  As
+such, all the fields that I required to properly represent a Link Reference Definition
+element were already in place.  That allowed
+me to implement a near-complete version of the <code>rehydrate_link_reference_definition</code>
+function after only 3 tries and 10 minutes.  That was very refreshing.</p>
+<p>The second bit of good news was that the previous work on this token had already dealt
+with all the token’s complexity.  As I had a lot of issues in implementing the parser’s
+support for
+the Link Reference Definition element, I assumed that the rehydration of the token
+would also be a lot of work.  It turned out that because of all that hard work, that
+near-complete version of the <code>rehydrate_link_reference_definition</code> function was very
+simple.  I had even collected both pre-processed and post-processed versions of the
+link label, link destination URI, and link title!  </p>
+<p>Now back to the other Link tokens.</p>
+<h3 id="back-to-finishing-up-links">Back to Finishing Up Links<a class="headerlink" href="#back-to-finishing-up-links" title="Permanent link">¶</a></h3>
+<p>With all the hard work done, finishing off the rest of the links was easier than I
+had previously anticipated.  With Link Reference Definition support in place, the
+scenario tests that included both Link Reference Definition elements and Shortcut
+Links were executed and, with a few tweaks, passed.  Like the effort required to
+support Shortcut Reference Link tokens, the support for Full Reference Link tokens and
+Collapsed Reference Link tokens was added quickly.</p>
+<p>Within a couple of hours, a good percentage of the scenario tests that involved any
+4 of the Link tokens were completed and passing.  The remaining tests were those
+scenario tests that gave me some real issues with determining the original text.  A
+good example of this was the scenario test for
+<a href="https://github.github.com/gfm/#example-540">example 540</a>:</p>
+<div class="highlight"><pre><span></span><span class="k">[foo [bar](/uri)][ref]</span>
+
+<span class="na">[ref]: /uri</span>
+</pre></div>
+<p>which produces the HTML output:</p>
+<div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">p</span><span class="p">&gt;</span>[foo <span class="p">&lt;</span><span class="nt">a</span> <span class="na">href</span><span class="o">=</span><span class="s">"/uri"</span><span class="p">&gt;</span>bar<span class="p">&lt;/</span><span class="nt">a</span><span class="p">&gt;</span>]<span class="p">&lt;</span><span class="nt">a</span> <span class="na">href</span><span class="o">=</span><span class="s">"/uri"</span><span class="p">&gt;</span>ref<span class="p">&lt;/</span><span class="nt">a</span><span class="p">&gt;&lt;/</span><span class="nt">p</span><span class="p">&gt;</span>
+</pre></div>
+<p>The first link that gets interpreted from
+that text is the Inline Link <code>[bar](/uri)</code>.  When the <code>]</code> character is encountered
+after that link text, due to
+<a href="https://github.github.com/gfm/#phase-2-inline-structure">the provided algorithm</a>,
+it is kept as a <code>]</code> character as there is a valid link between it and its matching
+opening <code>[</code> character.  Finally, the <code>[ref]</code> is a valid Shortcut Link, matching the
+reference set up by the Link Reference Definition.</p>
+<p>Getting the correct, original text to insert into the Link tokens was a bit of an
+effort.  The <code>__collect_text_from_blocks</code> function took a bit of fiddling to make
+sure that the original text that was extracted matched the actual original text.
+As with other things in this project, it took a couple of tries to find something
+that worked and worked well, but that time was well worth it.  A bit frustrating
+at time, but worth it.</p>
+<p>Having completed adding the support for all the non-image link scenario tests, it was
+time to add the image links into that mix.</p>
+<h2 id="images">Images<a class="headerlink" href="#images" title="Permanent link">¶</a></h2>
+<p>Looking at the
+<a href="https://github.github.com/gfm/#images">GFM specification for images</a>,
+it clearly states:</p>
+<blockquote>
+<p>The rules for this are the same as for link text, except that (a) an image description starts with ![ rather than [, and (b) an image description may contain links.</p>
+</blockquote>
+<p>Basically, as I stated before, the Image Link tokens get to use a lot of the work done
+for the other link tokens as a foundation, with just 2 changes.  The first part of that
+difference was easy to deal with in the transformer: emit the sequence <code>![</code> instead of
+the sequence <code>[</code>.  Done.</p>
+<p>The second part of that difference was handling examples of links within image links
+and image links within links.  While avoiding the scenario test for
+<a href="https://github.github.com/gfm/#example-528">example 528</a><sup id="fnref:example528"><a class="footnote-ref" href="#fn:example528">2</a></sup>, there were plenty of
+other cases such as
+<a href="https://github.github.com/gfm/#example-525">example 525</a>:</p>
+<div class="highlight"><pre><span></span><span class="o">[</span><span class="n">![moon</span><span class="o">]</span><span class="p">(</span><span class="n">moon</span><span class="p">.</span><span class="n">jpg</span><span class="p">)</span><span class="err">]</span><span class="p">(</span><span class="o">/</span><span class="n">uri</span><span class="p">)</span><span class="w"></span>
+</pre></div>
+<p>and <a href="https://github.github.com/gfm/#example-583">example 583</a>:</p>
+<div class="highlight"><pre><span></span><span class="err">!</span><span class="o">[</span><span class="n">foo [bar</span><span class="o">]</span><span class="p">(</span><span class="o">/</span><span class="n">url</span><span class="p">)</span><span class="err">]</span><span class="p">(</span><span class="o">/</span><span class="n">url2</span><span class="p">)</span><span class="w"></span>
+</pre></div>
+<p>that I needed to deal with.  The actual parsing of those images and their transformation
+to HTML were already tested and working. It was just the extraction of the original
+text that gave me issues.  However, having dealt with similar examples in the previous
+changes for the <code>__collect_text_from_blocks</code> function, I was able to finish up those
+cases quickly.</p>
+<p>The good part about getting to the end of this work took a bit to sink in.  I had
+budgeted and entire week to complete these changes.  But even after making
+sure the commit was clean, it was early on Saturday morning.  It was Saturday morning
+and the link token group was completed.  Well, almost completed.  More on example 528
+later.  But it was good enough to mark this block of work done and complete.  With some
+extra time left in my schedule, I decided to put it to good use.</p>
+<h2 id="code-coverage">Code Coverage<a class="headerlink" href="#code-coverage" title="Permanent link">¶</a></h2>
+<p>The first good use that I put that extra time to was improving code coverage.  While
+there were only 3 cases where I needed to tighten up the code coverage, it was just
+something I wanted to make sure got done.  It is true that I almost always argue that
+the scenario
+coverage metric is more important than the code coverage metric.  But with the code
+coverage percentage in the high 99’s, I just wanted to nail this down while the required
+changes would be small and manageable.</p>
+<h2 id="moving-special-character-support">Moving Special Character Support<a class="headerlink" href="#moving-special-character-support" title="Permanent link">¶</a></h2>
+<p>The second good use for my extra time was to move the special character support in the
+parser into the <code>ParserHelper</code> class.  Along the way, adding proper support for the
+Markdown transformer was accomplished using a
+small set of special characters.  These special characters allowed the normal processing
+of the tokens by the HTML transformer to generate the proper HTML output, while at the
+same time allowing the Markdown transformer to rehydrate the token into its original
+Markdown.</p>
+<p>With the use of the characters scattered around the project’s code base, I felt it was
+useful to centralize the usage of those characters into the <code>ParserHelper</code> class.
+To complete that centralization, I also introduced a number of functions that either
+resolved the characters (for HTML) or removed the characters (for Markdown).<sup id="fnref:better"><a class="footnote-ref" href="#fn:better">3</a></sup>
+Those characters and their behaviors are:</p>
+<ul>
+<li>the <code>\b</code> or backspace character, used primarily for the <code>\\</code> or backslash character<ul>
+<li>when resolved, removes the character and the character before it</li>
+<li>when removed, leaves the previous character in place</li>
+</ul>
+</li>
+<li>the <code>\a</code> or alert character, used to provide an “X was replaced with Y” notation<ul>
+<li>when resolved, removes the alert characters and the X sequence, leaving the Y sequence</li>
+<li>when removed, removes the alert characters and the Y sequence, leaving the X sequence</li>
+</ul>
+</li>
+<li>the <code>\x02</code> character, used to split whitespaces<ul>
+<li>when resolved, is replaced with an empty string</li>
+<li>when removed as part of SetExt Heading whitespace processing, delineates leading whitespace that was removed from trailing whitespace that was removed</li>
+</ul>
+</li>
+<li>the <code>\x03</code> or “NOOP” character, used with the alert character sequence as a Y sequence<ul>
+<li>when resolved, replaces the entire sequence with an empty string</li>
+<li>when removed, same as above but used to indicate that the X sequence was a caused by a blank line token</li>
+</ul>
+</li>
+</ul>
+<p>The centralization of these characters and their usage did help to clean up the code.
+In all cases, I created a single variable to represent the character, and enforced
+its use throughout the codebase, except in test output.  For example, instead of using
+the <code>\b</code> for the backspace character, I created a new static member variable of
+the <code>ParserHelper</code> class called <code>__backspace_character</code>.  The use of these variables
+in the code made it clear that those characters were being used with purpose, and not
+because of convenience.</p>
+<p>But even after that work, I still had a bit of time left.  What else could I do to
+help the project?</p>
+<h2 id="example-528">Example 528<a class="headerlink" href="#example-528" title="Permanent link">¶</a></h2>
+<p>With my last remaining bits of extra time, I wanted to take another shot at the proper
+processing of
+<a href="https://github.github.com/gfm/#example-528">example 528</a>.  Having tackled the
+Link related group of tokens, I felt that I had a good grasp of the processing
+required.  With a sense of purpose and confidence, I felt it was time to put that
+belief to the test.</p>
+<p>For some background, example 528 is similar to
+<a href="https://github.github.com/gfm/#example-525">example 525</a>
+and
+<a href="https://github.github.com/gfm/#example-583">example 583</a>
+referenced in the previous sections.  However, while each of those examples deals with
+one type of link within the other type of link, example 528 can be considered the
+composition of both of those examples together.  The example is as follows:</p>
+<div class="highlight"><pre><span></span><span class="err">!</span><span class="o">[</span><span class="n">[[foo</span><span class="o">]</span><span class="p">(</span><span class="n">uri1</span><span class="p">)</span><span class="err">]</span><span class="p">(</span><span class="n">uri2</span><span class="p">)</span><span class="err">]</span><span class="p">(</span><span class="n">uri3</span><span class="p">)</span><span class="w"></span>
+</pre></div>
+<p>producing the following HTML:</p>
+<div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">p</span><span class="p">&gt;&lt;</span><span class="nt">img</span> <span class="na">src</span><span class="o">=</span><span class="s">"uri3"</span> <span class="na">alt</span><span class="o">=</span><span class="s">"[foo](uri2)"</span> <span class="p">/&gt;&lt;/</span><span class="nt">p</span><span class="p">&gt;</span>
+</pre></div>
+<p>To be clear, this is an inline image link that contains 2 possibly valid inline links
+within its link label.  The final result was that the image’s URI is <code>uri3</code> as expected,
+but the <code>alt</code> parameter’s text is set to <code>[foo](uri2)</code>, an interpretation of the
+text within the link label.  And to make it even more interesting, the
+GFM specification also provides an algorithm for
+<a href="https://github.github.com/gfm/#phase-2-inline-structure">evaluating emphasis and links</a>
+which has been tested.</p>
+<p>Yes, I have had the algorithm given to me, and I cannot make it work.  I confess.
+I have been over the specification’s algorithm and my own implementation of that
+algorithm, and I cannot make it work.  Every couple of weeks, I have spent a couple
+of hours looking at the log output, the source code, and the algorithm description,
+and… nothing.</p>
+<p>Giving it another shot, I decided that instead of assuming I knew what was going on,
+I would try and test it as a new problem.  And with any new problem, I tackle it by
+doing research on it, so that is what I set out to do.  I turned
+on the logging for the scenario test associated with example 528 and started observing
+and scribbling.  By the time I had gone through the algorithm 3 times, I was
+convinced that I was either missing something important or there was a problem with
+the well-tested algorithm.  If I were a betting man, my money would be on the algorithm
+being correct, but I just could not figure out where the issue was!</p>
+<p>What I saw in each of my examinations, was that as the processing progressed, the
+string <code>[foo](uri1)</code> was parsed as a link.  Following the algorithm’s instructions,
+any link starts before that point needed to be marked as inactive, so the code
+marked the second <code>[</code> character was marked as inactive.  I also double checked the
+handling of the initial <code>![</code> sequence.  As that sequence denotes an image token and not
+a link token, that initial <code>![</code> sequence was not marked as inactive.  Then, when the
+second <code>]</code> character was processed, the implementation skipped over the inactive <code>[</code>
+character, hitting the <code>![</code> sequence for the image.  With the start link characters
+exhausted, the rest of that string became plain text.</p>
+<p>But that is not the result that was specified in the GFM specification.  It wanted</p>
+<div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">p</span><span class="p">&gt;&lt;</span><span class="nt">img</span> <span class="na">src</span><span class="o">=</span><span class="s">"uri3"</span> <span class="na">alt</span><span class="o">=</span><span class="s">"[foo](uri2)"</span> <span class="p">/&gt;&lt;/</span><span class="nt">p</span><span class="p">&gt;</span>
+</pre></div>
+<p>and the code was generating:</p>
+<div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">p</span><span class="p">&gt;&lt;</span><span class="nt">img</span> <span class="na">src</span><span class="o">=</span><span class="s">"uri2"</span> <span class="na">alt</span><span class="o">=</span><span class="s">"foo"</span> <span class="p">/&gt;</span>](uri3)<span class="p">&lt;/</span><span class="nt">p</span><span class="p">&gt;</span>
+</pre></div>
+<p>At that point, I decided to seek help from a higher power: the CommonMark specification
+site.  I posted a quick message to the forums, making sure I indicated that I was having
+a problem, clearly stating my findings from above and that they were based on my
+implementation.  A couple of quick checks for spelling and grammar, and I posted
+a request for help.  I did get a response to my request rather quickly, and I will
+address that in a future article.</p>
+<h2 id="what-was-my-experience-so-far">What Was My Experience So Far?<a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link">¶</a></h2>
+<p>The goal that I had set for myself for this chunk of work was to make sure that I
+added the link token group to the Markdown transformer’s features.  While it did
+take me most of the week to accomplish that, I do believe that I accomplished that
+with some time to spare.  It felt good to be able to take some time and do some small
+tasks to clean up the code a bit.</p>
+<p>The weird thing about being able to see the end of the project’s initial phase is
+that while I want a quality project, I also want to hurry up.  I can see the items
+in the issue list being resolved and then removed, and I just want to get them all
+removed.  I want to push myself harder to finish them quicker, even though I know
+that is the wrong thing to do.</p>
+<p>As with all side projects, my time and effort spent on the project is a balancing
+act between my personal responsibilities, my professional responsibilities, and the
+project’s responsibilities.  And yes, while it is a balancing act, those three
+groups of responsibilities are in the correct order.  I need to make sure to take
+care of myself and my job first, using any extra bandwidth to work on the project.
+While I do want to push myself to hurry and finish the project, from a resource
+allocation point of view, it just would not work.</p>
+<p>And there is also the quality point of view.  While I am good at my job, I am keenly
+aware that every project has four dials that can be adjusted: scope, cost, time, and
+quality.  If I want the project to completed faster, changing the time dial, I need
+to adjust the other dials to compensate.  This is a personal side project, so I cannot
+adjust the cost dial, leaving the quality and scope dials.  Seeing as I do not want to
+change my requirements for either of those two dials, I know I need to keep the time
+dial where it is.</p>
+<p>Between the balancing act and the resource logic puzzle, I know I need to stay the
+course.  While I was feeling the need to hurry up, I also knew that is not what has
+got me to this point in the project.  What has got me here is good planning, solid
+effort, and not exhausting myself.  If I upset that balance, I might lose my
+desire to finish the project, and that would be a shame.</p>
+<p>So, as always, I started to look at and plan the next chunk of work, making
+sure it was a good chunk of work that I could easily accomplish.  After all, slow
+and steady went the tortoise…</p>
+<h2 id="what-is-next">What is Next?<a class="headerlink" href="#what-is-next" title="Permanent link">¶</a></h2>
+<p>Add all the normal tokens to the Markdown transformer?  Check.  Add the Link-related
+token group to the Markdown transformer?  Check.  That just left the Container-related
+token group.  Add since I knew that Block Quotes were going to need a lot of work,
+taking care of the List-related tokens was a good first step.</p>
+<div class="footnote">
+<hr/>
+<ol>
+<li id="fn:slog">
+<p>According to <a href="https://www.merriam-webster.com/dictionary/slog">Webster’s dictionary</a>: “to plod (one’s way) perseveringly especially against difficulty”. <a class="footnote-backref" href="#fnref:slog" title="Jump back to footnote 1 in the text">↩</a></p>
+</li>
+<li id="fn:example528">
+<p>More on <a href="https://jackdewinter.github.io/2020/08/10/markdown-linter-adding-links-to-the-markdown-transformer/#example-528">example 528</a> later. <a class="footnote-backref" href="#fnref:example528" title="Jump back to footnote 2 in the text">↩</a></p>
+</li>
+<li id="fn:better">
+<p>While I am sure I can come up with a better name for the two sets of functions, I am not sure what those better names would be.  Ideas? <a class="footnote-backref" href="#fnref:better" title="Jump back to footnote 3 in the text">↩</a></p>
+</li>
+</ol>
+</div>
+
+
+             
+ 
+                <p id="post-share-links">
+    Like this post? Share on:
+    <a href="https://twitter.com/intent/tweet?text=Markdown%20Linter%20-%20Adding%20Links%20to%20the%20Markdown%20Transformer&url=https%3A//jackdewinter.github.io/2020/08/10/markdown-linter-adding-links-to-the-markdown-transformer/&hashtags=markdown-linter,core-linter" target="_blank" rel="nofollow noopener noreferrer" title="Share on Twitter">Twitter</a>
+    ❄
+    <a href="https://www.facebook.com/sharer/sharer.php?u=https%3A//jackdewinter.github.io/2020/08/10/markdown-linter-adding-links-to-the-markdown-transformer/" target="_blank" rel="nofollow noopener noreferrer" title="Share on Facebook">Facebook</a>
+    ❄
+    <a href="mailto:?subject=Markdown%20Linter%20-%20Adding%20Links%20to%20the%20Markdown%20Transformer&amp;body=https%3A//jackdewinter.github.io/2020/08/10/markdown-linter-adding-links-to-the-markdown-transformer/" target="_blank" rel="nofollow noopener noreferrer" title="Share via Email">Email</a>
+    </p>
+
+            
+            
+
+
+
+
+
+
+<section>
+    <h6 style="display:none;">Comments</h6>
+    <p id="comment-message">So what do you think? Did I miss something? Is any part unclear? Leave your comments below. </p>
+
+    <div class="accordion" id="accordion2">
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                <a class="accordion-toggle disqus-comment-count comment-count"
+                   data-toggle="collapse"
+                   data-parent="#accordion2"
+                   href="https://jackdewinter.github.io/2020/08/10/markdown-linter-adding-links-to-the-markdown-transformer/#comment_thread"
+                   id="comment-accordion-toggle">
+                    Comments
+                </a>
+            </div>
+            <div id="comment_thread" class="accordion-body collapse">
+                <div class="accordion-inner">
+                    <div class="comments">
+
+                        <script src="https://utteranc.es/client.js"
+        data-repo="jackdewinter/jackdewinter.github.io"
+        data-issue-term="markdown-linter-adding-links-to-the-markdown-transformer"
+        data-label="Comments"
+        data-theme="github-light"
+        crossorigin="anonymous"
+        async>
+</script>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+            <hr/>
+            <aside>
+            <nav>
+            <ul class="articles-timeline">
+                <li class="previous-article">« <a href="https://jackdewinter.github.io/2020/08/03/markdown-linter-improving-the-markdown-transformer/" title="Previous: Markdown Linter - Improving the Markdown Transformer">Markdown Linter - Improving the Markdown Transformer</a></li>
+            </ul>
+            </nav>
+            </aside>
+        </div>
+        <section id="article-sidebar" class="span2">
+    <h4>Reading Time</h4>
+    <p>~18 min read</p>
+            <h4>Published</h4>
+            <time itemprop="dateCreated" datetime="2020-08-10T00:00:00-07:00">Aug 10, 2020</time>
+        <h4>Markdown Linter Core</h4>
+    <ul class="multi-parts-list">
+            <li >
+            <a href="https://jackdewinter.github.io/2020/05/04/markdown-linter-core-pre-rule-improvements/" title="Markdown Linter - Core - Pre-Rule Improvements">Part 1: Markdown Linter - Core - Pre-Rule Improvements</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/06/01/markdown-linter-taking-time-to-evaluate/" title="Markdown Linter - Taking Time To Evaluate">Part 2: Markdown Linter - Taking Time To Evaluate</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/06/08/markdown-linter-adding-line-and-column-support/" title="Markdown Linter - Adding Line and Column Support">Part 3: Markdown Linter - Adding Line and Column Support</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/06/15/markdown-linter-rabbit-hole-1-adding-consistency-checks/" title="Markdown Linter - Rabbit Hole 1 - Adding Consistency Checks">Part 4: Markdown Linter - Rabbit Hole 1 - Adding Consistency Checks</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/06/22/markdown-linter-rabbit-hole-2-losing-my-way/" title="Markdown Linter - Rabbit Hole 2 - Losing My Way">Part 5: Markdown Linter - Rabbit Hole 2 - Losing My Way</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/07/06/markdown-linter-weeding-the-projects-issue-list/" title="Markdown Linter - Weeding the Project's Issue List">Part 6: Markdown Linter - Weeding the Project's Issue List</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/06/29/markdown-linter-rabbit-hole-3-trying-to-dig-myself-out/" title="Markdown Linter - Rabbit Hole 3 - Trying To Dig Myself Out">Part 7: Markdown Linter - Rabbit Hole 3 - Trying To Dig Myself Out</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/07/13/markdown-linter-improving-consistency/" title="Markdown Linter - Improving Consistency">Part 8: Markdown Linter - Improving Consistency</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/07/20/markdown-linter-transforming-back-to-markdown/" title="Markdown Linter - Transforming Back to Markdown">Part 9: Markdown Linter - Transforming Back to Markdown</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/07/27/markdown-linter-addressing-the-initial-markdown-transformer-issues/" title="Markdown Linter - Addressing the Initial Markdown Transformer Issues">Part 10: Markdown Linter - Addressing the Initial Markdown Transformer Issues</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/08/03/markdown-linter-improving-the-markdown-transformer/" title="Markdown Linter - Improving the Markdown Transformer">Part 11: Markdown Linter - Improving the Markdown Transformer</a>
+            </li>
+            <li  class="active-part">
+            Part 12: Markdown Linter - Adding Links to the Markdown Transformer
+            </li>
+    </ul>
+            <h4>Category</h4>
+            <a class="category-link" href="https://jackdewinter.github.io/categories#software-quality-ref">Software Quality</a>
+            <h4>Tags</h4>
+            <ul class="list-of-tags tags-in-article">
+                <li><a href="https://jackdewinter.github.io/tags#core-linter-ref">core linter
+                    <span>15</span>
+</a></li>
+                <li><a href="https://jackdewinter.github.io/tags#markdown-linter-ref">markdown linter
+                    <span>33</span>
+</a></li>
+            </ul>
+<h4>Stay in Touch</h4>
+<div id="sidebar-social-link">
+    <a href="https://github.com/jackdewinter" title="github-alt" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="GitHub" role="img" viewBox="0 0 512 512"><rect width="512" height="512" rx="15%" fill="#1B1817"/><path fill="#fff" d="M335 499c14 0 12 17 12 17H165s-2-17 12-17c13 0 16-6 16-12l-1-50c-71 16-86-28-86-28-12-30-28-37-28-37-24-16 1-16 1-16 26 2 40 26 40 26 22 39 59 28 74 22 2-17 9-28 16-35-57-6-116-28-116-126 0-28 10-51 26-69-3-6-11-32 3-67 0 0 21-7 70 26 42-12 86-12 128 0 49-33 70-26 70-26 14 35 6 61 3 67 16 18 26 41 26 69 0 98-60 120-117 126 10 8 18 24 18 48l-1 70c0 6 3 12 16 12z"/></svg>
+    </a>
+    <a href="https://www.linkedin.com/in/jackdewinter/" title="linkedin" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="LinkedIn" role="img" viewBox="0 0 512 512" fill="#fff"><rect width="512" height="512" rx="15%" fill="#0077b5"/><circle cx="142" cy="138" r="37"/><path stroke="#fff" stroke-width="66" d="M244 194v198M142 194v198"/><path d="M276 282c0-20 13-40 36-40 24 0 33 18 33 45v105h66V279c0-61-32-89-76-89-34 0-51 19-59 32"/></svg>
+    </a>
+    <a href="https://jackdewinter.github.io/feeds/all.atom.xml" title="" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="RSS" role="img" viewBox="0 0 512 512"><rect width="512" height="512" rx="15%" fill="#f80"/><circle cx="145" cy="367" r="35" fill="#fff"/><path fill="none" stroke="#fff" stroke-width="60" d="M109 241c89 0 162 73 162 162M109 127c152 0 276 124 276 276"/></svg>
+    </a>
+</div>
+            
+
+
+
+
+
+            
+
+
+
+
+
+        </section>
+</div>
+</article>
+                    </div>
+                    <div class="span1"></div>
+                </div>
+            </div>
+        </div>
+<footer>
+    <div>
+        
+&copy; Copyright 2019 by Jack De Winter and licensed under a <a rel="license"
+  href="http://creativecommons.org/licenses/by/4.0/">
+  <img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/80x15.png" />
+  Creative Commons Attribution 4.0 International License</a>.
+
+    </div>
+
+
+
+
+    <div id="fpowered">
+        Powered by: <a href="http://getpelican.com/" title="Pelican Home Page" target="_blank" rel="nofollow noopener noreferrer">Pelican</a>
+        Theme: <a href="https://elegant.oncrashreboot.com/" title="Theme Elegant Home Page" target="_blank" rel="nofollow noopener noreferrer">Elegant</a>
+    </div>
+</footer>            <script src="//code.jquery.com/jquery.min.js"></script>
+        <script src="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>
+        <script>
+            function validateForm(query)
+            {
+                return (query.length > 0);
+            }
+        </script>
+
+    <script>
+    (function () {
+        if (window.location.hash.match(/^#comment-\d+$/)) {
+            $('#comment_thread').collapse('show');
+        }
+    })();
+    window.onhashchange=function(){
+        if (window.location.hash.match(/^#comment-\d+$/))
+            window.location.reload(true);
+    }
+    $('#comment_thread').on('shown', function () {
+        var link = document.getElementById('comment-accordion-toggle');
+        var old_innerHTML = link.innerHTML;
+        $(link).fadeOut(200, function() {
+            $(this).text('Click here to hide comments').fadeIn(200);
+        });
+        $('#comment_thread').on('hidden', function () {
+            $(link).fadeOut(200, function() {
+                $(this).text(old_innerHTML).fadeIn(200);
+            });
+        })
+    })
+</script>
+
+    </body>
+    <!-- Theme: Elegant built for Pelican
+        License : MIT -->
+</html>
