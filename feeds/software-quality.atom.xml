@@ -1,5 +1,262 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench - Software Quality</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/software-quality.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2020-08-10T00:00:00-07:00</updated><entry><title>Markdown Linter - Adding Links to the Markdown Transformer</title><link href="https://jackdewinter.github.io/2020/08/10/markdown-linter-adding-links-to-the-markdown-transformer/" rel="alternate"></link><published>2020-08-10T00:00:00-07:00</published><updated>2020-08-10T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-08-10:/2020/08/10/markdown-linter-adding-links-to-the-markdown-transformer/</id><summary type="html">
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench - Software Quality</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/software-quality.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2020-08-14T00:00:00-07:00</updated><entry><title>Python Projects - Using PipEnv</title><link href="https://jackdewinter.github.io/2020/08/14/python-projects-using-pipenv/" rel="alternate"></link><published>2020-08-14T00:00:00-07:00</published><updated>2020-08-14T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-08-14:/2020/08/14/python-projects-using-pipenv/</id><summary type="html">
+&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;With almost a year of Python development under my belt, I wanted to start talking about
+the Python elements that I feel have made my development of the
+&lt;a href="https://github.com/jackdewinter/pymarkdown"&gt;PyMarkdown project&lt;/a&gt;
+successful.  When thinking about where to start, the first thing that came to mind was
+my use of PipEnv …&lt;/p&gt;</summary><content type="html">
+&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;With almost a year of Python development under my belt, I wanted to start talking about
+the Python elements that I feel have made my development of the
+&lt;a href="https://github.com/jackdewinter/pymarkdown"&gt;PyMarkdown project&lt;/a&gt;
+successful.  When thinking about where to start, the first thing that came to mind was
+my use of PipEnv to maintain the project environment.&lt;/p&gt;
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;While I am relatively new to Python, I am an old hat at trying to maintain a cohesive
+way to keep my projects usable yet portable.  From my early days in C and Pascal to my
+current days in Go and Java, I have always tried to have a cohesive story around how to
+package my project’s source code to be used by multiple developers.  In the end, I
+found that the main goals were always the same: how do I keep a project usable by all
+interested developers, while keeping the maintenance of that project to a minimum?&lt;/p&gt;
+&lt;p&gt;From my point of view,
+&lt;a href="https://pipenv.pypa.io/en/latest/"&gt;PipEnv&lt;/a&gt;
+meets those goals for Python by solving a lot of the common issues that project
+maintainers and developers have.  This in turn makes two of the harder parts of
+developing programs mostly disappear: dependency management and portability.  Using the
+simple command &lt;code&gt;pip install --user pipenv&lt;/code&gt; to install into any Python system, PipEnv quickly became a useful tool in my toolbox and has stayed there.
+During this article, I will talk about why PipEnv keeps that position in my toolbox.&lt;/p&gt;
+&lt;h2 id="quick-note"&gt;Quick Note&lt;a class="headerlink" href="#quick-note" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;While I realize some projects may still be on Python version 2, this article is
+targeted for people developing on Python 3 and above.  More precisely, these examples
+were all tested with Python 3.7.&lt;/p&gt;
+&lt;h2 id="what-is-pipenv"&gt;What Is PipEnv?&lt;a class="headerlink" href="#what-is-pipenv" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;While the full answer can be seen at the top of the
+&lt;a href="https://pipenv.pypa.io/en/latest/"&gt;PipEnv home page&lt;/a&gt;,
+my summary of that answer is as follows:&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;PipEnv is a Python module that cleanly manages your Python project and its dependencies, ensuring that the project can be easily rebuilt on other systems.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;While that might seem like an easy thing to accomplish, PipEnv or tools like it are
+usually only employed after a journey through other, less efficient solutions.&lt;/p&gt;
+&lt;p&gt;To understand those solutions and the problems that they present, let’s start at
+the beginning with dependency management.&lt;/p&gt;
+&lt;h3 id="starting-with-dependencies"&gt;Starting with Dependencies&lt;a class="headerlink" href="#starting-with-dependencies" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;In Python, as with most modern languages, a lot of the heavy lifting is done in
+libraries.  For Python, these libraries must be installed directly into the current
+instance of Python for those libraries to be visible to the Python programs.  The most
+common way of installing and managing those libraries locally is to use the
+&lt;a href="https://pip.pypa.io/en/stable/"&gt;&lt;code&gt;pip&lt;/code&gt;&lt;/a&gt;
+tool. For example, to add the latest version of the &lt;code&gt;colorama&lt;/code&gt; library to the local
+Python installation, the following command is used:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;pip install colorama
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;But that command has a problem in that it installs the specified library into the global
+instance of Python.  Even addressing that problem using a user-specific variation of
+that command:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;pip install --user colorama
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;that caching still takes effect for all Python programs that are run as that user.
+That is a bit better, but not optimal.&lt;/p&gt;
+&lt;p&gt;The big issue is that it is hard to replicate which libraries are installed for any given project without maintaining a per-project
+script with many lines in it, one for each library. With multiple projects sharing the
+same global cache of libraries, a clear way to enforce the libraries and versions
+needed for a specific project is needed.&lt;/p&gt;
+&lt;p&gt;Enter the &lt;code&gt;requirements.txt&lt;/code&gt; file.&lt;/p&gt;
+&lt;h3 id="explicitly-specifying-requirements-as-code"&gt;Explicitly Specifying Requirements as Code&lt;a class="headerlink" href="#explicitly-specifying-requirements-as-code" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;The first step that many people take on their Python project journey is to create a
+&lt;code&gt;requirements.txt&lt;/code&gt; file to hold all the library requirements for their project. The
+file has a format of:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;colorama=0.4.3
+Pygments==2.4.2
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;with each library being listed on its own line, optionally followed by the version
+of the library to install. To apply these library requirements to a given Python
+environment, the command:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;pip install --user -r requirements.txt
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;is used.  This usage of &lt;code&gt;pip&lt;/code&gt; is used as a shortcut for having to call &lt;code&gt;pip install&lt;/code&gt;
+once for every library needed in the project.  By
+this point in the project process, most developers understand that nailing down a
+specific version of the library being used is critical to the project’s success.  By
+specifying an exact version of the library to be referenced, the &lt;code&gt;pip&lt;/code&gt; tool guarantees
+that it will always reference that specific version of the library, locking down the
+behavior of the library and making it predictable.&lt;/p&gt;
+&lt;p&gt;While the tool usage is simple enough, there are problems with using the &lt;code&gt;pip&lt;/code&gt; tool
+in this way.  The first problem is that to ensure that I have the right libraries for
+my program, every time I run that program, I need to re-run that
+&lt;code&gt;pip install --user -r requirements.txt&lt;/code&gt; command before I run my program.  If I do not
+run that command, I risk the chance that another program has changed
+the libraries on my program, either causing the program to fail or rendering its output
+questionable.  Even when I created a script to run the above command and my program
+together, I felt that the combination often feels slow, bothersome, and inelegant.&lt;/p&gt;
+&lt;p&gt;The second problem is that of “phantom” dependencies.  For argument’s sake, let’s assume
+that I am maintaining 2 projects and their dependencies.  Project A has a dependency
+on Library 1 and Project B has a dependency on Library 2, with Library 1 and
+Library 2 being separate libraries.  Furthermore, let’s assume that both
+projects use a &lt;code&gt;requirements.txt&lt;/code&gt; file and the above &lt;code&gt;pipenv install&lt;/code&gt; method to manage
+their project
+dependencies.  Because of the way these files are applied, if Project B is used after
+Project A, it retains access to Library 1 that was installed by Project A.  After
+all, with nothing to remove Project A’s dependencies, they stay in the user’s global
+cache of libraries.  This means Project B’s dependencies are not clearly defined and
+may prove difficult to replicate on someone else’s machine.&lt;/p&gt;
+&lt;p&gt;Given those problems, how can the project move away from using global library caches?&lt;/p&gt;
+&lt;h3 id="another-step-forward-virtual-environments"&gt;Another Step Forward: Virtual Environments&lt;a class="headerlink" href="#another-step-forward-virtual-environments" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;The next step forward is to use the tools accumulated so far and to add virtual
+environments into that group of tools.  Installed using the following command:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;pip install --user virtualenv
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;the user can then run the following command to create a virtual environment under the
+current directory:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;virtualenv venv
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;This command may take some time to complete, but once it is done, there will be a local
+&lt;code&gt;virtualenv&lt;/code&gt; directory that contains a completely distinct version of the Python
+installation that it was created from.&lt;/p&gt;
+&lt;p&gt;Even with that environment in place, there is some work to do before executing the
+project’s Python program.  To use the virtual environment, the execution of an
+activator script is
+required to set the shell’s environment to point at the correct environment.
+Located in either the
+&lt;code&gt;virtualenv\Scripts&lt;/code&gt; directory (on Windows systems) or the &lt;code&gt;virtualenv\bin&lt;/code&gt; directory
+(on Posix systems) are a group of scripts with the name &lt;code&gt;activate&lt;/code&gt; or matching the
+pattern &lt;code&gt;activate.*&lt;/code&gt;.  Executing the correct script activates the virtual environment
+for a given shell, isolating any changes to the Python environment into that
+virtual environment.&lt;/p&gt;
+&lt;p&gt;The usage of this tool seems beneficial so far, so what are the issues with this tool?
+The
+big issue for me is that you must remember to deactivate the environment before
+leaving the project folder.  If you do not deactivate the environment before leaving the
+project’s directories, you can be doing something else in another directory and forget
+the directory that you anchored that environment to .  Without noticing it, a simple
+&lt;code&gt;pip install&lt;/code&gt; command will then alter the requirements of that environment, and not of
+the environment in the current directory.   This is a realistic scenario.  In my early
+days of Python development, I did this numerous times!  And each time, it took a while to
+figure out what I had done and how to reverse it.&lt;/p&gt;
+&lt;p&gt;A smaller issue with these environments is that they are specific to the local system
+but are anchored within the project.  This means that when dealing with version control
+systems such as Git, the project needs to explicitly ignore the files in the project’s
+&lt;code&gt;virtualenv&lt;/code&gt; directory to prevent local environment files from being committed.
+However, even with that directory ignored, the project requires extra scripts as part
+of its project code that specify how developers need to create the required virtual
+environment.&lt;/p&gt;
+&lt;p&gt;Given those issues, how do we take the best parts of &lt;code&gt;pip&lt;/code&gt; and &lt;code&gt;virtualenv&lt;/code&gt; and merge
+them together?&lt;/p&gt;
+&lt;h3 id="enter-pipenv"&gt;Enter PipEnv&lt;a class="headerlink" href="#enter-pipenv" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Installed using the following command:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;pip install --user pipenv
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;&lt;code&gt;PipEnv&lt;/code&gt; combines the best aspects of the previous concepts while getting rid of a fair
+number of the problems.  To illustrate this, I created a sample project from scratch to
+say, “Hello world!”  Setting up the project was easy.  I created a new directory,
+changed my current directory to that directory, and entered the command:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;pipenv --three
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;It took a while for the command to complete, but upon its completion I had a directory
+that contained the file &lt;code&gt;Pipfile&lt;/code&gt; and a “hidden”&lt;sup id="fnref:hidden"&gt;&lt;a class="footnote-ref" href="#fn:hidden"&gt;1&lt;/a&gt;&lt;/sup&gt; virtual environment.  To see
+the location of that virtual environment, I entered the command:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;pipenv --venv
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;and PipEnv returned the path to the virtual environment.  To be specific, it created
+a virtual environment that was not in my project directory, but in my local system’s
+user space. This meant that the virtual environment directory did not show up in any
+scans of the project directory, meaning that I did not have to ignore that directory
+by any version control systems.  That was definitely a win!&lt;/p&gt;
+&lt;p&gt;From there, I decided I wanted to add a splash of color to the program, brightening up
+a normally dull Hello World program.  While a simple Hello World program would look
+like this:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;print&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"Hello World!"&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;I decided to go with using the &lt;code&gt;colorama&lt;/code&gt; library to add that color.  Installing the
+&lt;code&gt;colorama&lt;/code&gt; library to the current project was easy, using the following command:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;pipenv install colorama
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;That command looked for the latest version of the &lt;code&gt;colorama&lt;/code&gt; library, installed it in
+the virtual environment, updated the &lt;code&gt;Pipfile&lt;/code&gt; and generated a new &lt;code&gt;Pipfile.lock&lt;/code&gt; file.
+Once that was completed, I created the file &lt;code&gt;main.py&lt;/code&gt; with the following contents:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;colorama&lt;/span&gt; &lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="n"&gt;init&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;Fore&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;Back&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;Style&lt;/span&gt;
+
+&lt;span class="n"&gt;init&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;span class="k"&gt;print&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"Hello "&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;Fore&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;BLACK&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;Back&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;GREEN&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s2"&gt;"World!"&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;Style&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;RESET_ALL&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;and saved that file.  After a quick check for spelling and grammar mistakes, I executed
+that program with the command:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;pipenv run python main.py
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;and I was greeted with this response:&lt;/p&gt;
+&lt;p&gt;&lt;img alt="image" src="https://jackdewinter.github.io/images/project-1/hello_world.png"/&gt;&lt;/p&gt;
+&lt;p&gt;To be clear, with 3 commands and 3 lines of Python code, I was able to create a simple
+program that referenced a library to colorize the output for my simple program and to
+write a single line of text to the console.  An even bigger win for me was that I knew
+that if I needed this project to be portable, I could easily bundle up the source in
+the directory and recreate the project elsewhere.  Having used PipEnv for months, this
+was not a theory for me, this was something that I have done in practice multiple times.&lt;/p&gt;
+&lt;p&gt;But unless you have performed that action, it may be hard to appreciate.  So let’s
+prove it!&lt;/p&gt;
+&lt;h3 id="proving-that-the-project-really-is-portable"&gt;Proving That the Project Really Is Portable&lt;a class="headerlink" href="#proving-that-the-project-really-is-portable" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;To prove that the project is portable, I created a separate directory and copied the
+contents of my sample directory into that directory.  While that is not exactly what
+happens when I clone a project from Git, I believe it is a close enough estimate for
+the purpose of this example.  To be specific, there were only 3 files in the source
+directory for my sample project, and all of them were copied over: &lt;code&gt;main.py&lt;/code&gt;,
+&lt;code&gt;Pipfile&lt;/code&gt;, and &lt;code&gt;Pipfile.lock&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;To properly setup the project, I entered the directory and executed the command:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;pipenv sync
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;After a while, control returned to my shell, with the &lt;code&gt;pipenv&lt;/code&gt; output clearly detailing
+that it created a new virtual environment and downloaded the needed libraries.&lt;/p&gt;
+&lt;p&gt;&lt;img alt="image" src="https://jackdewinter.github.io/images/project-1/sync.png"/&gt;&lt;/p&gt;
+&lt;p&gt;From there, entering the command:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;pipenv run python main.py
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;yielded the same output as the example project in the original directory.&lt;/p&gt;
+&lt;p&gt;&lt;img alt="image" src="https://jackdewinter.github.io/images/project-1/hello_world.png"/&gt; &lt;sup id="fnref:myWord"&gt;&lt;a class="footnote-ref" href="#fn:myWord"&gt;2&lt;/a&gt;&lt;/sup&gt;&lt;/p&gt;
+&lt;p&gt;While the
+typical project will be more complicated than this small project, the underlying
+principles are the same.  If a project uses PipEnv to manage library dependencies,
+the &lt;code&gt;Pipfile&lt;/code&gt; and &lt;code&gt;Pipfile.lock&lt;/code&gt; files become part of the project’s source and
+allows the project’s dependencies to be replicated in another directory or on another
+system.&lt;/p&gt;
+&lt;p&gt;Satisfied with the portability test passing, and not wanting to be a bad consumer of
+system resources, I then used the following command to remove the virtual environment
+from my local machine:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;pipenv --rm
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;By using the &lt;code&gt;pipenv --venv&lt;/code&gt; command both before and after this command, I was
+able to verify that the directory containing the virtual environment was removed from
+my local system.&lt;/p&gt;
+&lt;h2 id="why-do-i-like-it"&gt;Why Do I Like It?&lt;a class="headerlink" href="#why-do-i-like-it" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;I like using PipEnv because it is simple to setup, simple to maintain, and easy to
+use.  I am lazy in that I want to have the right tools at my fingertips to do the simple
+and easy stuff for me.  Having to remember to activate a virtual environment when I go
+into a directory and deactivate it when I leave was a headache.  There were many times
+I forgot to do just that, and it caused a bit of chaos.&lt;/p&gt;
+&lt;p&gt;I feel that PipEnv keeps everything I need together and keeps it in the right place
+for me: the base of the project.  If I need to run a Python script from the project,
+I use &lt;code&gt;pipenv run python {script-name}.py&lt;/code&gt;, a format that makes sense to me. If I need
+to check the project’s dependencies, the &lt;code&gt;pipenv graph&lt;/code&gt; command is there, with an
+intuitive output format. If I need to recreate the project in a new directory, the
+&lt;code&gt;pipenv sync&lt;/code&gt; command is there, and completes its job properly&lt;/p&gt;
+&lt;p&gt;Basically, it is a tool that I find useful and that I think makes sense.&lt;/p&gt;
+&lt;h2 id="wrap-up"&gt;Wrap Up&lt;a class="headerlink" href="#wrap-up" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;While there are options out there on how to maintain Python projects, the
+one that I prefer is PipEnv.  Newer options exist, such as
+&lt;a href="https://python-poetry.org/"&gt;Poetry&lt;/a&gt;,
+but for projects that I rely on, I want something that has been battle tested
+thoroughly.&lt;/p&gt;
+&lt;p&gt;I feel that PipEnv is the best option that easily meets my requirements.&lt;/p&gt;
+&lt;div class="footnote"&gt;
+&lt;hr/&gt;
+&lt;ol&gt;
+&lt;li id="fn:hidden"&gt;
+&lt;p&gt;The directory is not hidden according to the file system.  However, from the project’s point of view, it does not appear anywhere within the bounds of the project. &lt;a class="footnote-backref" href="#fnref:hidden" title="Jump back to footnote 1 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li id="fn:myWord"&gt;
+&lt;p&gt;You’ll have to take my word that the output was the same.  I am using the same picture for both, but that is only because the output was the same. &lt;a class="footnote-backref" href="#fnref:myWord" title="Jump back to footnote 2 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/div&gt;</content><category term="Software Quality"></category><category term="python"></category><category term="python projects"></category></entry><entry><title>Markdown Linter - Adding Links to the Markdown Transformer</title><link href="https://jackdewinter.github.io/2020/08/10/markdown-linter-adding-links-to-the-markdown-transformer/" rel="alternate"></link><published>2020-08-10T00:00:00-07:00</published><updated>2020-08-10T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-08-10:/2020/08/10/markdown-linter-adding-links-to-the-markdown-transformer/</id><summary type="html">
 &lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;In my
 &lt;a href="https://jackdewinter.github.io/2020/08/03/markdown-linter-improving-the-markdown-transformer/"&gt;last article&lt;/a&gt;,
@@ -9427,397 +9684,4 @@ tokenization of the Markdown was correct, so I decided to go all out for the nex
 section and add the remaining scenario tests from the GFM specification.  To close
 the loop on the testing, I also went through all the existing tests and added
 a new class that transforms the PyMarkdown tokens into HTML, comparing that output
-directly against the GFM specification.  Stay tuned!&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="linter tokenizer"></category></entry><entry><title>Markdown Linter - Taking Time to Refactor -- Post-Easy Inlines</title><link href="https://jackdewinter.github.io/2020/03/02/markdown-linter-taking-time-to-refactor-post-easy-inlines/" rel="alternate"></link><published>2020-03-02T00:00:00-08:00</published><updated>2020-03-02T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-03-02:/2020/03/02/markdown-linter-taking-time-to-refactor-post-easy-inlines/</id><summary type="html">
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;When I was working on implementing the
-&lt;a href="https://jackdewinter.github.io/2020/02/24/markdown-linter-starting-inline-processing/#code-spans"&gt;inline code spans&lt;/a&gt;,
-as detailed in the last article,
-I performed
-a thorough scan of the scenario tests and their source data, noting down any issues I
-found.  I knew that I had missed the mark on how to internally represent Atx …&lt;/p&gt;</summary><content type="html">
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;When I was working on implementing the
-&lt;a href="https://jackdewinter.github.io/2020/02/24/markdown-linter-starting-inline-processing/#code-spans"&gt;inline code spans&lt;/a&gt;,
-as detailed in the last article,
-I performed
-a thorough scan of the scenario tests and their source data, noting down any issues I
-found.  I knew that I had missed the mark on how to internally represent Atx Headers,
-and I was curious about how many other things I had missed.  Having found a
-decent handful of issues to fix,  I decided to spend some time to address those issues
-before adding more of the inline processing.  In my mind, it was
-better to take a week and try and keep the issue count low than to continue forward,
-possibly compounding the cost of fixing those issues.  As I am in a somewhat ideal
-scenario, with nobody pressuring me for features or issue fixes, I figured it was best
-if I took advantage of that to the best of my abilities and “do it right”.&lt;/p&gt;
-&lt;h2 id="what-is-the-audience-for-this-article"&gt;What Is the Audience For This Article?&lt;a class="headerlink" href="#what-is-the-audience-for-this-article" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;While detailed more eloquently in
-&lt;a href="https://jackdewinter.github.io/2020/04/05/what-is-the-audience-for-my-blog/#what-is-the-audience-for-my-blog"&gt;this article&lt;/a&gt;,
-my goal for this technical article is to focus on the reasoning behind my solutions,
-rather that the solutions themselves.  For a full record of the solutions presented in
-this article, please go to this project’s GitHub repository and consult the
-commits between
-&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/5102bfd8a3b2616eb6c3147f9416e3d7b308e523"&gt;14 February 2020&lt;/a&gt; and
-&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/62127eb46d5b03a781ba85fbcf3a397221716eb2"&gt;20 February 2020&lt;/a&gt;.&lt;/p&gt;
-&lt;h2 id="why-refactor-now"&gt;Why Refactor Now?&lt;a class="headerlink" href="#why-refactor-now" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;As the owner and sole developer on the project, my decision to stop and refactor was
-any easy one to make.  It also did not escape my attention that making a decision like
-that isn’t always that simple for larger projects.  If this were a work project
-or a team project, the group working on the project would have to meet to figure things
-out. The team itself usually plays a critical role in assessing the cost and benefit of
-each task, but
-in the end it is a balancing act for managers and directors to figure out which tasks
-are the best ones to focus on at any given time. As it is only me on the PyMarkdown
-project, I get to conveniently shortcut those conversations in favor of simple
-decisions based on my own experience.&lt;/p&gt;
-&lt;p&gt;From my years of experience, I find that there are usually two driving forces that make
-me support a decision to refactor a project.  The first driving force is the cost of
-any applicable technical
-debt on product code.  As I consider tests integral to a project’s quality, my
-definition of the term “product code” includes all source code and resources required
-to execute the project normally and to perform testing used to certify that same
-project as shippable.  With almost 700 scenario tests for
-PyMarkdown’s parser, even a small change can generate large ripples through the
-code base, especially the scenario tests.  As the scenarios for a feature are only added
-when that feature itself is added, each feature added therefore adds a significant
-amount of product code for any change to ripple through.  It also follows that each
-extra test impacted by an issue means an increased cost to fix that issue before
-proceeding.  Therefore, if the goal is to keep overall costs down, refactoring more
-frequently during development seems logical.&lt;/p&gt;
-&lt;p&gt;The second driving force is less quantifiable, but equally important to any type of
-project.  That force is the flow of the team working on the project.  Based on past
-projects, I know that I work more efficiently if
-I focus on a group of similar things for a while, then shift to another group when done.
-The larger the difference is in the skill sets between the two groups of work, the more
-relaxed I feel about the work.  This sense of relaxation allows me to get into a better
-flow.  As this project is being
-written by me in the evenings and on the weekends, keeping a good flow for the project
-keeps me focused and energized about the project.  As I am the sole developer on the
-project at the time, keeping myself motivated in a necessity!&lt;/p&gt;
-&lt;p&gt;While one force is more empirical and the other is more feelings based, both
-forces worked together to convince me that it was yet again time to refactor the
-PyMarkdown project.&lt;/p&gt;
-&lt;h2 id="issue-1-setext-headers-paragraphs-and-block-quotes"&gt;Issue 1:  SetExt Headers, Paragraphs, and Block Quotes&lt;a class="headerlink" href="#issue-1-setext-headers-paragraphs-and-block-quotes" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;I needed one of the smaller issues to get me warmed up, so after looking over the list
-of possible issues to work on, I decided on
-this one.  During the review of active scenario tests, I noticed that the text &lt;code&gt;===&lt;/code&gt;
-was in the paragraph tags for the specification’s example, but the tokens that the
-parser were omitting had them outside of the paragraph.  It seemed simple enough but
-looks were deceiving.&lt;/p&gt;
-&lt;p&gt;It took me a bit of digging to find two possible reasons for the string &lt;code&gt;===&lt;/code&gt; to be kept
-inside of the paragraph: laziness and non-interrupts.  Working backwards, the
-concept of laziness with block quotes and list items is that you can omit any of
-the leading characters if the next non-whitespace character after the omitted
-characters is text that continues the paragraph.  In essence:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;this&lt;/span&gt; &lt;span class="k"&gt;is&lt;/span&gt;
-&lt;span class="n"&gt;a&lt;/span&gt; &lt;span class="n"&gt;block&lt;/span&gt; &lt;span class="n"&gt;quote&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;is equivalent to&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;this&lt;/span&gt; &lt;span class="k"&gt;is&lt;/span&gt;
-&lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;a&lt;/span&gt; &lt;span class="n"&gt;block&lt;/span&gt; &lt;span class="n"&gt;quote&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;That got me halfway there, but there was still the question of how the &lt;code&gt;===&lt;/code&gt; would be
-kept as part of the paragraph and not as a SetExt header indicator.  I read the
-section on SetExt a couple of times before the following lines clicked:&lt;/p&gt;
-&lt;blockquote&gt;
-&lt;p&gt;However, it cannot interrupt a paragraph, so when a setext heading comes after a paragraph, a blank line is needed between them.&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;p&gt;Bingo!  I wish it did not take multiple reads through that part of the specification,
-but specifications are sometimes like that.  Based on those discoveries, I temporary
-rewrote the scenario for scenario 63 to:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;foo&lt;/span&gt;
-&lt;span class="n"&gt;bar&lt;/span&gt;
-&lt;span class="o"&gt;===&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;The goal of this was to remove the laziness out of the equation while working on the
-interrupt issue.  When I reran scenario test 63, I correctly got a single paragraph
-with 3 lines in it.  Whatever the issue was, it was not just simple parsing of
-paragraphs.  Taking a step forward, I added the block quotes back into the picture,
-changing that scenario text to:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;foo&lt;/span&gt;
-&lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;bar&lt;/span&gt;
-&lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="o"&gt;===&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;It was at this point that the scenario broke, apparently thinking that the third line
-was a
-SetExt header and should close off the paragraph.  Issue reproduced!  To be sure, I
-applied the laziness concept to the block quote, reverting the scenario back to
-its original text of:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;foo&lt;/span&gt;
-&lt;span class="n"&gt;bar&lt;/span&gt;
-&lt;span class="o"&gt;===&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;and validated that the behavior was the same.&lt;/p&gt;
-&lt;p&gt;Armed with a good reproduction case for the issue, good debug output, and a general
-area in the source code for the cause of the issue, the issue was identified and
-fixed in quick order.  This issue was very specific, so only the one scenario test
-was impacted, which was a good thing.  The problem was that during the development
-of block quotes, something made me think that anything looking like a
-SetExt header should close off a paragraph, hence I added code to do just that. I
-checked the code a couple of times, and that was the only scenario test referencing
-that code, so I just deleted it.&lt;/p&gt;
-&lt;p&gt;While the research on the issue was
-a bit more effort than I originally thought, fixing this issue was a great warm up
-to the next couple of issues.  One issue, one scenario test impacted, and I was
-refactoring.&lt;/p&gt;
-&lt;h2 id="issue-2-python-markdown-and-line-continuation-characters"&gt;Issue 2: Python, Markdown, and Line Continuation Characters&lt;a class="headerlink" href="#issue-2-python-markdown-and-line-continuation-characters" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;The next issue for me to work on was a subtle copy-and-paste error, one that flew
-under my radar until I took a solid look at it.  This issue did not show any indications
-of failure until I started my scan of the scenario tests.  The only
-reason I found this one was that I went looking for any error, not something specific.&lt;/p&gt;
-&lt;p&gt;In Markdown, the &lt;code&gt;\&lt;/code&gt; character at the end of the line is used to denote a hard line
-break, not yet to be implemented in the PyMarkdown project.  In Python, the &lt;code&gt;\&lt;/code&gt;
-character at the end of the line is used as a line continuation character, telling the
-Python interpreter to treat the text before the character and the text after the
-character as a single line.  Hopefully, any readers see where I am going with this.&lt;/p&gt;
-&lt;p&gt;When I added the scenario test for
-&lt;a href="https://github.github.com/gfm/#example-60"&gt;scenario 60&lt;/a&gt;,
-I did a copy-and-paste on the Markdown input to the new scenario test, a process I
-have done for 99% of the scenario tests in the project.  To accomplish this, I pasted
-the following Markdown text between the &lt;code&gt;"""&lt;/code&gt; characters denoting the Markdown to use
-as input:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;Foo&lt;/span&gt;&lt;span class="err"&gt;\&lt;/span&gt;
-&lt;span class="c1"&gt;----&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;resulting in the Python code:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="n"&gt;source_markdown&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;"""Foo&lt;/span&gt;&lt;span class="se"&gt;\&lt;/span&gt;
-&lt;span class="s2"&gt;----"""&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;After pasting each scenario’s Markdown into the scenario test, I try to ensure that
-I replace every instance of the &lt;code&gt;\&lt;/code&gt; character with the &lt;code&gt;\\&lt;/code&gt; characters to properly
-represent the backslash character in a Python string.  As I am
-only human, there are times that I forget to do this.  Luckily for me, if a &lt;code&gt;\&lt;/code&gt;
-character is not paired up with a valid character to escape, the Python interpreter
-will generate a warning like the following:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;======================================================== warnings summary ========================================================
-test\test_markdown_setext_headings.py:346
-  C:\old\enlistments\pymarkdown\test\test_markdown_setext_headings.py:346: DeprecationWarning: invalid escape sequence \&amp;gt;
-    expected_gfm = """&amp;lt;h2\&amp;gt;Foo\\&amp;lt;/h2&amp;gt;"""
-
--- Docs: https://docs.pytest.org/en/latest/warnings.html
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;As the backslash character in Markdown is used with punctuation characters and the
-backslash character in Python is used with alphabetic characters, this is usually a
-very solid detection scheme for finding copy-and-paste misses.  In this case, that
-check failed.&lt;/p&gt;
-&lt;p&gt;The good news here is two-fold: an easy fix and a very localized fix.  This fix was
-easy as I just had to apply the missed substitution.  It was localized mainly because
-I had not yet implemented hard line breaks.  And yes, it meant that when I did implement
-hard line breaks, I triple checked my line endings to avoid this issue showing up again.&lt;/p&gt;
-&lt;p&gt;Momentum was increasing, so it was time to step things up!&lt;/p&gt;
-&lt;h2 id="issue-3-code-blocks-indenting-and-blank-lines"&gt;Issue 3: Code Blocks, Indenting, and Blank Lines&lt;a class="headerlink" href="#issue-3-code-blocks-indenting-and-blank-lines" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Having resolved a couple of warm-up issues, I felt it was time to tackle some larger
-issues.  Each issue in
-this group either deals with vertical space issues or leading space issues within a code
-block.  The vertical space issue was that blank lines were not being folded into the
-text blocks properly, causing foreseeable issues with  parsing complete blocks of text
-soon.  Given some Markdown text, such as:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;```&lt;/span&gt;
-&lt;span class="n"&gt;abc&lt;/span&gt;
-
-&lt;span class="n"&gt;def&lt;/span&gt;
-&lt;span class="o"&gt;```&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;I expected that the output tokens would include a fenced code block with a single text
-block inside of it with three lines present.  Instead, there were three tokens present,
-the first and last were text tokens with strings and the token in the middle was a blank
-line token.  While the token representation was technically correct, parsing it would
-be awkward.  For the specific case of blank lines within a code block, it made sense to
-merge the blank line tokens into the surrounding text tokens.&lt;/p&gt;
-&lt;p&gt;The leading space issue was a bit more subtle but equally simple.  To properly parse
-text blocks within a code block, an appropriate amount of whitespace may need to be
-removed from each line as it is combined.  As always, it is the details that
-matter, and it is easy to gloss over them.  In the opening part of the indented code
-block section of the specification, the following line is present:&lt;/p&gt;
-&lt;blockquote&gt;
-&lt;p&gt;The contents of the code block are the literal contents of the lines, including trailing line endings, minus four spaces of indentation.&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;p&gt;The similar line for fenced code blocks reads:&lt;/p&gt;
-&lt;blockquote&gt;
-&lt;p&gt;If the leading code fence is indented N spaces, then up to N spaces of indentation are removed from each line of the content (if present).&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;p&gt;Basically, this means that the following indented code block:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="n"&gt;fred&lt;/span&gt;
-     &lt;span class="n"&gt;frank&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;should produce a code block with the text &lt;code&gt;fred&lt;/code&gt; on the first line and the text
-&lt;code&gt;&amp;lt;space&amp;gt;frank&lt;/code&gt;&lt;sup id="fnref:Space"&gt;&lt;a class="footnote-ref" href="#fn:Space"&gt;1&lt;/a&gt;&lt;/sup&gt; on the second line, having had the first 4 spaces removed.  The fenced
-code blocks are
-a bit more nuanced, in that:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;```&lt;/span&gt;
-  &lt;span class="n"&gt;fred&lt;/span&gt;
-&lt;span class="o"&gt;```&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;is parsed as &lt;code&gt;&amp;lt;space&amp;gt;&amp;lt;space&amp;gt;fred&lt;/code&gt;&lt;sup id="fnref2:Space"&gt;&lt;a class="footnote-ref" href="#fn:Space"&gt;1&lt;/a&gt;&lt;/sup&gt; and:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;  &lt;span class="o"&gt;```&lt;/span&gt;
-  &lt;span class="n"&gt;fred&lt;/span&gt;
-&lt;span class="o"&gt;```&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;is parsed as &lt;code&gt;fred&lt;/code&gt;, based on the extra indenting of the fenced code block start.
-While the line containing the text &lt;code&gt;fred&lt;/code&gt; is the same in both cases, the number of
-leading spaces before the fenced code block are different, resulting in the different
-outputs.&lt;/p&gt;
-&lt;p&gt;Prior to fixing this issue, text lines were combined in a simple manner and no
-whitespace was removed from the start of any lines within code blocks.  To properly
-address this issue, not only did these two rules need to be followed, but the existing
-code to properly remove leading spaces for each line within a normal paragraph needed
-to be preserved.  It took a bit to get it right, but with a good number of scenario
-tests to keep things honest, it was easy to get it right quickly.&lt;/p&gt;
-&lt;p&gt;My original estimates for the impact of this issue was 15-20 tests, and it thankfully
-remained within that range.  While the initial number of scenarios covered by these
-issues was 15, I expected other scenarios to use code blocks to show how their feature
-worked with code blocks, adding another 3-7 scenario tests in the process.  Looking
-back, I think I got off nicely with the scope of these changes.&lt;/p&gt;
-&lt;h2 id="issue-4-paragraphs-and-indenting"&gt;Issue 4: Paragraphs and Indenting&lt;a class="headerlink" href="#issue-4-paragraphs-and-indenting" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Feeling energized from fixing the issues documented in the previous sections, I decided
-to keep with the theme and attack the issue with leading spaces in normal paragraphs.
-Similar to the prior issue, the rule for normal paragraphs is that all
-leading whitespace is
-removed as the text for the paragraph is pasted together.  While it is hard to point
-to an exact quote from the specification for this rule&lt;sup id="fnref:Missing"&gt;&lt;a class="footnote-ref" href="#fn:Missing"&gt;2&lt;/a&gt;&lt;/sup&gt;,
-&lt;a href="https://github.github.com/gfm/#example-192"&gt;example 192&lt;/a&gt; clearly shows this as the
-Markdown:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;  &lt;span class="n"&gt;aaa&lt;/span&gt;
- &lt;span class="n"&gt;bbb&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;is translated into the HTML text:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;aaa
-bbb&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;The fix for this was similar to the change made for the code blocks issue, but instead
-of specifying a fixed number of whitespace to remove, the &lt;code&gt;combine&lt;/code&gt; function was
-changed to accept a value that indicates the removal of all whitespace.  The original 9
-cases were quickly tested with the fix, and things looked solid.&lt;/p&gt;
-&lt;p&gt;Originally, it looked like the changes would be confined to the original 9 cases, but
-I suspected that the number would at least be double that, as this fix would affect any
-scenario involving a paragraph with multiple lines. While a number of the cases were
-simple cases, when all was said and done, there were 59 changes to scenario
-tests in the commit for this issue.  Even so, those changes were quickly made, and the
-scenario tests were re-verified.&lt;/p&gt;
-&lt;p&gt;While this took a lot of work to get right, it felt good to get this one resolved.  It
-was hard for me to quantify this to myself, but the parsing of the paragraphs always
-looked like they had too many spaces.  It was nice to finally figure out why!&lt;/p&gt;
-&lt;h2 id="issue-5-trailing-spaces-in-scenarios"&gt;Issue 5: Trailing Spaces in Scenarios&lt;a class="headerlink" href="#issue-5-trailing-spaces-in-scenarios" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;During the early development phase of the project, I wanted to get going with the
-scenarios as quickly
-as possible, so I copied each scenario’s Markdown text from the GFM specification
-exactly as-is.  This was not a
-problem, except that in a small number of cases, there were lines in the scenarios that
-ended in one or more whitespaces.  These trailing whitespaces raised the
-&lt;code&gt;trailing-whitespace&lt;/code&gt; warning when I ran the PyLint program over the project’s
-code base, as I do with each set of changes. Determined to deal with the issue later,
-I added a few comment lines like this:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="c1"&gt;# pylint: disable=trailing-whitespace&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;to disable the Pylint warnings that occurred, knowing I would have to fix
-them later.  At this point in the project, it seemed like a good time to deal with this.&lt;/p&gt;
-&lt;p&gt;As this issue was largely out of sight, everything was fine.   That is, everything was
-fine until I hit a
-couple of problems in a row that did involve these scenarios.  Instead of immediately
-noticing the trailing whitespace and the comment, I started debugging each issue
-without noticing either the comment or the whitespace, and was dumfounded by why the
-parsing was not as was suggested
-by the Markdown text that was clearly visible.
-When I took a step back to really read the scenario tests, I then noticed
-the comment at the top of each of the problem test functions, and then it clicked.  But
-it took a lot longer than it should have.  Instead of “just dealing with it”, I decided
-that refactoring was a better solution.&lt;/p&gt;
-&lt;p&gt;The fix was an easy one too, something I should have thought of earlier.  The ASCII BELL
-character is represented by &lt;code&gt;\a&lt;/code&gt; in Python strings, and to the best of my knowledge is
-seldom used in most Python programs or Markdown text.  As it has a very low probability
-of being used in any scenarios, I replaced the
-terminating whitespace characters with &lt;code&gt;\a&lt;/code&gt; characters, then added &lt;code&gt;.replace("\a", " ")&lt;/code&gt;
-at the end of the sample string.  It was then a simple matter of going through the
-other 6 scenarios with trailing whitespaces and repeating this fix.&lt;/p&gt;
-&lt;p&gt;While issues like this may seem small, having to disable a PyLint warning did not feel
-right, even if it helped me maintain momentum at the time.  It just felt really good
-to solve this issue properly.&lt;/p&gt;
-&lt;h2 id="issue-6-getting-atx-headers-right"&gt;Issue 6: Getting Atx Headers Right&lt;a class="headerlink" href="#issue-6-getting-atx-headers-right" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;In the last article, I started looking for issues after wondering if a code span
-could work within an Atx Header, realizing that the specification allowed it, but
-my current implementation did not allow it. As stated in the preamble for
-&lt;a href="https://github.github.com/gfm/#example-36"&gt;scenario 36&lt;/a&gt;:&lt;/p&gt;
-&lt;blockquote&gt;
-&lt;p&gt;The raw contents of the heading are stripped of leading and trailing spaces before being parsed as inline content.&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;p&gt;Basically, my decision was based on my usage patterns, not the specification.
-In my experience, I have only ever done Atx Headers in the form:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;###&lt;/span&gt; &lt;span class="n"&gt;This&lt;/span&gt; &lt;span class="k"&gt;is&lt;/span&gt; &lt;span class="n"&gt;my&lt;/span&gt; &lt;span class="n"&gt;header&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;When I read the specification, I glossed over that section, only thinking
-of Atx Headers as containers for normal text.  However, based on the specification,
-the following text is also allowed:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="c1"&gt;### This *is* `my` header&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;As a result, instead of the header text &lt;code&gt;This is my header&lt;/code&gt; being generated by the
-first sample, I can use the second sample to generate the header text of
-&lt;code&gt;This &amp;lt;em&amp;gt;is&amp;lt;/em&amp;gt; &amp;lt;code&amp;gt;my&amp;lt;/code&amp;gt; header&lt;/code&gt;.  Neat!&lt;/p&gt;
-&lt;p&gt;The change itself was pretty simple and confined to the &lt;code&gt;parse_atx_headings&lt;/code&gt; function.
-As it was a simple change, the accompanying change in each test was also pretty
-simple:  take a single Atx Header token with text, replace it with an Atx Header token
-without the text, a Text token with the text, and an End token for the Atx Header.&lt;/p&gt;
-&lt;p&gt;While I was concerned that the fix for this issue was going to be more widespread,
-it was confined to 22 scenario tests, and was easy to verify.&lt;/p&gt;
-&lt;h2 id="issue-7-bringing-the-tabs-back"&gt;Issue 7:  Bringing the Tabs Back&lt;a class="headerlink" href="#issue-7-bringing-the-tabs-back" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Looking for something to finish the refactoring session with, I decided to tackle one
-of the longstanding fixes that I had some reservations about: the bulk conversion
-of tabs to spaces.  While it was a good fix at the time, I suspected that there
-might be problems with the code blocks where all text is supposed to be preserved
-literally, including tab characters.&lt;/p&gt;
-&lt;p&gt;In a stroke of luck, all the affected scenario tests are in the
-&lt;code&gt;test_markdown_tabs.py&lt;/code&gt; file
-and the places where tabs are important can be grouped into 2 distinct groups.
-In the Markdown specification, there is a distinction between whether there is enough
-whitespace for an indented code block with 4 spaces, or not with less than 4 spaces.
-To address those cases, I simply added the &lt;code&gt;is_length_greater_than_or_equal_to&lt;/code&gt; and
-&lt;code&gt;is_length_less_than_or_equal_to&lt;/code&gt; functions.  While I could have simply used a &lt;code&gt;not&lt;/code&gt;
-modifier to get the same effect, I thought it was more readable to simply spell it
-out.  For cases where the actual length was needed, the &lt;code&gt;calculate_length&lt;/code&gt; function
-determines the length of the string, allowing for the length of a tab to be 4
-characters while every other character is assigned a length of 1.&lt;/p&gt;
-&lt;p&gt;While this was not a very technical issue to fix, it helped me return things to a known
-good state, with confidence that tabs were being treated properly.  Before this fix,
-I was always concerned that the bulk translation of tab characters to spaces would
-introduce a hard to diagnose issue.  With that translation removed, that concern went
-away.&lt;/p&gt;
-&lt;h2 id="what-was-my-experience-so-far"&gt;What Was My Experience So Far?&lt;a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;At various points in the development of PyMarkdown, I have wondered if my thinking
-should be more realistic with a “two steps forward, one step back” feel to it.  Maybe
-it is just who I am, but with a few exceptions, I see almost all of this development as
-stepping forward with quality, and hence, all positive.  I like the fact that
-I am implementing some new features, then doing some refactoring, and repeating.  It
-gives me a solid perception that the project is on stable footing at every stage,
-accumulating little technical debt along the way.&lt;/p&gt;
-&lt;p&gt;Something that struck me at this point was how easily I seemed to fall into a rhythm
-that works well for me and the project:  implementing a couple of features, noting down
-any issues as I implement, and then fixing a couple of the more pressing issues before
-repeating the pattern.  I am not sure if that kind of a pattern that everyone else
-works well with, but it seems to work well for me.  To a certain extent, it also helps
-me write these articles, as writing about quality software is very different than
-the development of that software.  For me, I find that they complement each other
-very well.&lt;/p&gt;
-&lt;p&gt;In terms of energy, keeping that rhythm going and writing these articles is
-helping to keep me charged up about the project.  While I have written my share of
-parsers in my career, they have almost always been for work projects with a specific
-goal and deadline to achieve.  Being freed from those restrictions does come with
-its benefits, but not having someone looking over your shoulder means that you have
-to take on that role yourself.  These articles, while initially created to talk about
-my approach in creating quality software, also server the purpose of keeping me
-honest and responsible to any readers.  Call it a backup plan, but it seems to be
-working well!&lt;/p&gt;
-&lt;h2 id="what-is-next"&gt;What is Next?&lt;a class="headerlink" href="#what-is-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Going back to the specification for features to implement, I decided to start at the
-end and get the line breaks, autolinks, and raw html inline processing taken care of.
-While I do not use them frequently myself, they are interesting aspects to the
-GFM specification, and perhaps learning about them will increase my use of them in
-my everyday Markdown usage.&lt;/p&gt;
-&lt;div class="footnote"&gt;
-&lt;hr/&gt;
-&lt;ol&gt;
-&lt;li id="fn:Space"&gt;
-&lt;p&gt;The string &lt;code&gt;&amp;lt;space&amp;gt;&lt;/code&gt; represents a space character, which by it’s very nature, is invisible. &lt;a class="footnote-backref" href="#fnref:Space" title="Jump back to footnote 1 in the text"&gt;↩&lt;/a&gt;&lt;a class="footnote-backref" href="#fnref2:Space" title="Jump back to footnote 1 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
-&lt;/li&gt;
-&lt;li id="fn:Missing"&gt;
-&lt;p&gt;The specification states “The paragraph’s raw content is formed by concatenating the lines and removing initial and final whitespace.”  This is the closest reference that I could find to removing whitespace.  Perhaps initial means per line? &lt;a class="footnote-backref" href="#fnref:Missing" title="Jump back to footnote 2 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
-&lt;/li&gt;
-&lt;/ol&gt;
-&lt;/div&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="linter tokenizer"></category></entry></feed>
+directly against the GFM specification.  Stay tuned!&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="linter tokenizer"></category></entry></feed>
