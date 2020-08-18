@@ -1,5 +1,478 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench - Software Quality</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/software-quality.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2020-08-14T00:00:00-07:00</updated><entry><title>Python Projects - Using PipEnv</title><link href="https://jackdewinter.github.io/2020/08/14/python-projects-using-pipenv/" rel="alternate"></link><published>2020-08-14T00:00:00-07:00</published><updated>2020-08-14T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-08-14:/2020/08/14/python-projects-using-pipenv/</id><summary type="html">
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench - Software Quality</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/software-quality.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2020-08-17T00:00:00-07:00</updated><entry><title>Markdown Linter - Adding Lists to the Markdown Transformer</title><link href="https://jackdewinter.github.io/2020/08/17/markdown-linter-adding-lists-to-the-markdown-transformer/" rel="alternate"></link><published>2020-08-17T00:00:00-07:00</published><updated>2020-08-17T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-08-17:/2020/08/17/markdown-linter-adding-lists-to-the-markdown-transformer/</id><summary type="html">
+&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In my
+&lt;a href="https://jackdewinter.github.io/2020/08/10/markdown-linter-adding-links-to-the-markdown-transformer/"&gt;last article&lt;/a&gt;,
+I increased the coverage provided by the token to Markdown transformer by adding
+support for the link related tokens. In this article, I take another large step
+towards completing the consistency checks by adding support for list related tokens.&lt;/p&gt;
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Having implemented the link related …&lt;/p&gt;</summary><content type="html">
+&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In my
+&lt;a href="https://jackdewinter.github.io/2020/08/10/markdown-linter-adding-links-to-the-markdown-transformer/"&gt;last article&lt;/a&gt;,
+I increased the coverage provided by the token to Markdown transformer by adding
+support for the link related tokens. In this article, I take another large step
+towards completing the consistency checks by adding support for list related tokens.&lt;/p&gt;
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Having implemented the link related tokens, I was now down to one large group:
+the container related tokens.  Even with the confidence I gained from the work that
+I performed with link related tokens, I felt that “container related tokens” was
+too large of a group for me to be comfortable working with.  Given that the container
+related tokens group contained only 2 types of tokens, it only seemed natural to focus
+on one of those two tokens: the list tokens.  More specifically, I was going to
+start with the Unordered List tokens.&lt;/p&gt;
+&lt;h2 id="what-is-the-audience-for-this-article"&gt;What Is the Audience for This Article?&lt;a class="headerlink" href="#what-is-the-audience-for-this-article" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;While detailed more eloquently in
+&lt;a href="https://jackdewinter.github.io/2020/04/05/what-is-the-audience-for-my-blog/#what-is-the-audience-for-my-blog"&gt;this article&lt;/a&gt;,
+my goal for this technical article is to focus on the reasoning behind my solutions,
+rather that the solutions themselves.  For a full record of the solutions presented in
+this article, please go to this project’s GitHub repository and consult the
+commits between
+&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/6f7fa825b3cd6bad52cd5b9772a0f35dc816b629"&gt;04 Aug 2020&lt;/a&gt;
+and
+&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/07d6f81c6c6b46c3ae9c526a3d176d65ddf06c54"&gt;08 Aug 2020&lt;/a&gt;.&lt;/p&gt;
+&lt;h2 id="starting-with-unordered-lists"&gt;Starting with Unordered Lists&lt;a class="headerlink" href="#starting-with-unordered-lists" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Taking a wander through the scenario tests with unordered lists in their examples,
+two things were clear to me.  The first thing is that with few exceptions, they were all
+working well from the point of view of existing consistency checks.  Those few examples
+were 1 case with nested links and 4 cases which mixed up block quotes with list.
+Those examples are
+&lt;a href="https://github.github.com/gfm/#example-528"&gt;example 528&lt;/a&gt;,
+&lt;a href="https://github.github.com/gfm/#example-237"&gt;example 237&lt;/a&gt;,
+&lt;a href="https://github.github.com/gfm/#example-238"&gt;example 238&lt;/a&gt;,
+&lt;a href="https://github.github.com/gfm/#example-270"&gt;example 270&lt;/a&gt;, and
+&lt;a href="https://github.github.com/gfm/#example-271"&gt;example 271&lt;/a&gt;.
+The second thing that was clear was that because of the first
+point, I had a high degree of confidence that I was going to be addressing issues that
+almost exclusively focused on whitespace.  With the HTML output already being verified,
+I was certain that properly transforming Unordered List tokens back into list Markdown
+would mostly boil down to whitespaces.&lt;/p&gt;
+&lt;h3 id="thinking-about-the-design"&gt;Thinking About the Design&lt;a class="headerlink" href="#thinking-about-the-design" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Before I leapt into the coding, I sat back and thought long and hard about the approach
+I was going to take with the transformation of these tokens.  When I started sketching
+out what my approach would be, I started to understand that there would be two issues
+I would have to deal with.  They were the transformation of the tokens themselves, and
+the whitespace they would inject before other tokens.  The first part was the easy
+part: see
+an unordered list token, use the elements in the token to figure out its transformed
+form, and emit that transformed form.  Done.&lt;/p&gt;
+&lt;p&gt;Managing the whitespace was going to be a lot more difficult.  The thing that helped
+me was that I knew I already had experience with handling that initial whitespace from
+writing the main parser.  What helped me immeasurably in the
+parser was to keep the processing of the two container elements, lists and block
+quotes, separate from the processing of the leaf tokens.  By only passing “container
+element free” text to the
+leaf token processor, that processor was kept simple.  To keep the container handling
+for the Markdown transformer simple, I decided that employing the same approach was
+pivotal.&lt;/p&gt;
+&lt;p&gt;But even with the decision to keep that processing separate, I figured that it would
+only get me
+part of the way there.  To complete the management of the whitespaces, I would need to
+be able to calculate the whitespace used before each line contained within a list block.
+The more I looked at the problems to be solved, the more I was sure that most of my
+time was going to be managing that initial whitespace.&lt;/p&gt;
+&lt;p&gt;It was not going to be fun getting the transformations done for the Unordered List
+tokens, but I had a feeling that it would be really satisfying when it was done!&lt;/p&gt;
+&lt;h3 id="and-go"&gt;And… Go!&lt;a class="headerlink" href="#and-go" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;I began this block of work with the moving of the if statement that avoided processing
+any scenario test that included block quotes or lists starts.  Before that move, it
+was buried in a large collection of if statements, and I wanted to make sure I called
+it out until it was fixed. Making it even better, when I moved it, I broke that single
+statement into three explicit statements. As I knew I was going to be enabling
+each one in the next week or so, being explicit about that work just seemed like the
+right thing to do.  But even though the move was mostly for aesthetics, I confess
+that it was also to remind me that I only had those tokens left to go.&lt;/p&gt;
+&lt;p&gt;Once that was completed, I did the easy work first and added the
+&lt;code&gt;rehydrate_unordered_list_start&lt;/code&gt; function and the &lt;code&gt;rehydrate_unordered_list_start_end&lt;/code&gt;
+function to the main processing loop.  After running the scenario tests again, I
+was reminded by the test output that the &lt;code&gt;rehydrate_next_list_item&lt;/code&gt; function would have
+to be added to deal with the Next List Item tokens in the stream.  Another quick run of
+the tests and a lot of comparison failures, but no missing token failures.  A good
+step in the right direction!&lt;/p&gt;
+&lt;h3 id="first-step-list-indentation"&gt;First Step: List Indentation&lt;a class="headerlink" href="#first-step-list-indentation" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;With the actual token handlers dealt with, it was time to focus on the effects that
+those tokens had
+on the leaf blocks.  Following my usual pattern, instead of immediately creating a
+new function to specifically handle the lists, I kept that code inline with the
+existing &lt;code&gt;transform&lt;/code&gt; method the Markdown transformer.  While I recognize that it
+looks messy and sloppy and the outset, it helps me think more clearly without worrying
+about that I need to pass where.&lt;/p&gt;
+&lt;p&gt;Therefore, following my usual pattern, I first added a simple post-processing step that
+took the
+contents of the variable &lt;code&gt;continue_seq&lt;/code&gt; and applied them to start of the output of
+specific tokens.  The &lt;code&gt;continue_seq&lt;/code&gt; variable was initialized with an empty string,
+but I altered the &lt;code&gt;rehydrate_unordered_list_start&lt;/code&gt; function to reset this variable
+to the amount of indent specified by the list.  With the change in place, the end
+of the loop processing was simple:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;        &lt;span class="n"&gt;new_data&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;new_data&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;replace&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;continue_seq&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;This gained some traction in getting the
+scenario tests passing, but that processing needed to be made a bit more complicated.  &lt;/p&gt;
+&lt;p&gt;The first complication that needed to be addressed was that both list starts, and list
+ends modified the &lt;code&gt;continue_seq&lt;/code&gt; variable, but needed to avoid applying it to
+the line on which they element resided.  This was because the processing of the
+Unordered List start token
+already had the required indenting taking care of, so the postprocessing would just
+add extra “garbage” whitespace. To remedy this, I added the &lt;code&gt;skip_merge&lt;/code&gt; variable to
+allow the Unordered
+List token handlers to inform the main loop to skip any post-processing.&lt;/p&gt;
+&lt;p&gt;The second complication was the handling the list terminations using the
+&lt;code&gt;rehydrate_unordered_list_start_end&lt;/code&gt; function.  In some of the easy cases, what was
+there was fine, but as soon a list was nested in another list, that processing fell
+apart.  What was missing was a recalculation of the indent level once the prior list
+ends.  That was quickly addressed by doing a recalculation of the contents for the
+&lt;code&gt;continue_seq&lt;/code&gt; variable for the new list token at the top of the stack.&lt;/p&gt;
+&lt;p&gt;With those easy fixes, and with the main replacement call in the main loop, a lot
+of the scenario tests were passing, while keeping the processing simple.&lt;/p&gt;
+&lt;p&gt;That simplicity would soon change.&lt;/p&gt;
+&lt;h3 id="indented-code-blocks"&gt;Indented Code Blocks&lt;a class="headerlink" href="#indented-code-blocks" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;As I went through the test failures, there were a few failures that stood out as an odd
+grouping: indented code blocks and lists.  Doing some more research, I found out
+that due to a bug in my code, the indented code blocks were not being checked
+properly.  It only involved one list item scenario test, but nonetheless,
+it still needed to be fixed.&lt;/p&gt;
+&lt;p&gt;In that newly found bug, the problem was that the indented code blocks were always
+adding their indented padding at the beginning of the lines.  This was not usually a
+problem, but with any examples that contained blank lines within the indented code
+block, it was an issue.  A good example of this is
+&lt;a href="https://github.github.com/gfm/#example-81"&gt;example 81&lt;/a&gt;:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="n"&gt;chunk1&lt;/span&gt;
+
+    &lt;span class="n"&gt;chunk2&lt;/span&gt;
+&lt;span class="err"&gt;{&lt;/span&gt;&lt;span class="k"&gt;space&lt;/span&gt;&lt;span class="err"&gt;}{&lt;/span&gt;&lt;span class="k"&gt;space&lt;/span&gt;&lt;span class="err"&gt;}&lt;/span&gt;
+&lt;span class="err"&gt;{&lt;/span&gt;&lt;span class="k"&gt;space&lt;/span&gt;&lt;span class="err"&gt;}&lt;/span&gt;
+&lt;span class="err"&gt;{&lt;/span&gt;&lt;span class="k"&gt;space&lt;/span&gt;&lt;span class="err"&gt;}&lt;/span&gt;
+    &lt;span class="n"&gt;chunk3&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;When the parser tokenizes this example, the Blank Line tokens that are generated
+already include any whitespace that is present on that line.  Taking care of their own
+whitespace data, when the Markdown transformer interprets those Blank Line tokens,
+it needs to accept those Blank Line elements as they are.
+Modifications were needed to enforce this behavior.  The &lt;code&gt;combine&lt;/code&gt; function of the
+&lt;code&gt;TextMarkdownToken&lt;/code&gt; class containing the indented blank line was changed to insert
+a NOOP character and then a newline character.  As text used in an indented code
+block was the only &lt;code&gt;paragraph-like&lt;/code&gt; encapsulating token that inserted a blank line
+into the composed text, had confidence this was isolated.&lt;/p&gt;
+&lt;p&gt;With those NOOP characters in place, the Markdown transformer needed some modifications
+to
+understand how to deal with this.  Before proceeding with the normal insertion of
+any whitespace in the &lt;code&gt;continue_seq&lt;/code&gt; variable, a quick check was made to see if
+the &lt;code&gt;new_data&lt;/code&gt; variable contained a NOOP character.  If so, the string in the
+&lt;code&gt;new_data&lt;/code&gt; variable was split and processed.  For each element in the split list,
+the element was checked to see if it started with a NOOP character.  If it did it
+simply removed the NOOP character by setting the &lt;code&gt;replacement_data&lt;/code&gt; variable to
+the contents of the &lt;code&gt;new_data&lt;/code&gt; variable after that first NOOP character.  If it did not
+find it, it set the &lt;code&gt;replacement_data&lt;/code&gt; variable to the contents of the &lt;code&gt;continue_seq&lt;/code&gt;
+variable plus the contents of the &lt;code&gt;new_data&lt;/code&gt; variable.  Once that was done, the value
+was put back in into the array at the same index.  Then,
+when the processing was done, it reconstituted the &lt;code&gt;new_data&lt;/code&gt; variable by joining the
+elements of the list back together using the &lt;code&gt;\n&lt;/code&gt; character as a joining character.&lt;/p&gt;
+&lt;p&gt;While I was not looking for that, I was glad I found it. A bit embarrassed that I
+did not find it right away, but I did find it!&lt;/p&gt;
+&lt;h3 id="handling-lazy-continuations-lines"&gt;Handling Lazy Continuations Lines&lt;a class="headerlink" href="#handling-lazy-continuations-lines" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;With most of the scenario tests now passing, my focus was centered on a set of tests
+that dealt with lists and lazy handling.  While this took me a bit to get my head
+around, it basically says:&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;If a string of lines Ls constitute a list item with contents Bs, then the result of deleting some or all the indentation from one or more lines in which the next non-whitespace character after the indentation is paragraph continuation text is a list item with the same contents and attributes. The unindented lines are called lazy continuation lines.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;Huh?  Let me translate:&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;If you have a list already started, and you encounter lines that should be in the list except for the fact that they are not indented properly, they are lazy continuation lines, and are included.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;The best way to explain is with an example:&lt;sup id="fnref:lazyList"&gt;&lt;a class="footnote-ref" href="#fn:lazyList"&gt;1&lt;/a&gt;&lt;/sup&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nv"&gt;first&lt;/span&gt; &lt;span class="nv"&gt;list&lt;/span&gt; &lt;span class="nv"&gt;item&lt;/span&gt;
+&lt;span class="k"&gt;next&lt;/span&gt; &lt;span class="nv"&gt;line&lt;/span&gt; &lt;span class="nv"&gt;of&lt;/span&gt; &lt;span class="nv"&gt;first&lt;/span&gt; &lt;span class="nv"&gt;list&lt;/span&gt; &lt;span class="nv"&gt;item&lt;/span&gt;
+ &lt;span class="k"&gt;next&lt;/span&gt; &lt;span class="k"&gt;next&lt;/span&gt; &lt;span class="nv"&gt;line&lt;/span&gt; &lt;span class="nv"&gt;of&lt;/span&gt; &lt;span class="nv"&gt;first&lt;/span&gt; &lt;span class="nv"&gt;list&lt;/span&gt; &lt;span class="nv"&gt;item&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;In that example, all three of those lines are considered part of the list item, even
+though the line is indented less than the indent of 2 specified by the initial list
+item element.  But that presented a bit of a problem.&lt;/p&gt;
+&lt;p&gt;When parsing the Markdown document, the indent level was being tracked, and any
+additional whitespace was added to the contained token.  But as I was writing the
+Markdown transformer, I noticed that I had missed the case where the amount of indent
+was less than the current list’s indent level.  This was not an issue with the HTML
+transformer, as that transformer does not rely on any of the extracted whitespace.
+However, the Markdown transformer does.&lt;/p&gt;
+&lt;p&gt;To fix this issue, I needed to first make a change in the &lt;code&gt;parse_paragraph&lt;/code&gt; function of
+the &lt;code&gt;LeafBlockProcessor&lt;/code&gt; class.  In that function, I reconstituted the actual indent
+of the given line and compared it against the indent level from the dominant unordered
+list item token.  If that actual indent level was less than the dominant indent level,
+I adjusted the actual whitespace by prefacing that whitespace with…well… blech
+characters.&lt;/p&gt;
+&lt;p&gt;Yes, blech characters.  Blech, according to
+&lt;a href="https://www.merriam-webster.com/dictionary/blech"&gt;Webster’s&lt;/a&gt; means “used to express
+disgust”.  While I knew I had to track those indenting characters somehow, I really
+was not happy with it.  Disgust may be a bit too intense of an emotion, but when I
+figured out what I had to do, that was the most printable word that I uttered.&lt;/p&gt;
+&lt;p&gt;Using the above example, the tokenized text looks like:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;- first list item{newline}
+{blech}{blech}next line of first list item{newline}
+{blech}next next line of first list item{newline}
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;In this way, the indent was properly represented in the token, and the Markdown
+transformer had enough information to rehydrate the data afterwards.  With those
+changes locked into the tokens, the Markdown transformer was then able to be
+changed to understand those tokens.  That processing was simple.  If a line of
+the text output started with a blech character, those blech characters were
+replaced with a space character.  If no blech characters were there, the normal
+replacement of the newline character would occur.&lt;/p&gt;
+&lt;p&gt;And I could
+have changed the name of the character from “blech character”, but after a while,
+it just kind of stuck with me.&lt;/p&gt;
+&lt;h3 id="new-list-item-tokens"&gt;New List Item Tokens&lt;a class="headerlink" href="#new-list-item-tokens" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;It was about this time when I decided to tackle the New List Item tokens.  While I had
+been working around them somewhat, it was starting to get to the point where they were
+unavoidable.  At first, I did not think these tokens would be an issue, but I forgot
+about one little part of the New List Item tokens: they reset the indent for the
+list.&lt;/p&gt;
+&lt;p&gt;A good example of this is &lt;a href="290"&gt;example 290&lt;/a&gt;:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="n"&gt;a&lt;/span&gt;
+ &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="n"&gt;b&lt;/span&gt;
+  &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="k"&gt;c&lt;/span&gt;
+   &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="n"&gt;d&lt;/span&gt;
+  &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="n"&gt;e&lt;/span&gt;
+ &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="n"&gt;f&lt;/span&gt;
+&lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="k"&gt;g&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;In this case, the first line starts a list and each line after that starts a new list
+item.  As the new list items are gradually increasing and then decreasing the indent,
+the 3 middle lines (&lt;code&gt;c&lt;/code&gt;, &lt;code&gt;d&lt;/code&gt;, and &lt;code&gt;e&lt;/code&gt;) are interpreted as a new list item element,
+rather than a sublist.  If it was not for the new list item elements resetting that
+indent, those 3 lines are indented to the point where their indent would make them
+eligible to start a new sublist.&lt;/p&gt;
+&lt;p&gt;But to properly track this indent change, it required some interesting thinking.  If
+I tracked the indent change in the actual token, it would mean changing that token.
+To me, that was a non-starter.  Instead, I added a separate stack for container tokens
+in the Markdown transformer and added copies of the container tokens to this stack.
+As I added copies of the tokens to the stack, I was free to change the indent value
+located within the Unordered List token without worrying about side effects.&lt;/p&gt;
+&lt;p&gt;With those changes in place, the Markdown transformer was able to reset the indent
+level and make sure it was being properly tracked.  This meant that the indents
+were able to be properly reset to the correct value once a List Item end token was
+received for a sublist.&lt;/p&gt;
+&lt;p&gt;Taking a bit of a deep breath and a pause, I noticed that I was close to finishing
+off the Unordered List Item tokens.  That gave me a bit of a jump in my step to
+clean things up!&lt;/p&gt;
+&lt;h2 id="taking-care-of-stragglers"&gt;Taking Care of Stragglers&lt;a class="headerlink" href="#taking-care-of-stragglers" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;With all the major and minor cases of lists dealt with, I started going through
+the other scenario tests, fixing up the token lists after verifying that the new
+tokens were correct.  Everything else was easily resolved at this point, except for
+some lists in a couple of cases.  Those cases were interesting in that there was
+actually too much whitespace, not too little.  And in this case, it was a newline
+character, not a space.&lt;/p&gt;
+&lt;p&gt;The Fenced Code Block element and the SetExt Heading element are unique in that they
+have a line-based sequence that delimits the end of the element.  Usually this is not
+a problem, but in the case of interacting with lists, the transformer was inserting
+a newline after the element itself, and then another newline to make the end of that
+line.  While this duplication did not occur all the time, it took a bit to figure
+the exact sequence that triggered this.&lt;/p&gt;
+&lt;p&gt;After doing some research, it was weird to me, but it only occurred if:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;it was one of these two elements&lt;/li&gt;
+&lt;li&gt;the new block of data ends with a newline character&lt;/li&gt;
+&lt;li&gt;the next token to be processed is a New List Item token&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;While the sequence of thing that had to occur was weird, the solution was easy:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;        &lt;span class="n"&gt;block_should_end_with_newline&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;False&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;next_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_name&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="s2"&gt;"end-fcode-block"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="n"&gt;block_should_end_with_newline&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;True&lt;/span&gt;
+            &lt;span class="n"&gt;delayed_continue&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;""&lt;/span&gt;
+        &lt;span class="k"&gt;elif&lt;/span&gt; &lt;span class="n"&gt;next_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_name&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="s2"&gt;"end-setext"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="n"&gt;block_should_end_with_newline&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;True&lt;/span&gt;
+        &lt;span class="o"&gt;...&lt;/span&gt;
+        &lt;span class="n"&gt;block_ends_with_newline&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; \
+            &lt;span class="n"&gt;block_should_end_with_newline&lt;/span&gt; &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="n"&gt;new_data&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;endswith&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="o"&gt;...&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
+            &lt;span class="n"&gt;block_ends_with_newline&lt;/span&gt;
+            &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="n"&gt;next_one&lt;/span&gt;
+            &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="n"&gt;next_one&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_name&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="n"&gt;MarkdownToken&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_new_list_item&lt;/span&gt;
+        &lt;span class="p"&gt;):&lt;/span&gt;
+            &lt;span class="n"&gt;new_data&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;new_data&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt; &lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;continue_seq&lt;/span&gt;&lt;span class="p"&gt;)]&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Basically, if we hit that situation, just remove the excess character.  I was
+hoping to refactor it into something more elegant, but it worked at the time and
+I wanted to get on to the handling of Ordered List Item tokens.&lt;/p&gt;
+&lt;h2 id="second-verse"&gt;Second Verse…&lt;a class="headerlink" href="#second-verse" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;I fondly remember being a kid at a summer camp and hearing the words “Second verse, same
+the first, a little bit louder, and a little bit worse!”.  Working on the ordered list
+tokens made me think of that saying almost immediately.  Except for the fact that it
+was not a little bit worse, it was a lot easier.&lt;/p&gt;
+&lt;p&gt;There were two main reasons for that.  The first reason is that looking at the samples as
+a group, there are objectively fewer examples with ordered lists than unordered lists.
+In the
+&lt;a href="https://spec.commonmark.org/0.29/#list-items"&gt;list items section&lt;/a&gt;
+of the GFM specification, there are 20 of each, but in the
+&lt;a href="https://spec.commonmark.org/0.29/#lists"&gt;lists section&lt;/a&gt;
+of the specification, there are 20 examples of unordered lists and 7 examples of ordered
+lists.  The second reason was that most of the work was either completed when working on
+the unordered list token transformations, or it was used in a copy-and-paste manner.&lt;/p&gt;
+&lt;p&gt;However, knowing that lists are one of the two container elements in Markdown, I took
+some extra time and reverified all the scenario tests, both ordered lists and unordered
+lists.  I was able to find a couple of small things that were quickly fixed, but other
+than that, everything looked fine!&lt;/p&gt;
+&lt;h2 id="cleanup"&gt;Cleanup&lt;a class="headerlink" href="#cleanup" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;As with a lot of my free project time recently, I used some extra time that I had to
+focus on a few cleanup items for the project.  While none of them was important
+on its own, I just felt that the project would be cleaner with them done.&lt;/p&gt;
+&lt;p&gt;The first one was an easy one, going through the HTML transformer and the Markdown
+transformer, and ensuring that all the token handlers were private.  There really
+was not any pressing need to do this, but it was just cleaner.  The only code that was
+using those handlers was in the same class, so it was just tidier that way.&lt;/p&gt;
+&lt;p&gt;Next was the creation of the &lt;code&gt;__create_link_token&lt;/code&gt; function to help tidy up the
+&lt;code&gt;__handle_link_types&lt;/code&gt; function.  The &lt;code&gt;__handle_link_types&lt;/code&gt; function was already messy
+enough handling the processing of the link information, the creating of the normal or
+image link was just complicating things.  While I still want to go back and clean
+functions like that up, for the time, moving the creation code to &lt;code&gt;__create_link_token&lt;/code&gt;
+was a good step.&lt;/p&gt;
+&lt;p&gt;Finally, there was the case of the justification function calls throughout the code.
+Not to sound like a purist, but I felt that they were messy.  I often had to remind
+myself of what the three operands were: string to perform on, the justification amount,
+and the character to use for the justification.  The actual use of the function was
+correct, it just felt like its usage was not clear.  So instead of having code
+like this around the code base:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;        &lt;span class="n"&gt;some_value&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;""&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;rjust&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;repeat_count&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;character_to_repeat&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;I replaced it with:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;        &lt;span class="n"&gt;some_value&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;ParserHelper&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;repeat_string&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;character_to_repeat&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;repeat_count&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;While the code for this operation was a one-line function, now located in the
+&lt;code&gt;ParserHelper&lt;/code&gt; class, I felt it now made sense and was in an easy to find
+place.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;repeat_string&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;string_to_repeat&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;repeat_count&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="sd"&gt;"""&lt;/span&gt;
+&lt;span class="sd"&gt;        Repeat the given character the specified number of times.&lt;/span&gt;
+&lt;span class="sd"&gt;        """&lt;/span&gt;
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="s2"&gt;""&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;rjust&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;repeat_count&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;string_to_repeat&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;h1 id="fixing-example-528"&gt;“Fixing” Example 528&lt;a class="headerlink" href="#fixing-example-528" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h1&gt;
+&lt;p&gt;I do not want to spoil the surprise too much, but the fact that I have a section called
+&lt;code&gt;"Fixing" Example 528&lt;/code&gt; probably gives it away.  I fixed it.  But the story is more
+interesting than that.&lt;/p&gt;
+&lt;p&gt;In the last article, I talked about
+&lt;a href="https://github.github.com/gfm/#example-528"&gt;example 528&lt;/a&gt;
+and how I was having problems getting it to
+&lt;a href="https://jackdewinter.github.io/2020/08/10/markdown-linter-adding-links-to-the-markdown-transformer/#example-528"&gt;parse properly&lt;/a&gt;.
+Even having done thorough research on the example and the algorithm, I came up with
+nothing.  To me, it looked like the parsing was being performed according to the
+&lt;a href="(https://github.github.com/gfm/#phase-2-inline-structure)"&gt;GFM specification’s algorithm&lt;/a&gt;,
+but the parsing was just off.  After yet another attempt to figure this example out
+and get it working, I posted my research and a request for help to the CommonMark
+&lt;a href="https://talk.commonmark.org/t/spec-algorithm-error-in-links-within-links-within-images/3571"&gt;discussion forums.&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;Keeping my head down and focused on writing that week’s article, I did not notice that I
+had received a reply the very next day.  As a matter of fact, while I did notice that I
+had a response to my post, it was not until Friday night that it clicked that it was a
+response to “THAT” post.  After getting the cleanup documented in the previous section
+taken care of, I reserved some dedicated time to walk through the reply.&lt;/p&gt;
+&lt;h2 id="kudos"&gt;Kudos&lt;a class="headerlink" href="#kudos" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;First off, I would like to extend kudos to the replier, John MacFarlane, one of the
+maintainers of the Markdown GFM specification.  While he would have been within his
+right to tell me to RTFM&lt;sup id="fnref:RTFM"&gt;&lt;a class="footnote-ref" href="#fn:RTFM"&gt;2&lt;/a&gt;&lt;/sup&gt;, he took some time to walk me through the algorithm
+as it applied to that example, even providing me with some debug output from his
+program for that example.  His response was just a classy response with just the
+right amount of information.&lt;/p&gt;
+&lt;h2 id="side-by-side-comparisons"&gt;Side by Side Comparisons&lt;a class="headerlink" href="#side-by-side-comparisons" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Armed with that new information, I turned on the debug output and ran through the output
+from my implementation of the algorithm again.  Slowly, with my own written notes as an
+additional guide, I began to walk through the output.  &lt;code&gt;Found closer at 8&lt;/code&gt;.  Check.
+&lt;code&gt;Found matching opener at 4&lt;/code&gt;. Check.  &lt;code&gt;Deactivating opener at 3&lt;/code&gt;. Check.
+&lt;code&gt;Found closer at 15&lt;/code&gt;.  Check.  &lt;code&gt;Popping inactive opener at 3&lt;/code&gt;.  Ch…er… what?
+“Popping”?&lt;/p&gt;
+&lt;p&gt;Going back to the algorithm and the text that John provided, it hit me.  The popping that
+he was referring to was this part of the algorithm:&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;If we do find one, but it’s not active, we remove the inactive delimiter from the stack, and return a literal text node ].&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;For some reason, when I read that before, I thought it was referring to removing the
+token from consideration, not actually removing it from the stack.  It probably also
+confused things in that I did not maintain a separate stack for the link resolution.
+Instead, I added an instance of the &lt;code&gt;SpecialTextMarkdownToken&lt;/code&gt; token to the inline block
+list whenever I hit a link sequence.  In either case, I was not doing that.  To compound
+the issue, I did not stop at that inactive token, I just kept on looking for the next
+active &lt;code&gt;SpecialTextMarkdownToken&lt;/code&gt; token, finding the image start token.  Ah… everything
+was now falling into place in my mind.&lt;/p&gt;
+&lt;h2 id="fixing-the-issue"&gt;Fixing the Issue&lt;a class="headerlink" href="#fixing-the-issue" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;The fix was very anticlimactic.  I created the new
+&lt;code&gt;__revert_token_to_normal_text_token&lt;/code&gt; function, which removed the
+&lt;code&gt;SpecialTextMarkdownToken&lt;/code&gt; token and replaced it with a normal &lt;code&gt;TextMarkdownToken&lt;/code&gt;
+token.  In addition, I changed the algorithm to make sure that when this happened,
+it stopped processing for that link end sequence, as per the algorithm.  With the start
+character sequence now being effectively invisible to the algorithm, the rest of the
+parsing went fine, with the correct results coming out.  Well, almost.  A small fix was
+needed to the
+&lt;code&gt;__consume_text_for_image_alt_text&lt;/code&gt; function to make it properly emit the correct text
+if an instance of a &lt;code&gt;SpecialTextMarkdownToken&lt;/code&gt; token was encountered.&lt;/p&gt;
+&lt;p&gt;With the big fix and the little fix both completed, the scenario test for Example 528
+was fully enabled and fully passing.  Finally!&lt;/p&gt;
+&lt;h3 id="reminder-to-self-be-humble"&gt;Reminder to Self: Be Humble&lt;a class="headerlink" href="#reminder-to-self-be-humble" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Having taken a quite a few attempts at implementing the algorithm and making sure it
+passed all test cases, I hit a wall. A seemingly rock-solid wall.  That was fine.
+During any project, be it software or hardware, things happen.  When it got to
+that point, I gave myself some time, I knuckled down&lt;sup id="fnref:knuck"&gt;&lt;a class="footnote-ref" href="#fn:knuck"&gt;3&lt;/a&gt;&lt;/sup&gt;, and I did some solid
+research on the problem.  Keeping good notes, I was then able to share those notes with
+peers in the community, along with a sincere and humble request for help.&lt;/p&gt;
+&lt;p&gt;I do not always get a good response to requests for help.  However, I have noticed that
+doing good research and presenting that research with humility increases the chance of
+getting a positive response.  At no point did I rant and say, “it’s broken” or
+“my way works, what is wrong with yours”.  Instead I said, “Is there something wrong
+with the algorithm?” and
+“Based on my implementation of that algorithm”.  By acknowledging that it could be an
+issue with my implementation, I feel that I opened the doors for someone to help, rather
+than slamming them shut with negative talk.&lt;/p&gt;
+&lt;p&gt;And as I mentioned in the Kudos section above, mostly in what I believe was a humble
+approach to asking for help, I got a real good response.&lt;/p&gt;
+&lt;h2 id="what-was-my-experience-so-far"&gt;What Was My Experience So Far?&lt;a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Wow… that work was intense.  For one, I was right, it was a lot of addressing issues
+with whitespace and running scenario tests repeatedly.  But it was more than
+that for me.  I knew I had the leaf blocks taken care of, but I was really concerned
+about how difficult the implementation of the container transformations would be. If
+I did it right and kept to my design, I was confident that I could keep the complexity
+down, but I still figured it would be complex.&lt;/p&gt;
+&lt;p&gt;I guess that led to me second guessing every line of code and getting in the way of
+myself a bit.  I did prevail, but that concern or fear of damaging existing tests was
+somewhat paralyzing at times.  And while the logical half of my brain was telling me
+that I had plenty of tests to reinforce my completed work, the emotional half was
+another story.  That is where that fear was coming from, my emotional side.  Only
+when I took a moment to take another breath and focus on the tests was I able to banish
+that concern for a while.&lt;/p&gt;
+&lt;p&gt;And it also helped me to do a bit of self-analysis on why I was concerned.  After a lot
+of thinking, I came to a simple conclusion. The closer I get closer to getting a
+complete project, the more I am concerned that I have not architected and designed it
+properly.  If I have done that, small changes can be accomplished with few or no
+unintended side effects.  If not, encountering side effects should be frequent.
+Seeing as I know I have identified some areas of the code
+base that I want to refactor, I questioned whether the current state was good enough.&lt;/p&gt;
+&lt;p&gt;Knowing that, it helped me figure it out for myself.  I do believe that I have
+confidence with my
+architecture and design, and at the same time, I believe that I can improve it.
+It might seem like a dichotomy, but I am starting to think that both can be correct
+at the same time.  But knowing that was the issue that was causing me concern helps
+me combat it.  I am a lot less worried about it, but it is a work in progress,
+much like the project.&lt;/p&gt;
+&lt;p&gt;With that information in hand, I felt better.  Cautious about the next steps in getting
+the checks closer to the finish line, but better! And let’s not forget about finally
+closing the issue with Example 528.  That was good!&lt;/p&gt;
+&lt;h2 id="what-is-next"&gt;What is Next?&lt;a class="headerlink" href="#what-is-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;With the Markdown transformer almost completed, the only tokens left that need a
+transformation are the Block Quote tokens.  In addition, as the line/column number
+consistency checks do not currently deal with Block Quote tokens either, I will need
+to add both checks in the next block of work.&lt;/p&gt;
+&lt;div class="footnote"&gt;
+&lt;hr/&gt;
+&lt;ol&gt;
+&lt;li id="fn:lazyList"&gt;
+&lt;p&gt;The only example 249, but ordered list. &lt;a class="footnote-backref" href="#fnref:lazyList" title="Jump back to footnote 1 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li id="fn:RTFM"&gt;
+&lt;p&gt;Read The F&amp;amp;$#ing Manual… or I guess RTFS in this case. &lt;a class="footnote-backref" href="#fnref:RTFM" title="Jump back to footnote 2 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li id="fn:knuck"&gt;
+&lt;p&gt;According to &lt;a href="https://www.merriam-webster.com/thesaurus/knuckle%20down"&gt;Webster’s&lt;/a&gt;: “pitch in, dig in”. &lt;a class="footnote-backref" href="#fnref:knuck" title="Jump back to footnote 3 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/div&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry><entry><title>Python Projects - Using PipEnv</title><link href="https://jackdewinter.github.io/2020/08/14/python-projects-using-pipenv/" rel="alternate"></link><published>2020-08-14T00:00:00-07:00</published><updated>2020-08-14T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-08-14:/2020/08/14/python-projects-using-pipenv/</id><summary type="html">
 &lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;With almost a year of Python development under my belt, I wanted to start talking about
 the Python elements that I feel have made my development of the
@@ -9370,318 +9843,4 @@ translate into the proper HTML… I now had proof they did!&lt;/p&gt;
 way of…”, it usually means that at least 2-3 groups of people implementing the
 protocol specification had issues.  So, it was with a bit of dread and a bit of
 confidence that I started looking at dealing with inline emphasis, the topic of the
-next article.&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="linter tokenizer"></category></entry><entry><title>Markdown Linter - Autolinks, Raw HTML, and Line Breaks</title><link href="https://jackdewinter.github.io/2020/03/09/markdown-linter-autolinks-raw-html-and-line-breaks/" rel="alternate"></link><published>2020-03-09T00:00:00-07:00</published><updated>2020-03-09T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-03-09:/2020/03/09/markdown-linter-autolinks-raw-html-and-line-breaks/</id><summary type="html">
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Having completed another refactoring session, I have confidence that the PyMarkdown
-project code has been returned to what I feel is a healthy amount of technical debt.
-After taking a deep breath and a good look at the features left to implement, I
-realized that the list is now …&lt;/p&gt;</summary><content type="html">
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Having completed another refactoring session, I have confidence that the PyMarkdown
-project code has been returned to what I feel is a healthy amount of technical debt.
-After taking a deep breath and a good look at the features left to implement, I
-realized that the list is now decently short: emphasis, links, autolinks, raw HTML, and
-line breaks.  Rechecking the section on
-&lt;a href="https://github.github.com/gfm/#phase-2-inline-structure"&gt;inline structure&lt;/a&gt;
-in the GitHub Flavored Markdown (GFM) specification, it is hard to miss the fact that
-the emphasis and link elements have their own “here is a suggested approach to
-implementation” section while the implementation for parsing the
-other elements are left up to the reader.  Deciding that the authors of the GFM
-were trying to tell me something, I decided to focus on autolinks, raw HTML, and line
-breaks first, leaving the emphasis and links for the last chunk of features.&lt;/p&gt;
-&lt;h2 id="what-is-the-audience-for-this-article"&gt;What Is the Audience For This Article?&lt;a class="headerlink" href="#what-is-the-audience-for-this-article" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;While detailed more eloquently in
-&lt;a href="https://jackdewinter.github.io/2020/04/05/what-is-the-audience-for-my-blog/#what-is-the-audience-for-my-blog"&gt;this article&lt;/a&gt;,
-my goal for this technical article is to focus on the reasoning behind my solutions,
-rather that the solutions themselves.  For a full record of the solutions presented in
-this article, please go to this project’s GitHub repository and consult the
-commits between
-&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/6ea7929d95468e28170671dc19214bd09507f04c"&gt;22 February 2020&lt;/a&gt; and
-&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/dffd948cf8e4066121dbb11ae68c385370a20877"&gt;27 February 2020&lt;/a&gt;.&lt;/p&gt;
-&lt;h2 id="my-take-on-html-in-markdown"&gt;My Take on HTML in Markdown&lt;a class="headerlink" href="#my-take-on-html-in-markdown" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Back in the article
-&lt;a href="https://jackdewinter.github.io/2020/02/10/markdown-linter-adding-html-blocks/"&gt;Markdown Linter - Adding HTML Blocks&lt;/a&gt;,
-I provided
-&lt;a href="https://jackdewinter.github.io/2020/02/10/markdown-linter-adding-html-blocks/#my-recommendation"&gt;a recommendation&lt;/a&gt;
-as follows:&lt;/p&gt;
-&lt;blockquote&gt;
-&lt;p&gt;When it comes to HTML blocks, I implemented them as part of the parser because they are part of the specification. But because of the complexity in understanding HTML blocks, I whole heartedly recommend avoiding using HTML blocks if at all possible.&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;p&gt;The big problem I have with HTML blocks is that there are 7 types of HTML blocks, and
-each one has a different ending condition.  As an author that heavily uses Markdown,
-I want any documents that I create to be simple and easy to read.  In my opinion,
-without a lot of memorization, HTML blocks are not simple at all.  &lt;/p&gt;
-&lt;p&gt;Raw HTML elements are on the complete other end of the spectrum.  If I had my way
-with the GFM specification, I would demote and remove HTML blocks entirely and replace
-them with raw HTML.  Raw HTML is exactly as it sounds: what you type is what you get.
-The good news is that if you follow a couple of easy to memorize rules, you can do this:&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;NEVER start a line with a HTML tag&lt;/li&gt;
-&lt;li&gt;Markdown is an authoring language, and should only use HTML sparingly&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;In support the first rule, my reading of the start conditions of each of the
-&lt;a href="https://github.github.com/gfm/#html-blocks"&gt;HTML block types&lt;/a&gt;
-in the GFM concludes with the observation that all start conditions begin with the text
-“line begins…”.  Thus, I created the first rule to ensure that I never inadvertently
-trigger a HTML block.  Any non-whitespace text and then any HTML is fine, just not
-by itself at the start of the line.&lt;/p&gt;
-&lt;p&gt;My second rule may seem like my own opinion, but I believe it is a solid rule.  While
-it is useful to read the GFM section on
-&lt;a href="https://github.github.com/gfm/#what-is-markdown-"&gt;What is Markdown?&lt;/a&gt;,
-that section boils down to this one quote from that section by John Gruber:&lt;/p&gt;
-&lt;blockquote&gt;
-&lt;p&gt;The overriding design goal for Markdown’s formatting syntax is to make it as readable as possible. The idea is that a Markdown-formatted document should be publishable as-is, as plain text, without looking like it’s been marked up with tags or formatting instructions.&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;p&gt;There is little question that having the ability to add a HTML tag where needed is a
-good feature of Markdown.  However, I would contend that any HTML tags that are added
-are contrary to Gruber’s stated goal for a document to not be marked up with tags. As
-such, unless Gruber’s readability goal is dismissed, anything more than sparing use of
-HTML in a Markdown document is harmful.&lt;/p&gt;
-&lt;p&gt;Don’t get me wrong, but there are good use cases for HTML, but they are rare.  In the
-5-6 years that I have been authoring documents in Markdown, there are only two times
-I have ever used HTML tags in Markdown documents.  The first time is in the writing of
-these articles on the Markdown parser for the PyMarkdown project and the other time was
-for a project that used the &lt;code&gt;&amp;lt;ul&amp;gt;&lt;/code&gt; and &lt;code&gt;&amp;lt;/ul&amp;gt;&lt;/code&gt; tags to satisfy a legal documentation
-requirement for text underlining.  From talking with other developers using Markdown
-parsers that underling text is a popular request along with a blanket request to
-disable all HTML tag support in Markdown, mostly for security reasons.&lt;/p&gt;
-&lt;p&gt;So, for what it is worth, that is my take on HTML in Markdown, and my reasons for that
-opinion.  Your mileage may vary.&lt;/p&gt;
-&lt;h2 id="raw-html"&gt;Raw Html&lt;a class="headerlink" href="#raw-html" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Unlike the rules that an author needs to memorize to properly use HTML blocks, using raw
-HTML in Markdown is very simple: its either a legal HTML tag or it gets interpreted
-as normal text.  No “if it’s a blah tag, then…” rules.  Just valid or invalid.  No
-ending conditions as raw HTML is inline processing of text.  Simple. Easy. Clean.&lt;/p&gt;
-&lt;p&gt;The reason that I can be comfortable in saying that raw HTML is simple is the following
-block of Markdown text:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nv"&gt;Start&lt;/span&gt; &lt;span class="nv"&gt;and&lt;/span&gt; &lt;span class="k"&gt;End&lt;/span&gt; &lt;span class="nv"&gt;Tags&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nv"&gt;a&lt;/span&gt; &lt;span class="nv"&gt;href&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="s"&gt;link&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt;&lt;span class="nv"&gt;link&lt;/span&gt; &lt;span class="nv"&gt;text&lt;/span&gt;&lt;span class="o"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nv"&gt;a&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt;  \
-&lt;span class="nv"&gt;Self&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="nv"&gt;Closing&lt;/span&gt; &lt;span class="nv"&gt;Start&lt;/span&gt; &lt;span class="nv"&gt;Tag&lt;/span&gt;  &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nv"&gt;br&lt;/span&gt; &lt;span class="o"&gt;/&amp;gt;&lt;/span&gt;  \
-&lt;span class="nv"&gt;Alternate&lt;/span&gt; &lt;span class="nv"&gt;Parameter&lt;/span&gt; &lt;span class="nv"&gt;Enclosing&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nv"&gt;b2&lt;/span&gt; &lt;span class="nv"&gt;data&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s1"&gt;'&lt;/span&gt;&lt;span class="s"&gt;foo&lt;/span&gt;&lt;span class="s1"&gt;'&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt;  \
-&lt;span class="nv"&gt;Simple&lt;/span&gt; &lt;span class="nv"&gt;Alternate&lt;/span&gt; &lt;span class="nv"&gt;Parameter&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nv"&gt;c3&lt;/span&gt; &lt;span class="nv"&gt;foo&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="nv"&gt;bar&lt;/span&gt; &lt;span class="o"&gt;/&amp;gt;&lt;/span&gt;  \
-&lt;span class="nv"&gt;Gratuitous&lt;/span&gt; &lt;span class="nv"&gt;Parameter&lt;/span&gt; &lt;span class="nv"&gt;Example&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nv"&gt;d4&lt;/span&gt; &lt;span class="nv"&gt;foo&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="s"&gt;bar&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt; &lt;span class="nv"&gt;bam&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s1"&gt;'&lt;/span&gt;&lt;span class="s"&gt;baz &amp;lt;em&amp;gt;"&amp;lt;/em&amp;gt;&lt;/span&gt;&lt;span class="s1"&gt;'&lt;/span&gt; &lt;span class="nv"&gt;_boolean&lt;/span&gt; &lt;span class="nv"&gt;zoop&lt;/span&gt;:&lt;span class="mi"&gt;33&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="nv"&gt;zoop&lt;/span&gt;:&lt;span class="mi"&gt;33&lt;/span&gt; &lt;span class="o"&gt;/&amp;gt;&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;While the grammar is broken down in the
-&lt;a href="https://github.github.com/gfm/#raw-html"&gt;Raw HTML&lt;/a&gt; section of the GFM specification,
-it follows the
-&lt;a href="https://www.w3.org/TR/html52/syntax.html#writing-html-documents-elements"&gt;HTML 5&lt;/a&gt;
-specification for how to construct the tag and which tag formats are valid.  From
-a document author point of view, this is simple.  When adding HTML to a Markdown
-document, the author either knows how to author a web page in HTML or has a person
-or web page that tells the author what HTML to insert into the document.  In either
-case, assuming that those tags are valid, those tags are emitted exactly as added,
-with no extra baggage added during the translation.&lt;/p&gt;
-&lt;p&gt;In adding these HTML samples to the above Markdown example, I am also following my own
-rules: never start a line with a tag and use it sparingly.  None of the lines start
-with a tag, ensuring that none of the text is parsed as a HTML block.  And while
-I went a bit overboard with the HTML specifically as it is an example, I can honestly
-say it is one of the less-than-5 times I have used HTML in Markdown.  I think that
-qualifies as sparingly.&lt;/p&gt;
-&lt;p&gt;The raw HTML inline processing was very easy to add, as the rules are very simple:
-its either a valid HTML tag, or not.  Not much to add.&lt;/p&gt;
-&lt;h2 id="autolinks"&gt;Autolinks&lt;a class="headerlink" href="#autolinks" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Until I started reading the specification, I had no idea that Markdown was capable of
-a lot of things.  In this case, I wasn’t aware that it can make a decent attempt at
-creating links with very little effort.  As far as using them in my articles and
-documents, I am not sure about them yet, but at the very least they are an interesting
-concept for Markdown to include.&lt;/p&gt;
-&lt;p&gt;The concept is simple.  An URI contained within the &lt;code&gt;&amp;lt;&lt;/code&gt; and &lt;code&gt;&amp;gt;&lt;/code&gt; characters is
-interpreted as a link to that URI, with both the link and the link text being set to
-that value.  There is also a variation of autolinks that uses any email address that
-matches the email address
-&lt;a href="https://html.spec.whatwg.org/multipage/forms.html#e-mail-state-(type=email)"&gt;regular expression in the HTML5 specification&lt;/a&gt;.  For email address autolinks, the link is set
-to a &lt;code&gt;mailto&lt;/code&gt; scheme for the link and the email address for the link text.&lt;/p&gt;
-&lt;p&gt;Real simple examples of these autolinks are contained within the following Markdown:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;My&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nl"&gt;website&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nl"&gt;http&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="o"&gt;//&lt;/span&gt;&lt;span class="n"&gt;example&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;com&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
-
-&lt;span class="n"&gt;My&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nl"&gt;email&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="n"&gt;head&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;honcho&lt;/span&gt;&lt;span class="nv"&gt;@example&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;com&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;which generates the following HTML:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;My website: &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;a&lt;/span&gt; &lt;span class="na"&gt;href&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;"http://example.com"&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;http://example.com&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;a&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
-&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;My email: &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;a&lt;/span&gt; &lt;span class="na"&gt;href&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;"mailto:head.honcho@example.com"&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;head.honcho@example.com&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;a&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;To make sure they are not interpreted as HTML blocks, they are prefaced with text,
-according to the rules I established in the last section.  While a properly
-created autolink should not be interpreted as either of the HTML elements, I prefer to
-keep things simple.  “NEVER start a line with a HTML tag unless it is a validly formed
-autolink” just seemed too much.  As mentioned before, your mileage may vary.&lt;/p&gt;
-&lt;p&gt;The actual HTML output is simple, as denoted in the second paragraph of this section.
-In looking at autolinks a couple of times for this article, my feeling about autolinks
-as a document author is that there is not enough control of the output.  Unless
-I am missing something, the following Markdown is equivalent to the above HTML, and
-it gives me more control of the document:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;My&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nl"&gt;website&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;http://example.com&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nl"&gt;http&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="o"&gt;//&lt;/span&gt;&lt;span class="n"&gt;example&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;com&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
-
-&lt;span class="n"&gt;My&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nl"&gt;email&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;head.honcho@example.com&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nl"&gt;mailto&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="n"&gt;head&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;honcho&lt;/span&gt;&lt;span class="nv"&gt;@example&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;com&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;In the end, while autolinks were as trivial to add as raw HTML, I think I’ll stick
-with my explicit links.&lt;/p&gt;
-&lt;h2 id="line-breaks"&gt;Line Breaks&lt;a class="headerlink" href="#line-breaks" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Wrapping things up for this group of features are the line breaks: hard breaks and soft
-breaks. At 14 examples for
-hard line breaks and 2 examples for soft line breaks, only the indented code
-blocks (11), the tabs (11), and the paragraphs (8) are in the same ball park for the
-low number of examples needed to adequately demonstrate that given structural element
-of Markdown.  In addition, if you really look at the 14 examples for hard line breaks,
-there is a good argument to be made that there is large amount of replication between
-the two character sequences, reducing the “actual” number of examples down
-into the same 8-11 examples range.&lt;/p&gt;
-&lt;p&gt;As indicated by the number of examples, line breaks in Markdown are really simple to
-use, inheriting its line break rules from HTML.  In both languages,
-if the author wants to specifically break a line after some text, they must use an
-element that forces a line break before its content, use an element that preserves line
-breaks within its content, or specify a hard line break itself.&lt;/p&gt;
-&lt;p&gt;A good example of the first case are the grouping of Markdown lines into a paragraph by
-separating them with a blank line.  This is best shown in the following Markdown from
-&lt;a href="https://github.github.com/gfm/#example-190"&gt;example 190&lt;/a&gt;:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;aaa&lt;/span&gt;
-&lt;span class="n"&gt;bbb&lt;/span&gt;
-
-&lt;span class="n"&gt;ccc&lt;/span&gt;
-&lt;span class="n"&gt;ddd&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;which generates the following HTML:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;aaa
-bbb&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
-&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;ccc
-ddd&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;and is displayed as the following:&lt;/p&gt;
-&lt;hr/&gt;
-&lt;p&gt;&lt;p&gt;aaa
-bbb&lt;/p&gt;
-&lt;p&gt;ccc
-ddd&lt;/p&gt;&lt;/p&gt;
-&lt;hr/&gt;
-&lt;p&gt;In this example, the (soft) line break that occurs in the Markdown between &lt;code&gt;aaa&lt;/code&gt; and
-&lt;code&gt;bbb&lt;/code&gt;, and then again between the &lt;code&gt;ccc&lt;/code&gt; and &lt;code&gt;ddd&lt;/code&gt;, is kept as it is translated into
-HTML.  However, when the HTML is rendered, that line break is not displayed.  When
-displayed, the first pair of characters are displayed, followed by a line break, and
-then the second set of characters.  As a general default rule, Markdown blocks
-force a hard line break before displaying their contents, to ensure that the content is
-understood to be different.&lt;/p&gt;
-&lt;p&gt;For the second case, a good example of it is a slightly modified version of the
-Markdown from &lt;a href="https://github.github.com/gfm/#example-110"&gt;example 110&lt;/a&gt;:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;foo&lt;/span&gt;
-&lt;span class="o"&gt;```&lt;/span&gt;
-&lt;span class="n"&gt;bar&lt;/span&gt;
-&lt;span class="n"&gt;bam&lt;/span&gt;
-&lt;span class="o"&gt;```&lt;/span&gt;
-&lt;span class="n"&gt;baz&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;which generates the following HTML:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;foo&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
-&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;pre&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;code&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;bar
-bam
-&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;code&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;pre&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
-&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;baz&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;and is displayed as the following:&lt;/p&gt;
-&lt;hr/&gt;
-&lt;p&gt;&lt;p&gt;foo&lt;/p&gt;
-&lt;pre&gt;&lt;code&gt;bar
-bam&lt;/code&gt;&lt;/pre&gt;
-&lt;p&gt;baz&lt;/p&gt;&lt;/p&gt;
-&lt;hr/&gt;
-&lt;p&gt;The first thing to notice is that, as described in the last example, when a new
-Markdown block is started, the default rule for displaying HTML forces a hard line
-break to be rendered, keeping its content distinct from the previous content.  As such,
-in this example both the &lt;code&gt;&amp;lt;pre&amp;gt;&lt;/code&gt; tag and the &lt;code&gt;&amp;lt;p&amp;gt;&lt;/code&gt; tag are displayed with a line break
-before them.  While this behavior can sometimes be overridden with styles and style
-sheets, it tends to make things more confusing and is mostly avoided by HTML authors.  &lt;/p&gt;
-&lt;p&gt;The second thing to notice is that the line breaks within the code block are
-preserved as-is.  Both code blocks and HTML blocks maintain a very tight control on
-how their data is translated and displayed, being the only two block elements that
-preserves any line breaks within its content.  In terms of other elements, it should
-be no surprise that code spans and raw HTML are the only two inline elements that also
-preserve line breaks within their content.&lt;/p&gt;
-&lt;p&gt;That leaves the final use case, where a Markdown author wants to force a hard line
-break outside of any of the previously mentioned constructs.  But, how does an author
-do that?&lt;/p&gt;
-&lt;p&gt;The often used and not-so-visible option is to end a
-line with 2 or more spaces that is also not at the end of a block.  Merging examples
-&lt;a href="https://github.github.com/gfm/#example-657"&gt;657&lt;/a&gt; and
-&lt;a href="https://github.github.com/gfm/#example-666"&gt;666&lt;/a&gt; together produces the following
-Markdown:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;foo&lt;/span&gt;&lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="k"&gt;space&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&amp;lt;&lt;/span&gt;&lt;span class="k"&gt;space&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt;
-&lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="k"&gt;space&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&amp;lt;&lt;/span&gt;&lt;span class="k"&gt;space&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&amp;lt;&lt;/span&gt;&lt;span class="k"&gt;space&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&amp;lt;&lt;/span&gt;&lt;span class="k"&gt;space&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&amp;lt;&lt;/span&gt;&lt;span class="k"&gt;space&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt;&lt;span class="n"&gt;bar&lt;/span&gt;
-&lt;span class="n"&gt;foo&lt;/span&gt;&lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="k"&gt;space&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&amp;lt;&lt;/span&gt;&lt;span class="k"&gt;space&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;generating the following HTML:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;foo&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;br&lt;/span&gt; &lt;span class="p"&gt;/&amp;gt;&lt;/span&gt;
-bar
-foo&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;and is displayed as the following:&lt;/p&gt;
-&lt;hr/&gt;
-&lt;p&gt;&lt;p&gt;foo&lt;br/&gt;
-bar
-foo&lt;/p&gt;&lt;/p&gt;
-&lt;hr/&gt;
-&lt;p&gt;Note that for the sake of clarity with this example, the string &lt;code&gt;&amp;lt;space&amp;gt;&lt;/code&gt; is used in
-place of the actual
-space character itself.  The two spaces at the end of the first line cause the HTML
-hard break tag &lt;code&gt;&amp;lt;br /&amp;gt;&lt;/code&gt; to be inserted into the data, generating a line break not only
-in the generated HTML, but also in the displayed HTML.  In contrast, since the two
-spaces at the end of the third line closes off the paragraph block, they are simply
-stripped away and not replaced with a hard break.  This was a smart move as any Markdown
-following that paragraph will be in a new block, the starting of the new block will,
-by default, force a hard break in the display of that block, as noted above.&lt;/p&gt;
-&lt;p&gt;In contrast, the second way to force a hard line break is to end the line with the
-&lt;code&gt;\&lt;/code&gt; character, as shown in the following Markdown:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;foo&lt;/span&gt;&lt;span class="err"&gt;\&lt;/span&gt;
-     &lt;span class="n"&gt;bar&lt;/span&gt;
-&lt;span class="n"&gt;foo&lt;/span&gt;&lt;span class="err"&gt;\&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;While there are changes in the Markdown from the previous example, the generated HTML
-remains the same.  After my initial confusion between Python’s &lt;code&gt;\&lt;/code&gt; line continuation
-character and the Markdown’s &lt;code&gt;\&lt;/code&gt; hard line break character (as
-&lt;a href="https://jackdewinter.github.io/2020/03/02/markdown-linter-taking-time-to-refactor-post-easy-inlines/#issue-2-python-markdown-and-line-continuation-characters"&gt;documented here&lt;/a&gt; ),
-the explicit hard line break character grew on me.  &lt;/p&gt;
-&lt;h2 id="what-was-my-experience-so-far"&gt;What Was My Experience So Far?&lt;a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;If I am being honest with myself, I was not sure at the beginning of the project if
-I would ever get to this point.  With only 2 inline elements left to process, not
-including the link definitions deferred from before, the parser is getting close
-to being able to handle a full and rich Markdown document.  As the GRM specification
-contains over 673 scenarios, there were times that I thought I would just give up
-or use a “mostly” complete parser… something that was just barely good enough.  But
-getting to this point, close to having a solid parser completed feels great!&lt;/p&gt;
-&lt;p&gt;Sure, there have been cases where it took me a day or two to figure out how to do
-something properly, such as list blocks and block quotes.  Those were tough.  And
-as I am writing this article at a 2-3 week delay from when I made the actual changes
-to the project, I know that there are some more bumps in the row yet to come.
-(No Spoilers!)  But
-the important thing is that while those things are hard, I face them with the mentality
-that I talk about in my article on
-&lt;a href="https://jackdewinter.github.io/2019/08/18/embracing-something-hard/"&gt;Embracing Something Hard&lt;/a&gt;.
-Maybe
-its just how I am, but for me part of the challenge is to embrace something hard
-and work my way through it.&lt;/p&gt;
-&lt;p&gt;It was when I was thinking about some of hard stuff that I had tackled previously
-and how easy this block of features was that I started wondering.  Looking back
-in the project at anything written before
-&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/dffd948cf8e4066121dbb11ae68c385370a20877"&gt;this commit on 27 February 2020&lt;/a&gt;,
-it is hard to find any test that compares the output to HTML, though all of scenario
-test output from the GFM specification is written as HTML.  What’s with that?&lt;/p&gt;
-&lt;p&gt;Going back to my article on
-&lt;a href="linter-1.md#what-are-the-requirements"&gt;Collecting Requirements&lt;/a&gt;,
-I determined that to properly write a Markdown linter, I needed to be able to take
-the output from a parser as a set of tokens, not output as HTML.  The entire reason
-that I have taken steps to write this Markdown parser is that there are no current
-parsers that do not output interpreted Markdown as HTML.  Furthermore, the previous
-section on
-&lt;a href="https://jackdewinter.github.io/2020/03/09/markdown-linter-autolinks-raw-html-and-line-breaks/#autolinks"&gt;autolinks&lt;/a&gt;
-is proof of that need.  Producing a simple link
-to a web page, I can generate it using an autolink, a raw HTML tag, and a HTML block.
-Tokenizing the output before that translation to HTML is the only way to ensure that I
-am linting the Markdown properly.&lt;/p&gt;
-&lt;p&gt;To get me this far, testing against the tokenized output of the parser was the right
-thing to do.  The linter is going to observe and consume the tokens from the parser,
-so they are the right thing to test.  But the questions of whether I was
-generating the correct tokens started to bounce around my mind…&lt;/p&gt;
-&lt;h2 id="what-is-next"&gt;What is Next?&lt;a class="headerlink" href="#what-is-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;As I mentioned in the last section, I had some concerns about whether or not the
-tokenization of the Markdown was correct, so I decided to go all out for the next
-section and add the remaining scenario tests from the GFM specification.  To close
-the loop on the testing, I also went through all the existing tests and added
-a new class that transforms the PyMarkdown tokens into HTML, comparing that output
-directly against the GFM specification.  Stay tuned!&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="linter tokenizer"></category></entry></feed>
+next article.&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="linter tokenizer"></category></entry></feed>

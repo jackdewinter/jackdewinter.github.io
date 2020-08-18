@@ -1,5 +1,478 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/all.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2020-08-14T00:00:00-07:00</updated><entry><title>Python Projects - Using PipEnv</title><link href="https://jackdewinter.github.io/2020/08/14/python-projects-using-pipenv/" rel="alternate"></link><published>2020-08-14T00:00:00-07:00</published><updated>2020-08-14T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-08-14:/2020/08/14/python-projects-using-pipenv/</id><summary type="html">
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/all.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2020-08-17T00:00:00-07:00</updated><entry><title>Markdown Linter - Adding Lists to the Markdown Transformer</title><link href="https://jackdewinter.github.io/2020/08/17/markdown-linter-adding-lists-to-the-markdown-transformer/" rel="alternate"></link><published>2020-08-17T00:00:00-07:00</published><updated>2020-08-17T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-08-17:/2020/08/17/markdown-linter-adding-lists-to-the-markdown-transformer/</id><summary type="html">
+&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In my
+&lt;a href="https://jackdewinter.github.io/2020/08/10/markdown-linter-adding-links-to-the-markdown-transformer/"&gt;last article&lt;/a&gt;,
+I increased the coverage provided by the token to Markdown transformer by adding
+support for the link related tokens. In this article, I take another large step
+towards completing the consistency checks by adding support for list related tokens.&lt;/p&gt;
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Having implemented the link related …&lt;/p&gt;</summary><content type="html">
+&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In my
+&lt;a href="https://jackdewinter.github.io/2020/08/10/markdown-linter-adding-links-to-the-markdown-transformer/"&gt;last article&lt;/a&gt;,
+I increased the coverage provided by the token to Markdown transformer by adding
+support for the link related tokens. In this article, I take another large step
+towards completing the consistency checks by adding support for list related tokens.&lt;/p&gt;
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Having implemented the link related tokens, I was now down to one large group:
+the container related tokens.  Even with the confidence I gained from the work that
+I performed with link related tokens, I felt that “container related tokens” was
+too large of a group for me to be comfortable working with.  Given that the container
+related tokens group contained only 2 types of tokens, it only seemed natural to focus
+on one of those two tokens: the list tokens.  More specifically, I was going to
+start with the Unordered List tokens.&lt;/p&gt;
+&lt;h2 id="what-is-the-audience-for-this-article"&gt;What Is the Audience for This Article?&lt;a class="headerlink" href="#what-is-the-audience-for-this-article" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;While detailed more eloquently in
+&lt;a href="https://jackdewinter.github.io/2020/04/05/what-is-the-audience-for-my-blog/#what-is-the-audience-for-my-blog"&gt;this article&lt;/a&gt;,
+my goal for this technical article is to focus on the reasoning behind my solutions,
+rather that the solutions themselves.  For a full record of the solutions presented in
+this article, please go to this project’s GitHub repository and consult the
+commits between
+&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/6f7fa825b3cd6bad52cd5b9772a0f35dc816b629"&gt;04 Aug 2020&lt;/a&gt;
+and
+&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/07d6f81c6c6b46c3ae9c526a3d176d65ddf06c54"&gt;08 Aug 2020&lt;/a&gt;.&lt;/p&gt;
+&lt;h2 id="starting-with-unordered-lists"&gt;Starting with Unordered Lists&lt;a class="headerlink" href="#starting-with-unordered-lists" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Taking a wander through the scenario tests with unordered lists in their examples,
+two things were clear to me.  The first thing is that with few exceptions, they were all
+working well from the point of view of existing consistency checks.  Those few examples
+were 1 case with nested links and 4 cases which mixed up block quotes with list.
+Those examples are
+&lt;a href="https://github.github.com/gfm/#example-528"&gt;example 528&lt;/a&gt;,
+&lt;a href="https://github.github.com/gfm/#example-237"&gt;example 237&lt;/a&gt;,
+&lt;a href="https://github.github.com/gfm/#example-238"&gt;example 238&lt;/a&gt;,
+&lt;a href="https://github.github.com/gfm/#example-270"&gt;example 270&lt;/a&gt;, and
+&lt;a href="https://github.github.com/gfm/#example-271"&gt;example 271&lt;/a&gt;.
+The second thing that was clear was that because of the first
+point, I had a high degree of confidence that I was going to be addressing issues that
+almost exclusively focused on whitespace.  With the HTML output already being verified,
+I was certain that properly transforming Unordered List tokens back into list Markdown
+would mostly boil down to whitespaces.&lt;/p&gt;
+&lt;h3 id="thinking-about-the-design"&gt;Thinking About the Design&lt;a class="headerlink" href="#thinking-about-the-design" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Before I leapt into the coding, I sat back and thought long and hard about the approach
+I was going to take with the transformation of these tokens.  When I started sketching
+out what my approach would be, I started to understand that there would be two issues
+I would have to deal with.  They were the transformation of the tokens themselves, and
+the whitespace they would inject before other tokens.  The first part was the easy
+part: see
+an unordered list token, use the elements in the token to figure out its transformed
+form, and emit that transformed form.  Done.&lt;/p&gt;
+&lt;p&gt;Managing the whitespace was going to be a lot more difficult.  The thing that helped
+me was that I knew I already had experience with handling that initial whitespace from
+writing the main parser.  What helped me immeasurably in the
+parser was to keep the processing of the two container elements, lists and block
+quotes, separate from the processing of the leaf tokens.  By only passing “container
+element free” text to the
+leaf token processor, that processor was kept simple.  To keep the container handling
+for the Markdown transformer simple, I decided that employing the same approach was
+pivotal.&lt;/p&gt;
+&lt;p&gt;But even with the decision to keep that processing separate, I figured that it would
+only get me
+part of the way there.  To complete the management of the whitespaces, I would need to
+be able to calculate the whitespace used before each line contained within a list block.
+The more I looked at the problems to be solved, the more I was sure that most of my
+time was going to be managing that initial whitespace.&lt;/p&gt;
+&lt;p&gt;It was not going to be fun getting the transformations done for the Unordered List
+tokens, but I had a feeling that it would be really satisfying when it was done!&lt;/p&gt;
+&lt;h3 id="and-go"&gt;And… Go!&lt;a class="headerlink" href="#and-go" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;I began this block of work with the moving of the if statement that avoided processing
+any scenario test that included block quotes or lists starts.  Before that move, it
+was buried in a large collection of if statements, and I wanted to make sure I called
+it out until it was fixed. Making it even better, when I moved it, I broke that single
+statement into three explicit statements. As I knew I was going to be enabling
+each one in the next week or so, being explicit about that work just seemed like the
+right thing to do.  But even though the move was mostly for aesthetics, I confess
+that it was also to remind me that I only had those tokens left to go.&lt;/p&gt;
+&lt;p&gt;Once that was completed, I did the easy work first and added the
+&lt;code&gt;rehydrate_unordered_list_start&lt;/code&gt; function and the &lt;code&gt;rehydrate_unordered_list_start_end&lt;/code&gt;
+function to the main processing loop.  After running the scenario tests again, I
+was reminded by the test output that the &lt;code&gt;rehydrate_next_list_item&lt;/code&gt; function would have
+to be added to deal with the Next List Item tokens in the stream.  Another quick run of
+the tests and a lot of comparison failures, but no missing token failures.  A good
+step in the right direction!&lt;/p&gt;
+&lt;h3 id="first-step-list-indentation"&gt;First Step: List Indentation&lt;a class="headerlink" href="#first-step-list-indentation" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;With the actual token handlers dealt with, it was time to focus on the effects that
+those tokens had
+on the leaf blocks.  Following my usual pattern, instead of immediately creating a
+new function to specifically handle the lists, I kept that code inline with the
+existing &lt;code&gt;transform&lt;/code&gt; method the Markdown transformer.  While I recognize that it
+looks messy and sloppy and the outset, it helps me think more clearly without worrying
+about that I need to pass where.&lt;/p&gt;
+&lt;p&gt;Therefore, following my usual pattern, I first added a simple post-processing step that
+took the
+contents of the variable &lt;code&gt;continue_seq&lt;/code&gt; and applied them to start of the output of
+specific tokens.  The &lt;code&gt;continue_seq&lt;/code&gt; variable was initialized with an empty string,
+but I altered the &lt;code&gt;rehydrate_unordered_list_start&lt;/code&gt; function to reset this variable
+to the amount of indent specified by the list.  With the change in place, the end
+of the loop processing was simple:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;        &lt;span class="n"&gt;new_data&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;new_data&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;replace&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;continue_seq&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;This gained some traction in getting the
+scenario tests passing, but that processing needed to be made a bit more complicated.  &lt;/p&gt;
+&lt;p&gt;The first complication that needed to be addressed was that both list starts, and list
+ends modified the &lt;code&gt;continue_seq&lt;/code&gt; variable, but needed to avoid applying it to
+the line on which they element resided.  This was because the processing of the
+Unordered List start token
+already had the required indenting taking care of, so the postprocessing would just
+add extra “garbage” whitespace. To remedy this, I added the &lt;code&gt;skip_merge&lt;/code&gt; variable to
+allow the Unordered
+List token handlers to inform the main loop to skip any post-processing.&lt;/p&gt;
+&lt;p&gt;The second complication was the handling the list terminations using the
+&lt;code&gt;rehydrate_unordered_list_start_end&lt;/code&gt; function.  In some of the easy cases, what was
+there was fine, but as soon a list was nested in another list, that processing fell
+apart.  What was missing was a recalculation of the indent level once the prior list
+ends.  That was quickly addressed by doing a recalculation of the contents for the
+&lt;code&gt;continue_seq&lt;/code&gt; variable for the new list token at the top of the stack.&lt;/p&gt;
+&lt;p&gt;With those easy fixes, and with the main replacement call in the main loop, a lot
+of the scenario tests were passing, while keeping the processing simple.&lt;/p&gt;
+&lt;p&gt;That simplicity would soon change.&lt;/p&gt;
+&lt;h3 id="indented-code-blocks"&gt;Indented Code Blocks&lt;a class="headerlink" href="#indented-code-blocks" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;As I went through the test failures, there were a few failures that stood out as an odd
+grouping: indented code blocks and lists.  Doing some more research, I found out
+that due to a bug in my code, the indented code blocks were not being checked
+properly.  It only involved one list item scenario test, but nonetheless,
+it still needed to be fixed.&lt;/p&gt;
+&lt;p&gt;In that newly found bug, the problem was that the indented code blocks were always
+adding their indented padding at the beginning of the lines.  This was not usually a
+problem, but with any examples that contained blank lines within the indented code
+block, it was an issue.  A good example of this is
+&lt;a href="https://github.github.com/gfm/#example-81"&gt;example 81&lt;/a&gt;:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="n"&gt;chunk1&lt;/span&gt;
+
+    &lt;span class="n"&gt;chunk2&lt;/span&gt;
+&lt;span class="err"&gt;{&lt;/span&gt;&lt;span class="k"&gt;space&lt;/span&gt;&lt;span class="err"&gt;}{&lt;/span&gt;&lt;span class="k"&gt;space&lt;/span&gt;&lt;span class="err"&gt;}&lt;/span&gt;
+&lt;span class="err"&gt;{&lt;/span&gt;&lt;span class="k"&gt;space&lt;/span&gt;&lt;span class="err"&gt;}&lt;/span&gt;
+&lt;span class="err"&gt;{&lt;/span&gt;&lt;span class="k"&gt;space&lt;/span&gt;&lt;span class="err"&gt;}&lt;/span&gt;
+    &lt;span class="n"&gt;chunk3&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;When the parser tokenizes this example, the Blank Line tokens that are generated
+already include any whitespace that is present on that line.  Taking care of their own
+whitespace data, when the Markdown transformer interprets those Blank Line tokens,
+it needs to accept those Blank Line elements as they are.
+Modifications were needed to enforce this behavior.  The &lt;code&gt;combine&lt;/code&gt; function of the
+&lt;code&gt;TextMarkdownToken&lt;/code&gt; class containing the indented blank line was changed to insert
+a NOOP character and then a newline character.  As text used in an indented code
+block was the only &lt;code&gt;paragraph-like&lt;/code&gt; encapsulating token that inserted a blank line
+into the composed text, had confidence this was isolated.&lt;/p&gt;
+&lt;p&gt;With those NOOP characters in place, the Markdown transformer needed some modifications
+to
+understand how to deal with this.  Before proceeding with the normal insertion of
+any whitespace in the &lt;code&gt;continue_seq&lt;/code&gt; variable, a quick check was made to see if
+the &lt;code&gt;new_data&lt;/code&gt; variable contained a NOOP character.  If so, the string in the
+&lt;code&gt;new_data&lt;/code&gt; variable was split and processed.  For each element in the split list,
+the element was checked to see if it started with a NOOP character.  If it did it
+simply removed the NOOP character by setting the &lt;code&gt;replacement_data&lt;/code&gt; variable to
+the contents of the &lt;code&gt;new_data&lt;/code&gt; variable after that first NOOP character.  If it did not
+find it, it set the &lt;code&gt;replacement_data&lt;/code&gt; variable to the contents of the &lt;code&gt;continue_seq&lt;/code&gt;
+variable plus the contents of the &lt;code&gt;new_data&lt;/code&gt; variable.  Once that was done, the value
+was put back in into the array at the same index.  Then,
+when the processing was done, it reconstituted the &lt;code&gt;new_data&lt;/code&gt; variable by joining the
+elements of the list back together using the &lt;code&gt;\n&lt;/code&gt; character as a joining character.&lt;/p&gt;
+&lt;p&gt;While I was not looking for that, I was glad I found it. A bit embarrassed that I
+did not find it right away, but I did find it!&lt;/p&gt;
+&lt;h3 id="handling-lazy-continuations-lines"&gt;Handling Lazy Continuations Lines&lt;a class="headerlink" href="#handling-lazy-continuations-lines" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;With most of the scenario tests now passing, my focus was centered on a set of tests
+that dealt with lists and lazy handling.  While this took me a bit to get my head
+around, it basically says:&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;If a string of lines Ls constitute a list item with contents Bs, then the result of deleting some or all the indentation from one or more lines in which the next non-whitespace character after the indentation is paragraph continuation text is a list item with the same contents and attributes. The unindented lines are called lazy continuation lines.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;Huh?  Let me translate:&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;If you have a list already started, and you encounter lines that should be in the list except for the fact that they are not indented properly, they are lazy continuation lines, and are included.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;The best way to explain is with an example:&lt;sup id="fnref:lazyList"&gt;&lt;a class="footnote-ref" href="#fn:lazyList"&gt;1&lt;/a&gt;&lt;/sup&gt;&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nv"&gt;first&lt;/span&gt; &lt;span class="nv"&gt;list&lt;/span&gt; &lt;span class="nv"&gt;item&lt;/span&gt;
+&lt;span class="k"&gt;next&lt;/span&gt; &lt;span class="nv"&gt;line&lt;/span&gt; &lt;span class="nv"&gt;of&lt;/span&gt; &lt;span class="nv"&gt;first&lt;/span&gt; &lt;span class="nv"&gt;list&lt;/span&gt; &lt;span class="nv"&gt;item&lt;/span&gt;
+ &lt;span class="k"&gt;next&lt;/span&gt; &lt;span class="k"&gt;next&lt;/span&gt; &lt;span class="nv"&gt;line&lt;/span&gt; &lt;span class="nv"&gt;of&lt;/span&gt; &lt;span class="nv"&gt;first&lt;/span&gt; &lt;span class="nv"&gt;list&lt;/span&gt; &lt;span class="nv"&gt;item&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;In that example, all three of those lines are considered part of the list item, even
+though the line is indented less than the indent of 2 specified by the initial list
+item element.  But that presented a bit of a problem.&lt;/p&gt;
+&lt;p&gt;When parsing the Markdown document, the indent level was being tracked, and any
+additional whitespace was added to the contained token.  But as I was writing the
+Markdown transformer, I noticed that I had missed the case where the amount of indent
+was less than the current list’s indent level.  This was not an issue with the HTML
+transformer, as that transformer does not rely on any of the extracted whitespace.
+However, the Markdown transformer does.&lt;/p&gt;
+&lt;p&gt;To fix this issue, I needed to first make a change in the &lt;code&gt;parse_paragraph&lt;/code&gt; function of
+the &lt;code&gt;LeafBlockProcessor&lt;/code&gt; class.  In that function, I reconstituted the actual indent
+of the given line and compared it against the indent level from the dominant unordered
+list item token.  If that actual indent level was less than the dominant indent level,
+I adjusted the actual whitespace by prefacing that whitespace with…well… blech
+characters.&lt;/p&gt;
+&lt;p&gt;Yes, blech characters.  Blech, according to
+&lt;a href="https://www.merriam-webster.com/dictionary/blech"&gt;Webster’s&lt;/a&gt; means “used to express
+disgust”.  While I knew I had to track those indenting characters somehow, I really
+was not happy with it.  Disgust may be a bit too intense of an emotion, but when I
+figured out what I had to do, that was the most printable word that I uttered.&lt;/p&gt;
+&lt;p&gt;Using the above example, the tokenized text looks like:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;- first list item{newline}
+{blech}{blech}next line of first list item{newline}
+{blech}next next line of first list item{newline}
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;In this way, the indent was properly represented in the token, and the Markdown
+transformer had enough information to rehydrate the data afterwards.  With those
+changes locked into the tokens, the Markdown transformer was then able to be
+changed to understand those tokens.  That processing was simple.  If a line of
+the text output started with a blech character, those blech characters were
+replaced with a space character.  If no blech characters were there, the normal
+replacement of the newline character would occur.&lt;/p&gt;
+&lt;p&gt;And I could
+have changed the name of the character from “blech character”, but after a while,
+it just kind of stuck with me.&lt;/p&gt;
+&lt;h3 id="new-list-item-tokens"&gt;New List Item Tokens&lt;a class="headerlink" href="#new-list-item-tokens" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;It was about this time when I decided to tackle the New List Item tokens.  While I had
+been working around them somewhat, it was starting to get to the point where they were
+unavoidable.  At first, I did not think these tokens would be an issue, but I forgot
+about one little part of the New List Item tokens: they reset the indent for the
+list.&lt;/p&gt;
+&lt;p&gt;A good example of this is &lt;a href="290"&gt;example 290&lt;/a&gt;:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="n"&gt;a&lt;/span&gt;
+ &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="n"&gt;b&lt;/span&gt;
+  &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="k"&gt;c&lt;/span&gt;
+   &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="n"&gt;d&lt;/span&gt;
+  &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="n"&gt;e&lt;/span&gt;
+ &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="n"&gt;f&lt;/span&gt;
+&lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="k"&gt;g&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;In this case, the first line starts a list and each line after that starts a new list
+item.  As the new list items are gradually increasing and then decreasing the indent,
+the 3 middle lines (&lt;code&gt;c&lt;/code&gt;, &lt;code&gt;d&lt;/code&gt;, and &lt;code&gt;e&lt;/code&gt;) are interpreted as a new list item element,
+rather than a sublist.  If it was not for the new list item elements resetting that
+indent, those 3 lines are indented to the point where their indent would make them
+eligible to start a new sublist.&lt;/p&gt;
+&lt;p&gt;But to properly track this indent change, it required some interesting thinking.  If
+I tracked the indent change in the actual token, it would mean changing that token.
+To me, that was a non-starter.  Instead, I added a separate stack for container tokens
+in the Markdown transformer and added copies of the container tokens to this stack.
+As I added copies of the tokens to the stack, I was free to change the indent value
+located within the Unordered List token without worrying about side effects.&lt;/p&gt;
+&lt;p&gt;With those changes in place, the Markdown transformer was able to reset the indent
+level and make sure it was being properly tracked.  This meant that the indents
+were able to be properly reset to the correct value once a List Item end token was
+received for a sublist.&lt;/p&gt;
+&lt;p&gt;Taking a bit of a deep breath and a pause, I noticed that I was close to finishing
+off the Unordered List Item tokens.  That gave me a bit of a jump in my step to
+clean things up!&lt;/p&gt;
+&lt;h2 id="taking-care-of-stragglers"&gt;Taking Care of Stragglers&lt;a class="headerlink" href="#taking-care-of-stragglers" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;With all the major and minor cases of lists dealt with, I started going through
+the other scenario tests, fixing up the token lists after verifying that the new
+tokens were correct.  Everything else was easily resolved at this point, except for
+some lists in a couple of cases.  Those cases were interesting in that there was
+actually too much whitespace, not too little.  And in this case, it was a newline
+character, not a space.&lt;/p&gt;
+&lt;p&gt;The Fenced Code Block element and the SetExt Heading element are unique in that they
+have a line-based sequence that delimits the end of the element.  Usually this is not
+a problem, but in the case of interacting with lists, the transformer was inserting
+a newline after the element itself, and then another newline to make the end of that
+line.  While this duplication did not occur all the time, it took a bit to figure
+the exact sequence that triggered this.&lt;/p&gt;
+&lt;p&gt;After doing some research, it was weird to me, but it only occurred if:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;it was one of these two elements&lt;/li&gt;
+&lt;li&gt;the new block of data ends with a newline character&lt;/li&gt;
+&lt;li&gt;the next token to be processed is a New List Item token&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;While the sequence of thing that had to occur was weird, the solution was easy:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;        &lt;span class="n"&gt;block_should_end_with_newline&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;False&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;next_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_name&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="s2"&gt;"end-fcode-block"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="n"&gt;block_should_end_with_newline&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;True&lt;/span&gt;
+            &lt;span class="n"&gt;delayed_continue&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;""&lt;/span&gt;
+        &lt;span class="k"&gt;elif&lt;/span&gt; &lt;span class="n"&gt;next_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_name&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="s2"&gt;"end-setext"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="n"&gt;block_should_end_with_newline&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;True&lt;/span&gt;
+        &lt;span class="o"&gt;...&lt;/span&gt;
+        &lt;span class="n"&gt;block_ends_with_newline&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; \
+            &lt;span class="n"&gt;block_should_end_with_newline&lt;/span&gt; &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="n"&gt;new_data&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;endswith&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="o"&gt;...&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
+            &lt;span class="n"&gt;block_ends_with_newline&lt;/span&gt;
+            &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="n"&gt;next_one&lt;/span&gt;
+            &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="n"&gt;next_one&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_name&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="n"&gt;MarkdownToken&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_new_list_item&lt;/span&gt;
+        &lt;span class="p"&gt;):&lt;/span&gt;
+            &lt;span class="n"&gt;new_data&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;new_data&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt; &lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;continue_seq&lt;/span&gt;&lt;span class="p"&gt;)]&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Basically, if we hit that situation, just remove the excess character.  I was
+hoping to refactor it into something more elegant, but it worked at the time and
+I wanted to get on to the handling of Ordered List Item tokens.&lt;/p&gt;
+&lt;h2 id="second-verse"&gt;Second Verse…&lt;a class="headerlink" href="#second-verse" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;I fondly remember being a kid at a summer camp and hearing the words “Second verse, same
+the first, a little bit louder, and a little bit worse!”.  Working on the ordered list
+tokens made me think of that saying almost immediately.  Except for the fact that it
+was not a little bit worse, it was a lot easier.&lt;/p&gt;
+&lt;p&gt;There were two main reasons for that.  The first reason is that looking at the samples as
+a group, there are objectively fewer examples with ordered lists than unordered lists.
+In the
+&lt;a href="https://spec.commonmark.org/0.29/#list-items"&gt;list items section&lt;/a&gt;
+of the GFM specification, there are 20 of each, but in the
+&lt;a href="https://spec.commonmark.org/0.29/#lists"&gt;lists section&lt;/a&gt;
+of the specification, there are 20 examples of unordered lists and 7 examples of ordered
+lists.  The second reason was that most of the work was either completed when working on
+the unordered list token transformations, or it was used in a copy-and-paste manner.&lt;/p&gt;
+&lt;p&gt;However, knowing that lists are one of the two container elements in Markdown, I took
+some extra time and reverified all the scenario tests, both ordered lists and unordered
+lists.  I was able to find a couple of small things that were quickly fixed, but other
+than that, everything looked fine!&lt;/p&gt;
+&lt;h2 id="cleanup"&gt;Cleanup&lt;a class="headerlink" href="#cleanup" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;As with a lot of my free project time recently, I used some extra time that I had to
+focus on a few cleanup items for the project.  While none of them was important
+on its own, I just felt that the project would be cleaner with them done.&lt;/p&gt;
+&lt;p&gt;The first one was an easy one, going through the HTML transformer and the Markdown
+transformer, and ensuring that all the token handlers were private.  There really
+was not any pressing need to do this, but it was just cleaner.  The only code that was
+using those handlers was in the same class, so it was just tidier that way.&lt;/p&gt;
+&lt;p&gt;Next was the creation of the &lt;code&gt;__create_link_token&lt;/code&gt; function to help tidy up the
+&lt;code&gt;__handle_link_types&lt;/code&gt; function.  The &lt;code&gt;__handle_link_types&lt;/code&gt; function was already messy
+enough handling the processing of the link information, the creating of the normal or
+image link was just complicating things.  While I still want to go back and clean
+functions like that up, for the time, moving the creation code to &lt;code&gt;__create_link_token&lt;/code&gt;
+was a good step.&lt;/p&gt;
+&lt;p&gt;Finally, there was the case of the justification function calls throughout the code.
+Not to sound like a purist, but I felt that they were messy.  I often had to remind
+myself of what the three operands were: string to perform on, the justification amount,
+and the character to use for the justification.  The actual use of the function was
+correct, it just felt like its usage was not clear.  So instead of having code
+like this around the code base:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;        &lt;span class="n"&gt;some_value&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;""&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;rjust&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;repeat_count&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;character_to_repeat&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;I replaced it with:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;        &lt;span class="n"&gt;some_value&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;ParserHelper&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;repeat_string&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;character_to_repeat&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;repeat_count&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;While the code for this operation was a one-line function, now located in the
+&lt;code&gt;ParserHelper&lt;/code&gt; class, I felt it now made sense and was in an easy to find
+place.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;repeat_string&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;string_to_repeat&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;repeat_count&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="sd"&gt;"""&lt;/span&gt;
+&lt;span class="sd"&gt;        Repeat the given character the specified number of times.&lt;/span&gt;
+&lt;span class="sd"&gt;        """&lt;/span&gt;
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="s2"&gt;""&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;rjust&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;repeat_count&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;string_to_repeat&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;h1 id="fixing-example-528"&gt;“Fixing” Example 528&lt;a class="headerlink" href="#fixing-example-528" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h1&gt;
+&lt;p&gt;I do not want to spoil the surprise too much, but the fact that I have a section called
+&lt;code&gt;"Fixing" Example 528&lt;/code&gt; probably gives it away.  I fixed it.  But the story is more
+interesting than that.&lt;/p&gt;
+&lt;p&gt;In the last article, I talked about
+&lt;a href="https://github.github.com/gfm/#example-528"&gt;example 528&lt;/a&gt;
+and how I was having problems getting it to
+&lt;a href="https://jackdewinter.github.io/2020/08/10/markdown-linter-adding-links-to-the-markdown-transformer/#example-528"&gt;parse properly&lt;/a&gt;.
+Even having done thorough research on the example and the algorithm, I came up with
+nothing.  To me, it looked like the parsing was being performed according to the
+&lt;a href="(https://github.github.com/gfm/#phase-2-inline-structure)"&gt;GFM specification’s algorithm&lt;/a&gt;,
+but the parsing was just off.  After yet another attempt to figure this example out
+and get it working, I posted my research and a request for help to the CommonMark
+&lt;a href="https://talk.commonmark.org/t/spec-algorithm-error-in-links-within-links-within-images/3571"&gt;discussion forums.&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;Keeping my head down and focused on writing that week’s article, I did not notice that I
+had received a reply the very next day.  As a matter of fact, while I did notice that I
+had a response to my post, it was not until Friday night that it clicked that it was a
+response to “THAT” post.  After getting the cleanup documented in the previous section
+taken care of, I reserved some dedicated time to walk through the reply.&lt;/p&gt;
+&lt;h2 id="kudos"&gt;Kudos&lt;a class="headerlink" href="#kudos" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;First off, I would like to extend kudos to the replier, John MacFarlane, one of the
+maintainers of the Markdown GFM specification.  While he would have been within his
+right to tell me to RTFM&lt;sup id="fnref:RTFM"&gt;&lt;a class="footnote-ref" href="#fn:RTFM"&gt;2&lt;/a&gt;&lt;/sup&gt;, he took some time to walk me through the algorithm
+as it applied to that example, even providing me with some debug output from his
+program for that example.  His response was just a classy response with just the
+right amount of information.&lt;/p&gt;
+&lt;h2 id="side-by-side-comparisons"&gt;Side by Side Comparisons&lt;a class="headerlink" href="#side-by-side-comparisons" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Armed with that new information, I turned on the debug output and ran through the output
+from my implementation of the algorithm again.  Slowly, with my own written notes as an
+additional guide, I began to walk through the output.  &lt;code&gt;Found closer at 8&lt;/code&gt;.  Check.
+&lt;code&gt;Found matching opener at 4&lt;/code&gt;. Check.  &lt;code&gt;Deactivating opener at 3&lt;/code&gt;. Check.
+&lt;code&gt;Found closer at 15&lt;/code&gt;.  Check.  &lt;code&gt;Popping inactive opener at 3&lt;/code&gt;.  Ch…er… what?
+“Popping”?&lt;/p&gt;
+&lt;p&gt;Going back to the algorithm and the text that John provided, it hit me.  The popping that
+he was referring to was this part of the algorithm:&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;If we do find one, but it’s not active, we remove the inactive delimiter from the stack, and return a literal text node ].&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;For some reason, when I read that before, I thought it was referring to removing the
+token from consideration, not actually removing it from the stack.  It probably also
+confused things in that I did not maintain a separate stack for the link resolution.
+Instead, I added an instance of the &lt;code&gt;SpecialTextMarkdownToken&lt;/code&gt; token to the inline block
+list whenever I hit a link sequence.  In either case, I was not doing that.  To compound
+the issue, I did not stop at that inactive token, I just kept on looking for the next
+active &lt;code&gt;SpecialTextMarkdownToken&lt;/code&gt; token, finding the image start token.  Ah… everything
+was now falling into place in my mind.&lt;/p&gt;
+&lt;h2 id="fixing-the-issue"&gt;Fixing the Issue&lt;a class="headerlink" href="#fixing-the-issue" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;The fix was very anticlimactic.  I created the new
+&lt;code&gt;__revert_token_to_normal_text_token&lt;/code&gt; function, which removed the
+&lt;code&gt;SpecialTextMarkdownToken&lt;/code&gt; token and replaced it with a normal &lt;code&gt;TextMarkdownToken&lt;/code&gt;
+token.  In addition, I changed the algorithm to make sure that when this happened,
+it stopped processing for that link end sequence, as per the algorithm.  With the start
+character sequence now being effectively invisible to the algorithm, the rest of the
+parsing went fine, with the correct results coming out.  Well, almost.  A small fix was
+needed to the
+&lt;code&gt;__consume_text_for_image_alt_text&lt;/code&gt; function to make it properly emit the correct text
+if an instance of a &lt;code&gt;SpecialTextMarkdownToken&lt;/code&gt; token was encountered.&lt;/p&gt;
+&lt;p&gt;With the big fix and the little fix both completed, the scenario test for Example 528
+was fully enabled and fully passing.  Finally!&lt;/p&gt;
+&lt;h3 id="reminder-to-self-be-humble"&gt;Reminder to Self: Be Humble&lt;a class="headerlink" href="#reminder-to-self-be-humble" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Having taken a quite a few attempts at implementing the algorithm and making sure it
+passed all test cases, I hit a wall. A seemingly rock-solid wall.  That was fine.
+During any project, be it software or hardware, things happen.  When it got to
+that point, I gave myself some time, I knuckled down&lt;sup id="fnref:knuck"&gt;&lt;a class="footnote-ref" href="#fn:knuck"&gt;3&lt;/a&gt;&lt;/sup&gt;, and I did some solid
+research on the problem.  Keeping good notes, I was then able to share those notes with
+peers in the community, along with a sincere and humble request for help.&lt;/p&gt;
+&lt;p&gt;I do not always get a good response to requests for help.  However, I have noticed that
+doing good research and presenting that research with humility increases the chance of
+getting a positive response.  At no point did I rant and say, “it’s broken” or
+“my way works, what is wrong with yours”.  Instead I said, “Is there something wrong
+with the algorithm?” and
+“Based on my implementation of that algorithm”.  By acknowledging that it could be an
+issue with my implementation, I feel that I opened the doors for someone to help, rather
+than slamming them shut with negative talk.&lt;/p&gt;
+&lt;p&gt;And as I mentioned in the Kudos section above, mostly in what I believe was a humble
+approach to asking for help, I got a real good response.&lt;/p&gt;
+&lt;h2 id="what-was-my-experience-so-far"&gt;What Was My Experience So Far?&lt;a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Wow… that work was intense.  For one, I was right, it was a lot of addressing issues
+with whitespace and running scenario tests repeatedly.  But it was more than
+that for me.  I knew I had the leaf blocks taken care of, but I was really concerned
+about how difficult the implementation of the container transformations would be. If
+I did it right and kept to my design, I was confident that I could keep the complexity
+down, but I still figured it would be complex.&lt;/p&gt;
+&lt;p&gt;I guess that led to me second guessing every line of code and getting in the way of
+myself a bit.  I did prevail, but that concern or fear of damaging existing tests was
+somewhat paralyzing at times.  And while the logical half of my brain was telling me
+that I had plenty of tests to reinforce my completed work, the emotional half was
+another story.  That is where that fear was coming from, my emotional side.  Only
+when I took a moment to take another breath and focus on the tests was I able to banish
+that concern for a while.&lt;/p&gt;
+&lt;p&gt;And it also helped me to do a bit of self-analysis on why I was concerned.  After a lot
+of thinking, I came to a simple conclusion. The closer I get closer to getting a
+complete project, the more I am concerned that I have not architected and designed it
+properly.  If I have done that, small changes can be accomplished with few or no
+unintended side effects.  If not, encountering side effects should be frequent.
+Seeing as I know I have identified some areas of the code
+base that I want to refactor, I questioned whether the current state was good enough.&lt;/p&gt;
+&lt;p&gt;Knowing that, it helped me figure it out for myself.  I do believe that I have
+confidence with my
+architecture and design, and at the same time, I believe that I can improve it.
+It might seem like a dichotomy, but I am starting to think that both can be correct
+at the same time.  But knowing that was the issue that was causing me concern helps
+me combat it.  I am a lot less worried about it, but it is a work in progress,
+much like the project.&lt;/p&gt;
+&lt;p&gt;With that information in hand, I felt better.  Cautious about the next steps in getting
+the checks closer to the finish line, but better! And let’s not forget about finally
+closing the issue with Example 528.  That was good!&lt;/p&gt;
+&lt;h2 id="what-is-next"&gt;What is Next?&lt;a class="headerlink" href="#what-is-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;With the Markdown transformer almost completed, the only tokens left that need a
+transformation are the Block Quote tokens.  In addition, as the line/column number
+consistency checks do not currently deal with Block Quote tokens either, I will need
+to add both checks in the next block of work.&lt;/p&gt;
+&lt;div class="footnote"&gt;
+&lt;hr/&gt;
+&lt;ol&gt;
+&lt;li id="fn:lazyList"&gt;
+&lt;p&gt;The only example 249, but ordered list. &lt;a class="footnote-backref" href="#fnref:lazyList" title="Jump back to footnote 1 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li id="fn:RTFM"&gt;
+&lt;p&gt;Read The F&amp;amp;$#ing Manual… or I guess RTFS in this case. &lt;a class="footnote-backref" href="#fnref:RTFM" title="Jump back to footnote 2 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li id="fn:knuck"&gt;
+&lt;p&gt;According to &lt;a href="https://www.merriam-webster.com/thesaurus/knuckle%20down"&gt;Webster’s&lt;/a&gt;: “pitch in, dig in”. &lt;a class="footnote-backref" href="#fnref:knuck" title="Jump back to footnote 3 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/div&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry><entry><title>Python Projects - Using PipEnv</title><link href="https://jackdewinter.github.io/2020/08/14/python-projects-using-pipenv/" rel="alternate"></link><published>2020-08-14T00:00:00-07:00</published><updated>2020-08-14T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-08-14:/2020/08/14/python-projects-using-pipenv/</id><summary type="html">
 &lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;With almost a year of Python development under my belt, I wanted to start talking about
 the Python elements that I feel have made my development of the
@@ -9091,372 +9564,4 @@ went off without any major issues.  It was cool to see that happen.&lt;/p&gt;
 &lt;p&gt;Having had a very smooth time implementing emphasis, it was very tempting to just dive
 in and tackle all of the link support at the same time.  However, in looking at the
 different types of links in the specification, I decided that inline links would be
-a good place to start.  That is where I will pick up in my next article!&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="linter tokenizer"></category></entry><entry><title>Markdown Linter - Verifying Base Scenarios</title><link href="https://jackdewinter.github.io/2020/03/16/markdown-linter-verifying-base-scenarios/" rel="alternate"></link><published>2020-03-16T00:00:00-07:00</published><updated>2020-03-16T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-03-16:/2020/03/16/markdown-linter-verifying-base-scenarios/</id><summary type="html">
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;In the wrap up for
-&lt;a href="https://jackdewinter.github.io/2020/02/10/markdown-linter-adding-html-blocks/#what-was-my-experience-so-far"&gt;my last article&lt;/a&gt;,
-I provided extra information on my decision to write a Markdown parser as part of
-the PyMarkdown project.  My belief
-is that the writing of an effective Markdown linter requires a parser that emits an
-intermediate set of tokens instead of …&lt;/p&gt;</summary><content type="html">
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;In the wrap up for
-&lt;a href="https://jackdewinter.github.io/2020/02/10/markdown-linter-adding-html-blocks/#what-was-my-experience-so-far"&gt;my last article&lt;/a&gt;,
-I provided extra information on my decision to write a Markdown parser as part of
-the PyMarkdown project.  My belief
-is that the writing of an effective Markdown linter requires a parser that emits an
-intermediate set of tokens instead of the usual HTML output. Accordingly, from the
-start of the project, all the scenario tests for the parser have dealt with those
-generated tokens and not the usual HTML output.  Based on my experience to date,
-both the belief in a non-HTML parser and the decision to test the tokens have proven to
-be the right choices.  During the project development to date, I have not
-observed a specific case where I believe that there would have been a substantial
-benefit in comparing the output to HTML instead of the intermediate tokens. However,
-even with that in mind, the lack of a direct comparison between the output specified in
-the
-&lt;a href="https://github.github.com/gfm"&gt;GFM specification&lt;/a&gt;
-and the output of the parser started to erode my confidence, even if just fractionally.&lt;/p&gt;
-&lt;p&gt;The questions that came to mind were simple ones.  Did I keep the right information
-when parsing the Markdown to enable a HTML transformation of the tokens?  Did I pick
-the right token to represent a Markdown element in the token stream?  Do the tokens
-contain enough information in them to allow me to write linting rules off them?  For
-me, these questions are relevant given the nature of the project.&lt;/p&gt;
-&lt;p&gt;Looking at those three questions, I quickly realized that answering that last
-question was impossible until I start writing the linting rules.  Sure, I could take
-a guess, but that is all it would be.  However, I realized that I could probably
-answer the first two questions and that there was significant benefit to be gained
-from doing so.  If I can write a token-to-HTML translator and apply it to that
-token stream, when the HTML output for all scenarios match, I have answered the first
-question.  And while I cannot answer the second question completely, if the translation
-to HTML is simple enough, I will have proven that I am headed in the right direction
-with respect to making good choices for the representative tokens. While I cannot prove
-that those choices are not perfect choices until the rules are written, I can at least
-prove to myself that my token choices are in the right direction.&lt;/p&gt;
-&lt;h2 id="what-is-the-audience-for-this-article"&gt;What Is the Audience For This Article?&lt;a class="headerlink" href="#what-is-the-audience-for-this-article" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;While detailed more eloquently in
-&lt;a href="https://jackdewinter.github.io/2020/04/05/what-is-the-audience-for-my-blog/#what-is-the-audience-for-my-blog"&gt;this article&lt;/a&gt;,
-my goal for this technical article is to focus on the reasoning behind my solutions,
-rather that the solutions themselves.  For a full record of the solutions presented in
-this article, please go to this project’s GitHub repository and consult the
-commits between
-&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/f9a0e31d0abb8bb22ae071250986f0925f2b7bcb"&gt;29 February 2020&lt;/a&gt; and
-&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/256432757e9a9b2ceca423cf228c5cb362ea61bc"&gt;06 March 2020&lt;/a&gt;.&lt;/p&gt;
-&lt;h2 id="finishing-up-the-scenario-tests"&gt;Finishing Up the Scenario Tests&lt;a class="headerlink" href="#finishing-up-the-scenario-tests" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;For me, this task was essentially a bookkeeping issue.  As the remaining features were
-the emphasis elements and the link elements, it felt like the
-right time to march through the remaining scenarios and implement them as scenario
-tests.&lt;/p&gt;
-&lt;p&gt;These scenario tests fell into two categories.  In the first category,
-if the scenario needed to test a failure using already implemented features, I copied
-over an existing test, changed the Markdown input, executed the new test, and copied
-the tokens from the newly executed test output in that test, manually verifying the
-tokens as I copied them.
-Basically, I figured that if the scenario test is failing in a manner that will not
-change even when the owning feature is implemented, then completing the test was the
-best choice for the project.
-In the second category, I did the same thing except I stopped before the execution step,
-instead adding a &lt;code&gt;@skip&lt;/code&gt; tag to the test’s definition.  In this way, I was able
-to add the bulk of the remaining tests without having tests that would obviously fail
-getting in the way.&lt;/p&gt;
-&lt;p&gt;While this may have seemed like busy work, it was meant to give me a realistic picture
-of how close I was to finishing the parser, and it worked.  By executing
-&lt;code&gt;pipenv run pytest&lt;/code&gt;, I executed every test and was able to look for entire modules
-with skipped tests, getting a good indication of what features and testing was left.
-From a wholistic point of view, it was good to see that out of the
-875+ tests in the project so far, there were only just over 100 tests left to go before
-the parser would be completed.  Being able to see how close I was to finishing the
-parser was definitely worthwhile!&lt;/p&gt;
-&lt;h2 id="adding-test-grouping"&gt;Adding Test Grouping&lt;a class="headerlink" href="#adding-test-grouping" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;I knew from the start that this would be the monotonous part, so I tried to make sure
-that I could stage the changes as I brought more scenario tests online.  The first
-thing I did was to add a new marker for PyTest to the project by adding this line to
-the &lt;code&gt;setup.cfg&lt;/code&gt; file for the project:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;markers=gfm
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;This change allowed me to use one of PyTest’s grouping features:
-&lt;a href="https://docs.pytest.org/en/latest/mark.html"&gt;marking&lt;/a&gt;.  By changing
-a scenario test’s definition from:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;test_atx_headings_032&lt;/span&gt;&lt;span class="p"&gt;():&lt;/span&gt;
-    &lt;span class="o"&gt;...&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;to:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nd"&gt;@pytest.mark.gfm&lt;/span&gt;
-&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;test_atx_headings_032&lt;/span&gt;&lt;span class="p"&gt;():&lt;/span&gt;
-    &lt;span class="o"&gt;...&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;I included that test into the &lt;code&gt;gfm&lt;/code&gt; group.  While I can still execute that test by
-itself by entering &lt;code&gt;pipenv run pytest -k 032&lt;/code&gt;, I could now execute all tests in
-the &lt;code&gt;gfm&lt;/code&gt; group by entering &lt;code&gt;pipenv run pytest -m gfm&lt;/code&gt;.&lt;/p&gt;
-&lt;p&gt;This command was invaluable during development of the parser.  After adding HTML
-translation support to a scenario test, I ensured that it was added to this group,
-thereby staging the scenario test with its owning feature. After completing the change
-to make the test pass, I then executed all the tests in the &lt;code&gt;gfm&lt;/code&gt; group to ensure that
-I didn’t break anything else in the process.  While it caused me some issues from time
-to time, it was an extra watch over the completed work, one that I appreciated.&lt;/p&gt;
-&lt;h2 id="adding-translating-into-html"&gt;Adding Translating into HTML&lt;a class="headerlink" href="#adding-translating-into-html" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Translating any stream into something requires a loop to process through each element
-in the stream, with some mix of emitting data and altering state.
-I created the &lt;code&gt;TransformToGfm&lt;/code&gt; class to handle that translation, with the &lt;code&gt;transform&lt;/code&gt;
-entry point to facilitate the transformation.  At this point in the implementation,
-this class was very simple.  As each token was seen in the loop, its data was emitted
-with only minor additional processing required.&lt;/p&gt;
-&lt;p&gt;Adding this support into existing tests was easy, just monotonous.  Using the
-same test 32 that was used in the prior example, that test changed from:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nd"&gt;@pytest.mark.gfm&lt;/span&gt;
-&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;test_atx_headings_032&lt;/span&gt;&lt;span class="p"&gt;():&lt;/span&gt;
-    &lt;span class="sd"&gt;"""&lt;/span&gt;
-&lt;span class="sd"&gt;    Test case 032:  Simple headings&lt;/span&gt;
-&lt;span class="sd"&gt;    """&lt;/span&gt;
-
-    &lt;span class="c1"&gt;# Arrange&lt;/span&gt;
-    &lt;span class="n"&gt;tokenizer&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;TokenizedMarkdown&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
-    &lt;span class="n"&gt;source_markdown&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;"""some markdown"""&lt;/span&gt;
-    &lt;span class="n"&gt;expected_tokens&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="o"&gt;...&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
-
-    &lt;span class="c1"&gt;# Act&lt;/span&gt;
-    &lt;span class="n"&gt;actual_tokens&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;tokenizer&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;transform&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;source_markdown&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-
-    &lt;span class="c1"&gt;# Assert&lt;/span&gt;
-    &lt;span class="n"&gt;assert_if_lists_different&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;expected_tokens&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;actual_tokens&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;to:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nd"&gt;@pytest.mark.gfm&lt;/span&gt;
-&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;test_atx_headings_032&lt;/span&gt;&lt;span class="p"&gt;():&lt;/span&gt;
-    &lt;span class="sd"&gt;"""&lt;/span&gt;
-&lt;span class="sd"&gt;    Test case 032:  Simple headings&lt;/span&gt;
-&lt;span class="sd"&gt;    """&lt;/span&gt;
-
-    &lt;span class="c1"&gt;# Arrange&lt;/span&gt;
-    &lt;span class="n"&gt;tokenizer&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;TokenizedMarkdown&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
-    &lt;span class="n"&gt;transformer&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;TransformToGfm&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
-    &lt;span class="n"&gt;source_markdown&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;"""some markdown"""&lt;/span&gt;
-    &lt;span class="n"&gt;expected_tokens&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="o"&gt;...&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
-    &lt;span class="n"&gt;expected_gfm&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;"""&amp;lt;p&amp;gt;some markdown&amp;lt;/p&amp;gt;"""&lt;/span&gt;
-
-    &lt;span class="c1"&gt;# Act&lt;/span&gt;
-    &lt;span class="n"&gt;actual_tokens&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;tokenizer&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;transform&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;source_markdown&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-    &lt;span class="n"&gt;actual_gfm&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;transformer&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;transform&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;actual_tokens&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-
-    &lt;span class="c1"&gt;# Assert&lt;/span&gt;
-    &lt;span class="n"&gt;assert_if_lists_different&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;expected_tokens&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;actual_tokens&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-    &lt;span class="n"&gt;assert_if_strings_different&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;expected_gfm&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;actual_gfm&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;In order of appearance, an instance of the &lt;code&gt;TransformToGfm&lt;/code&gt; class was added, the
-&lt;code&gt;expected_gfm&lt;/code&gt; variable was set to the expected HTML, the &lt;code&gt;transform&lt;/code&gt; function was
-called, and then the contents of the &lt;code&gt;expected_gfm&lt;/code&gt; variable were compared against
-the output from the &lt;code&gt;transform&lt;/code&gt; function.  Except for the expected changes to the
-&lt;code&gt;expected_gfm&lt;/code&gt; variable for each test, this transformation was repeated for each test
-as support for the feature it enabled was added.&lt;/p&gt;
-&lt;h2 id="translating-the-leaf-blocks"&gt;Translating the Leaf Blocks&lt;a class="headerlink" href="#translating-the-leaf-blocks" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Translating the leaf block tokens added in
-&lt;a href="https://jackdewinter.github.io/2020/01/27/markdown-linter-parsing-normal-markdown-blocks/"&gt;this article&lt;/a&gt; and
-&lt;a href="https://jackdewinter.github.io/2020/02/10/markdown-linter-adding-html-blocks/"&gt;this article&lt;/a&gt;
-proceeded quickly, encountering only a few unexpected issues.  These issues
-fell into two categories: the handling of HTML blocks and code blocks, and the handling
-of newlines in the HTML output.&lt;/p&gt;
-&lt;p&gt;Most of the issues that were uncovered for leaf blocks dealt with the processing of
-HTML blocks and code blocks. As mentioned in previous articles,
-these two leaf blocks are special in that they maintain firm control over the formatting
-of their content.  To accommodate these two leaf block types, the handling of the
-&lt;code&gt;TextMarkdownToken&lt;/code&gt; was changed to accommodate the stricter output requirements of
-those blocks, mostly ensuring that whitespace was preserved.  Other than that, the only
-other changes needed for processing was to change most of the tokens to expose
-certain fields, allowing the translator to access the token’s attributes cleanly.&lt;/p&gt;
-&lt;p&gt;From a rendering viewpoint, I had guessed that any newlines in the HTML output were
-going to be a problem from the start and I was right.
-While the GFM is purposefully vague on when to add newlines in the
-translation from Markdown to HTML, it was a vagueness that I could not avoid.  As the
-main push for this article’s work was to add proper comparisons of the GFM’s HTML
-output for each example, I had a hard choice to make.  Either I make modifications to
-each of the 673 scenarios as I copied their HTML output into the scenario tests,
-or I needed to ensure that the translation replicated the HTML &lt;em&gt;exactly&lt;/em&gt;.&lt;/p&gt;
-&lt;p&gt;After a lot of thinking, I decided to go with the exact HTML output path, hopefully
-removing any possible errors that may have occurred during the translation of the
-HTML output for each scenario test.
-When I thought about both options, I just felt that I would almost instantly regret
-making any changes to the HTML output, as it would no longer be synchronized to the
-GFM specification. Considering that, I figured it was better
-to be consistent and do a bit more work on the project than to
-start changing the scenarios.&lt;/p&gt;
-&lt;p&gt;My current focus was on enabling the HTML comparisons, and I knew it was going to take
-more effort and time to get them right. As such, I decided to add a fair number of “if
-this look like” conditions to add or not add newlines, with plans to later refactor the
-code to look for better groupings down the road.  I do not like adding technical debt
-just for the sake of expediency, but I just felt it was the right decision at the time.
-I figured by adjusting the translator with little tweaks here and there would give
-me a more complete picture on what needed done for a proper refactor later.  It was not
-a perfect decision, but it was one that I felt I could live with.&lt;/p&gt;
-&lt;p&gt;When all the leaf blocks were completed, I did notice a decent boost in my
-confidence.  Except for some issues with getting newlines right, the translation of
-leaf blocks was straightforward.  Knowing that I had made good decisions
-so far gave me that boost… something that I would need sooner rather than later.&lt;/p&gt;
-&lt;h2 id="translating-the-container-blocks"&gt;Translating the Container Blocks&lt;a class="headerlink" href="#translating-the-container-blocks" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;While the translation of the leaf blocks went smoothly, I hit a number of issues dealing
-with the container blocks added in
-&lt;a href="https://jackdewinter.github.io/2020/02/03/markdown-linter-adding-block-quotes-and-lists/"&gt;this article&lt;/a&gt;.
-While the block quotes themselves were not
-really an issue, the list blocks that caused me a lot of trouble.&lt;/p&gt;
-&lt;p&gt;In implementing the list block support in the translator, I was able to quickly get
-to a point where the tags themselves were being emitted properly, but the whitespace
-around the tags were off, especially with the newlines.  That was frustrating, but with
-some helpful observations and experimentation, I was able to get that taken care of
-relatively quickly.&lt;/p&gt;
-&lt;p&gt;Following that triumph, I spent a few aggravating
-days trying to figure out why some list items contained &lt;code&gt;&amp;lt;p&amp;gt;&lt;/code&gt; tags and why some list
-items didn’t contain &lt;code&gt;&amp;lt;p&amp;gt;&lt;/code&gt; tags.  I tried a couple approaches based on
-the surrounding tags and tokens, but each of them failed.  It wasn’t until I was looking
-at the specification again, when I took another look at the lists section and noticed
-the following paragraph in the
-&lt;a href="https://github.github.com/gfm/#lists"&gt;lists section&lt;/a&gt;:&lt;/p&gt;
-&lt;blockquote&gt;
-&lt;p&gt;A list is loose if any of its constituent list items are separated by blank lines, or if any of its constituent list items directly contain two block-level elements with a blank line between them. Otherwise a list is tight. (The difference in HTML output is that paragraphs in a loose list are wrapped in &lt;code&gt;&amp;lt;p&amp;gt;&lt;/code&gt; tags, while paragraphs in a tight list are not.)&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;p&gt;That was the information I was searching for!  While the actual implementation is a bit
-more complicated than just that, that is the essence of when I needed to add the
-paragraph tags.&lt;/p&gt;
-&lt;p&gt;The complications in implementation arose as the examples became more complex.  For
-example, based on the above description, it is easy to see that this modified
-&lt;a href="https://github.github.com/gfm/#example-294"&gt;example 294&lt;/a&gt;
-is a strict list:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="n"&gt;a&lt;/span&gt;
-&lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="n"&gt;b&lt;/span&gt;
-&lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="k"&gt;c&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;and this unmodified
-&lt;a href="https://github.github.com/gfm/#example-294"&gt;example 294&lt;/a&gt; is a loose list:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="n"&gt;a&lt;/span&gt;
-&lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="n"&gt;b&lt;/span&gt;
-
-&lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="k"&gt;c&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;From the above lists section quote, since there is a blank line that separates
-two of the list elements, it is a loose list.  Pretty easy and straight forward.
-Implementing this aspect of looseness was decently easy but did require some
-non-trivial extra code. Basically, go back to the start of the current list, then go
-through each list element in the list, looking to see if the Markdown element before it
-is a blank line.  If so, mark the entire list as loose and apply that throughout the
-list.&lt;/p&gt;
-&lt;p&gt;However, when dealing with lists and sublists, it was not so simple.  For example,
-consider the Markdown from
-&lt;a href="https://github.github.com/gfm/#example-299"&gt;example 299&lt;/a&gt;:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="n"&gt;a&lt;/span&gt;
-  &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="n"&gt;b&lt;/span&gt;
-
-    &lt;span class="k"&gt;c&lt;/span&gt;
-&lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="n"&gt;d&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Understanding the Markdown list blocks can be nested and following the guidance from
-the above quote, you can deduce that the outer list is tight and the sublist is loose.
-To make the leap from handling the previous 2 examples to this example would mean that
-I needed to find a way to add scoping to the translation. Without scoping, when the
-translator processed the above example, it saw 3 items in the same list, with the
-second element making the entire list loose.  Scoping was required to allow the
-translator to determine that the &lt;code&gt;a&lt;/code&gt; and &lt;code&gt;d&lt;/code&gt; items were in one list and the &lt;code&gt;b/c&lt;/code&gt; item
-was in it’s own list, therefore determining the correct looseness for both lists.&lt;/p&gt;
-&lt;p&gt;The code itself to handle scoping was simple, but the tradeoff was that the
-translator was slowly becoming more complicated, something that I was not happy
-about.  It was not in dangerous territory yet, but it was something to keep a watch out
-for.  In addition, while the difference between a list being lose or strict is
-obvious in hindsight, at the time it was very annoying.  It took me the better part of
-4 days to do something that was obvious.  Even better than obvious was the fact
-that it was plainly spelled out in the specification.  But as I had to do a number of
-other times during this project, I picked myself up, dusted myself off, and continued on
-with the inline translations.&lt;/p&gt;
-&lt;h2 id="translating-inlines-backslash-escapes-character-references-and-code-spans"&gt;Translating Inlines - Backslash Escapes, Character References, and Code Spans&lt;a class="headerlink" href="#translating-inlines-backslash-escapes-character-references-and-code-spans" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;During this translation process, first I hit a high, then I hit a low, and then I saw
-the payoff of both with the translation of these inline elements into HTML.  These
-elements consist of
-the backslash escapes, character references, and code spans elements, and were added in
-&lt;a href="https://jackdewinter.github.io/2020/02/24/markdown-linter-starting-inline-processing/"&gt;this article&lt;/a&gt;. Apart from
-a couple of typos and the code spans, adding support for these features flew past
-quickly. The backslash escapes and character references were already being processed
-along with the
-text tokens, which in turn were already tested with the leaf blocks.  The only new
-code needed was for code spans, but those additions were quickly made by copying the
-work done for code blocks and simplifying it a bit.  Other than a couple of typos that
-I also needed to correct; the entire body of this work was completed in just under 3
-hours.  And to be honest, that included me grabbing some well-deserved dinner.&lt;/p&gt;
-&lt;p&gt;Based on the days of trying to figure out list blocks and paragraph tags from the
-last section, it was nice to get a real easy set of changes.  It wasn’t anything
-challenging, just… nice.&lt;/p&gt;
-&lt;h2 id="translating-inlines-raw-html-autolinks-and-line-breaks"&gt;Translating Inlines - Raw Html, Autolinks, and Line Breaks&lt;a class="headerlink" href="#translating-inlines-raw-html-autolinks-and-line-breaks" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Rounding out the series of translations were the tests for raw html, autolinks, and
-line breaks.  With features just added in the
-&lt;a href="https://jackdewinter.github.io/2020/03/09/markdown-linter-autolinks-raw-html-and-line-breaks/"&gt;last article&lt;/a&gt;,
-the tests for these features were added with only a couple of issues, similar in
-severity to the issues from the leaf blocks.&lt;/p&gt;
-&lt;p&gt;The largest group of issues encountered were issues with character encodings in
-the autolinks feature.  Some of those issues were due to Unicode characters being
-present in the Markdown but needing to be properly encoded and escaped when present
-in URIs.  Some of the issues were because the characters present in the URIs are
-special characters and had to be escaped to prevent them from being encoded twice.&lt;/p&gt;
-&lt;p&gt;However, the most annoying issues were differences in the language libraries that
-caused the translator to URI-encode a different set of characters than in the
-GFM specification.  Specifically, it looks like the Commonmark parser uses the
-Javascript libraries to encode URIs, while the PyMarkdown project uses the Python
-libraries.  I wasn’t too concerned with these issues at the current time, so I made
-sure to add some notes to address these concerns later and kept on marching forward.&lt;/p&gt;
-&lt;p&gt;The big catch with these changes was with the scenario test for the GFM specification’s
-&lt;a href="https://github.github.com/gfm/#example-641"&gt;example 641&lt;/a&gt;:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="n"&gt;a&lt;/span&gt; &lt;span class="n"&gt;href&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s1"&gt;'bar'&lt;/span&gt;&lt;span class="n"&gt;title&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;title&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;While it might seem like a small difference when looking at a web page, the
-PyMarkdown parser emitted a HTML block and a tag as content instead of
-emitting a simple paragraph containing text, as follows:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;&lt;span class="ni"&gt;&amp;amp;lt;&lt;/span&gt;a href='bar'title=title&lt;span class="ni"&gt;&amp;amp;gt;&lt;/span&gt;&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Looking at the HTML output in the example, it is very clear that it should be a
-paragraph containing text,
-but somewhere in the copy-and-paste process I had accepted the wrongs tokens as
-correct.  Digging into this issue, I quickly found out that a single omission in one of
-the functions of the &lt;code&gt;HtmlHelper&lt;/code&gt; module was not checking for whitespace between the
-tag’s attributes, therefore thinking that it was a valid tag when it was not.  Within 5
-minutes, I had a fix implemented, and the test corrected, and the last scenario test
-that was currently implemented was now complete!&lt;/p&gt;
-&lt;p&gt;As a strange aside, I may not have the only parser that has made this mistake. When
-I was writing this article in VSCode, as usual, I had to check the example’s Markdown
-a few times.  The Markdown in the above section was generated with the following
-fenced code block:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;```&lt;/span&gt;&lt;span class="n"&gt;Markdown&lt;/span&gt;
-&lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="n"&gt;a&lt;/span&gt; &lt;span class="n"&gt;href&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s1"&gt;'bar'&lt;/span&gt;&lt;span class="n"&gt;title&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;title&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt;
-&lt;span class="o"&gt;```&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Its a pretty simple example, and I typed it in as I usually do.  Create the fenced
-block, add in the text from its source, verify it a couple of times, and then add in
-the language specifier.  As soon as I typed in &lt;code&gt;Markdown&lt;/code&gt;, a strange thing happened.
-The &lt;code&gt;a&lt;/code&gt; for the tag name turned into a deep blue, as expected.  But then both
-attribute names, &lt;code&gt;href&lt;/code&gt; and &lt;code&gt;title&lt;/code&gt;, turned light blue while the attribute values,
-&lt;code&gt;`bar`&lt;/code&gt; and &lt;code&gt;title&lt;/code&gt; turned red.  I added a space before &lt;code&gt;title&lt;/code&gt; and then deleted
-it, repeating
-this experiment a couple of times, looking for color changes.  There were none.  For
-whatever reasons, the coloring library that VSCode is using to color Markdown text
-seems to believe that example 641 contains valid Markdown.  Weird!&lt;/p&gt;
-&lt;h2 id="what-was-my-experience-so-far"&gt;What Was My Experience So Far?&lt;a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;In writing automation tests as part of my professional job, I have a clear distinction
-in my responsibility to my team.  I am not there to break their code or to find flaws
-in it, I am there to help them find issues before they become problems.  If
-possible, I stress automated tests over manual tests, and I also stress being able to
-adopt consistent processes to shine a very focused light on anything that is different.&lt;/p&gt;
-&lt;p&gt;The mere fact that I found a couple small issues with the parser, even at this
-late stage of the project is fine with me.  I am helping my team (me) find these issues
-before the code is released and impacts other people and their processes.  While it was
-a large pain to go through, I felt that I closed part of the testing the loop by
-consistently adding HTML output verification to each parser scenario test.  The mere
-fact that the issues were found proves its own worth.  In addition, there was a small
-efficiency and confidence boost because I do not have to guess anymore as to whether or
-not I chose the right tokens.  The HTML output from the examples proved that I made the
-right choices.&lt;/p&gt;
-&lt;p&gt;In the end, what it boils down to for me is that while adding the HTML output
-verification to each test was painfully monotonous at times, it paid off.  While
-only a handful of issues were uncovered, it did find at least one issue, which itself
-boosted my confidence in the project.
-Regardless of whether any issues were found, knowing that the tokens that
-the parser was generating were being properly translated into the GFM specification’s
-HTML output was worth it.  No more questioning whether the tokens would
-translate into the proper HTML… I now had proof they did!&lt;/p&gt;
-&lt;h2 id="what-is-next"&gt;What is Next?&lt;a class="headerlink" href="#what-is-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Whenever a protocol specification states something like “and here is a suggested
-way of…”, it usually means that at least 2-3 groups of people implementing the
-protocol specification had issues.  So, it was with a bit of dread and a bit of
-confidence that I started looking at dealing with inline emphasis, the topic of the
-next article.&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="linter tokenizer"></category></entry></feed>
+a good place to start.  That is where I will pick up in my next article!&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="linter tokenizer"></category></entry></feed>
