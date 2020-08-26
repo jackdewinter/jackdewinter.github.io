@@ -1,5 +1,384 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/all.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2020-08-17T00:00:00-07:00</updated><entry><title>Markdown Linter - Adding Lists to the Markdown Transformer</title><link href="https://jackdewinter.github.io/2020/08/17/markdown-linter-adding-lists-to-the-markdown-transformer/" rel="alternate"></link><published>2020-08-17T00:00:00-07:00</published><updated>2020-08-17T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-08-17:/2020/08/17/markdown-linter-adding-lists-to-the-markdown-transformer/</id><summary type="html">
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/all.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2020-08-25T00:00:00-07:00</updated><entry><title>Markdown Linter - Adding Consistency to Block Quotes</title><link href="https://jackdewinter.github.io/2020/08/25/markdown-linter-adding-consistency-to-block-quotes/" rel="alternate"></link><published>2020-08-25T00:00:00-07:00</published><updated>2020-08-25T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-08-25:/2020/08/25/markdown-linter-adding-consistency-to-block-quotes/</id><summary type="html">
+&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In my
+&lt;a href="https://jackdewinter.github.io/2020/08/17/markdown-linter-adding-lists-to-the-markdown-transformer/"&gt;last article&lt;/a&gt;,
+I took care of completing the Markdown transformer checks for one half of the container
+block tokens: the List Block tokens.  In this article, I tackle both the line/column
+number consistency checks and the Markdown transformer checks for the Block Quote
+tokens.&lt;/p&gt;
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;While …&lt;/p&gt;</summary><content type="html">
+&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In my
+&lt;a href="https://jackdewinter.github.io/2020/08/17/markdown-linter-adding-lists-to-the-markdown-transformer/"&gt;last article&lt;/a&gt;,
+I took care of completing the Markdown transformer checks for one half of the container
+block tokens: the List Block tokens.  In this article, I tackle both the line/column
+number consistency checks and the Markdown transformer checks for the Block Quote
+tokens.&lt;/p&gt;
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;While the implementation of list tokens went easier than I thought it would, I
+remained cautiously optimistic about adding consistency check support for Block Quote
+tokens.  During the initial development of the line/column number checks, I noticed
+that the Block Quote tokens did not keep any information about removed data.  After
+having completed the List Block token support, I knew that it would be pivotal to
+get that right.  And that meant more work.  A lot of nitpicking work.&lt;/p&gt;
+&lt;p&gt;To add the consistency checks, I was going to have to accomplish 3 things: capture the
+removed line start text, use that information to validate the line/column numbers, and
+then write the Markdown transformations for it.  The last two items were the easy part,
+those parts I had confidence I could complete.  It was the capturing of removed checks
+that I was not confident about.  And the capturing of text was the change that I needed
+to tackle first.&lt;/p&gt;
+&lt;h2 id="what-is-the-audience-for-this-article"&gt;What Is the Audience for This Article?&lt;a class="headerlink" href="#what-is-the-audience-for-this-article" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;While detailed more eloquently in
+&lt;a href="https://jackdewinter.github.io/2020/04/05/what-is-the-audience-for-my-blog/#what-is-the-audience-for-my-blog"&gt;this article&lt;/a&gt;,
+my goal for this technical article is to focus on the reasoning behind my solutions,
+rather that the solutions themselves.  For a full record of the solutions presented in
+this article, please go to this project’s GitHub repository and consult the
+commits between
+&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/255bfce0efab68c0d76ca8d04b03017ba40e6223"&gt;12 Aug 2020&lt;/a&gt;
+and
+&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/08da2e04c355e0a3bd016e20afce3102696a8107"&gt;14 Aug 2020&lt;/a&gt;.&lt;/p&gt;
+&lt;h2 id="lets-talk-about-the-obvious"&gt;Let’s Talk About the Obvious&lt;a class="headerlink" href="#lets-talk-about-the-obvious" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;I am generally very disciplined when it comes to writing my blog.  I keep notes when I
+am writing the code, curating those notes into an outline on the
+Thursday to Saturday before I post my article.  If I am lucky enough, I will start
+the actual writing of my article on
+Saturday night, but most often I start writing it early Sunday morning.  This allows
+me to take my time to enjoy my Sunday while ending up with a solid version of the
+article by Sunday night.  Then, on Monday night, I take that article and add
+extra code samples and do some wordsmithing to form the article into its final form.  It
+may not be the way others write their articles, but it is a process that works
+for me.&lt;/p&gt;
+&lt;p&gt;Until this week that is.  Everything was on track until Monday, when I started my edits
+with a headache that I just could not ditch.  But process is process, so I started doing
+those edits, pushing on until a couple of hours later.  At that point, I looked at
+what I was doing and went… huh?  I started looking at my edits and tried to figure
+things out, using even more edits to fix any problems I encountered.  Far from making
+things better, I was making them worse.  But I would not see that until later.&lt;/p&gt;
+&lt;p&gt;It was a while later when I finally stopped and locked my computer.  Above all else,
+this was the best thing that I did in that entire situation.  It took me a
+while, but I stopped.  However, by that point, a certain amount of damage
+was already done.  I had written some things twice and other things not at all. In
+some cases, I had sentences that looking at them later, I wonder if I had written them
+while drunk.  I knew I could recover from that position, but it would require a clear
+head, some extra time, and some hard work.  And it was not going to happen that night.
+I came to the realization that I was not going to be able to meet my usual posting
+deadline of Monday night.&lt;/p&gt;
+&lt;p&gt;At first, I was angry with myself.  Many weeks of not missing a posting deadline and
+now I had a bad record.  “I always post on Monday nights, except for…”  Argh!
+But after thinking about the purpose of my blog, to educate and help others, I
+started to find peace with it.  None of us is perfect, and we all need to take care
+of ourselves.  Me included.  My health versus my article’s deadline.  I needed to
+take that extra day and get better before finishing… er… unfinishing and then
+refinishing the editing.&lt;/p&gt;
+&lt;h2 id="capturing-the-leading-block-quote-text"&gt;Capturing the Leading Block Quote Text&lt;a class="headerlink" href="#capturing-the-leading-block-quote-text" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In its simplest form, the handling of container block elements and their tokens is a
+relatively easy concept. Every line of a Markdown document enclosed within a container
+block element is usually prefaced with one or more characters that denote the presence
+of that container element.  For Block Quotes these are character sequences with the
+&lt;code&gt;&amp;gt;&lt;/code&gt; character and an optional whitespace, and for Lists these are whitespaces.  To make
+the processing of those contained lines easier, at the start of the project I took some
+up-front time to ensure that
+the container block element processing is independent of the leaf block element
+processing.  As such, I was able to work on that leaf block processing independently of
+container block processing.&lt;/p&gt;
+&lt;p&gt;When I was doing the initial research for
+&lt;a href="https://jackdewinter.github.io/2020/06/29/markdown-linter-rabbit-hole-3-trying-to-dig-myself-out/#keeping-the-scope-small"&gt;container block support&lt;/a&gt;,
+I started with List tokens.  I quickly wrote a proof of concept for the line/column
+number check and was happy to find that I had already placed the required information
+in the token.  However, after using the same process with Block Quote tokens, it was
+evident that I had missed the mark with them.  Unlike the List tokens, none of the
+required
+information was placed within the Block Quote tokens.  At that time, after having
+gone down a
+&lt;a href="https://jackdewinter.github.io/2020/06/15/markdown-linter-rabbit-hole-1-adding-consistency-checks/"&gt;rabbit hole for a bit&lt;/a&gt;,
+I wisely decided to wait until later to implement that.   Well, that time was now and
+I knew it was going to take some work to add it.&lt;/p&gt;
+&lt;h3 id="addressing-the-issue"&gt;Addressing the Issue&lt;a class="headerlink" href="#addressing-the-issue" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Like the work I did for List Block tokens, the Block Quote stack token needed a
+change to support the &lt;code&gt;matching_markdown_token&lt;/code&gt; field.  This field is pivotal to
+inform the processor of the latest markdown token that is containing other tokens.
+But to properly use this field, it would take a bit of disassembly and reassembly.
+Before this change, the code to add the necessary tokens to the two relevant stacks
+were:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="n"&gt;parser_state&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_stack&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;append&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;BlockQuoteStackToken&lt;/span&gt;&lt;span class="p"&gt;())&lt;/span&gt;
+    &lt;span class="o"&gt;...&lt;/span&gt;
+    &lt;span class="n"&gt;container_level_tokens&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;append&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+        &lt;span class="n"&gt;BlockQuoteMarkdownToken&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;extracted_whitespace&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;adjusted_position_marker&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Two different tokens and two different stacks, with nothing between them.  With this new
+functionality in place, that code needed some slight changes:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="n"&gt;new_markdown_token&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;BlockQuoteMarkdownToken&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+        &lt;span class="n"&gt;extracted_whitespace&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;adjusted_position_marker&lt;/span&gt;
+    &lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;container_level_tokens&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;append&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;new_markdown_token&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;parser_state&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_stack&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;append&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+        &lt;span class="n"&gt;BlockQuoteStackToken&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;new_markdown_token&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Instead of two distinct tokens, there was now a stack token that included a reference
+to the Markdown token that it represented.  &lt;/p&gt;
+&lt;p&gt;With that field properly initialized, the &lt;code&gt;add_leading_spaces&lt;/code&gt; function was then added
+to make use of that new field.  It is
+a simple function that adds any extracted text (usually whitespace) to its
+field, separating any new text from the existing text using a newline character.
+The function itself is very boring.  The interesting part about the function would be in
+locating where that function needed to be called from and using it properly.&lt;/p&gt;
+&lt;h3 id="the-first-one-is-almost-always-easy"&gt;The First One Is Almost Always Easy&lt;a class="headerlink" href="#the-first-one-is-almost-always-easy" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;The first location was obvious: within the &lt;code&gt;__handle_block_quote_section&lt;/code&gt; function
+of the &lt;code&gt;BlockQuoteProcessor&lt;/code&gt; class.  This is where the bulk of the processing of
+Bulk Quote elements and their effects go through.  In there is an easy to find block of
+code that records the number of characters removed and resets the string to exclude
+those characters:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;            &lt;span class="n"&gt;line_to_parse&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;line_to_parse&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;start_index&lt;/span&gt;&lt;span class="p"&gt;:]&lt;/span&gt;
+            &lt;span class="n"&gt;removed_chars_at_start&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;start_index&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;That block of code was slightly modified to record that removed text and place it into
+its own variable:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;            &lt;span class="n"&gt;removed_text&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
+                &lt;span class="n"&gt;line_to_parse&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;position_marker&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;index_number&lt;/span&gt; &lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;start_index&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+            &lt;span class="p"&gt;)&lt;/span&gt;
+            &lt;span class="n"&gt;LOGGER&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;debug&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="o"&gt;...&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+            &lt;span class="n"&gt;line_to_parse&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;line_to_parse&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;start_index&lt;/span&gt;&lt;span class="p"&gt;:]&lt;/span&gt;
+            &lt;span class="n"&gt;removed_chars_at_start&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;start_index&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;With the removed text in hand, the code just needed to know which token to associate the
+removed text with. As the code processes Block Quote elements, it was reasonable to
+assume that the most relevant Block Quote stack token is the last one on the stack.
+That stack token was easily found with a simple for loop:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;            &lt;span class="n"&gt;found_stack_token&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;
+            &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;stack_index&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="nb"&gt;range&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;parser_state&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_stack&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+                &lt;span class="o"&gt;...&lt;/span&gt;
+                &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;parser_state&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;stack_index&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_block_quote&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+                    &lt;span class="n"&gt;found_stack_token&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;parser_state&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;stack_index&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+                    &lt;span class="k"&gt;break&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;With the extracted text and the ‘top’ stack token, the only thing that was left to
+do was:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;            &lt;span class="n"&gt;found_stack_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;matching_markdown_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;add_leading_spaces&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;removed_text&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Almost right away, I was off to a good start on extracting the leading spaces for the
+Block Quote token and storing them.&lt;/p&gt;
+&lt;h3 id="locating-the-next-issue"&gt;Locating the Next Issue&lt;a class="headerlink" href="#locating-the-next-issue" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;After those changes were in place, I ran the scenario tests again, seeing almost every
+test that has a Block Quote token fail.  My heart dropped.  But after a second, I
+realized that I wanted that to happen.  As I wanted to make sure each Block Quote token
+was verified, I added the leading space data to the end of the string for the
+&lt;code&gt;BlockQuoteMarkdownToken&lt;/code&gt; class, separated from the rest with the &lt;code&gt;:&lt;/code&gt; character.  If
+things worked properly, that meant every Block Quote token would, at the very least,
+now include an extra &lt;code&gt;:&lt;/code&gt; character.  Every serialized Block Quote token was now “wrong”,
+so every Block Quote scenario test should fail.  Good!&lt;/p&gt;
+&lt;p&gt;Working through each case was decently fast, with a solid methodical process in place:
+look at
+the results, find the next failing test, and manually determine what change needed to
+be made to the Block Quote token.  After making that change to the test data, I would
+then re-run that specific scenario test, and check for token differences.&lt;/p&gt;
+&lt;p&gt;It was by using this process that I found the next issue: missing leading whitespace.
+In some cases, the leading text that was extracted was preceded by one of more
+whitespaces. Those whitespaces were stuffed into the &lt;code&gt;extracted_whitespace&lt;/code&gt; variable
+and then ignored after that.  The resolution to that issue was
+simple.  Instead of only adding the leading space to the &lt;code&gt;removed_text&lt;/code&gt; variable,
+the contents of that &lt;code&gt;extracted_whitespace&lt;/code&gt; needed to be added to the variable, as such:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;            &lt;span class="n"&gt;removed_text&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
+                &lt;span class="n"&gt;extracted_whitespace&lt;/span&gt;
+                &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;line_to_parse&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;position_marker&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;index_number&lt;/span&gt; &lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;start_index&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+            &lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Running the tests again, a new block of tests started passing.&lt;/p&gt;
+&lt;h3 id="and-next-blank-lines"&gt;And Next… Blank Lines&lt;a class="headerlink" href="#and-next-blank-lines" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;As more and more of the Block Quote scenario tests were changed and started passing,
+there were a handful of tests that were failing that I left for later.  When I got
+to the end of those tests, I went back and started to look at those failing tests
+one-by-one.&lt;/p&gt;
+&lt;p&gt;The first group of failures that I examined were ones in which there was a Blank
+Line element contained within a Block Quote. A good example of this is
+&lt;a href="https://github.github.com/gfm/#example-222"&gt;example 222&lt;/a&gt;:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;foo&lt;/span&gt;
+&lt;span class="o"&gt;&amp;gt;&lt;/span&gt;
+&lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;bar&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;In these cases, the parsing was
+correct, but the newly added &lt;code&gt;add_leading_spaces&lt;/code&gt; function was not being called.  The
+outcome
+was that the number of newlines contained within the owning Block Quote token did
+not match the number of lines within the Block Quote element itself.  To ensure
+that those two values lined up, the &lt;code&gt;add_leading_spaces&lt;/code&gt; function was called with
+an empty string, thereby evening up those values.&lt;/p&gt;
+&lt;p&gt;Running the scenario tests again, all the scenario tests explicitly for Block Quotes
+were passing.  I then ran the scenario tests again, checking to make sure that the
+scenario tests with Block Quotes and Blank Lines passed. While the new changes were
+now passing, there were still a handful of tests to work on.&lt;/p&gt;
+&lt;h3 id="and-finally-html-blocks"&gt;And Finally, HTML Blocks&lt;a class="headerlink" href="#and-finally-html-blocks" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Having run the scenario tests again, the only tests that were not passing were
+scenario tests that included Block Quotes and HTML blocks.  Doing some research into
+the issue, I quickly found
+that it looked like the same issue with the Blank Line elements, just with HTML blocks.
+This issue was uncovered through one of my additional tests, “cov_2” used to increase
+coverage on the various forms of HTML start and end tags:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nt"&gt;&amp;lt;/hrx&lt;/span&gt;
+&lt;span class="nt"&gt;&amp;gt;&lt;/span&gt;
+&lt;span class="nt"&gt;&amp;lt;/x-table&amp;gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Like the previous issue with Blank Line tokens, the number of new lines were not lining
+up between the two sources.  Once again, calling the &lt;code&gt;add_leading_spaces&lt;/code&gt; function
+with an empty string in these cases solved the issue.&lt;/p&gt;
+&lt;h3 id="closing-out-the-token-changes"&gt;Closing Out the Token Changes&lt;a class="headerlink" href="#closing-out-the-token-changes" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;After those changes has been completed, it was obvious that all the scenario tests were
+passing.  Just to be sure, I manually went through each of the scenarios and verified
+the newly changed tokens.  As I have said before, maybe I am paranoid, but if I was
+depending on those results, I figured an extra pass or two would not hurt.&lt;/p&gt;
+&lt;p&gt;It just felt good to get these changes completed.  I had a high degree of confidence
+that I was able to find most of these issues, but an even higher degree of confidence
+that the remaining work would flush out anything that I missed.  It was with those
+positive thoughts in my head that I started working on the consistency checks.&lt;/p&gt;
+&lt;h2 id="validating-the-line-numbers-and-column-numbers"&gt;Validating the Line Numbers and Column Numbers&lt;a class="headerlink" href="#validating-the-line-numbers-and-column-numbers" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;With that confidence, I started working on the consistency checks for line numbers
+and column numbers.  The first step in doing this was removing a couple of lines
+of code that prevented the consistency checks from firing if one of the tokens was
+a Block Quote token.  It was useful when I did not have anything in place, but now
+it would just get in the way.&lt;/p&gt;
+&lt;p&gt;After that change, tests predictably started failing, but I was ready for them.  From
+the work
+that I had just completed, I figured that I would have to follow a similar path in
+implementing the consistency check.  Therefore, the first thing I did to help with
+the consistency check is to reset the &lt;code&gt;leading_text_index&lt;/code&gt; field of the
+&lt;code&gt;BlockQuoteMarkdownToken&lt;/code&gt; instance to 0 when it is encountered.  This made sure that
+the tracking of the leading spaces would always start with the first entry.&lt;/p&gt;
+&lt;p&gt;With that done, the code needed to take advantage of that was easy to write.
+When a token exists on a new line, it’s indent must be determined by tracking the
+size of the removed text and adding that measurement to the column number.  Based
+on the previous work, this becomes trivially easy:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="n"&gt;split_leading_spaces&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;top_block&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;leading_spaces&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;split&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;init_ws&lt;/span&gt; &lt;span class="o"&gt;+=&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;split_leading_spaces&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;top_block&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;leading_text_index&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Basically, grab the top Block Quote token, split it into lines, and use the
+&lt;code&gt;leading_text_index&lt;/code&gt; value of that topmost token to grab the right leading space.&lt;/p&gt;
+&lt;p&gt;From there, the new work mirrored the work that I did in preparing the tokens.  When a
+Blank Line token is encountered, that index is incremented.  For each line of
+text within an HTML block, that index is incremented.  And in addition, that
+&lt;code&gt;leading_text_index&lt;/code&gt; field needed to be tweaked at the end of HTML blocks,
+Atx Heading blocks, and Paragraph blocks, which was something I figured might
+come up.  Just some simple cases where a bit of extra finessing was needed.&lt;/p&gt;
+&lt;p&gt;To be clear, I was not 100% percent sure that this would happen, but I was hoping that
+it would.  To me it made sense that if I needed to add code to track the leading
+spaces that were removed, any consistency check would need to follow that same path
+to verify the information.  And as to the extra tweak for the end tokens, I was
+confident that it was a solid change, and was not worried about that deviation from
+the previous work.&lt;/p&gt;
+&lt;h2 id="writing-the-block-quote-markdown-transformations"&gt;Writing the Block Quote Markdown Transformations&lt;a class="headerlink" href="#writing-the-block-quote-markdown-transformations" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Given the work I had just completed to get to this point, it was obvious to me that
+I was going to have to do a lot of fiddling with spaces to get the transformations
+correct.  To make that job a bit easier, I decided for the moment to eliminate any
+Markdown documents which contained both Block Quote elements and List elements.
+I would get back to these quickly, but at that moment, it was just too much.&lt;/p&gt;
+&lt;p&gt;The processing of the start and end of the Block Quote elements were simple,
+largely mimicking the work I did for the List elements.  When a Block Quote token
+was processed, it created a copy of itself and added that copy to the top of the
+&lt;code&gt;container_token_stack&lt;/code&gt; list.  From there, the leading space were retrieved from
+their storage in the token and added to the sequence to be emitted.  The end
+of the Block Quote element was even easier, returning an empty string after removing
+the top token off the &lt;code&gt;container_token_stack&lt;/code&gt; list.  The work I had previously done
+on setting up the leading spaces was really paying off.&lt;/p&gt;
+&lt;p&gt;With the work to recognize and process the actual tokens taken care of, the main
+task ahead of me was to add and populate the &lt;code&gt;__perform_container_post_processing_block_quote&lt;/code&gt; function.  Like how List
+Block tokens were handled in the
+&lt;code&gt;__perform_container_post_processing_lists&lt;/code&gt; function, this new function was used
+to handle the newline processing for text enclosed within Block Quote elements.
+After having completed all this other work, that work was relatively simple to do.
+With all the individual token processing already
+performed, this function just needed to focus on detecting newline characters.
+For each of these characters encountered, the top Block Quote token would be
+used to determine the current &lt;code&gt;leading_text_index&lt;/code&gt; to start with.  With each
+newline encountered, the current split value would be used, incrementing the
+&lt;code&gt;leading_text_index&lt;/code&gt; value afterwards.  This pretty much worked flawlessly out
+of the box.&lt;/p&gt;
+&lt;h3 id="as-i-was-cleaning-up"&gt;As I was cleaning up&lt;a class="headerlink" href="#as-i-was-cleaning-up" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;An interesting issue came up as I was generating these transformations.
+For some reason, I had missed some cases involving Block Quote elements that
+contained Fenced Code Block elements.  With the Markdown transformer now rehydrating
+the Markdown, it was obvious that things were missing.  It did not take me long to
+figure out that the Fenced Code Blocks were missing their Block Quote leading
+characters.  This was found for
+&lt;a href="https://github.github.com/gfm/#example-98"&gt;example 98&lt;/a&gt;:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="o"&gt;```&lt;/span&gt;
+&lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;aaa&lt;/span&gt;
+
+&lt;span class="n"&gt;bbb&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;When the transformer tried to rehydrate the document, it rehydrated that Markdown
+text without the leading &lt;code&gt;&amp;gt;&lt;/code&gt; sequence before the text &lt;code&gt;aaa&lt;/code&gt;.  Having just gone
+through that research for other elements, I was quick to spot it and realize where
+the issue was.  A couple of quick changes, and that change was passing!&lt;/p&gt;
+&lt;h3 id="along-the-way"&gt;Along the Way&lt;a class="headerlink" href="#along-the-way" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;And to hammer home the point that this consistency checking is good, it found some
+issues along the way.&lt;/p&gt;
+&lt;p&gt;The first one was an interesting issue where the starting whitespace for one
+transformation was missing.  And it was such a weird case.  It was an Atx Heading
+element that contained a Shortcut Link element as its only text, separated from the Atx
+Heading character ( &lt;code&gt;#&lt;/code&gt; ) by the mandatory single space. That is really important.  Two
+space it was okay with, but the one space, nope! Due to the way that
+it was parsed, that spaces were missing and not accounted for.  The fix to this was
+to add that starting whitespace as a new token containing that removed text, but with
+a twist.  That twist was to use the &lt;code&gt;create_replace_with_nothing_marker&lt;/code&gt; function to
+add that text as itself for the Markdown transformer, but keep it as removed for the
+HTML transformer.  With both transformers appeased, it was on to the next issue.&lt;/p&gt;
+&lt;p&gt;The second issue that I uncovered was that, in rare cases, the leading spaces for
+certain lines were missing.  After doing some digging, it only appeared to be lines
+that did not have any block quote prefix characters removed from the line.  So
+after adding a new &lt;code&gt;__adjust_paragraph_for_block_quotes&lt;/code&gt; function to the
+&lt;code&gt;LeafBlockProcessor&lt;/code&gt; and wiring it into the &lt;code&gt;parse_paragraph&lt;/code&gt; function, the debug
+confirmed that it was only those few cases where that was an issue.&lt;/p&gt;
+&lt;h2 id="and-of-course-some-cleanup"&gt;And Of Course, Some Cleanup&lt;a class="headerlink" href="#and-of-course-some-cleanup" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;It would not be a proper week of coding if I did not do some cleanup.  In this case,
+the cleanup was simple: relocating the line/column number logic to its own
+module.  One of the things that made the Markdown transformations easy to deal with
+is that those transformations are in their own &lt;code&gt;TransformToMarkdown&lt;/code&gt; class.
+That worked well.  The
+line/column number checks were in with some other validation code in the &lt;code&gt;utils.py&lt;/code&gt;
+module.  That worked… well… okay?&lt;/p&gt;
+&lt;p&gt;When I started with the consistency checks, they were new, and keeping all that code
+in the &lt;code&gt;utils.py&lt;/code&gt; module made sense.  But as the amount of code in the module grew, I
+never took the time to to some refactoring.  As such, the module developed two
+responsibilities. The first was to be the location for all the &lt;code&gt;assert_*&lt;/code&gt; functions
+and the &lt;code&gt;write_temporary_configuration&lt;/code&gt; functions.  Those are all the functions that are
+called directly from the tests, mostly in the final Assert stage of the test.  The
+second was to house the logic for the line/column number consistency checks.&lt;/p&gt;
+&lt;p&gt;It just seemed logical, now that that part of the code was stable and well-tested, to
+take that second responsibility and put it into its own module. I created the
+&lt;code&gt;verify_line_and_column_numbers.py&lt;/code&gt; module and started moving the functions into it,
+with the &lt;code&gt;verify_line_and_column_numbers&lt;/code&gt; function being the main entry point for
+the module.  It just seemed cleaner and more compact.  One module, one responsibility.&lt;/p&gt;
+&lt;h2 id="what-was-my-experience-so-far"&gt;What Was My Experience So Far?&lt;a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;The dominant part of my experience at the current moment is one of humility and
+patience.  Yes, it is Tuesday night. And after a little over 3 hours of extra work,
+I have finally recovered the article to where it was at this time last night. I
+do feel an impulse to be hard on myself about this delay, but I also am working
+hard to remember to be patient with myself.  This is one time where I am missing a
+deadline, and it probably will not be the last.&lt;/p&gt;
+&lt;p&gt;The humility that I am trying to practice is in understanding that I cannot do
+everything all the time.  I know that sounds like it should be an obvious thing to
+know, but I think we all forget it from time to time.  I was so focused on making
+sure that I met my deadline, that I neglected to have a conversation with myself
+on whether that was the right choice.  But it was not a large rabbit hole,
+just a small one that I was able to easily recover from.&lt;/p&gt;
+&lt;p&gt;Focusing more on the actual work that I accomplished, I was buoyed.  I was long
+worried about how hard it would be to implement the consistency checks for Block
+Quote tokens.  Having completed that work, I now am trying to figure out why I was
+worried.  Trying to figure it out now, I would guess I would focus on what it took
+to complete that work with lists.  That work was very nitpicky because it contained a
+lot of “empty” whitespace, if I am remembering it clearly.  From the effort that it
+took to deal with that, I can see how I might have thought it would have taken the same
+effort for Block Quote tokens.&lt;/p&gt;
+&lt;p&gt;But it did not.  The work I had done in that area on List tokens forced me to get things
+set up to make List token processing easier, which I believe Block Quotes benefited
+from.  Regardless, I was glad that I could close the books on the Block Quote tokens
+and their consistency checks.&lt;/p&gt;
+&lt;h2 id="what-is-next"&gt;What is Next?&lt;a class="headerlink" href="#what-is-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;With all the block token consistency checks now taken care of, there was a bit of clean
+up to do with determining the height of each block token.  While I initially thought
+that it would be easy, it did not turn out that way.&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry><entry><title>Markdown Linter - Adding Lists to the Markdown Transformer</title><link href="https://jackdewinter.github.io/2020/08/17/markdown-linter-adding-lists-to-the-markdown-transformer/" rel="alternate"></link><published>2020-08-17T00:00:00-07:00</published><updated>2020-08-17T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-08-17:/2020/08/17/markdown-linter-adding-lists-to-the-markdown-transformer/</id><summary type="html">
 &lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;In my
 &lt;a href="https://jackdewinter.github.io/2020/08/10/markdown-linter-adding-links-to-the-markdown-transformer/"&gt;last article&lt;/a&gt;,
@@ -227,7 +606,7 @@ been working around them somewhat, it was starting to get to the point where the
 unavoidable.  At first, I did not think these tokens would be an issue, but I forgot
 about one little part of the New List Item tokens: they reset the indent for the
 list.&lt;/p&gt;
-&lt;p&gt;A good example of this is &lt;a href="290"&gt;example 290&lt;/a&gt;:&lt;/p&gt;
+&lt;p&gt;A good example of this is &lt;a href="https://github.github.com/gfm/#example-290"&gt;example 290&lt;/a&gt;:&lt;/p&gt;
 &lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="n"&gt;a&lt;/span&gt;
  &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="n"&gt;b&lt;/span&gt;
   &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="k"&gt;c&lt;/span&gt;
@@ -9258,310 +9637,4 @@ for inline links will be heavily leveraged to complete the link group itself.&lt
 &lt;p&gt;Emphasis and link support and delimiter stack?  Done and tested.  Inline support for
 links?  Done and tested.  Before going on to reference links and image links, it only
 made sense to do link reference definitions next, so that is where I implemented next,
-though not without a lot of difficulties.&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="linter tokenizer"></category></entry><entry><title>Markdown Linter - Adding Inline Emphasis</title><link href="https://jackdewinter.github.io/2020/03/23/markdown-linter-adding-inline-emphasis/" rel="alternate"></link><published>2020-03-23T00:00:00-07:00</published><updated>2020-03-23T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-03-23:/2020/03/23/markdown-linter-adding-inline-emphasis/</id><summary type="html">
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;I have been reading and implementing specifications for a long time.  I truly
-believed that I had seen with and dealt with every situation presented in any
-specification. I was therefore surprised when I started reading the
-&lt;a href="https://github.github.com/gfm"&gt;GFM specification&lt;/a&gt;
-and I noticed an entry in the table of contents …&lt;/p&gt;</summary><content type="html">
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;I have been reading and implementing specifications for a long time.  I truly
-believed that I had seen with and dealt with every situation presented in any
-specification. I was therefore surprised when I started reading the
-&lt;a href="https://github.github.com/gfm"&gt;GFM specification&lt;/a&gt;
-and I noticed an entry in the table of contents labelled
-&lt;a href="https://github.github.com/gfm/#phase-2-inline-structure"&gt;Phase 2: inline structure&lt;/a&gt;.
-Thinking “if it is in the table of contents as a separate entry, it must be important”,
-I started reading that section, waiting for some big revelation to appear.&lt;/p&gt;
-&lt;p&gt;That Phase 2 section starts with an example which is an extension of the example used
-in the preceding section in the document.  After a bit of comparison with the
-previous example, it should be obvious that the string &lt;code&gt;\n&lt;/code&gt; was changed to &lt;code&gt;softbreak&lt;/code&gt;
-and the string &lt;code&gt;"Qui *quodsi iracundia*"&lt;/code&gt; was changed to
-&lt;code&gt;str "Qui " emph str "quodsi iracundia"&lt;/code&gt;.  Going back to my article on
-&lt;a href="https://jackdewinter.github.io/2020/03/09/markdown-linter-autolinks-raw-html-and-line-breaks/"&gt;Autolinks, Raw HTML, and Line Breaks&lt;/a&gt;,
-the translation from &lt;code&gt;\n&lt;/code&gt; to the soft line break (or soft-break) is easy to see,
-the inline parser code to perform that translation having just been implemented.  And
-looking at the provided example, emphasis looked like it was going to be easy.  So why
-include implementation notes on it if it was so easy?&lt;/p&gt;
-&lt;p&gt;On the surface, the translation of emphasis markers to emphasis would seem to be easy
-to understand, if not for the start of the next section of Phase 2:&lt;/p&gt;
-&lt;blockquote&gt;
-&lt;p&gt;By far the trickiest part of inline parsing is handling emphasis, strong emphasis, links, and images. This is done using the following algorithm.&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;p&gt;I was kind of skeptical, but I continued reading… and reading… and reading.
-After a couple of thorough reads of the section in the GFM specification on
-&lt;a href="https://github.github.com/gfm/#emphasis-and-strong-emphasis"&gt;Emphasis and strong emphasis&lt;/a&gt;,
-I started to understand why emphasis is not as easy as it seems. At its root it is
-pretty simple: use one &lt;code&gt;*&lt;/code&gt; for emphasis and &lt;code&gt;**&lt;/code&gt; for strong emphasis.  No problems
-there.  If you need a subtle change in the emphasis rules, primarily around intra-word
-usage and use around punctuation, use &lt;code&gt;_&lt;/code&gt; instead of &lt;code&gt;*&lt;/code&gt;. Okay…why do I need so many
-rules?&lt;/p&gt;
-&lt;p&gt;Isn’t it &lt;em&gt;as easy&lt;/em&gt; as &lt;strong&gt;this&lt;/strong&gt;?&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;Isn&lt;/span&gt;&lt;span class="err"&gt;'&lt;/span&gt;&lt;span class="n"&gt;t&lt;/span&gt; &lt;span class="n"&gt;it&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="k"&gt;as&lt;/span&gt; &lt;span class="n"&gt;easy&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="k"&gt;as&lt;/span&gt; &lt;span class="o"&gt;**&lt;/span&gt;&lt;span class="n"&gt;this&lt;/span&gt;&lt;span class="o"&gt;**?&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;It took a bit more reading, but for me, it was some questions from the preface of
-the specification that made me understand.  The big revelation finally hit me in
-the form of those questions and the ambiguity that they raised.&lt;/p&gt;
-&lt;p&gt;How are the following cases from the specification of strong emphasis interpreted?&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;***strong emph***
-***strong** in emph*
-***emph* in strong**
-**in strong *emph***
-*in emph **strong***
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;How about the following cases of nested emphasis?&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;*emph *with emph* in it*
-**strong **with strong** in it**
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;And finally, how about intra-word emphasis?&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;internal emphasis: foo*bar*baz
-no emphasis: foo_bar_baz
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;For most of those examples, I could come up with at least 2-3 different ways that
-they could be parsed.  As such, it is probably a good idea that there are 17 rules to
-help with emphasis.  But before I could work on the implementation, I needed to
-do some more research.&lt;/p&gt;
-&lt;h2 id="what-is-the-audience-for-this-article"&gt;What Is the Audience For This Article?&lt;a class="headerlink" href="#what-is-the-audience-for-this-article" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;While detailed more eloquently in
-&lt;a href="https://jackdewinter.github.io/2020/04/05/what-is-the-audience-for-my-blog/#what-is-the-audience-for-my-blog"&gt;this article&lt;/a&gt;,
-my goal for this technical article is to focus on the reasoning behind my solutions,
-rather that the solutions themselves.  For a full record of the solutions presented in
-this article, please go to this project’s GitHub repository and consult the
-commits between
-&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/ad66340685ba128fa522a6d275ae55348951c96c"&gt;10 March 2020&lt;/a&gt; and
-&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/23e77f98d9ab4a7a8d05285cbc11293a96c9ed11"&gt;13 March 2020&lt;/a&gt;.&lt;/p&gt;
-&lt;h2 id="emphasis-is-hard-and-not-always-consistent"&gt;Emphasis is Hard and not always Consistent&lt;a class="headerlink" href="#emphasis-is-hard-and-not-always-consistent" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;For any readers that have been following this series, it might be apparent that I have
-veered away from my usual habits.  Usually I label all of my Markdown code blocks
-properly to allow my
-&lt;a href="https://jackdewinter.github.io/2019/08/25/static-websites-setting-up-the-pelican-static-site-generator/"&gt;static site generator&lt;/a&gt;
-to take care of the proper coloring. However, for the above examples, I just marked
-them as normal text blocks without any language specified.  This
-was not a mistake; it was a conscious decision.&lt;/p&gt;
-&lt;p&gt;When I started entering the fenced code
-block for the text, everything looked normal. However, once I added the &lt;code&gt;Markdown&lt;/code&gt;
-language tag at the start of the block, that all changed.  What I saw in my VSCode
-editor was the following:&lt;/p&gt;
-&lt;p&gt;&lt;img alt="python logo" src="https://jackdewinter.github.io/images/linter-12/vscode.png"/&gt;&lt;/p&gt;
-&lt;p&gt;Publishing the page and looking there, I saw that same text rendered as:&lt;/p&gt;
-&lt;p&gt;&lt;img alt="python logo" src="https://jackdewinter.github.io/images/linter-12/chrome.png"/&gt;&lt;/p&gt;
-&lt;p&gt;And finally, running it through my favorite GFM test link, the following was generated:&lt;/p&gt;
-&lt;p&gt;&lt;em&gt;&lt;strong&gt;strong emph&lt;/strong&gt;&lt;/em&gt;&lt;br/&gt;
-&lt;em&gt;&lt;strong&gt;strong&lt;/strong&gt; in emph&lt;/em&gt;&lt;br/&gt;
-&lt;strong&gt;&lt;em&gt;emph&lt;/em&gt; in strong&lt;/strong&gt;&lt;br/&gt;
-&lt;strong&gt;in strong &lt;em&gt;emph&lt;/em&gt;&lt;/strong&gt;&lt;br/&gt;
-&lt;em&gt;in emph &lt;strong&gt;strong&lt;/strong&gt;&lt;/em&gt;&lt;br/&gt;&lt;/p&gt;
-&lt;p&gt;Three different platforms and three different ways to interpret the emphasis.
-To me, it was then that it was apparent why a consistent way to implement
-emphasis was needed in order to produce consistent results.&lt;/p&gt;
-&lt;h2 id="utilizing-the-wisdom-of-others"&gt;Utilizing the Wisdom of Others&lt;a class="headerlink" href="#utilizing-the-wisdom-of-others" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Instead of trying to figure everything out myself, tempting as that can be sometimes,
-I decided to implement the algorithm as stated in the GFM specification with one small
-change: no links for now. To accomplish this, I kept to the algorithm’s recipe as
-described, but I left the implementation of the &lt;code&gt;look for link or image&lt;/code&gt; section for
-later.  My plan was to focus on the emphasis itself before moving on to
-links, which I still believe was a very good decision on my part.&lt;/p&gt;
-&lt;p&gt;In looking at the algorithm through a bit of a sideways lens, I observed that there were
-two main tasks that the algorithm accomplishes: building the delimiter stack and
-resolving that same delimiter stack.  Without taking a two-phase approach to the
-algorithm, I determined that I would be multitasking two separate objectives, and not
-doing either of them very well.  I just felt strongly that it was better to split the
-task in two and focus on each one until it’s completion.  In the end, I was going to
-finish both part of the algorithm, so if both tasks were done, emphasis would
-be implemented.&lt;/p&gt;
-&lt;p&gt;The first task: building the delimiter stack.&lt;/p&gt;
-&lt;h2 id="building-the-delimiter-stack"&gt;Building the Delimiter Stack&lt;a class="headerlink" href="#building-the-delimiter-stack" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Taking a high-level look at the algorithm, I came up with the following two
-observations. In cases where a delimiter is not used in a special way, it needs to be
-represented by a simple text node.  Where it is used in a special way, it may need to
-be removed and properly replaced with the tokens that the delimiters represent. The
-“may” part of that last statement is there as, after looking at some of those examples,
-it may be possible to have a case where the parser only uses some of the emphasis
-delimiters, but not all of them.  Once such example is the string &lt;code&gt;this **is* my text&lt;/code&gt;.&lt;/p&gt;
-&lt;p&gt;To accomplish this, I created a new class &lt;code&gt;SpecialTextMarkdownToken&lt;/code&gt; that is a child
-of the &lt;code&gt;TextMarkdownToken&lt;/code&gt; class.  In cases where the delimiter is not completely
-consumed, this allows the new token to be easily consumed by existing code, without
-any modifications needed.  Supporting the additional parsing requirements, the new
-&lt;code&gt;SpecialTextMarkdownToken&lt;/code&gt; tokens adds the &lt;code&gt;repeat_count&lt;/code&gt;, &lt;code&gt;active&lt;/code&gt;, &lt;code&gt;preceding_two&lt;/code&gt;,
-and &lt;code&gt;following_two&lt;/code&gt; fields, enabling the algorithm to be implemented properly.
-Finally, but most importantly, to ensure the algorithm works properly, that new token
-is added to the delimiter stack.&lt;/p&gt;
-&lt;p&gt;To properly test that I had produced the correct tokens and delimiter stack,
-I started by enabling one of the emphasis tests and examining the resulting tokens.
-I compared those tokens against the tokens that were there before, looking for
-changes that I expected to be induced by the presence of the emphasis delimiters.  As I
-was only building the delimiter stack at this point in the process, this was easy to
-verify.&lt;/p&gt;
-&lt;p&gt;A solid example of this is the emphasis test for
-&lt;a href="https://github.github.com/gfm/#example-364"&gt;example 364&lt;/a&gt;,
-which is the example that I selected as my initial test.  That example contains the
-string &lt;code&gt;foo*bar*&lt;/code&gt; to test against and is a pretty easy example. Before the delimiter
-stack was built, I verified that the string was represented by a single
-&lt;code&gt;TextMarkdownToken&lt;/code&gt; token containing the string &lt;code&gt;foo*bar*&lt;/code&gt;.  After the delimiter stack
-was built, that same string was represented by 4 tokens:&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;a &lt;code&gt;TextMarkdownToken&lt;/code&gt; token with the string &lt;code&gt;foo&lt;/code&gt;&lt;/li&gt;
-&lt;li&gt;a &lt;code&gt;SpecialTextMarkdownToken&lt;/code&gt; token with the string &lt;code&gt;*&lt;/code&gt;&lt;/li&gt;
-&lt;li&gt;a &lt;code&gt;TextMarkdownToken&lt;/code&gt; token with the string &lt;code&gt;bar&lt;/code&gt;&lt;/li&gt;
-&lt;li&gt;a &lt;code&gt;SpecialTextMarkdownToken&lt;/code&gt; token with the string &lt;code&gt;*&lt;/code&gt;&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;In addition, the delimiter stack contained both &lt;code&gt;SpecialTextMarkdownToken&lt;/code&gt;
-tokens in the order that they appear.  At this point in the process, that was the
-expected token output, and I was happy to see it work so well.&lt;/p&gt;
-&lt;p&gt;As one good test was not solid proof to me, I continued to make sure that I had decent
-results after building the delimiter stack by repeating this examination with 5-6
-other tests.  While there were a couple of small issues along the way, I was able to
-quickly get to the part where I had a high degree of confidence that the delimiter
-stack was correct.  Now it was on to the resolution of that stack.&lt;/p&gt;
-&lt;h2 id="resolving-the-delimiter-stack"&gt;Resolving the Delimiter Stack&lt;a class="headerlink" href="#resolving-the-delimiter-stack" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Skipping past the &lt;code&gt;look for link or image&lt;/code&gt; section of the GFM specification, I sat down
-with my headphones on and poured over the section on &lt;code&gt;process emphasis&lt;/code&gt; a couple of
-times, taking notes as I went.  I then went back to the
-&lt;a href="https://github.github.com/gfm/#emphasis-and-strong-emphasis"&gt;emphasis scetion&lt;/a&gt;
-of the GFM and started pairing each of the 17 rules to each note that I made and was
-happy to find a 1-to-1 mapping between the two lists.&lt;/p&gt;
-&lt;p&gt;And yes, that is right… 17 rules.  It did take a while, but I validated each step
-in the specification against each of the rules, making detailed notes as I went.  While
-it was slow to emerge, by the time I reached the last rule I had a plan to follow.
-To implement each rule, I would implement the tests in order of the rules that they
-support, with a slightly irregular start order.  Basically, instead of starting with a
-“1 2 3 4” order, I started with a “3 1 4 2” order.  The reason for this weird ordering
-is because the algorithm starts by identifying eligible closing emphasis, then trying
-to locate a matching start emphasis.  To accommodate that, I decided to start with the
-close and start pair for the normal emphasis (&lt;code&gt;*&lt;/code&gt; character) following that same pattern
-with the strong emphasis (&lt;code&gt;_&lt;/code&gt; character).&lt;/p&gt;
-&lt;p&gt;While I was thankful for the examples in the GFM specification before implementing
-emphasis, having the emphasis examples, rules, and examples-by-rule-groups made me
-even more thankful.   Starting with rules 3 and 1, I was able to get solid code written
-to implement what was needed to support those rules.  The next two rules, rules 4
-and 2, were added using the first two rules as a building block.  For the remaining
-13 rules, I just felt that each rule and the examples to support it just naturally
-flowed, each one adding another small piece of the puzzle.  While it did take some
-time to get all 17 rules implemented and the tests for all 130 examples passing, it
-all felt like just another step.  It was a nice feeling.&lt;/p&gt;
-&lt;h2 id="emphasis-the-base-cases"&gt;Emphasis - The Base Cases&lt;a class="headerlink" href="#emphasis-the-base-cases" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;As I progressed with the rules, it was nice to see the natural progressing in the
-sequences that I was enabling for the parser.  This progression was so natural
-and straightforward, I want to take the time to show how things progressed over
-the course of the 17 rules.  The truth is that when I was finished, it felt
-more like 4-5 rules than 17 rules.&lt;/p&gt;
-&lt;p&gt;In order of enablement, first there were
-the simple sequences enabled in rules 1 to 4:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;This is *my* emphasis.
-&lt;/pre&gt;&lt;/div&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;This is &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;em&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;my&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;em&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt; emphasis.&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;This is &lt;em&gt;my&lt;/em&gt; emphasis.&lt;/p&gt;
-&lt;p&gt;Rules 5 to 8 added strong emphasis:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;This is *my* **strong** emphasis.
-&lt;/pre&gt;&lt;/div&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;This is &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;em&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;my&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;em&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt; &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;strong&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;strong&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;strong&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt; emphasis.&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;This is &lt;em&gt;my&lt;/em&gt; &lt;strong&gt;strong&lt;/strong&gt; emphasis.&lt;/p&gt;
-&lt;p&gt;Rules 9 and 10 added clarity on how to handle nested emphasis:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;*foo**bar**baz*
-&lt;/pre&gt;&lt;/div&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;em&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;foo&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;strong&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;bar&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;strong&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;baz&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;em&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;&lt;em&gt;foo&lt;strong&gt;bar&lt;/strong&gt;baz&lt;/em&gt;&lt;/p&gt;
-&lt;p&gt;Rules 11 and 12 add clarity on escaping delimiters and how excess delimiters are
-handled:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;***foo**
-&lt;/pre&gt;&lt;/div&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;*&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;strong&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;foo&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;strong&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;*&lt;strong&gt;foo&lt;/strong&gt;&lt;/p&gt;
-&lt;h2 id="emphasis-resolving-the-ambiguity-of-complex-cases"&gt;Emphasis - Resolving the Ambiguity of Complex Cases&lt;a class="headerlink" href="#emphasis-resolving-the-ambiguity-of-complex-cases" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Using just the prior rules, there were many representations that could be
-inconsistent from parser to parser.  These rules are used to resolve that ambiguity.
-As these rules resolve ambiguity, I am only showing the HTML output in a code block
-instead of showing the HTML output in a code block and the actual HTML itself.&lt;/p&gt;
-&lt;p&gt;Rule 13 adds the concept that one &lt;code&gt;&amp;lt;strong&amp;gt;&lt;/code&gt; is preferred to &lt;code&gt;&amp;lt;em&amp;gt;&amp;lt;em&amp;gt;&lt;/code&gt;:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;******foo******
-&lt;/pre&gt;&lt;/div&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;strong&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;strong&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;strong&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;foo&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;strong&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;strong&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;strong&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Rule 14 adds the concept that the &lt;code&gt;&amp;lt;strong&amp;gt;&lt;/code&gt; tags should always deeper than the &lt;code&gt;&amp;lt;em&amp;gt;&lt;/code&gt;
-tags, if used together:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;***foo***
-&lt;/pre&gt;&lt;/div&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;em&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;strong&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;foo&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;strong&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;em&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Rule 15 adds the concept that in a case of overlapping emphasis spans, the emphasis
-span that ends first overrides the interpretation of the second possible emphasis
-span as an actual emphasis span.&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;*foo _bar* baz_
-&lt;/pre&gt;&lt;/div&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;em&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;foo _bar&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;em&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt; baz_&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Rule 16 adds the concept that if two emphasis spans have the same closing delimiter,
-the shorter of those two emphasis spans is interpreted as an actual emphasis span.&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;**foo **bar baz**
-&lt;/pre&gt;&lt;/div&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;**foo &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;strong&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;bar baz&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;strong&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Rule 17 adds a clarification that number of inline elements are more tightly grouped
-that emphasis spans, meaning that the parsing of those inline elements takes precedence
-over the parsing of the emphasis spans.&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;*a `*`*
-&lt;/pre&gt;&lt;/div&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;em&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;a &lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;code&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;*&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;code&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;em&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;h2 id="emphasis-rule-summary"&gt;Emphasis - Rule Summary&lt;a class="headerlink" href="#emphasis-rule-summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Without implementing a Markdown parser, it might be hard to appreciate how
-natural the process of building the emphasis support into the parser was.  But please
-believe me, it was a thing of beauty.  The best way to describe it was that as I
-was implementing each section, I jotted down notes for myself that usually started
-with “what about…”.  It was usually within a rule or two that I scratched off that
-note as it was no longer an issue.  By the time I got to the end of the emphasis
-implementation, all the notes were scratched off.  That kind of progression when
-implementing a specification are rare, and it was just wonderful to witness.&lt;/p&gt;
-&lt;h2 id="what-were-the-bumps-on-the-road"&gt;What were the bumps on the road?&lt;a class="headerlink" href="#what-were-the-bumps-on-the-road" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;During the implementation to support inline emphasis, other than “fat man finger”
-typing errors, there were only a couple of issues that impeded its addition to the
-parser.  The first was because I got impatient and tried to implement one of the rules
-ahead of time and the second was caused by a subtle change I made to the algorithm
-and the side effects that I needed to abate. Other than those two issues, the
-development just flowed easily from the rules and their examples.&lt;/p&gt;
-&lt;p&gt;The impatience issue occurred when I was trying to take care of a side-effect of rule
-11, but I was trying to take care of it when implementing rule 1.  It sidetracked me
-for a couple of hours without any resolution.  It was not until I double checked that it
-was indeed part of rule 11 that I abandoned it until later.  The “funny” thing is that
-when I did get to implementing rule 11 in the proper order, it was implemented with
-almost no friction in less than 5 minutes. Because of the way the rules build on
-each other, in hindsight it makes perfect sense that I ran into issues trying to
-implement part of rule 11 at the beginning.&lt;/p&gt;
-&lt;p&gt;The change issue was caused by a subtle change that I made to the algorithm to better
-deal with Python’s data structures.  To simplify the implementation in Python, the
-references in the
-delimiter stack were made with indices (or “indexes” for Americans) instead of pointers.
-In the “if one is found” section of the algorithm there are two cases where the
-algorithm calls for the removal of nodes from the delimiter stack.  Instead of removing
-the elements of the delimiter stack and recomputing the indices, I just altered the
-algorithm to work better with the &lt;code&gt;active&lt;/code&gt; field.  While this did cause a few
-small issues that needed to be resolved, in the end I believe it still was a better
-course of development to take.&lt;/p&gt;
-&lt;h2 id="what-was-my-experience-so-far"&gt;What Was My Experience So Far?&lt;a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Having taken time to do my research and to have a solid plan emerge, it was nice to see
-that the plan paying off after the code for the first couple of rules were
-implemented.  Often when you plan an approach for a project, in your head you always
-think things like “I’ll have to switch to plan B if I see…”.  In this case, while
-I still thought that, I was able to stick with my first plan the entire way through.
-That was nice and gratifying.&lt;/p&gt;
-&lt;p&gt;I also cannot stress how impressed I am with the authors of the GFM specification and
-the effort they took to specify the emphasis elements.  Not only did they work hard
-to resolve any ambiguity with 17 rules, but they provided a solid road map for
-implementers to follow with a suggested approach.  For me, the beauty of those two
-parts of the specification is how they weave together, each one reinforcing the other
-one.  In its simplest form, they took something that I was sure was going to be
-a headache and made it very easy to implement correctly.&lt;/p&gt;
-&lt;p&gt;Basically, I started this part of the parser with a feeling of dread, thinking that
-I would plan an approach and switch to plan B, or even to plan F.  But
-with some good planning on the behalf of the authors of the GFM specification, it
-went off without any major issues.  It was cool to see that happen.&lt;/p&gt;
-&lt;h2 id="what-is-next"&gt;What is Next?&lt;a class="headerlink" href="#what-is-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Having had a very smooth time implementing emphasis, it was very tempting to just dive
-in and tackle all of the link support at the same time.  However, in looking at the
-different types of links in the specification, I decided that inline links would be
-a good place to start.  That is where I will pick up in my next article!&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="linter tokenizer"></category></entry></feed>
+though not without a lot of difficulties.&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="linter tokenizer"></category></entry></feed>

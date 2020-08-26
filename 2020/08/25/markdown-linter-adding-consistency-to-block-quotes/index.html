@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="author" content="Jack De Winter" />
+
+        <meta name="description" content="Summary¶ In my last article, I took care of completing the Markdown transformer checks for one half of the container block tokens: the List Block tokens. In this article, I tackle both the line/column number consistency checks and the Markdown transformer checks for the Block Quote tokens. Introduction¶ While …
+" />
+        <meta property="og:type" content="article" />
+        <meta name="twitter:card" content="summary">
+
+<meta name="keywords" content="markdown linter, core linter, Software Quality, " />
+
+<meta property="og:title" content="Markdown Linter - Adding Consistency to Block Quotes "/>
+<meta property="og:url" content="https://jackdewinter.github.io/2020/08/25/markdown-linter-adding-consistency-to-block-quotes/" />
+<meta property="og:description" content="Summary¶ In my last article, I took care of completing the Markdown transformer checks for one half of the container block tokens: the List Block tokens. In this article, I tackle both the line/column number consistency checks and the Markdown transformer checks for the Block Quote tokens. Introduction¶ While …" />
+<meta property="og:site_name" content="Jack&#39;s Digital Workbench" />
+<meta property="og:article:author" content="Jack De Winter" />
+<meta property="og:article:published_time" content="2020-08-25T00:00:00-07:00" />
+<meta name="twitter:title" content="Markdown Linter - Adding Consistency to Block Quotes ">
+<meta name="twitter:description" content="Summary¶ In my last article, I took care of completing the Markdown transformer checks for one half of the container block tokens: the List Block tokens. In this article, I tackle both the line/column number consistency checks and the Markdown transformer checks for the Block Quote tokens. Introduction¶ While …">
+
+        <title>Markdown Linter - Adding Consistency to Block Quotes  · Jack&#39;s Digital Workbench
+</title>
+        <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://jackdewinter.github.io/theme/css/style.min.css?bec7d543">
+
+        <link href="https://jackdewinter.github.io/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Jack&#39;s Digital Workbench - Full Atom Feed" />
+
+
+    </head>
+    <body>
+        <div id="content">
+            <div class="navbar navbar-static-top">
+                <div class="navbar-inner">
+                    <div class="container-fluid">
+                        <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                        </a>
+                        <a class="brand" href="https://jackdewinter.github.io/"><span class=site-name>Jack's Digital Workbench</span></a>
+                        <div class="nav-collapse collapse">
+                            <ul class="nav pull-right top-menu">
+                                <li >
+                                    <a href=
+                                       https://jackdewinter.github.io
+                                    >Home</a>
+                                </li>
+                                <li ><a href="https://jackdewinter.github.io/categories">Categories</a></li>
+                                <li ><a href="https://jackdewinter.github.io/tags">Tags</a></li>
+                                <li ><a href="https://jackdewinter.github.io/archives">Archives</a></li>
+                                <li><form class="navbar-search" action="https://jackdewinter.github.io/search.html" onsubmit="return validateForm(this.elements['q'].value);"> <input type="text" class="search-query" placeholder="Search" name="q" id="tipue_search_input"></form></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="container-fluid">
+                <div class="row-fluid">
+                    <div class="span1"></div>
+                    <div class="span10">
+<article itemscope>
+<div class="row-fluid">
+    <header class="page-header span10 offset2">
+        <h1>
+            <a href="https://jackdewinter.github.io/2020/08/25/markdown-linter-adding-consistency-to-block-quotes/">
+                Markdown Linter - Adding Consistency to Block Quotes
+            </a>
+        </h1>
+    </header>
+</div>
+
+<div class="row-fluid">
+    <div class="span2 table-of-content">
+        <nav>
+        <h4>Contents</h4>
+        <div class="toc">
+<ul>
+<li><a href="#summary">Summary</a></li>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#what-is-the-audience-for-this-article">What Is the Audience for This Article?</a></li>
+<li><a href="#lets-talk-about-the-obvious">Let’s Talk About the Obvious</a></li>
+<li><a href="#capturing-the-leading-block-quote-text">Capturing the Leading Block Quote Text</a><ul>
+<li><a href="#addressing-the-issue">Addressing the Issue</a></li>
+<li><a href="#the-first-one-is-almost-always-easy">The First One Is Almost Always Easy</a></li>
+<li><a href="#locating-the-next-issue">Locating the Next Issue</a></li>
+<li><a href="#and-next-blank-lines">And Next… Blank Lines</a></li>
+<li><a href="#and-finally-html-blocks">And Finally, HTML Blocks</a></li>
+<li><a href="#closing-out-the-token-changes">Closing Out the Token Changes</a></li>
+</ul>
+</li>
+<li><a href="#validating-the-line-numbers-and-column-numbers">Validating the Line Numbers and Column Numbers</a></li>
+<li><a href="#writing-the-block-quote-markdown-transformations">Writing the Block Quote Markdown Transformations</a><ul>
+<li><a href="#as-i-was-cleaning-up">As I was cleaning up</a></li>
+<li><a href="#along-the-way">Along the Way</a></li>
+</ul>
+</li>
+<li><a href="#and-of-course-some-cleanup">And Of Course, Some Cleanup</a></li>
+<li><a href="#what-was-my-experience-so-far">What Was My Experience So Far?</a></li>
+<li><a href="#what-is-next">What is Next?</a></li>
+</ul>
+</div>
+        </nav>
+    </div>
+    <div class="span8 article-content">
+            
+            
+<h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">¶</a></h2>
+<p>In my
+<a href="https://jackdewinter.github.io/2020/08/17/markdown-linter-adding-lists-to-the-markdown-transformer/">last article</a>,
+I took care of completing the Markdown transformer checks for one half of the container
+block tokens: the List Block tokens.  In this article, I tackle both the line/column
+number consistency checks and the Markdown transformer checks for the Block Quote
+tokens.</p>
+<h2 id="introduction">Introduction<a class="headerlink" href="#introduction" title="Permanent link">¶</a></h2>
+<p>While the implementation of list tokens went easier than I thought it would, I
+remained cautiously optimistic about adding consistency check support for Block Quote
+tokens.  During the initial development of the line/column number checks, I noticed
+that the Block Quote tokens did not keep any information about removed data.  After
+having completed the List Block token support, I knew that it would be pivotal to
+get that right.  And that meant more work.  A lot of nitpicking work.</p>
+<p>To add the consistency checks, I was going to have to accomplish 3 things: capture the
+removed line start text, use that information to validate the line/column numbers, and
+then write the Markdown transformations for it.  The last two items were the easy part,
+those parts I had confidence I could complete.  It was the capturing of removed checks
+that I was not confident about.  And the capturing of text was the change that I needed
+to tackle first.</p>
+<h2 id="what-is-the-audience-for-this-article">What Is the Audience for This Article?<a class="headerlink" href="#what-is-the-audience-for-this-article" title="Permanent link">¶</a></h2>
+<p>While detailed more eloquently in
+<a href="https://jackdewinter.github.io/2020/04/05/what-is-the-audience-for-my-blog/#what-is-the-audience-for-my-blog">this article</a>,
+my goal for this technical article is to focus on the reasoning behind my solutions,
+rather that the solutions themselves.  For a full record of the solutions presented in
+this article, please go to this project’s GitHub repository and consult the
+commits between
+<a href="https://github.com/jackdewinter/pymarkdown/commit/255bfce0efab68c0d76ca8d04b03017ba40e6223">12 Aug 2020</a>
+and
+<a href="https://github.com/jackdewinter/pymarkdown/commit/08da2e04c355e0a3bd016e20afce3102696a8107">14 Aug 2020</a>.</p>
+<h2 id="lets-talk-about-the-obvious">Let’s Talk About the Obvious<a class="headerlink" href="#lets-talk-about-the-obvious" title="Permanent link">¶</a></h2>
+<p>I am generally very disciplined when it comes to writing my blog.  I keep notes when I
+am writing the code, curating those notes into an outline on the
+Thursday to Saturday before I post my article.  If I am lucky enough, I will start
+the actual writing of my article on
+Saturday night, but most often I start writing it early Sunday morning.  This allows
+me to take my time to enjoy my Sunday while ending up with a solid version of the
+article by Sunday night.  Then, on Monday night, I take that article and add
+extra code samples and do some wordsmithing to form the article into its final form.  It
+may not be the way others write their articles, but it is a process that works
+for me.</p>
+<p>Until this week that is.  Everything was on track until Monday, when I started my edits
+with a headache that I just could not ditch.  But process is process, so I started doing
+those edits, pushing on until a couple of hours later.  At that point, I looked at
+what I was doing and went… huh?  I started looking at my edits and tried to figure
+things out, using even more edits to fix any problems I encountered.  Far from making
+things better, I was making them worse.  But I would not see that until later.</p>
+<p>It was a while later when I finally stopped and locked my computer.  Above all else,
+this was the best thing that I did in that entire situation.  It took me a
+while, but I stopped.  However, by that point, a certain amount of damage
+was already done.  I had written some things twice and other things not at all. In
+some cases, I had sentences that looking at them later, I wonder if I had written them
+while drunk.  I knew I could recover from that position, but it would require a clear
+head, some extra time, and some hard work.  And it was not going to happen that night.
+I came to the realization that I was not going to be able to meet my usual posting
+deadline of Monday night.</p>
+<p>At first, I was angry with myself.  Many weeks of not missing a posting deadline and
+now I had a bad record.  “I always post on Monday nights, except for…”  Argh!
+But after thinking about the purpose of my blog, to educate and help others, I
+started to find peace with it.  None of us is perfect, and we all need to take care
+of ourselves.  Me included.  My health versus my article’s deadline.  I needed to
+take that extra day and get better before finishing… er… unfinishing and then
+refinishing the editing.</p>
+<h2 id="capturing-the-leading-block-quote-text">Capturing the Leading Block Quote Text<a class="headerlink" href="#capturing-the-leading-block-quote-text" title="Permanent link">¶</a></h2>
+<p>In its simplest form, the handling of container block elements and their tokens is a
+relatively easy concept. Every line of a Markdown document enclosed within a container
+block element is usually prefaced with one or more characters that denote the presence
+of that container element.  For Block Quotes these are character sequences with the
+<code>&gt;</code> character and an optional whitespace, and for Lists these are whitespaces.  To make
+the processing of those contained lines easier, at the start of the project I took some
+up-front time to ensure that
+the container block element processing is independent of the leaf block element
+processing.  As such, I was able to work on that leaf block processing independently of
+container block processing.</p>
+<p>When I was doing the initial research for
+<a href="https://jackdewinter.github.io/2020/06/29/markdown-linter-rabbit-hole-3-trying-to-dig-myself-out/#keeping-the-scope-small">container block support</a>,
+I started with List tokens.  I quickly wrote a proof of concept for the line/column
+number check and was happy to find that I had already placed the required information
+in the token.  However, after using the same process with Block Quote tokens, it was
+evident that I had missed the mark with them.  Unlike the List tokens, none of the
+required
+information was placed within the Block Quote tokens.  At that time, after having
+gone down a
+<a href="https://jackdewinter.github.io/2020/06/15/markdown-linter-rabbit-hole-1-adding-consistency-checks/">rabbit hole for a bit</a>,
+I wisely decided to wait until later to implement that.   Well, that time was now and
+I knew it was going to take some work to add it.</p>
+<h3 id="addressing-the-issue">Addressing the Issue<a class="headerlink" href="#addressing-the-issue" title="Permanent link">¶</a></h3>
+<p>Like the work I did for List Block tokens, the Block Quote stack token needed a
+change to support the <code>matching_markdown_token</code> field.  This field is pivotal to
+inform the processor of the latest markdown token that is containing other tokens.
+But to properly use this field, it would take a bit of disassembly and reassembly.
+Before this change, the code to add the necessary tokens to the two relevant stacks
+were:</p>
+<div class="highlight"><pre><span></span>    <span class="n">parser_state</span><span class="o">.</span><span class="n">token_stack</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">BlockQuoteStackToken</span><span class="p">())</span>
+    <span class="o">...</span>
+    <span class="n">container_level_tokens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+        <span class="n">BlockQuoteMarkdownToken</span><span class="p">(</span><span class="n">extracted_whitespace</span><span class="p">,</span> <span class="n">adjusted_position_marker</span><span class="p">)</span>
+    <span class="p">)</span>
+</pre></div>
+<p>Two different tokens and two different stacks, with nothing between them.  With this new
+functionality in place, that code needed some slight changes:</p>
+<div class="highlight"><pre><span></span>    <span class="n">new_markdown_token</span> <span class="o">=</span> <span class="n">BlockQuoteMarkdownToken</span><span class="p">(</span>
+        <span class="n">extracted_whitespace</span><span class="p">,</span> <span class="n">adjusted_position_marker</span>
+    <span class="p">)</span>
+    <span class="n">container_level_tokens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_markdown_token</span><span class="p">)</span>
+    <span class="n">parser_state</span><span class="o">.</span><span class="n">token_stack</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+        <span class="n">BlockQuoteStackToken</span><span class="p">(</span><span class="n">new_markdown_token</span><span class="p">)</span>
+    <span class="p">)</span>
+</pre></div>
+<p>Instead of two distinct tokens, there was now a stack token that included a reference
+to the Markdown token that it represented.  </p>
+<p>With that field properly initialized, the <code>add_leading_spaces</code> function was then added
+to make use of that new field.  It is
+a simple function that adds any extracted text (usually whitespace) to its
+field, separating any new text from the existing text using a newline character.
+The function itself is very boring.  The interesting part about the function would be in
+locating where that function needed to be called from and using it properly.</p>
+<h3 id="the-first-one-is-almost-always-easy">The First One Is Almost Always Easy<a class="headerlink" href="#the-first-one-is-almost-always-easy" title="Permanent link">¶</a></h3>
+<p>The first location was obvious: within the <code>__handle_block_quote_section</code> function
+of the <code>BlockQuoteProcessor</code> class.  This is where the bulk of the processing of
+Bulk Quote elements and their effects go through.  In there is an easy to find block of
+code that records the number of characters removed and resets the string to exclude
+those characters:</p>
+<div class="highlight"><pre><span></span>            <span class="n">line_to_parse</span> <span class="o">=</span> <span class="n">line_to_parse</span><span class="p">[</span><span class="n">start_index</span><span class="p">:]</span>
+            <span class="n">removed_chars_at_start</span> <span class="o">=</span> <span class="n">start_index</span>
+</pre></div>
+<p>That block of code was slightly modified to record that removed text and place it into
+its own variable:</p>
+<div class="highlight"><pre><span></span>            <span class="n">removed_text</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">line_to_parse</span><span class="p">[</span><span class="n">position_marker</span><span class="o">.</span><span class="n">index_number</span> <span class="p">:</span> <span class="n">start_index</span><span class="p">]</span>
+            <span class="p">)</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+            <span class="n">line_to_parse</span> <span class="o">=</span> <span class="n">line_to_parse</span><span class="p">[</span><span class="n">start_index</span><span class="p">:]</span>
+            <span class="n">removed_chars_at_start</span> <span class="o">=</span> <span class="n">start_index</span>
+</pre></div>
+<p>With the removed text in hand, the code just needed to know which token to associate the
+removed text with. As the code processes Block Quote elements, it was reasonable to
+assume that the most relevant Block Quote stack token is the last one on the stack.
+That stack token was easily found with a simple for loop:</p>
+<div class="highlight"><pre><span></span>            <span class="n">found_stack_token</span> <span class="o">=</span> <span class="bp">None</span>
+            <span class="k">for</span> <span class="n">stack_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">parser_state</span><span class="o">.</span><span class="n">token_stack</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+                <span class="o">...</span>
+                <span class="k">if</span> <span class="n">parser_state</span><span class="o">.</span><span class="n">token_stack</span><span class="p">[</span><span class="n">stack_index</span><span class="p">]</span><span class="o">.</span><span class="n">is_block_quote</span><span class="p">:</span>
+                    <span class="n">found_stack_token</span> <span class="o">=</span> <span class="n">parser_state</span><span class="o">.</span><span class="n">token_stack</span><span class="p">[</span><span class="n">stack_index</span><span class="p">]</span>
+                    <span class="k">break</span>
+</pre></div>
+<p>With the extracted text and the ‘top’ stack token, the only thing that was left to
+do was:</p>
+<div class="highlight"><pre><span></span>            <span class="n">found_stack_token</span><span class="o">.</span><span class="n">matching_markdown_token</span><span class="o">.</span><span class="n">add_leading_spaces</span><span class="p">(</span><span class="n">removed_text</span><span class="p">)</span>
+</pre></div>
+<p>Almost right away, I was off to a good start on extracting the leading spaces for the
+Block Quote token and storing them.</p>
+<h3 id="locating-the-next-issue">Locating the Next Issue<a class="headerlink" href="#locating-the-next-issue" title="Permanent link">¶</a></h3>
+<p>After those changes were in place, I ran the scenario tests again, seeing almost every
+test that has a Block Quote token fail.  My heart dropped.  But after a second, I
+realized that I wanted that to happen.  As I wanted to make sure each Block Quote token
+was verified, I added the leading space data to the end of the string for the
+<code>BlockQuoteMarkdownToken</code> class, separated from the rest with the <code>:</code> character.  If
+things worked properly, that meant every Block Quote token would, at the very least,
+now include an extra <code>:</code> character.  Every serialized Block Quote token was now “wrong”,
+so every Block Quote scenario test should fail.  Good!</p>
+<p>Working through each case was decently fast, with a solid methodical process in place:
+look at
+the results, find the next failing test, and manually determine what change needed to
+be made to the Block Quote token.  After making that change to the test data, I would
+then re-run that specific scenario test, and check for token differences.</p>
+<p>It was by using this process that I found the next issue: missing leading whitespace.
+In some cases, the leading text that was extracted was preceded by one of more
+whitespaces. Those whitespaces were stuffed into the <code>extracted_whitespace</code> variable
+and then ignored after that.  The resolution to that issue was
+simple.  Instead of only adding the leading space to the <code>removed_text</code> variable,
+the contents of that <code>extracted_whitespace</code> needed to be added to the variable, as such:</p>
+<div class="highlight"><pre><span></span>            <span class="n">removed_text</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">extracted_whitespace</span>
+                <span class="o">+</span> <span class="n">line_to_parse</span><span class="p">[</span><span class="n">position_marker</span><span class="o">.</span><span class="n">index_number</span> <span class="p">:</span> <span class="n">start_index</span><span class="p">]</span>
+            <span class="p">)</span>
+</pre></div>
+<p>Running the tests again, a new block of tests started passing.</p>
+<h3 id="and-next-blank-lines">And Next… Blank Lines<a class="headerlink" href="#and-next-blank-lines" title="Permanent link">¶</a></h3>
+<p>As more and more of the Block Quote scenario tests were changed and started passing,
+there were a handful of tests that were failing that I left for later.  When I got
+to the end of those tests, I went back and started to look at those failing tests
+one-by-one.</p>
+<p>The first group of failures that I examined were ones in which there was a Blank
+Line element contained within a Block Quote. A good example of this is
+<a href="https://github.github.com/gfm/#example-222">example 222</a>:</p>
+<div class="highlight"><pre><span></span><span class="o">&gt;</span> <span class="n">foo</span>
+<span class="o">&gt;</span>
+<span class="o">&gt;</span> <span class="n">bar</span>
+</pre></div>
+<p>In these cases, the parsing was
+correct, but the newly added <code>add_leading_spaces</code> function was not being called.  The
+outcome
+was that the number of newlines contained within the owning Block Quote token did
+not match the number of lines within the Block Quote element itself.  To ensure
+that those two values lined up, the <code>add_leading_spaces</code> function was called with
+an empty string, thereby evening up those values.</p>
+<p>Running the scenario tests again, all the scenario tests explicitly for Block Quotes
+were passing.  I then ran the scenario tests again, checking to make sure that the
+scenario tests with Block Quotes and Blank Lines passed. While the new changes were
+now passing, there were still a handful of tests to work on.</p>
+<h3 id="and-finally-html-blocks">And Finally, HTML Blocks<a class="headerlink" href="#and-finally-html-blocks" title="Permanent link">¶</a></h3>
+<p>Having run the scenario tests again, the only tests that were not passing were
+scenario tests that included Block Quotes and HTML blocks.  Doing some research into
+the issue, I quickly found
+that it looked like the same issue with the Blank Line elements, just with HTML blocks.
+This issue was uncovered through one of my additional tests, “cov_2” used to increase
+coverage on the various forms of HTML start and end tags:</p>
+<div class="highlight"><pre><span></span><span class="nt">&lt;/hrx</span>
+<span class="nt">&gt;</span>
+<span class="nt">&lt;/x-table&gt;</span>
+</pre></div>
+<p>Like the previous issue with Blank Line tokens, the number of new lines were not lining
+up between the two sources.  Once again, calling the <code>add_leading_spaces</code> function
+with an empty string in these cases solved the issue.</p>
+<h3 id="closing-out-the-token-changes">Closing Out the Token Changes<a class="headerlink" href="#closing-out-the-token-changes" title="Permanent link">¶</a></h3>
+<p>After those changes has been completed, it was obvious that all the scenario tests were
+passing.  Just to be sure, I manually went through each of the scenarios and verified
+the newly changed tokens.  As I have said before, maybe I am paranoid, but if I was
+depending on those results, I figured an extra pass or two would not hurt.</p>
+<p>It just felt good to get these changes completed.  I had a high degree of confidence
+that I was able to find most of these issues, but an even higher degree of confidence
+that the remaining work would flush out anything that I missed.  It was with those
+positive thoughts in my head that I started working on the consistency checks.</p>
+<h2 id="validating-the-line-numbers-and-column-numbers">Validating the Line Numbers and Column Numbers<a class="headerlink" href="#validating-the-line-numbers-and-column-numbers" title="Permanent link">¶</a></h2>
+<p>With that confidence, I started working on the consistency checks for line numbers
+and column numbers.  The first step in doing this was removing a couple of lines
+of code that prevented the consistency checks from firing if one of the tokens was
+a Block Quote token.  It was useful when I did not have anything in place, but now
+it would just get in the way.</p>
+<p>After that change, tests predictably started failing, but I was ready for them.  From
+the work
+that I had just completed, I figured that I would have to follow a similar path in
+implementing the consistency check.  Therefore, the first thing I did to help with
+the consistency check is to reset the <code>leading_text_index</code> field of the
+<code>BlockQuoteMarkdownToken</code> instance to 0 when it is encountered.  This made sure that
+the tracking of the leading spaces would always start with the first entry.</p>
+<p>With that done, the code needed to take advantage of that was easy to write.
+When a token exists on a new line, it’s indent must be determined by tracking the
+size of the removed text and adding that measurement to the column number.  Based
+on the previous work, this becomes trivially easy:</p>
+<div class="highlight"><pre><span></span>    <span class="n">split_leading_spaces</span> <span class="o">=</span> <span class="n">top_block</span><span class="o">.</span><span class="n">leading_spaces</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
+    <span class="n">init_ws</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">split_leading_spaces</span><span class="p">[</span><span class="n">top_block</span><span class="o">.</span><span class="n">leading_text_index</span><span class="p">])</span>
+</pre></div>
+<p>Basically, grab the top Block Quote token, split it into lines, and use the
+<code>leading_text_index</code> value of that topmost token to grab the right leading space.</p>
+<p>From there, the new work mirrored the work that I did in preparing the tokens.  When a
+Blank Line token is encountered, that index is incremented.  For each line of
+text within an HTML block, that index is incremented.  And in addition, that
+<code>leading_text_index</code> field needed to be tweaked at the end of HTML blocks,
+Atx Heading blocks, and Paragraph blocks, which was something I figured might
+come up.  Just some simple cases where a bit of extra finessing was needed.</p>
+<p>To be clear, I was not 100% percent sure that this would happen, but I was hoping that
+it would.  To me it made sense that if I needed to add code to track the leading
+spaces that were removed, any consistency check would need to follow that same path
+to verify the information.  And as to the extra tweak for the end tokens, I was
+confident that it was a solid change, and was not worried about that deviation from
+the previous work.</p>
+<h2 id="writing-the-block-quote-markdown-transformations">Writing the Block Quote Markdown Transformations<a class="headerlink" href="#writing-the-block-quote-markdown-transformations" title="Permanent link">¶</a></h2>
+<p>Given the work I had just completed to get to this point, it was obvious to me that
+I was going to have to do a lot of fiddling with spaces to get the transformations
+correct.  To make that job a bit easier, I decided for the moment to eliminate any
+Markdown documents which contained both Block Quote elements and List elements.
+I would get back to these quickly, but at that moment, it was just too much.</p>
+<p>The processing of the start and end of the Block Quote elements were simple,
+largely mimicking the work I did for the List elements.  When a Block Quote token
+was processed, it created a copy of itself and added that copy to the top of the
+<code>container_token_stack</code> list.  From there, the leading space were retrieved from
+their storage in the token and added to the sequence to be emitted.  The end
+of the Block Quote element was even easier, returning an empty string after removing
+the top token off the <code>container_token_stack</code> list.  The work I had previously done
+on setting up the leading spaces was really paying off.</p>
+<p>With the work to recognize and process the actual tokens taken care of, the main
+task ahead of me was to add and populate the <code>__perform_container_post_processing_block_quote</code> function.  Like how List
+Block tokens were handled in the
+<code>__perform_container_post_processing_lists</code> function, this new function was used
+to handle the newline processing for text enclosed within Block Quote elements.
+After having completed all this other work, that work was relatively simple to do.
+With all the individual token processing already
+performed, this function just needed to focus on detecting newline characters.
+For each of these characters encountered, the top Block Quote token would be
+used to determine the current <code>leading_text_index</code> to start with.  With each
+newline encountered, the current split value would be used, incrementing the
+<code>leading_text_index</code> value afterwards.  This pretty much worked flawlessly out
+of the box.</p>
+<h3 id="as-i-was-cleaning-up">As I was cleaning up<a class="headerlink" href="#as-i-was-cleaning-up" title="Permanent link">¶</a></h3>
+<p>An interesting issue came up as I was generating these transformations.
+For some reason, I had missed some cases involving Block Quote elements that
+contained Fenced Code Block elements.  With the Markdown transformer now rehydrating
+the Markdown, it was obvious that things were missing.  It did not take me long to
+figure out that the Fenced Code Blocks were missing their Block Quote leading
+characters.  This was found for
+<a href="https://github.github.com/gfm/#example-98">example 98</a>:</p>
+<div class="highlight"><pre><span></span><span class="o">&gt;</span> <span class="o">```</span>
+<span class="o">&gt;</span> <span class="n">aaa</span>
+
+<span class="n">bbb</span>
+</pre></div>
+<p>When the transformer tried to rehydrate the document, it rehydrated that Markdown
+text without the leading <code>&gt;</code> sequence before the text <code>aaa</code>.  Having just gone
+through that research for other elements, I was quick to spot it and realize where
+the issue was.  A couple of quick changes, and that change was passing!</p>
+<h3 id="along-the-way">Along the Way<a class="headerlink" href="#along-the-way" title="Permanent link">¶</a></h3>
+<p>And to hammer home the point that this consistency checking is good, it found some
+issues along the way.</p>
+<p>The first one was an interesting issue where the starting whitespace for one
+transformation was missing.  And it was such a weird case.  It was an Atx Heading
+element that contained a Shortcut Link element as its only text, separated from the Atx
+Heading character ( <code>#</code> ) by the mandatory single space. That is really important.  Two
+space it was okay with, but the one space, nope! Due to the way that
+it was parsed, that spaces were missing and not accounted for.  The fix to this was
+to add that starting whitespace as a new token containing that removed text, but with
+a twist.  That twist was to use the <code>create_replace_with_nothing_marker</code> function to
+add that text as itself for the Markdown transformer, but keep it as removed for the
+HTML transformer.  With both transformers appeased, it was on to the next issue.</p>
+<p>The second issue that I uncovered was that, in rare cases, the leading spaces for
+certain lines were missing.  After doing some digging, it only appeared to be lines
+that did not have any block quote prefix characters removed from the line.  So
+after adding a new <code>__adjust_paragraph_for_block_quotes</code> function to the
+<code>LeafBlockProcessor</code> and wiring it into the <code>parse_paragraph</code> function, the debug
+confirmed that it was only those few cases where that was an issue.</p>
+<h2 id="and-of-course-some-cleanup">And Of Course, Some Cleanup<a class="headerlink" href="#and-of-course-some-cleanup" title="Permanent link">¶</a></h2>
+<p>It would not be a proper week of coding if I did not do some cleanup.  In this case,
+the cleanup was simple: relocating the line/column number logic to its own
+module.  One of the things that made the Markdown transformations easy to deal with
+is that those transformations are in their own <code>TransformToMarkdown</code> class.
+That worked well.  The
+line/column number checks were in with some other validation code in the <code>utils.py</code>
+module.  That worked… well… okay?</p>
+<p>When I started with the consistency checks, they were new, and keeping all that code
+in the <code>utils.py</code> module made sense.  But as the amount of code in the module grew, I
+never took the time to to some refactoring.  As such, the module developed two
+responsibilities. The first was to be the location for all the <code>assert_*</code> functions
+and the <code>write_temporary_configuration</code> functions.  Those are all the functions that are
+called directly from the tests, mostly in the final Assert stage of the test.  The
+second was to house the logic for the line/column number consistency checks.</p>
+<p>It just seemed logical, now that that part of the code was stable and well-tested, to
+take that second responsibility and put it into its own module. I created the
+<code>verify_line_and_column_numbers.py</code> module and started moving the functions into it,
+with the <code>verify_line_and_column_numbers</code> function being the main entry point for
+the module.  It just seemed cleaner and more compact.  One module, one responsibility.</p>
+<h2 id="what-was-my-experience-so-far">What Was My Experience So Far?<a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link">¶</a></h2>
+<p>The dominant part of my experience at the current moment is one of humility and
+patience.  Yes, it is Tuesday night. And after a little over 3 hours of extra work,
+I have finally recovered the article to where it was at this time last night. I
+do feel an impulse to be hard on myself about this delay, but I also am working
+hard to remember to be patient with myself.  This is one time where I am missing a
+deadline, and it probably will not be the last.</p>
+<p>The humility that I am trying to practice is in understanding that I cannot do
+everything all the time.  I know that sounds like it should be an obvious thing to
+know, but I think we all forget it from time to time.  I was so focused on making
+sure that I met my deadline, that I neglected to have a conversation with myself
+on whether that was the right choice.  But it was not a large rabbit hole,
+just a small one that I was able to easily recover from.</p>
+<p>Focusing more on the actual work that I accomplished, I was buoyed.  I was long
+worried about how hard it would be to implement the consistency checks for Block
+Quote tokens.  Having completed that work, I now am trying to figure out why I was
+worried.  Trying to figure it out now, I would guess I would focus on what it took
+to complete that work with lists.  That work was very nitpicky because it contained a
+lot of “empty” whitespace, if I am remembering it clearly.  From the effort that it
+took to deal with that, I can see how I might have thought it would have taken the same
+effort for Block Quote tokens.</p>
+<p>But it did not.  The work I had done in that area on List tokens forced me to get things
+set up to make List token processing easier, which I believe Block Quotes benefited
+from.  Regardless, I was glad that I could close the books on the Block Quote tokens
+and their consistency checks.</p>
+<h2 id="what-is-next">What is Next?<a class="headerlink" href="#what-is-next" title="Permanent link">¶</a></h2>
+<p>With all the block token consistency checks now taken care of, there was a bit of clean
+up to do with determining the height of each block token.  While I initially thought
+that it would be easy, it did not turn out that way.</p>
+
+
+             
+ 
+                <p id="post-share-links">
+    Like this post? Share on:
+    <a href="https://twitter.com/intent/tweet?text=Markdown%20Linter%20-%20Adding%20Consistency%20to%20Block%20Quotes&url=https%3A//jackdewinter.github.io/2020/08/25/markdown-linter-adding-consistency-to-block-quotes/&hashtags=markdown-linter,core-linter" target="_blank" rel="nofollow noopener noreferrer" title="Share on Twitter">Twitter</a>
+    ❄
+    <a href="https://www.facebook.com/sharer/sharer.php?u=https%3A//jackdewinter.github.io/2020/08/25/markdown-linter-adding-consistency-to-block-quotes/" target="_blank" rel="nofollow noopener noreferrer" title="Share on Facebook">Facebook</a>
+    ❄
+    <a href="mailto:?subject=Markdown%20Linter%20-%20Adding%20Consistency%20to%20Block%20Quotes&amp;body=https%3A//jackdewinter.github.io/2020/08/25/markdown-linter-adding-consistency-to-block-quotes/" target="_blank" rel="nofollow noopener noreferrer" title="Share via Email">Email</a>
+    </p>
+
+            
+            
+
+
+
+
+
+
+<section>
+    <h6 style="display:none;">Comments</h6>
+    <p id="comment-message">So what do you think? Did I miss something? Is any part unclear? Leave your comments below. </p>
+
+    <div class="accordion" id="accordion2">
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                <a class="accordion-toggle disqus-comment-count comment-count"
+                   data-toggle="collapse"
+                   data-parent="#accordion2"
+                   href="https://jackdewinter.github.io/2020/08/25/markdown-linter-adding-consistency-to-block-quotes/#comment_thread"
+                   id="comment-accordion-toggle">
+                    Comments
+                </a>
+            </div>
+            <div id="comment_thread" class="accordion-body collapse">
+                <div class="accordion-inner">
+                    <div class="comments">
+
+                        <script src="https://utteranc.es/client.js"
+        data-repo="jackdewinter/jackdewinter.github.io"
+        data-issue-term="markdown-linter-adding-consistency-to-block-quotes"
+        data-label="Comments"
+        data-theme="github-light"
+        crossorigin="anonymous"
+        async>
+</script>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+            <hr/>
+            <aside>
+            <nav>
+            <ul class="articles-timeline">
+                <li class="previous-article">« <a href="https://jackdewinter.github.io/2020/08/17/markdown-linter-adding-lists-to-the-markdown-transformer/" title="Previous: Markdown Linter - Adding Lists to the Markdown Transformer">Markdown Linter - Adding Lists to the Markdown Transformer</a></li>
+            </ul>
+            </nav>
+            </aside>
+        </div>
+        <section id="article-sidebar" class="span2">
+    <h4>Reading Time</h4>
+    <p>~16 min read</p>
+            <h4>Published</h4>
+            <time itemprop="dateCreated" datetime="2020-08-25T00:00:00-07:00">Aug 25, 2020</time>
+        <h4>Markdown Linter Core</h4>
+    <ul class="multi-parts-list">
+            <li >
+            <a href="https://jackdewinter.github.io/2020/05/04/markdown-linter-core-pre-rule-improvements/" title="Markdown Linter - Core - Pre-Rule Improvements">Part 1: Markdown Linter - Core - Pre-Rule Improvements</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/06/01/markdown-linter-taking-time-to-evaluate/" title="Markdown Linter - Taking Time To Evaluate">Part 2: Markdown Linter - Taking Time To Evaluate</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/06/08/markdown-linter-adding-line-and-column-support/" title="Markdown Linter - Adding Line and Column Support">Part 3: Markdown Linter - Adding Line and Column Support</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/06/15/markdown-linter-rabbit-hole-1-adding-consistency-checks/" title="Markdown Linter - Rabbit Hole 1 - Adding Consistency Checks">Part 4: Markdown Linter - Rabbit Hole 1 - Adding Consistency Checks</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/06/22/markdown-linter-rabbit-hole-2-losing-my-way/" title="Markdown Linter - Rabbit Hole 2 - Losing My Way">Part 5: Markdown Linter - Rabbit Hole 2 - Losing My Way</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/07/06/markdown-linter-weeding-the-projects-issue-list/" title="Markdown Linter - Weeding the Project's Issue List">Part 6: Markdown Linter - Weeding the Project's Issue List</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/06/29/markdown-linter-rabbit-hole-3-trying-to-dig-myself-out/" title="Markdown Linter - Rabbit Hole 3 - Trying To Dig Myself Out">Part 7: Markdown Linter - Rabbit Hole 3 - Trying To Dig Myself Out</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/07/13/markdown-linter-improving-consistency/" title="Markdown Linter - Improving Consistency">Part 8: Markdown Linter - Improving Consistency</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/07/20/markdown-linter-transforming-back-to-markdown/" title="Markdown Linter - Transforming Back to Markdown">Part 9: Markdown Linter - Transforming Back to Markdown</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/07/27/markdown-linter-addressing-the-initial-markdown-transformer-issues/" title="Markdown Linter - Addressing the Initial Markdown Transformer Issues">Part 10: Markdown Linter - Addressing the Initial Markdown Transformer Issues</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/08/03/markdown-linter-improving-the-markdown-transformer/" title="Markdown Linter - Improving the Markdown Transformer">Part 11: Markdown Linter - Improving the Markdown Transformer</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/08/10/markdown-linter-adding-links-to-the-markdown-transformer/" title="Markdown Linter - Adding Links to the Markdown Transformer">Part 12: Markdown Linter - Adding Links to the Markdown Transformer</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/08/17/markdown-linter-adding-lists-to-the-markdown-transformer/" title="Markdown Linter - Adding Lists to the Markdown Transformer">Part 13: Markdown Linter - Adding Lists to the Markdown Transformer</a>
+            </li>
+            <li  class="active-part">
+            Part 14: Markdown Linter - Adding Consistency to Block Quotes
+            </li>
+    </ul>
+            <h4>Category</h4>
+            <a class="category-link" href="https://jackdewinter.github.io/categories#software-quality-ref">Software Quality</a>
+            <h4>Tags</h4>
+            <ul class="list-of-tags tags-in-article">
+                <li><a href="https://jackdewinter.github.io/tags#core-linter-ref">core linter
+                    <span>17</span>
+</a></li>
+                <li><a href="https://jackdewinter.github.io/tags#markdown-linter-ref">markdown linter
+                    <span>35</span>
+</a></li>
+            </ul>
+<h4>Stay in Touch</h4>
+<div id="sidebar-social-link">
+    <a href="https://github.com/jackdewinter" title="github-alt" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="GitHub" role="img" viewBox="0 0 512 512"><rect width="512" height="512" rx="15%" fill="#1B1817"/><path fill="#fff" d="M335 499c14 0 12 17 12 17H165s-2-17 12-17c13 0 16-6 16-12l-1-50c-71 16-86-28-86-28-12-30-28-37-28-37-24-16 1-16 1-16 26 2 40 26 40 26 22 39 59 28 74 22 2-17 9-28 16-35-57-6-116-28-116-126 0-28 10-51 26-69-3-6-11-32 3-67 0 0 21-7 70 26 42-12 86-12 128 0 49-33 70-26 70-26 14 35 6 61 3 67 16 18 26 41 26 69 0 98-60 120-117 126 10 8 18 24 18 48l-1 70c0 6 3 12 16 12z"/></svg>
+    </a>
+    <a href="https://www.linkedin.com/in/jackdewinter/" title="linkedin" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="LinkedIn" role="img" viewBox="0 0 512 512" fill="#fff"><rect width="512" height="512" rx="15%" fill="#0077b5"/><circle cx="142" cy="138" r="37"/><path stroke="#fff" stroke-width="66" d="M244 194v198M142 194v198"/><path d="M276 282c0-20 13-40 36-40 24 0 33 18 33 45v105h66V279c0-61-32-89-76-89-34 0-51 19-59 32"/></svg>
+    </a>
+    <a href="https://jackdewinter.github.io/feeds/all.atom.xml" title="" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="RSS" role="img" viewBox="0 0 512 512"><rect width="512" height="512" rx="15%" fill="#f80"/><circle cx="145" cy="367" r="35" fill="#fff"/><path fill="none" stroke="#fff" stroke-width="60" d="M109 241c89 0 162 73 162 162M109 127c152 0 276 124 276 276"/></svg>
+    </a>
+</div>
+            
+
+
+
+
+
+            
+
+
+
+
+
+        </section>
+</div>
+</article>
+                    </div>
+                    <div class="span1"></div>
+                </div>
+            </div>
+        </div>
+<footer>
+    <div>
+        
+&copy; Copyright 2020 by Jack De Winter and licensed under a <a rel="license"
+  href="http://creativecommons.org/licenses/by/4.0/">
+  <img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/80x15.png" />
+  Creative Commons Attribution 4.0 International License</a>.
+
+    </div>
+
+
+
+
+    <div id="fpowered">
+        Powered by: <a href="http://getpelican.com/" title="Pelican Home Page" target="_blank" rel="nofollow noopener noreferrer">Pelican</a>
+        Theme: <a href="https://elegant.oncrashreboot.com/" title="Theme Elegant Home Page" target="_blank" rel="nofollow noopener noreferrer">Elegant</a>
+    </div>
+</footer>            <script src="//code.jquery.com/jquery.min.js"></script>
+        <script src="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>
+        <script>
+            function validateForm(query)
+            {
+                return (query.length > 0);
+            }
+        </script>
+
+    <script>
+    (function () {
+        if (window.location.hash.match(/^#comment-\d+$/)) {
+            $('#comment_thread').collapse('show');
+        }
+    })();
+    window.onhashchange=function(){
+        if (window.location.hash.match(/^#comment-\d+$/))
+            window.location.reload(true);
+    }
+    $('#comment_thread').on('shown', function () {
+        var link = document.getElementById('comment-accordion-toggle');
+        var old_innerHTML = link.innerHTML;
+        $(link).fadeOut(200, function() {
+            $(this).text('Click here to hide comments').fadeIn(200);
+        });
+        $('#comment_thread').on('hidden', function () {
+            $(link).fadeOut(200, function() {
+                $(this).text(old_innerHTML).fadeIn(200);
+            });
+        })
+    })
+</script>
+
+    </body>
+    <!-- Theme: Elegant built for Pelican
+        License : MIT -->
+</html>
