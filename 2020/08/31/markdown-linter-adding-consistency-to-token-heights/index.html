@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="author" content="Jack De Winter" />
+
+        <meta name="description" content="Summary¶ In my last article, I took care of completing the Markdown transformer checks for the second half of the container block tokens: the Block Quote tokens. In this article, I fill out the line/column number consistency checks by adding support for determining and verifying the height of all …
+" />
+        <meta property="og:type" content="article" />
+        <meta name="twitter:card" content="summary">
+
+<meta name="keywords" content="markdown linter, core linter, Software Quality, " />
+
+<meta property="og:title" content="Markdown Linter - Adding Consistency to Token Heights "/>
+<meta property="og:url" content="https://jackdewinter.github.io/2020/08/31/markdown-linter-adding-consistency-to-token-heights/" />
+<meta property="og:description" content="Summary¶ In my last article, I took care of completing the Markdown transformer checks for the second half of the container block tokens: the Block Quote tokens. In this article, I fill out the line/column number consistency checks by adding support for determining and verifying the height of all …" />
+<meta property="og:site_name" content="Jack&#39;s Digital Workbench" />
+<meta property="og:article:author" content="Jack De Winter" />
+<meta property="og:article:published_time" content="2020-08-31T00:00:00-07:00" />
+<meta name="twitter:title" content="Markdown Linter - Adding Consistency to Token Heights ">
+<meta name="twitter:description" content="Summary¶ In my last article, I took care of completing the Markdown transformer checks for the second half of the container block tokens: the Block Quote tokens. In this article, I fill out the line/column number consistency checks by adding support for determining and verifying the height of all …">
+
+        <title>Markdown Linter - Adding Consistency to Token Heights  · Jack&#39;s Digital Workbench
+</title>
+        <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://jackdewinter.github.io/theme/css/style.min.css?bec7d543">
+
+        <link href="https://jackdewinter.github.io/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Jack&#39;s Digital Workbench - Full Atom Feed" />
+
+
+    </head>
+    <body>
+        <div id="content">
+            <div class="navbar navbar-static-top">
+                <div class="navbar-inner">
+                    <div class="container-fluid">
+                        <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                        </a>
+                        <a class="brand" href="https://jackdewinter.github.io/"><span class=site-name>Jack's Digital Workbench</span></a>
+                        <div class="nav-collapse collapse">
+                            <ul class="nav pull-right top-menu">
+                                <li >
+                                    <a href=
+                                       https://jackdewinter.github.io
+                                    >Home</a>
+                                </li>
+                                <li ><a href="https://jackdewinter.github.io/categories">Categories</a></li>
+                                <li ><a href="https://jackdewinter.github.io/tags">Tags</a></li>
+                                <li ><a href="https://jackdewinter.github.io/archives">Archives</a></li>
+                                <li><form class="navbar-search" action="https://jackdewinter.github.io/search.html" onsubmit="return validateForm(this.elements['q'].value);"> <input type="text" class="search-query" placeholder="Search" name="q" id="tipue_search_input"></form></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="container-fluid">
+                <div class="row-fluid">
+                    <div class="span1"></div>
+                    <div class="span10">
+<article itemscope>
+<div class="row-fluid">
+    <header class="page-header span10 offset2">
+        <h1>
+            <a href="https://jackdewinter.github.io/2020/08/31/markdown-linter-adding-consistency-to-token-heights/">
+                Markdown Linter - Adding Consistency to Token Heights
+            </a>
+        </h1>
+    </header>
+</div>
+
+<div class="row-fluid">
+    <div class="span2 table-of-content">
+        <nav>
+        <h4>Contents</h4>
+        <div class="toc">
+<ul>
+<li><a href="#summary">Summary</a></li>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#what-is-the-audience-for-this-article">What Is the Audience for This Article?</a></li>
+<li><a href="#looking-back-at-last-weeks-issue">Looking Back at Last Week’s Issue</a></li>
+<li><a href="#getting-ready-for-the-changes">Getting Ready for the Changes</a></li>
+<li><a href="#verifying-the-height-of-tokens">Verifying the Height of Tokens</a><ul>
+<li><a href="#doing-the-heavy-lifting">Doing the Heavy Lifting</a></li>
+<li><a href="#counting-newlines">Counting Newlines</a></li>
+<li><a href="#leaf-block-stacks-and-tracking-tokens">Leaf Block Stacks and Tracking Tokens</a></li>
+<li><a href="#how-did-this-work">How Did This work?</a></li>
+<li><a href="#why-did-they-need-special-processing">Why Did They Need Special Processing?</a></li>
+</ul>
+</li>
+<li><a href="#there-was-one-additional-thing">There Was One Additional Thing</a><ul>
+<li><a href="#determining-if-a-token-is-forced">Determining If A Token Is Forced</a></li>
+</ul>
+</li>
+<li><a href="#was-it-worth-it">Was It Worth It?</a></li>
+<li><a href="#what-was-my-experience-so-far">What Was My Experience So Far?</a></li>
+<li><a href="#what-is-next">What is Next?</a></li>
+</ul>
+</div>
+        </nav>
+    </div>
+    <div class="span8 article-content">
+            
+            
+<h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">¶</a></h2>
+<p>In my
+<a href="https://jackdewinter.github.io/2020/08/25/markdown-linter-adding-consistency-to-block-quotes/">last article</a>,
+I took care of completing the Markdown transformer checks for the second half of the
+container block tokens: the Block Quote tokens.  In this article, I fill out the
+line/column number consistency checks by adding support for determining and verifying
+the height of all block tokens.</p>
+<h2 id="introduction">Introduction<a class="headerlink" href="#introduction" title="Permanent link">¶</a></h2>
+<p>From a high-level point of view, I believe that the project is coming together nicely.
+Each of the examples in the base
+<a href="https://github.github.com/gfm/">GFM specification</a>
+have been tested, and their proscribed HTML output verified.  The consistency check that
+verifies that that Markdown tokens contain the correct information is also in place,
+covering all existing tokens.  What was left was a bit of unfinished business with
+the consistency checks to verify those same tokens.  Two parts of that check were left:
+verifying the token height and verifying the inline tokens.</p>
+<p>I had always intended the verification of inline tokens to be the final verification.
+That was always immediately clear to me.  To properly verify any of the inline
+tokens, the tokens around it needed to be verified to give that token a solid
+foundation.  Without those other tokens as a foundation, any attempt at verifying
+inline tokens would be shaky at best. It only made sense for me to start working on
+the verification of token heights before verifying the inline tokens.</p>
+<h2 id="what-is-the-audience-for-this-article">What Is the Audience for This Article?<a class="headerlink" href="#what-is-the-audience-for-this-article" title="Permanent link">¶</a></h2>
+<p>While detailed more eloquently in
+<a href="https://jackdewinter.github.io/2020/04/05/what-is-the-audience-for-my-blog/#what-is-the-audience-for-my-blog">this article</a>,
+my goal for this technical article is to focus on the reasoning behind my solutions,
+rather that the solutions themselves.  For a full record of the solutions presented in
+this article, please go to this project’s GitHub repository and consult the
+commits between
+<a href="https://github.com/jackdewinter/pymarkdown/commit/4ae90e7b0a6e242f4364ec8bb4fe667d9d024580">15 Aug 2020</a>
+and
+<a href="https://github.com/jackdewinter/pymarkdown/commit/3fe81f2d4ffa65f1fb2d7818cab739e9e8b20470">19 Aug 2020</a>.</p>
+<h2 id="looking-back-at-last-weeks-issue">Looking Back at Last Week’s Issue<a class="headerlink" href="#looking-back-at-last-weeks-issue" title="Permanent link">¶</a></h2>
+<p>After finishing the work on last week’s article, I took it easy for a few days,
+working on the project when I could, but not pushing to hard.  As someone who uses
+his brain heavily in both his professional capacity and his personal capacity, it was a
+bit of a wakeup call for me.  When I saw the end of the project getting closer and
+closer, I started to put in extra effort towards the project, thinking that I could get
+there faster.  This normally would not be a bad thing. But to achieve that extra effort,
+I diverted some of my energy away from the energy that I normally use to take care of
+myself.  I did not really think about it before I started doing it, it just happened.</p>
+<p>While the result was me taking an extra day to complete the article, it could have
+been worse.  From an article
+point of view, I needed to rework 2-3 sections, but it was not too bad.  From a personal
+point of view, if I had continued to push myself, I believe it would have multiplied
+the time needed to recover substantially. I forgot that taking care of yourself and
+your mental well-being is very important, especially in times of crisis.  In normal
+times, I might have been able to make that trade off work, but currently, I do not
+believe it is a viable option for me.  I just do not have tons of extra energy to spare.
+Like it or not, those are just the times we are living in right now.</p>
+<p>And that is okay.  It is taking me a bit to accept that, but I am working on it.
+What is important to me is this project and writing about it… all about it.  Not
+just the rosy stuff you read in other blogs, but the actual problems I encountered
+and how I approached them.  At that includes problems like these.</p>
+<h2 id="getting-ready-for-the-changes">Getting Ready for the Changes<a class="headerlink" href="#getting-ready-for-the-changes" title="Permanent link">¶</a></h2>
+<p>Knowing that I was going to be making a lot of changes to the verification logic for
+line/column numbers, I wanted to prepare for that work by moving that code into its own
+module.  Having seen this feature organization work well for the Markdown transformer
+and the HTML transformer, I figured that moving the line/column verification code into
+its own
+module was an easy choice.  Further increasing the benefit of that choice was the fact
+that I was going to add more logic to the code.  Keeping all that logic in one place
+just made a lot of sense to me.</p>
+<p>The movement of the code was a pretty painless process, will all functions that
+handle the verification
+of line/column numbers being moved into the <code>verify_line_and_column_numbers.py</code> module.
+Once moved, any functions that did not need to be public were prefixed with <code>__</code> and
+their invocations were also changed to add the <code>__</code> prefix.  Having a good set of
+scenario tests added to the ease of this change, as I was able to verify that the
+code was still working properly at each stage of the change.</p>
+<p>With the new module created, it was time to add to that new module.</p>
+<h2 id="verifying-the-height-of-tokens">Verifying the Height of Tokens<a class="headerlink" href="#verifying-the-height-of-tokens" title="Permanent link">¶</a></h2>
+<p>As with any of the consistency checks, the verification of the token height started as
+a very small and compact function.  At the beginning, the <code>__verify_token_height</code>
+function had 2 parameters: <code>current_token</code> and <code>last_token</code>.  Knowing that I had the
+SetExt Heading token to process, I encapsulated that logic within that function,
+calling the <code>__validate_block_token_height</code> function to do the heavy lifting.  This
+encapsulation allowed me to replace the <code>line_number</code> and <code>column_number</code> variables
+used by the other tokens with the <code>original_line_number</code> and <code>original_column_number</code>
+variables used by the SetExt Heading token.</p>
+<p>That verification function, the <code>__verify_token_height</code> function, needed to be called
+from 2 locations: after the <code>__validate_new_line</code> was called and at the end of
+the normal processing.  The call after the <code>__validate_new_line</code> function was called
+ensured that the height of any 2 block tokens not on the same line was calculated. If
+the 2 tokens were on the same line, one of them was a container block
+token, and they would always be on the same line.  As such, I could just focus on the
+tokens on different lines without losing missing anything.  The call at the end of
+processing would ensure that the height of the final block would also be verified.</p>
+<p>It was a good start.  With all the little stuff out of the way, it was on to
+the heavy lifting part of the change.</p>
+<h3 id="doing-the-heavy-lifting">Doing the Heavy Lifting<a class="headerlink" href="#doing-the-heavy-lifting" title="Permanent link">¶</a></h3>
+<p>The <code>__validate_block_token_height</code> function was always intended to be a function that
+needed to know about every block level token.  From the initial design for this change,
+I figured that it was best to have one big function that could be
+refactored later, than to have duplicate code in separate handler functions.  As I have
+had good success with that pattern so far, I decided to use it again here.</p>
+<p>Like my other uses of the pattern, I started off the function with a large
+<code>if-elif-else</code> statement containing all the leaf block token names, one to each
+<code>if</code> statement.  Each <code>if</code> statement contained a single line:</p>
+<div class="highlight"><pre><span></span>    <span class="k">assert</span> <span class="bp">False</span>
+</pre></div>
+<p>and a final:</p>
+<div class="highlight"><pre><span></span>    <span class="k">else</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="bp">False</span><span class="p">,</span> <span class="s2">"Token "</span> <span class="o">+</span> <span class="n">last_token</span><span class="o">.</span><span class="n">token_name</span> <span class="o">+</span> <span class="s2">" not supported."</span>
+</pre></div>
+<p>Just like before, I had a plan.  I started running tests in groups
+based on their name.  So to start, I used the command line:</p>
+<div class="highlight"><pre><span></span>pipenv run pytest -k test_paragraph_blocks_
+</pre></div>
+<p>to run all the tests that dealt with paragraph blocks.  If I hit a type of leaf block
+that I had not worked on yet, the <code>assert False</code> triggered with the line number
+indicating which token type failed.  If I hit a type of block that I was not expecting,
+the <code>assert False</code> in the final <code>else</code> would be triggered, letting me know which
+token I missed.</p>
+<p>And it was a lot of
+<a href="https://en.wikipedia.org/wiki/Lather,_rinse,_repeat">lather-rinse-repeat</a>.
+I ran the tests over and over again using the above command line.  If any tests failed,
+I picked either the first test or the last test and examined why the test failed.  If
+it was the first time that I was dealing with that specific token, I coded a good guess
+as to what the height formula
+should be.  Otherwise, I examined the existing formula, and tried a variation of the
+code that would handle the new case.  Once all the tests for a given group were
+passing, I picked another group.  This repeated until all the scenario tests in
+the project were passing.</p>
+<p>For the most part, that seemingly endless processing loop worked.  But as in any
+project, there were things that needed to be handled separately.</p>
+<h3 id="counting-newlines">Counting Newlines<a class="headerlink" href="#counting-newlines" title="Permanent link">¶</a></h3>
+<p>Shortly into the changes, I figured out that I needed a simple helper function to
+calculate the
+number of newline characters in each string.  Based on my observations, I was going
+to need to count a different set of newline characters for most of the tokens.  Rather
+than implementing the algorithm multiple times, it made sense to put it into one
+function and in one location.</p>
+<p>After a couple of tries, I ended up with:</p>
+<div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">__count_newlines_in_text</span><span class="p">(</span><span class="n">text_to_examine</span><span class="p">):</span>
+    <span class="n">original_length</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">text_to_examine</span><span class="p">)</span>
+    <span class="n">removed_length</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">text_to_examine</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">,</span> <span class="s2">""</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">original_length</span> <span class="o">-</span> <span class="n">removed_length</span>
+</pre></div>
+<p>I forget where I encountered this pattern initially, but it was a useful one to
+remember. While it does include the possibly expensive creation of a new string, the
+algorithm itself is simple.
+The number of a given characters in a string is the difference between the original
+length of the string and length of that same string with all that specific character
+replaced with an empty string.</p>
+<p>Say for example I need to know how many <code>a</code> characters are in the string
+<code>maybe a good day to die</code>, which has a length of 23.  If I remove all the <code>a</code>
+characters, I am left with the string <code>mybe  good dy to die</code> which has a length of 20.
+Subtracting the second result from the first result leaves a value of 3, the number of
+<code>a</code> characters in the string.</p>
+<p>For Paragraph tokens, the use of this function was simple:</p>
+<div class="highlight"><pre><span></span>    <span class="n">token_height</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">__count_newlines_in_text</span><span class="p">(</span><span class="n">last_token</span><span class="o">.</span><span class="n">extracted_whitespace</span><span class="p">)</span>
+</pre></div>
+<p>as it was for Indented Code Block tokens:</p>
+<div class="highlight"><pre><span></span>    <span class="n">token_height</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">__count_newlines_in_text</span><span class="p">(</span><span class="n">last_token</span><span class="o">.</span><span class="n">indented_whitespace</span><span class="p">)</span>
+</pre></div>
+<p>For Link Reference Definitions, it was even more useful:</p>
+<div class="highlight"><pre><span></span>    <span class="n">token_height</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="mi">1</span>
+        <span class="o">+</span> <span class="n">__count_newlines_in_text</span><span class="p">(</span><span class="n">last_token</span><span class="o">.</span><span class="n">extracted_whitespace</span><span class="p">)</span>
+        <span class="o">+</span> <span class="n">__count_newlines_in_text</span><span class="p">(</span><span class="n">last_token</span><span class="o">.</span><span class="n">link_name_debug</span><span class="p">)</span>
+        <span class="o">+</span> <span class="n">__count_newlines_in_text</span><span class="p">(</span><span class="n">last_token</span><span class="o">.</span><span class="n">link_destination_whitespace</span><span class="p">)</span>
+        <span class="o">+</span> <span class="n">__count_newlines_in_text</span><span class="p">(</span><span class="n">last_token</span><span class="o">.</span><span class="n">link_title_raw</span><span class="p">)</span>
+        <span class="o">+</span> <span class="n">__count_newlines_in_text</span><span class="p">(</span><span class="n">last_token</span><span class="o">.</span><span class="n">link_title_whitespace</span><span class="p">)</span>
+    <span class="p">)</span>
+</pre></div>
+<p>After dealing with those tokens, there were a handful of other tokens
+that were easily handled by very simple calculations.  After those tokens
+were handled, there were only two troublesome tokens left: the HTML Block token and the
+Fenced Code Block token.</p>
+<h3 id="leaf-block-stacks-and-tracking-tokens">Leaf Block Stacks and Tracking Tokens<a class="headerlink" href="#leaf-block-stacks-and-tracking-tokens" title="Permanent link">¶</a></h3>
+<p>To properly process the height of those two troublesome tokens, a pair of concepts were
+introduced almost at the same time.  I tried splitting these two concepts into their
+own sections, but I found each attempt to do that complicated by their dependencies on
+each other.</p>
+<p>The first of those concepts was the ability to track the leaf block that was currently
+active at any point.  The primary driver for this concept was to provide context to the
+tokens that
+occurred within the HTML Block element and the Fenced Code Block element.  As these
+two block elements handle their own text parsing, I needed to avoid any “extra”
+checking that
+occurred within these blocks.  After trying 4 or 5 other alternatives, the
+tried-and-true block stack was easily the best, and most reliable, solution.</p>
+<p>The second concept was closely tied to the first concept and dealt with properly
+tracking the right tokens.  To finish the handling of the HTML Block element and the
+Fenced Code Block element, I needed to make sure that the concept of the “last” token
+was correct.  To get that working properly, I added code to check the stack and only
+set the new “remembered” token variable if that was not set.</p>
+<h3 id="how-did-this-work">How Did This work?<a class="headerlink" href="#how-did-this-work" title="Permanent link">¶</a></h3>
+<p>Unless there was anything to do with HTML Block elements or
+Fenced Code Block elements, this code was not invoked.  Except for the 4 block
+tokens that do not have close tokens (Blank Line, New List Item, Link Reference
+Definition, and Thematic Break), any start token was added to the stack.  When
+an end token was encountered, if the name of that end token matched the top
+token on the stack, that top element was removed.  Simple stack management.  After
+a test revealed that I had forgot to add one of those 4 block tokens to the “do not
+stack” list, the stack worked flawlessly.</p>
+<p>The tracking of the tokens to avoid duplication worked as well.
+When one of the two special blocks were encountered, the stack logic would add them
+to the stack.  Once added, the algorithm assumed that the handling of the HTML Block
+tokens and Fenced Code Block token would handle any encapsulated tokens and did not
+track any of those encapsulated tokens.  When the end of the block occurred, it was
+popped off the stack and the normal processing occurred.  There were a couple of
+small issues at the start, but after they were cleaned up, it was smooth sailing after
+that.</p>
+<h3 id="why-did-they-need-special-processing">Why Did They Need Special Processing?<a class="headerlink" href="#why-did-they-need-special-processing" title="Permanent link">¶</a></h3>
+<p>Although I tried a number of different options, the only thing that worked for
+determining the height of these two special block tokens was a brute-force iteration of
+all the
+inline tokens.  While there were other tokens that persisted information on how many
+newlines were contained within their Leaf Block, these two Leaf Block tokens did
+not.  Without that information, the only option left was to iterate through each of the
+encapsulated inline tokens, counting newline characters as I went.  But with those
+tokens already counted, I needed to avoid counting them a second time.</p>
+<p>It was not a great solution, but it was the one that I ended up with.  Up to this
+point in the project, there was no reason to change how those two Leaf Blocks stored
+(or did not store) any newline, it just was not a problem.  While it was not a
+great solution, at this stage it was an efficient solution.  But to check to see if
+I could do it better, I created a new item in the issues list, and moved on.</p>
+<h2 id="there-was-one-additional-thing">There Was One Additional Thing<a class="headerlink" href="#there-was-one-additional-thing" title="Permanent link">¶</a></h2>
+<p>As I finished up my work validating the Fenced Code Block token heights, there was one
+scenario test that snuck up and surprised me:
+<a href="https://github.github.com/gfm/#example-97">example 97</a></p>
+<div class="highlight"><pre><span></span><span class="o">`````</span>
+
+<span class="o">```</span>
+<span class="n">aaa</span>
+</pre></div>
+<p>This example, and the ones around it, show how an open block is closed when the
+container block that owns it is closed or when the end of the document is reached.
+While everything else was working properly with this example, the token’s line
+height was off by one.  After double checking the math for the consistency check
+and for the existing tokens, I confirmed that it was an off-by-one error. Given that
+error and the section that the example was in, the next step was an easy one: craft an
+example that included the end of the Fenced Code Block element:</p>
+<div class="highlight"><pre><span></span><span class="o">`````</span>
+
+<span class="o">```</span>
+<span class="n">aaa</span>
+<span class="o">`````</span>
+</pre></div>
+<p>Running that test, it immediately worked, which meant only one thing to me: the
+algorothm needs to know if the end token was forced.</p>
+<h3 id="determining-if-a-token-is-forced">Determining If A Token Is Forced<a class="headerlink" href="#determining-if-a-token-is-forced" title="Permanent link">¶</a></h3>
+<p>Right away, I was aware that determining if the end token was forced was not going
+to be an easy task.  I immediately figured out one approach but dismissed it as too
+costly.  But as I spent hours looking for any other approach that worked, I was coming
+up empty with each attempt.  I found some partial solutions, but nothing that worked
+in all required cases.  In the end, it was that costly approach that I returned to
+as my only solution.</p>
+<p>What was that solution?  Costly as it was, that solution was to add a field to
+every end token that indicates whether it was asked to be closed or forced close.
+Why was it costly?  A quick scan of the scenario tests revealed almost 200 instances
+of an end token… for only the scenario tests starting with <code>test_markdown_a</code> and
+<code>test_markdown_b</code>.  Extrapolating from that sample, I believed that it would
+realistically mean changing between 1250 and 1750 end tokens throughout all the
+examples.</p>
+<p>It was not a decision that I made lightly, but with no other viable options, I
+started to embrace it.  Making the change was the easy part.  Before the <code>was_forced</code>
+field was added to the <code>EndMarkdownToken</code> class, the <code>compose_data_field</code> function
+looked like this:</p>
+<div class="highlight"><pre><span></span>    <span class="k">def</span> <span class="nf">compose_data_field</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">display_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">extracted_whitespace</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">extra_end_data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">display_data</span> <span class="o">=</span> <span class="n">display_data</span> <span class="o">+</span> <span class="s2">":"</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">extra_end_data</span>
+</pre></div>
+<p>Once the <code>was_forced</code> field was added, it changed into:</p>
+<div class="highlight"><pre><span></span>    <span class="k">def</span> <span class="nf">compose_data_field</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">display_data</span> <span class="o">=</span> <span class="s2">""</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">extra_end_data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">display_data</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">extracted_whitespace</span>
+        <span class="n">display_data</span> <span class="o">+=</span> <span class="s2">":"</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">extra_end_data</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">display_data</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">extra_end_data</span>
+        <span class="n">display_data</span> <span class="o">+=</span> <span class="s2">":"</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">was_forced</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">extra_data</span> <span class="o">=</span> <span class="n">display_data</span>
+</pre></div>
+<p>If this looks like I snuck something extra in, it is because I did.  Given the number
+of changes that I was going to make, I wanted to ensure that I could efficiently make
+those
+changes and verify them.  While having optional parts of the token serialization left
+out was
+more compact, it did make the serialization harder to read.  I figured that if I was
+making a thorough change like this, being explicit with each of the fields would
+reduce my chances of getting one of the serializations wrong.  Instead of asking myself
+“what was the default value of the second and third fields”, I just added those fields
+and ensured they were serialized.</p>
+<p>Basically, I gambled.  The cost of making the change to the token’s serialization was
+cheap.  It would be in the verification of that change where most of the expense would
+come.  And my bet was that serializing all fields explicitly would make that
+verification easier and faster.</p>
+<h2 id="was-it-worth-it">Was It Worth It?<a class="headerlink" href="#was-it-worth-it" title="Permanent link">¶</a></h2>
+<p>If anyone would have asked me that question at the start of that process, I would
+have
+<a href="https://idioms.thefreedictionary.com/hemmed+and+hawed">hemmed and hawed</a>,
+giving an answer that would be uncertain at best.  But by the time I had finished
+the first group of scenario tests, that answer was easily becoming a more solid “Yes!”.</p>
+<p>Was it painful?  Yes!  I purposefully did not keep track of how many changes I had
+completed and how many I had left to go.  I felt that keeping track of that number
+would be discouraging and focusing my mind on something other than the obvious thing:
+this was the right change to do.  I was aware this was going to take a while, and
+as the hours ticked by, that was hammered home multiple times.  By the time I
+got to the end of this process, it took 4 days and many long hours to complete.</p>
+<p>But, in my eyes, it was worth every step of it.  As this change touched on every
+scenario test, I needed to manually verify each scenario test before
+going on to the next test.  And while I had test automation in peace, I had not
+manually gone through each of the tests and verified for myself if the tokens
+looked correct.  For me, I found peace in having inspected the tests for myself,
+knowing that the consistency checks were providing me with the same results as
+my manual verification.</p>
+<p>Does that mean I want to do it again?  Not really.  But would I do it if I felt that
+I needed to?  In a heartbeat.  In terms of confidence,
+this was me doing a final read of my article before publishing it.  This was me
+running the Static Code Analysis against my code one more time just to make sure
+that I did not miss anything.  This was me looking over the changes I am about to
+commit to the repository before I submit the commit.  It is easy to argue that
+each of those actions is more emotional than logical, but that is the point.</p>
+<p>Sometimes, it is just logical to do an action for a positive emotional reaction.
+And that is okay too.</p>
+<h2 id="what-was-my-experience-so-far">What Was My Experience So Far?<a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link">¶</a></h2>
+<p>I know I will only get one chance to make a good impression with this project, so
+I want to make that impression a good one.  If I want to provide a good impression by
+having a good linter as the outcome for this project, I will need to test as many of the
+combinations of Markdown elements with each other as possible, in as many circumstances
+as possible.  From the beginning of the project, a simple calculation made it clear that
+the scope of testing required would be difficult if I was lucky.  If I was not lucky,
+that hopeful guess of difficult would grow by at least 2 orders of magnitude.</p>
+<p>But even given that prediction that testing everything would be very difficult, I
+wanted to give the project the best chance to succeed.  The best way that I know of
+doing that is to fully commit to making the right changes to solve the problems
+properly.  For the first set of changes, this meant working with what I had, as it
+was only the token height calculation that needed that logic.  For the the second set of
+changes it meant changing all the tokens, because there really was not any alternative.</p>
+<p>In a strange way, both sets of changes brought me peace, increasing my confidence
+about the project.  In the grand scheme of things, the iterative calculations for the
+height of the two Leaf Block tokens was not too expensive, and it is localized to that
+one module.  Ammortizing the cost of those calculations over all the Leaf Block tokens
+makes it even less expensive.  From that point of view, those changes were definitely
+cost effective in my eyes.</p>
+<p>And while people can say I am pedantic and a perfectionist, I somewhat liked spending
+that time going through each scenario and verifying it.  Before that review, I had
+a lot of trust in those consistency checks, but there was always a question of whether
+I had missed something important.  With the existing checks in place and a
+manual review of those scenario tests, the chances of any major issues being left
+are drastically reduced.</p>
+<p>I will never say that any piece of software has zero bugs in it, but I do know that
+I feel that I am eliminating many of the paths for bugs to form in this project.</p>
+<p>And that I am confident about!</p>
+<h2 id="what-is-next">What is Next?<a class="headerlink" href="#what-is-next" title="Permanent link">¶</a></h2>
+<p>After completing the token height verification for block tokens, it was time to start
+working on the line/column numbers for the inline tokens.  I was not sure how much of a
+chore it would be, but it would be gratifying to get them done!</p>
+
+
+             
+ 
+                <p id="post-share-links">
+    Like this post? Share on:
+    <a href="https://twitter.com/intent/tweet?text=Markdown%20Linter%20-%20Adding%20Consistency%20to%20Token%20Heights&url=https%3A//jackdewinter.github.io/2020/08/31/markdown-linter-adding-consistency-to-token-heights/&hashtags=markdown-linter,core-linter" target="_blank" rel="nofollow noopener noreferrer" title="Share on Twitter">Twitter</a>
+    ❄
+    <a href="https://www.facebook.com/sharer/sharer.php?u=https%3A//jackdewinter.github.io/2020/08/31/markdown-linter-adding-consistency-to-token-heights/" target="_blank" rel="nofollow noopener noreferrer" title="Share on Facebook">Facebook</a>
+    ❄
+    <a href="mailto:?subject=Markdown%20Linter%20-%20Adding%20Consistency%20to%20Token%20Heights&amp;body=https%3A//jackdewinter.github.io/2020/08/31/markdown-linter-adding-consistency-to-token-heights/" target="_blank" rel="nofollow noopener noreferrer" title="Share via Email">Email</a>
+    </p>
+
+            
+            
+
+
+
+
+
+
+<section>
+    <h6 style="display:none;">Comments</h6>
+    <p id="comment-message">So what do you think? Did I miss something? Is any part unclear? Leave your comments below. </p>
+
+    <div class="accordion" id="accordion2">
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                <a class="accordion-toggle disqus-comment-count comment-count"
+                   data-toggle="collapse"
+                   data-parent="#accordion2"
+                   href="https://jackdewinter.github.io/2020/08/31/markdown-linter-adding-consistency-to-token-heights/#comment_thread"
+                   id="comment-accordion-toggle">
+                    Comments
+                </a>
+            </div>
+            <div id="comment_thread" class="accordion-body collapse">
+                <div class="accordion-inner">
+                    <div class="comments">
+
+                        <script src="https://utteranc.es/client.js"
+        data-repo="jackdewinter/jackdewinter.github.io"
+        data-issue-term="markdown-linter-adding-consistency-to-token-heights"
+        data-label="Comments"
+        data-theme="github-light"
+        crossorigin="anonymous"
+        async>
+</script>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+            <hr/>
+            <aside>
+            <nav>
+            <ul class="articles-timeline">
+                <li class="previous-article">« <a href="https://jackdewinter.github.io/2020/08/25/markdown-linter-adding-consistency-to-block-quotes/" title="Previous: Markdown Linter - Adding Consistency to Block Quotes">Markdown Linter - Adding Consistency to Block Quotes</a></li>
+            </ul>
+            </nav>
+            </aside>
+        </div>
+        <section id="article-sidebar" class="span2">
+    <h4>Reading Time</h4>
+    <p>~15 min read</p>
+            <h4>Published</h4>
+            <time itemprop="dateCreated" datetime="2020-08-31T00:00:00-07:00">Aug 31, 2020</time>
+        <h4>Markdown Linter Core</h4>
+    <ul class="multi-parts-list">
+            <li >
+            <a href="https://jackdewinter.github.io/2020/05/04/markdown-linter-core-pre-rule-improvements/" title="Markdown Linter - Core - Pre-Rule Improvements">Part 1: Markdown Linter - Core - Pre-Rule Improvements</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/06/01/markdown-linter-taking-time-to-evaluate/" title="Markdown Linter - Taking Time To Evaluate">Part 2: Markdown Linter - Taking Time To Evaluate</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/06/08/markdown-linter-adding-line-and-column-support/" title="Markdown Linter - Adding Line and Column Support">Part 3: Markdown Linter - Adding Line and Column Support</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/06/15/markdown-linter-rabbit-hole-1-adding-consistency-checks/" title="Markdown Linter - Rabbit Hole 1 - Adding Consistency Checks">Part 4: Markdown Linter - Rabbit Hole 1 - Adding Consistency Checks</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/06/22/markdown-linter-rabbit-hole-2-losing-my-way/" title="Markdown Linter - Rabbit Hole 2 - Losing My Way">Part 5: Markdown Linter - Rabbit Hole 2 - Losing My Way</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/07/06/markdown-linter-weeding-the-projects-issue-list/" title="Markdown Linter - Weeding the Project's Issue List">Part 6: Markdown Linter - Weeding the Project's Issue List</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/06/29/markdown-linter-rabbit-hole-3-trying-to-dig-myself-out/" title="Markdown Linter - Rabbit Hole 3 - Trying To Dig Myself Out">Part 7: Markdown Linter - Rabbit Hole 3 - Trying To Dig Myself Out</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/07/13/markdown-linter-improving-consistency/" title="Markdown Linter - Improving Consistency">Part 8: Markdown Linter - Improving Consistency</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/07/20/markdown-linter-transforming-back-to-markdown/" title="Markdown Linter - Transforming Back to Markdown">Part 9: Markdown Linter - Transforming Back to Markdown</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/07/27/markdown-linter-addressing-the-initial-markdown-transformer-issues/" title="Markdown Linter - Addressing the Initial Markdown Transformer Issues">Part 10: Markdown Linter - Addressing the Initial Markdown Transformer Issues</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/08/03/markdown-linter-improving-the-markdown-transformer/" title="Markdown Linter - Improving the Markdown Transformer">Part 11: Markdown Linter - Improving the Markdown Transformer</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/08/10/markdown-linter-adding-links-to-the-markdown-transformer/" title="Markdown Linter - Adding Links to the Markdown Transformer">Part 12: Markdown Linter - Adding Links to the Markdown Transformer</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/08/17/markdown-linter-adding-lists-to-the-markdown-transformer/" title="Markdown Linter - Adding Lists to the Markdown Transformer">Part 13: Markdown Linter - Adding Lists to the Markdown Transformer</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/08/25/markdown-linter-adding-consistency-to-block-quotes/" title="Markdown Linter - Adding Consistency to Block Quotes">Part 14: Markdown Linter - Adding Consistency to Block Quotes</a>
+            </li>
+            <li  class="active-part">
+            Part 15: Markdown Linter - Adding Consistency to Token Heights
+            </li>
+    </ul>
+            <h4>Category</h4>
+            <a class="category-link" href="https://jackdewinter.github.io/categories#software-quality-ref">Software Quality</a>
+            <h4>Tags</h4>
+            <ul class="list-of-tags tags-in-article">
+                <li><a href="https://jackdewinter.github.io/tags#core-linter-ref">core linter
+                    <span>18</span>
+</a></li>
+                <li><a href="https://jackdewinter.github.io/tags#markdown-linter-ref">markdown linter
+                    <span>36</span>
+</a></li>
+            </ul>
+<h4>Stay in Touch</h4>
+<div id="sidebar-social-link">
+    <a href="https://github.com/jackdewinter" title="github-alt" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="GitHub" role="img" viewBox="0 0 512 512"><rect width="512" height="512" rx="15%" fill="#1B1817"/><path fill="#fff" d="M335 499c14 0 12 17 12 17H165s-2-17 12-17c13 0 16-6 16-12l-1-50c-71 16-86-28-86-28-12-30-28-37-28-37-24-16 1-16 1-16 26 2 40 26 40 26 22 39 59 28 74 22 2-17 9-28 16-35-57-6-116-28-116-126 0-28 10-51 26-69-3-6-11-32 3-67 0 0 21-7 70 26 42-12 86-12 128 0 49-33 70-26 70-26 14 35 6 61 3 67 16 18 26 41 26 69 0 98-60 120-117 126 10 8 18 24 18 48l-1 70c0 6 3 12 16 12z"/></svg>
+    </a>
+    <a href="https://www.linkedin.com/in/jackdewinter/" title="linkedin" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="LinkedIn" role="img" viewBox="0 0 512 512" fill="#fff"><rect width="512" height="512" rx="15%" fill="#0077b5"/><circle cx="142" cy="138" r="37"/><path stroke="#fff" stroke-width="66" d="M244 194v198M142 194v198"/><path d="M276 282c0-20 13-40 36-40 24 0 33 18 33 45v105h66V279c0-61-32-89-76-89-34 0-51 19-59 32"/></svg>
+    </a>
+    <a href="https://jackdewinter.github.io/feeds/all.atom.xml" title="" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="RSS" role="img" viewBox="0 0 512 512"><rect width="512" height="512" rx="15%" fill="#f80"/><circle cx="145" cy="367" r="35" fill="#fff"/><path fill="none" stroke="#fff" stroke-width="60" d="M109 241c89 0 162 73 162 162M109 127c152 0 276 124 276 276"/></svg>
+    </a>
+</div>
+            
+
+
+
+
+
+            
+
+
+
+
+
+        </section>
+</div>
+</article>
+                    </div>
+                    <div class="span1"></div>
+                </div>
+            </div>
+        </div>
+<footer>
+    <div>
+        
+&copy; Copyright 2020 by Jack De Winter and licensed under a <a rel="license"
+  href="http://creativecommons.org/licenses/by/4.0/">
+  <img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/80x15.png" />
+  Creative Commons Attribution 4.0 International License</a>.
+
+    </div>
+
+
+
+
+    <div id="fpowered">
+        Powered by: <a href="http://getpelican.com/" title="Pelican Home Page" target="_blank" rel="nofollow noopener noreferrer">Pelican</a>
+        Theme: <a href="https://elegant.oncrashreboot.com/" title="Theme Elegant Home Page" target="_blank" rel="nofollow noopener noreferrer">Elegant</a>
+    </div>
+</footer>            <script src="//code.jquery.com/jquery.min.js"></script>
+        <script src="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>
+        <script>
+            function validateForm(query)
+            {
+                return (query.length > 0);
+            }
+        </script>
+
+    <script>
+    (function () {
+        if (window.location.hash.match(/^#comment-\d+$/)) {
+            $('#comment_thread').collapse('show');
+        }
+    })();
+    window.onhashchange=function(){
+        if (window.location.hash.match(/^#comment-\d+$/))
+            window.location.reload(true);
+    }
+    $('#comment_thread').on('shown', function () {
+        var link = document.getElementById('comment-accordion-toggle');
+        var old_innerHTML = link.innerHTML;
+        $(link).fadeOut(200, function() {
+            $(this).text('Click here to hide comments').fadeIn(200);
+        });
+        $('#comment_thread').on('hidden', function () {
+            $(link).fadeOut(200, function() {
+                $(this).text(old_innerHTML).fadeIn(200);
+            });
+        })
+    })
+</script>
+
+    </body>
+    <!-- Theme: Elegant built for Pelican
+        License : MIT -->
+</html>
