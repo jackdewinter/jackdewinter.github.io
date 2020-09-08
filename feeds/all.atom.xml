@@ -1,16 +1,447 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/all.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2020-08-31T00:00:00-07:00</updated><entry><title>Markdown Linter - Adding Consistency to Token Heights</title><link href="https://jackdewinter.github.io/2020/08/31/markdown-linter-adding-consistency-to-token-heights/" rel="alternate"></link><published>2020-08-31T00:00:00-07:00</published><updated>2020-08-31T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-08-31:/2020/08/31/markdown-linter-adding-consistency-to-token-heights/</id><summary type="html">
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/all.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2020-09-07T00:00:00-07:00</updated><entry><title>Markdown Linter - Starting to Add Line/Column Numbers For Inline Tokens</title><link href="https://jackdewinter.github.io/2020/09/07/markdown-linter-starting-to-add-linecolumn-numbers-for-inline-tokens/" rel="alternate"></link><published>2020-09-07T00:00:00-07:00</published><updated>2020-09-07T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-09-07:/2020/09/07/markdown-linter-starting-to-add-linecolumn-numbers-for-inline-tokens/</id><summary type="html">
+&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In my
+&lt;a href="https://jackdewinter.github.io/2020/08/31/markdown-linter-adding-consistency-to-token-heights/"&gt;last article&lt;/a&gt;,
+I took care of completing the consistency checks by verifying the height of all block
+tokens.  In this article, with all the block tokens now properly covered, I
+start to add proper support for line and column numbers for the text inline tokens
+and the …&lt;/p&gt;</summary><content type="html">
+&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In my
+&lt;a href="https://jackdewinter.github.io/2020/08/31/markdown-linter-adding-consistency-to-token-heights/"&gt;last article&lt;/a&gt;,
+I took care of completing the consistency checks by verifying the height of all block
+tokens.  In this article, with all the block tokens now properly covered, I
+start to add proper support for line and column numbers for the text inline tokens
+and the emphasis inline tokens.&lt;/p&gt;
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;As I mentioned in the last article:&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;To properly verify any of the inline tokens, the tokens around it needed to be verified to give that token a solid foundation. Without those other tokens as a foundation, any attempt at verifying inline tokens would be shaky at best.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;With that foundation now firmly in place, it was then time for me to start adding the
+line/column numbers to the inline tokens.&lt;/p&gt;
+&lt;p&gt;The scope of what I was about to start was not lost on me.  From the outset, I knew
+that adding the line/column numbers to the Text tokens was going to be expensive.
+Starting with the obvious, the Text tokens are the default “capture-all” for anything
+Markdown that does not firmly fall under another token’s purview.  That alone meant
+there were going to be a fair number of scenarios in which Text tokens were present.
+Add to
+that number the various forms of text that the token contains, and each form’s
+way of dealing with the Text tokens within their bounds.  Also, as I wanted
+to have a good gauge on how hard it was going to be to add the other inline tokens,
+I added support for Emphasis tokens to the worklist.&lt;/p&gt;
+&lt;p&gt;I was clear about the scope of this change with myself from the outset.  It was going to
+be a long trek to complete all this work in one week.  I did contemplate updating the
+consistency checks to accommodate the changes to the inline tokens, but discretion got
+the better part of me.  This work was going to be tough enough on its own, no need to
+add some extra tasks to the list.&lt;/p&gt;
+&lt;h2 id="what-is-the-audience-for-this-article"&gt;What Is the Audience for This Article?&lt;a class="headerlink" href="#what-is-the-audience-for-this-article" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;While detailed more eloquently in
+&lt;a href="https://jackdewinter.github.io/2020/04/05/what-is-the-audience-for-my-blog/#what-is-the-audience-for-my-blog"&gt;this article&lt;/a&gt;,
+my goal for this technical article is to focus on the reasoning behind my solutions,
+rather that the solutions themselves.  For a full record of the solutions presented in
+this article, please go to this project’s GitHub repository and consult the
+commit of
+&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/7eb893cf1b7c815666946661b790b956fa87278d"&gt;29 Aug 2020&lt;/a&gt;.&lt;/p&gt;
+&lt;h2 id="framing-a-big-problem-in-a-better-light"&gt;Framing a Big Problem in a Better Light&lt;a class="headerlink" href="#framing-a-big-problem-in-a-better-light" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Before starting with this monumental task, I wanted to take a step back and really
+understand the task and its intricacies.  When I
+started looking at the sheer depth of this task, I will admit I was a bit scared at
+first.
+The work this task requires is daunting.  Doing a simple search over the project’s
+scenario tests, I found 1577 instances of a Text token in a scenario test and 161
+instances of Emphasis Start tokens in a scenario test.  That meant between the Text
+tokens and both Emphasis Start and Emphasis End tokens, I was looking at 1899 instances
+that needed to be changed and manually verified.  That was indeed overwhelming.&lt;/p&gt;
+&lt;p&gt;This is where my experience with test automation came in handy.  I took a breath and
+started to look for
+&lt;a href="https://en.wikipedia.org/wiki/Equivalence_partitioning"&gt;equivalence partitions&lt;/a&gt;
+that I could use.  While the number of discrete instances of Text tokens and Emphasis
+tokens were facts that
+I could not change, I decided to apply equivalence partitioning and reduce the effective
+number of instances down to a more manageable number.&lt;/p&gt;
+&lt;h3 id="how-does-that-work"&gt;How Does That Work?&lt;a class="headerlink" href="#how-does-that-work" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Let me take a small sample function that is in the &lt;code&gt;ParserHelper&lt;/code&gt; class,
+the &lt;code&gt;is_character_at_index&lt;/code&gt; function.  This function is as follows:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="nd"&gt;@staticmethod&lt;/span&gt;
+    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;is_character_at_index&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;source_string&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;index_in_string&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;valid_character&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
+            &lt;span class="mi"&gt;0&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;=&lt;/span&gt; &lt;span class="n"&gt;index_in_string&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;source_string&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+            &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="n"&gt;source_string&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;index_in_string&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="n"&gt;valid_character&lt;/span&gt;
+        &lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;The function is simple in that given a large variation on the parameters, it will
+simply return a &lt;code&gt;True&lt;/code&gt; response or a &lt;code&gt;False&lt;/code&gt; response.&lt;sup id="fnref:mostlyTrue"&gt;&lt;a class="footnote-ref" href="#fn:mostlyTrue"&gt;1&lt;/a&gt;&lt;/sup&gt;  While the number of
+variations are largely finite&lt;sup id="fnref:largeFinite"&gt;&lt;a class="footnote-ref" href="#fn:largeFinite"&gt;2&lt;/a&gt;&lt;/sup&gt;, they do fall into a number of
+categories.  Starting with
+the &lt;code&gt;index_in_string&lt;/code&gt; argument, those groups are: less than 0, equal to 0,
+greater than 0
+and less then &lt;code&gt;len(source_string)&lt;/code&gt;, equal to &lt;code&gt;len(source_string)&lt;/code&gt;, and greater than
+&lt;code&gt;len(source_string)&lt;/code&gt;.  Of those groups, only if the &lt;code&gt;index_in_string&lt;/code&gt; argument is in
+the &lt;code&gt;equal to 0&lt;/code&gt; group or the &lt;code&gt;greater than 0 and less then len(source_string)&lt;/code&gt; group do
+I need to check to see if the character at the specified index is equivalent to the
+argument &lt;code&gt;valid_character&lt;/code&gt;.  As the value to compare against is a single character, the
+only two groups for that part of the comparison are that it matches that single
+character or it does not.&lt;/p&gt;
+&lt;p&gt;Based on this information, I can use those groups as equivalence partitions or
+equivalence groups or  to partition the data to test into 7 distinct test groups.  The
+first 3
+equivalence groups are the ones that cause the first comparison to fail: &lt;code&gt;less than 0&lt;/code&gt;,
+&lt;code&gt;equal to len(source_string)&lt;/code&gt;, and &lt;code&gt;greater than len(source_string)&lt;/code&gt;.  For this group,
+the negative group, a simple test with one value in each group is required.  For the
+other 2 tests, the positive group, in addition to the comparison to get it into one of
+the 5 groups, one test is required where the index specifies the
+a character matching the &lt;code&gt;valid_character&lt;/code&gt; argument, and one where it does not match.
+In all, 3 tests in the first group, and 2 sets of 2 tests in the second group, for a
+grand total of 7 tests.&lt;/p&gt;
+&lt;p&gt;This works well because it reduces the scope of the testing to a manageable number.
+Given the &lt;code&gt;less than 0&lt;/code&gt; group, it does not matter if the &lt;code&gt;index_in_string&lt;/code&gt; argument is
+&lt;code&gt;-1&lt;/code&gt;, &lt;code&gt;-2&lt;/code&gt;, or any other negative number.  They all fit into that group and they all
+evoke the same behavior: they cause the expression to be evaluated as &lt;code&gt;False&lt;/code&gt;.
+By applying this process to many testing problems, it can quickly break down the
+problem from an unmanageable number of possibilities down to a smaller number of more
+easily handled cases.&lt;/p&gt;
+&lt;h3 id="how-does-that-apply-to-this-work"&gt;How Does That Apply to This Work?&lt;a class="headerlink" href="#how-does-that-apply-to-this-work" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;No matter how it is viewed, having to change the serialization of 1577 instances of a
+Text token is a big job.  That part of the work I cannot change.  However, I can make
+the manual validation part of the changes more efficient by applying equivalence
+classes to those changes.  While I was not sure at the onset what those classes were
+going to be, I was confident that I could work out those groups would be one-by-one.&lt;/p&gt;
+&lt;p&gt;But it was still a big task, just not as big.  Looking back at my notes, I have a
+scribble that says:&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;~40 variations for text, ~10 for emphasis&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;I believe that was a note to myself to boost my confidence by estimating how many
+equivalence classes that I believed I would get the tests down to.  As I wrote this
+article and looked at that scribble, for a second, I was back at the point in time when
+I wrote that down.  Like an echo, I vaguely remembered the feeling of optimism that
+washed over me when I wrote those numbers down.  While I am not 100% certain of what I
+was thinking at the time, I am confident that it was something like:&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;1600 validations is insane!  On the other hand, 40 is okay.  I can do 40.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;At that moment, it was not about whether those numbers were accurate, just that I had
+confidence that those numbers were in the general vicinity.  While having to validate
+each of
+approximately 1600 variations of Text tokens filled me with dread, having to validate
+approximately 40 variations of those same Text tokens and approximately 10 variations
+of Emphasis tokens was something I had confidence that I could easily handle.&lt;/p&gt;
+&lt;h2 id="updating-the-text-token"&gt;Updating the Text Token&lt;a class="headerlink" href="#updating-the-text-token" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Before I was ready to start with the Text tokens, I needed to get ready.
+Not a lot of work, but some solid foundational stuff to make the rest of the
+processing go easier.&lt;/p&gt;
+&lt;h3 id="getting-ready"&gt;Getting Ready&lt;a class="headerlink" href="#getting-ready" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;My main drive for updating the Text token to support line/column numbers was never
+about the small stuff.  It was that boring work, stuff was easy to do and quickly
+finished, that I wanted to get out of the way.  Adding the ability
+to pass in either a &lt;code&gt;position_marker&lt;/code&gt; argument or the &lt;code&gt;line_number&lt;/code&gt; and &lt;code&gt;column_number&lt;/code&gt;
+arguments?  Done.  Making sure they got copied along with the other information when
+the &lt;code&gt;create_copy&lt;/code&gt; function was called? Done.  Changing the &lt;code&gt;InlineRequest&lt;/code&gt; and
+&lt;code&gt;InlineResponse&lt;/code&gt; classes to handle line numbers and column numbers?  Done.  If my
+memory and notes are accurate, those changes were all completed in the first half-hour
+that I used to work on these changes.&lt;/p&gt;
+&lt;p&gt;Then,
+to ensure things were setup to verify the consistency of the changes in
+the future, I made some changes to the
+&lt;code&gt;verify_line_and_column_numbers.py&lt;/code&gt; module. While I knew I was going to write the actual
+validations in a separate task, I wanted to make sure that I had a good view of what
+inline tokens were going to be handed off to the future consistency validators.
+To accomplish this, I added two sets of print statements: one as part of the
+&lt;code&gt;__verify_token_height&lt;/code&gt; function and one at the end of the
+&lt;code&gt;verify_line_and_column_numbers&lt;/code&gt; function.  My plan here was to not only set myself
+up for the inline consistency checks to come, but to be able to see what the group
+of inline tokens to be processed was, to allow me to plan future sets of equivalence
+classes.&lt;/p&gt;
+&lt;p&gt;With that setup work done, it was on to the actual classes.&lt;/p&gt;
+&lt;h3 id="starting-with-the-paragraph-tests"&gt;Starting with the Paragraph Tests&lt;a class="headerlink" href="#starting-with-the-paragraph-tests" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;With that foundational work completed, I decided to start with the tests in the
+&lt;code&gt;test_markdown_paragraph_blocks.py&lt;/code&gt; module.  Since the Paragraph Block tokens are the
+default containers for Text tokens, I figured that this was the best bet to get started
+with some of the simple stuff.  That bet paid off with the first equivalence class,
+a Text token following a Paragraph token.&lt;/p&gt;
+&lt;p&gt;If I had to point out the simplest case of a Text element in a Markdown document, I
+would definitely point to an example similar to
+&lt;a href="https://github.github.com/gfm/#example-189"&gt;example 189&lt;/a&gt;.
+Despite its high index number, to me this is the simplest example of all Markdown
+documents:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;aaa&lt;/span&gt;
+
+&lt;span class="n"&gt;bbb&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Simply speaking, it is two paragraphs separated by a single newline.  While it is true
+that a single line of text would be simpler, to me, that is not a realistic example of
+a Markdown document.  To me, a document means multiple paragraphs of text that
+conveys some information.  From experience, it is very hard to convey anything except
+the most basic forms of
+information in a single paragraph.  Also, as a realistic example, example 189 shows how
+you can separate two paragraphs in a Markdown document.  As such, I consider this the
+root example.&lt;/p&gt;
+&lt;p&gt;As this was the root example to me, it also contained the first and root equivalence
+class: a Text token
+contained as the first token after a Paragraph token.  While there are numerous
+variations of this equivalence class, for me this is the base class itself.  And as I
+looked through the code on how to isolate this equivalence class, I came to an
+interesting observation. It should have been an obvious observation, but it took me a
+bit to work through from “huh?” to obvious.  I forgot that equivalence classes deal with
+input and output, but that source code rarely follows those same patterns.&lt;/p&gt;
+&lt;h3 id="this-is-a-good-thing"&gt;This Is A Good Thing&lt;a class="headerlink" href="#this-is-a-good-thing" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;When I started to look for the source code behind my first equivalence class, I found
+that it was hard to isolate the source code to just that equivalence class.  But as
+I looked at the source code more, that made sense.  One reason that it made sense was
+that if the cases were isolated based on equivalence class, it would mean that there
+was a lot of duplicated code in the project.  Another reason was that such separation
+would force distinct paths through the source code that would not be natural from any
+other viewpoint than that of equivalence classes.&lt;/p&gt;
+&lt;p&gt;The way the project was designed was to have an initial parsing phase to get all the raw
+information together, then a coalesce phase to combine any text tokens where possible,
+and finally an inline parse phase to handle the inline tokens.  Dragging any artificial
+grouping of output across those phases seemed very counter-productive to me.  But
+I still needed to figure things out.  It was time for a bit of a regroup.&lt;/p&gt;
+&lt;h3 id="rethinking-my-approach"&gt;Rethinking My Approach&lt;a class="headerlink" href="#rethinking-my-approach" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;After performing a global search for &lt;code&gt;TextMarkdownToken(&lt;/code&gt; on the project, I was rewarded
+with a small number of occurrences of a &lt;code&gt;TextMarkdownToken&lt;/code&gt; being created within the
+project.  This was good because it meant the number of actual changes that I would
+need to make was small, and hopefully each change would carry over multiple equivalence
+classes.&lt;/p&gt;
+&lt;p&gt;The &lt;code&gt;__handle_fenced_code_block&lt;/code&gt; function and the &lt;code&gt;__handle_html_block&lt;/code&gt; function
+(through the &lt;code&gt;check_normal_html_block_end&lt;/code&gt; function) were
+both responsible for handling the additional Text tokens as part of container
+processing, so they were the first to be changed.  In addition, the
+&lt;code&gt;parse_indented_code_block&lt;/code&gt; function, the &lt;code&gt;parse_atx_headings&lt;/code&gt; function, and the
+&lt;code&gt;parse_paragraph&lt;/code&gt; functions all included the creation of new instances of the
+&lt;code&gt;TextMarkdownToken&lt;/code&gt;.  Making those changes took care of all cases where the
+Parsing Processor created Text tokens.  From there, a quick check confirmed that the
+Coalescing Processor only modified existing Text tokens and did not create any new
+ones.&lt;/p&gt;
+&lt;p&gt;After a bit of double checking to make sure I did not miss anything, I acknowledged
+that the preparation work was done, and it was now onto inline processing.&lt;/p&gt;
+&lt;h3 id="how-the-inline-processing-works"&gt;How The Inline Processing Works&lt;a class="headerlink" href="#how-the-inline-processing-works" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;When the Inline Processor starts, it loops through all the tokens, explicitly looking
+for Text tokens, as they are the only tokens that can contain inline sequences.  Once
+such a Text token is found, a further check is done to make sure that the Text token
+is within a Paragraph element or a SetExt Heading element (the only two block elements
+in which inline tokens are allowed) before proceeding with
+the actual processing of the Text Token.&lt;/p&gt;
+&lt;p&gt;For any readers that have not been following along on the project’s journey, let me
+provide a bit of a recap on how that processing works.  Back in the article
+&lt;a href="https://jackdewinter.github.io/2020/02/24/markdown-linter-starting-inline-processing/"&gt;on starting inline processing&lt;/a&gt;,
+I go through the algorithm that I use in the inline processor:&lt;sup id="fnref:hidden"&gt;&lt;a class="footnote-ref" href="#fn:hidden"&gt;3&lt;/a&gt;&lt;/sup&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;set the &lt;em&gt;start point&lt;/em&gt; to the beginning of the string&lt;/li&gt;
+&lt;li&gt;look from the &lt;em&gt;start point&lt;/em&gt; for a new &lt;em&gt;interesting sequence&lt;/em&gt;&lt;ul&gt;
+&lt;li&gt;if none is found&lt;ul&gt;
+&lt;li&gt;emit the rest of the line from the &lt;em&gt;start point&lt;/em&gt; and exit&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;if one is found&lt;ul&gt;
+&lt;li&gt;emit the text from the &lt;em&gt;start point&lt;/em&gt; to the start of the &lt;em&gt;interesting sequence&lt;/em&gt;&lt;/li&gt;
+&lt;li&gt;handle the current &lt;em&gt;interesting sequence&lt;/em&gt;&lt;/li&gt;
+&lt;li&gt;update the &lt;em&gt;start point&lt;/em&gt; to the end of the &lt;em&gt;interesting sequence&lt;/em&gt;&lt;/li&gt;
+&lt;li&gt;go back to the top&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;From the Text token perspective, the important parts of that algorithm are
+the &lt;code&gt;emit the rest of the line&lt;/code&gt; part and the &lt;code&gt;emit the text from...&lt;/code&gt; part.  When most
+of the other parts
+of the algorithm emit their own token&lt;sup id="fnref:twoExceptions"&gt;&lt;a class="footnote-ref" href="#fn:twoExceptions"&gt;4&lt;/a&gt;&lt;/sup&gt;, a check it made to see what
+text has been “emitted” before that point.  Then a new Text token is created with
+that emitted text, followed by the newly created token that represents the &lt;em&gt;interesting
+sequence&lt;/em&gt;, followed by the algorithm looks for the next &lt;em&gt;interesting sequence&lt;/em&gt; to deal
+with.&lt;/p&gt;
+&lt;p&gt;In the end, there were only 4 places where I had to change the creation of the
+Text tokens to provide the line/column number information.  In all, there were only
+9 places in the project where I had to change the creation of the Text token.
+Far from being lulled into thinking the hard work was done, I figured it would be
+in the updating of the scenario tests that things would get interesting.  And I was
+not disappointed!&lt;/p&gt;
+&lt;h3 id="scenarios"&gt;Scenarios&lt;a class="headerlink" href="#scenarios" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;With the code changes made to the Inline Processor, it was time to focus on the
+scenario tests and getting their data changed and manually validated.  Using the
+command line:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;pipenv run pytest -k test_paragraph_blocks
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;I executed each of the paragraph specific scenario tests, looking for the expected
+failures in each test that contains a Text token.  Except for three tests,
+each of these tests were simple cases of the base equivalence class, which meant that
+they were quickly updated and verified.  Of those three tests, two new equivalence
+classes emerged: the first Text token within an Indented Code Block token, and a Text
+token following a Hard Break token.&lt;/p&gt;
+&lt;p&gt;The scenario test for
+&lt;a href="https://github.github.com/gfm/#example-195"&gt;example 195&lt;/a&gt;
+is as follows:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="n"&gt;aaa&lt;/span&gt;
+&lt;span class="n"&gt;bbb&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;which was properly parsed into new equivalence class of an Indented Code Block token
+containing a single Text token and a normal Paragraph token containing a single Text
+token.  As code blocks
+do not contain any inline processing and no extra inline processing was specified, this
+was an easy validation of that new equivalence class.  Quick, easy, done.&lt;/p&gt;
+&lt;p&gt;The other failing scenario test, the test for
+&lt;a href="https://github.github.com/gfm/#example-196"&gt;example 196&lt;/a&gt;
+is as follows:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;aaa&lt;/span&gt;&lt;span class="err"&gt;{&lt;/span&gt;&lt;span class="k"&gt;space&lt;/span&gt;&lt;span class="err"&gt;}{&lt;/span&gt;&lt;span class="k"&gt;space&lt;/span&gt;&lt;span class="err"&gt;}{&lt;/span&gt;&lt;span class="k"&gt;space&lt;/span&gt;&lt;span class="err"&gt;}{&lt;/span&gt;&lt;span class="k"&gt;space&lt;/span&gt;&lt;span class="err"&gt;}{&lt;/span&gt;&lt;span class="k"&gt;space&lt;/span&gt;&lt;span class="err"&gt;}&lt;/span&gt;
+&lt;span class="n"&gt;bbb&lt;/span&gt;&lt;span class="err"&gt;{&lt;/span&gt;&lt;span class="k"&gt;space&lt;/span&gt;&lt;span class="err"&gt;}{&lt;/span&gt;&lt;span class="k"&gt;space&lt;/span&gt;&lt;span class="err"&gt;}{&lt;/span&gt;&lt;span class="k"&gt;space&lt;/span&gt;&lt;span class="err"&gt;}{&lt;/span&gt;&lt;span class="k"&gt;space&lt;/span&gt;&lt;span class="err"&gt;}{&lt;/span&gt;&lt;span class="k"&gt;space&lt;/span&gt;&lt;span class="err"&gt;}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;where the sequence &lt;code&gt;{space}&lt;/code&gt; was replaced with actual space characters.  I replaced
+the tokens with what I thought was their proper line/column numbers and was surprised
+to find out that the tests were still failing.
+As I started
+to work through the research on why this was happening, I came to an interesting
+conclusion.  I was not going to get away from handling the other inline tokens after
+all.&lt;/p&gt;
+&lt;h3 id="the-truth-always-wins"&gt;The Truth Always Wins&lt;a class="headerlink" href="#the-truth-always-wins" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Based on the above Markdown, the tokens that were generated for that scenario test were
+a Text Token, a Hard Line Break token, and another Text Token.  The first Text token
+was fine, I had that covered, and the Hard Line Break token was not what we were
+focusing on, so the fact that it did not have a line/column number associated with it
+was fine.  But that left the second Text token in a bit of a conundrum.  Based on the
+code at that time, the line/column number was &lt;code&gt;1,4&lt;/code&gt;, which based on the existing logic
+was correct.  But from a validation point of view it was incorrect: it should be &lt;code&gt;2,1&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;It took me a bit to realize that if I was going to change each Text token, I would at
+least have to partially handle the other inline tokens.  In this case, unless
+I added some code that understood the Hard Line Break token, the source code would
+correctly state that the line/column number was &lt;code&gt;1,4&lt;/code&gt;.  To be clear, it is not that
+the line/column number of &lt;code&gt;1,4&lt;/code&gt; is actually correct, but according to the information
+that the algorithm has, that is the correct value to compute for that token. So,
+while I did not have to output the line/column number for the other inline tokens
+yet, I at least had to figure out what change that token was
+going to impart to the stream of inline tokens in that group.&lt;/p&gt;
+&lt;h3 id="and-it-happened-with-the-most-complicated-inline-token"&gt;And It Happened with The Most Complicated Inline Token&lt;a class="headerlink" href="#and-it-happened-with-the-most-complicated-inline-token" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;The Hard Line Break token just happened to be the token I needed to figure out.  And
+it would end up being the most
+difficult inline token to figure out the new line/column number for.  One reason was
+that, for whatever reason, I placed the newline for the Hard Line Break token with the
+following
+Text token, and not the Hard Line Break token itself.&lt;sup id="fnref:yesIDid"&gt;&lt;a class="footnote-ref" href="#fn:yesIDid"&gt;5&lt;/a&gt;&lt;/sup&gt;  This meant that
+to properly deal with that token, I needed to reduce the vertical height of the
+following Text token by 1, as the Hard Line Break token had already increased the
+line number. The other reason for it being complicated is that the proper setting of
+the column
+number relied on checking with the owning Paragraph token, grabbing any leading space
+for that next line from that token.&lt;/p&gt;
+&lt;p&gt;All in all, in took a bit of work, but not too much before all the tests in that
+scenario test group were passing.  While I knew there were 10s of hundreds more changes
+to make, I knew I could do this.  Yeah, it would be slow, but if I just kept my
+focus on the task at hand, I could do this.&lt;/p&gt;
+&lt;h3 id="lather-rinse-repeat"&gt;Lather-Rinse-Repeat&lt;a class="headerlink" href="#lather-rinse-repeat" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;While I could go through each of the other equivalence classes that I discovered and
+processed, I will leave that for a future article where I talk about the inline
+consistency checks.  It was enough of a brutal and time-consuming process that I will not make it more so by talking about it.  Each time, I literally picked a new section of
+scenario tests, replaced the &lt;code&gt;test_paragraph_blocks&lt;/code&gt; in the command line with the
+prefix for another group of
+tests and ran it again.  With the results of that test run, I picked off one of the
+failing tests, correcting the line/column number for the Text tokens, and running
+the tests again to repeat the process.  As I went, I manually validated each
+test’s changes, and I rechecked my results as I staged the changes into the project’s
+GitHub repository.&lt;/p&gt;
+&lt;p&gt;A good example of this process was the next group of tests that I tackled: the Hard
+Line Block group.  The
+first couple of tests were a rehash of what I had already done, so determining the
+proper line/column numbers for those tests were easy, and quickly verified.  That
+left tests that included Emphasis tokens and Text tokens within Atx Heading tokens.
+I just buckled down and followed at the same process as documented before, adjusting
+as I went.&lt;/p&gt;
+&lt;p&gt;Yes, it was slow, but it was also good.  While it dragged on, I was getting predictable
+results with the application of my process.  In my mind, I had confidence that it was
+no longer a matter of “um… around 1600 tokens? how am I going to…”.  I was making
+that transition to “how can I get these done more efficiently and reduce my time on
+each test without sacrificing quality?”&lt;/p&gt;
+&lt;h2 id="updating-the-emphasis-token"&gt;Updating the Emphasis Token&lt;a class="headerlink" href="#updating-the-emphasis-token" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Compared to the work required to change the Text token, updating the Emphasis token
+to include line/column numbers was trivial.  As the work had already been done to
+determine the width to apply to the start and end tokens, the main change was to pass
+the line/column number information to the constructor of the EmphasisMarkdownToken
+and the EndMarkdownToken.&lt;/p&gt;
+&lt;p&gt;With that change in place, I started running the scenario tests in the emphasis group
+and only had to make one small change.  In the cases where the end Emphasis token
+were completely consumed, everything was fine.  But in the cases where an end Emphasis
+token were partially consumed, the column number was off by one.  That took a bit
+of puzzling, but after some thinking, the answer leapt out at me.  I will not kid you
+though, without me scribbling down the various cases and working through the scenarios,
+it would have taken me a lot longer.&lt;/p&gt;
+&lt;p&gt;For the start and end Emphasis tokens, the Inline Processor creates a Special Text token
+that contains either the &lt;code&gt;*&lt;/code&gt; or &lt;code&gt;_&lt;/code&gt; character and the number of those characters found.
+Because emphasis is processed from the inside out&lt;sup id="fnref:empExample"&gt;&lt;a class="footnote-ref" href="#fn:empExample"&gt;6&lt;/a&gt;&lt;/sup&gt;, the emphasis characters
+taken from those Special Text tokens occur at the end of the Special Text token for the
+start Emphasis token and the beginning for the end Emphasis token.  As a result of that,
+the start Emphasis token’s column number needed to be adjusted by the number of
+characters consumed, to ensure it pointed at the right location.  Once that adjusted
+was added, the remaining scenario tests passed.&lt;/p&gt;
+&lt;p&gt;While I was not sure if the other inline tokens would be as easy as the Emphasis
+tokens, I was hopeful.  And in a long project, that is a good thing!&lt;/p&gt;
+&lt;h2 id="what-was-my-experience-so-far"&gt;What Was My Experience So Far?&lt;a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;When I start to write these sections in my articles, I always refer to my notes and try
+to put my mind back into the frame of mind I was in at that time.  While there are
+sparse notes here and there about this section of work, there is really only one of
+those notes that properly sums up the work:&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Phew!&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;While there were times during that slog that I did not think it would ever end, I was
+adamant that I was going to get through it and complete it.  In my mind, it was not
+a question of confidence, it was a question of endurance.  My change algorithm was
+simple enough, and I had confidence that the validation part of that algorithm was
+solid.  It was just a matter of working through what seemed to be a mind-numbing number
+of changes until they were all done.&lt;/p&gt;
+&lt;p&gt;But I persisted and got through it.  And while I believe it was the right decision
+to only focus on the Text token and the Emphasis tokens, in hindsight, it might have
+been okay to add the other inline tokens at the same time.  With all the work to
+make sure their space was properly accounted for, I believe that most of the work that I
+have left with those tokens is to plug in the calculated line/column numbers into the
+inline tokens themselves, changing the serialized text, and writing the consistency
+checks.  Be it as it may, unless I messed up a calculation, the hard part of making
+sure the calculations work has already been done.&lt;/p&gt;
+&lt;p&gt;On the technical debt point of view, I am a bit worried, but not too much.  The list
+of things to check in the issues list is a bit larger than I like it, but there are
+some future ideas and a lot of double-check reminders on there.  At the very least,
+I am sure I can start to make short work of a lot of those issues, or properly
+prioritize them for later, whichever is best for that issue.&lt;/p&gt;
+&lt;h2 id="what-is-next"&gt;What is Next?&lt;a class="headerlink" href="#what-is-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;With the Text tokens and the Emphasis tokens out of the way, I decided that it was
+better that I add the consistency checks for those tokens before progressing forward.
+After having to do a fair amount of work to support “bypassing” those tokens to properly
+calculate the line/column number of any following Text token, I had a feeling it would
+come in handy if I moved it up the priority list a bit.&lt;/p&gt;
+&lt;div class="footnote"&gt;
+&lt;hr/&gt;
+&lt;ol&gt;
+&lt;li id="fn:mostlyTrue"&gt;
+&lt;p&gt;This function makes simple assumptions that the &lt;code&gt;source_string&lt;/code&gt; argument is a string of any length, the &lt;code&gt;index_in_string&lt;/code&gt; argument is an integer, and the &lt;code&gt;valid_character&lt;/code&gt; argument is a string of length 1.  Because the argument names are explicit enough and their usage is within a predefined scope, I decided to not verify the type of value for each.  As such, the statement that the function will either return &lt;code&gt;True&lt;/code&gt; or &lt;code&gt;False&lt;/code&gt; assumes that those assumptions are followed. &lt;a class="footnote-backref" href="#fnref:mostlyTrue" title="Jump back to footnote 1 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li id="fn:largeFinite"&gt;
+&lt;p&gt;For more information, &lt;a href="https://en.wikipedia.org/wiki/History_of_large_numbers"&gt;see Wikipedia&lt;/a&gt;.  The short answer to this is that I would start with the first argument containing an empty string, for a count of 1.  Then I would move on to a string with 1 character, and have to populate that string with every viable Unicode character.  Moving on to strings with 2 characters, I would need to take every 1 character string, and repeat that same process with the second character.  Repeating this process, the number of variations on possible strings is not infinite, but mathematically it is called a large finite number, or largely finite. &lt;a class="footnote-backref" href="#fnref:largeFinite" title="Jump back to footnote 2 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li id="fn:hidden"&gt;
+&lt;p&gt;Looking back at it myself, it is a bit hidden, but it is in the section on &lt;a href="https://jackdewinter.github.io/2020/02/24/markdown-linter-starting-inline-processing/#code-spans"&gt;code spans&lt;/a&gt; in the fourth paragraph. &lt;a class="footnote-backref" href="#fnref:hidden" title="Jump back to footnote 3 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li id="fn:twoExceptions"&gt;
+&lt;p&gt;The two exceptions to this are the handling of the backslash sequence and the character entity sequence, both which add to the text that is being accumulated. &lt;a class="footnote-backref" href="#fnref:twoExceptions" title="Jump back to footnote 4 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li id="fn:yesIDid"&gt;
+&lt;p&gt;Yes, I did add an item to the issues list for this. &lt;a class="footnote-backref" href="#fnref:yesIDid" title="Jump back to footnote 5 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li id="fn:empExample"&gt;
+&lt;p&gt;For a good example of this, look at &lt;a href="https://github.github.com/gfm/#example-422"&gt;example 422&lt;/a&gt;. &lt;a class="footnote-backref" href="#fnref:empExample" title="Jump back to footnote 6 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/div&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry><entry><title>Markdown Linter - Adding Consistency to Token Heights</title><link href="https://jackdewinter.github.io/2020/08/31/markdown-linter-adding-consistency-to-token-heights/" rel="alternate"></link><published>2020-08-31T00:00:00-07:00</published><updated>2020-08-31T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-08-31:/2020/08/31/markdown-linter-adding-consistency-to-token-heights/</id><summary type="html">
 &lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;In my
 &lt;a href="https://jackdewinter.github.io/2020/08/25/markdown-linter-adding-consistency-to-block-quotes/"&gt;last article&lt;/a&gt;,
-I took care of completing the Markdown transformer checks for the second half of the
+I took care of completing the consistency checks by verifying for the second half of the
 container block tokens: the Block Quote tokens.  In this article, I fill out the
 line/column number consistency checks by adding support for determining and verifying
-the height of all …&lt;/p&gt;</summary><content type="html">
+the height of …&lt;/p&gt;</summary><content type="html">
 &lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;In my
 &lt;a href="https://jackdewinter.github.io/2020/08/25/markdown-linter-adding-consistency-to-block-quotes/"&gt;last article&lt;/a&gt;,
-I took care of completing the Markdown transformer checks for the second half of the
+I took care of completing the consistency checks by verifying for the second half of the
 container block tokens: the Block Quote tokens.  In this article, I fill out the
 line/column number consistency checks by adding support for determining and verifying
 the height of all block tokens.&lt;/p&gt;
@@ -9624,93 +10055,4 @@ the start of the real linting work in coming soon!&lt;/p&gt;
 &lt;p&gt;As per John Gruber’s original intentions.  Go to &lt;a href="https://daringfireball.net/projects/markdown/syntax#em"&gt;this part&lt;/a&gt; of his original Markdown article and go to the paragraph preceding the start of the emphasis section.  For more complete information on why John felt that reference links were better, look further up in that section for more details. &lt;a class="footnote-backref" href="#fnref:JohnGruberMarkdown" title="Jump back to footnote 4 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
 &lt;/li&gt;
 &lt;/ol&gt;
-&lt;/div&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="linter tokenizer"></category></entry><entry><title>What is the Audience for my Blog?</title><link href="https://jackdewinter.github.io/2020/04/05/what-is-the-audience-for-my-blog/" rel="alternate"></link><published>2020-04-05T00:00:00-07:00</published><updated>2020-04-05T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-04-05:/2020/04/05/what-is-the-audience-for-my-blog/</id><summary type="html">
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;From my experience, the two most critical components for learning are: the focus and
-desire to learn; and the ability to seek out, handle, and then learn from constructive
-criticism obtained from people that are more experienced.  It is primarily the people
-that I have seen employ both of …&lt;/p&gt;</summary><content type="html">
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;From my experience, the two most critical components for learning are: the focus and
-desire to learn; and the ability to seek out, handle, and then learn from constructive
-criticism obtained from people that are more experienced.  It is primarily the people
-that I have seen employ both of those components in unison that I have seen learn and
-excel in their fields.&lt;/p&gt;
-&lt;p&gt;From the day last summer when I started writing this blog until today, I believe I have
-proven to myself that I have the focus to continue writing and the desire to keep on
-writing.  It was when I reached out to some friends and colleagues in the writing field
-for constructive criticism that they all asked the same question: “What is the audience
-for your articles?”&lt;/p&gt;
-&lt;h2 id="thinking-about-that-question"&gt;Thinking About That Question&lt;a class="headerlink" href="#thinking-about-that-question" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Wow.  It was a pretty obvious question, but at the same time, it was one that I just
-assumed I knew the answer to.  As I started to write this article, I just assumed that
-the words would just flow out of my fingers…&lt;/p&gt;
-&lt;p&gt;Until they didn’t.&lt;/p&gt;
-&lt;p&gt;Instead, I sat at the keyboard for a long while, with a flood of thoughts going through
-my head.  I was pretty sure I was not doing the blog for attention, but what was it
-really that drove me to take the day or two out of my week to write these blog posts?
-To get my thoughts out of my head, I started writing different parts of different
-paragraphs that were prototypes for this article.  In the end, each one seemed like it
-was scratching at the service, not really answering the question.&lt;/p&gt;
-&lt;p&gt;To be clear, none of those paragraphs made it to this final version of the article. In
-any form.  Not even remotely.  I knew I had to come up with an answer, but I was hitting
-a wall. And try as I might, I was not making any progress.  It was frustrating… very
-frustrating.&lt;/p&gt;
-&lt;p&gt;It was while doing something totally unrelated that I remembered a conversation with a
-colleague about elevator pitches.  The general idea behind elevator pitches is that in
-the 30-45 seconds that you have with someone in an elevator, you can pitch them an
-idea that is comprised of the 2-3 sentences that are the distillation of the most
-important points to get across about your idea.  If you want to successfully get the
-other person’s attention, you need to “hook” them before those elevator doors open and
-their attention is no longer focused on you, but what is outside of the elevator doors.&lt;/p&gt;
-&lt;p&gt;To me, this concept seems to contain some basic truths.  There are a fair number of
-talented people that can briefly capture your attention by coming up with flowery words
-about their ideas, but those ideas usually end up just being smoke and mirrors.  In
-response, when people start seeing those kinds of words and sentences coming their way,
-their experience trains them to disregard a lot of what you are saying.
-Based on personal experience, this decision is made within the first 3-5 sentences that
-you speak to the other person.  Therefore, if you honestly have something meaningful to
-say, you should be
-able to describe it in a short and powerful burst that is simple and straightforward,
-containing the most important parts of what you want to say.&lt;/p&gt;
-&lt;p&gt;So, how could I apply that concept to the question of audience and how I would answer
-it?&lt;/p&gt;
-&lt;h2 id="what-is-my-goal"&gt;What Is My Goal?&lt;a class="headerlink" href="#what-is-my-goal" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;It took my quite the while.  But ultimately, for me and my blog, it boils down to this:&lt;/p&gt;
-&lt;p&gt;&lt;em&gt;I want my blog to inspire people and help them learn, like people have inspired and helped me in the past.&lt;/em&gt;&lt;/p&gt;
-&lt;p&gt;It may seem simple and altruistic, but that is the heart of what I want to accomplish.
-Not a lot of flowery words.  Not a lot of meaningless sentences.  Just a simple
-statement of what I want to accomplish with my blog.&lt;/p&gt;
-&lt;p&gt;It was a good start on what I wanted to accomplish, but I still needed more.&lt;/p&gt;
-&lt;h2 id="how-do-i-accomplish-that-goal"&gt;How do I accomplish that goal?&lt;a class="headerlink" href="#how-do-i-accomplish-that-goal" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Having a good statement of my goal, I needed to figure out how my blog was going to
-accomplish that goal, thereby further defining the audience.&lt;/p&gt;
-&lt;p&gt;Based on my stated goal, I started thinking about the blogs that I usually read.
-Writing some of those blogs down, I found there were two categories that emerged: ones
-that I use as a point-in-time resource and ones that I read and learn from.  From my
-point of view, a lot of the blogs and sources out there present the information
-necessary to solve an
-immediate problem, but not a lot them offer insight as to how the authors arrived at
-that solution or what the alternatives are.&lt;/p&gt;
-&lt;p&gt;To be clear, that isn’t always a problem.  I use sites like
-&lt;a href="https://stackoverflow.com"&gt;Stack Overflow&lt;/a&gt; all
-of the time to get help with a particular situation.  However, in terms of being a site
-that I learn from, Stack Overflow will rarely be one of them. In contrast, the blogs
-and sites
-that I keep on going back to are ones that offer that additional insight and help me
-learn through that insight.  They provide something to me above and beyond the normal
-solutions to problems that are documented on other sites.&lt;/p&gt;
-&lt;p&gt;But what exactly was it about those blogs that helped me learn?  What were their
-hooks?  And more importantly, what was the way in which I was going to do this for
-people reading my blog?&lt;/p&gt;
-&lt;p&gt;Thinking about that information for a long while, and then distilling it down to its
-essence, I expanded on my stated goal from above to include be a more complete answer.&lt;/p&gt;
-&lt;h2 id="what-is-the-audience-for-my-blog"&gt;What Is the Audience For My Blog?&lt;a class="headerlink" href="#what-is-the-audience-for-my-blog" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;&lt;em&gt;I want my blog to inspire people and help them learn, like people have inspired and helped me in the past.  For technical articles, I feel that I can best do that by focusing more on the &lt;code&gt;why&lt;/code&gt; and &lt;code&gt;how&lt;/code&gt; of the decisions leading up to the solutions rather than the &lt;code&gt;what&lt;/code&gt; of the solutions themselves.  For other articles, I feel that I can best do that by being an honest and believable storyteller, helping people to understand issues and situations as I see them.&lt;/em&gt;&lt;/p&gt;
-&lt;h2 id="wrap-up"&gt;Wrap Up&lt;a class="headerlink" href="#wrap-up" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;It was an interesting process for me to try and summarize a whole lot of thoughts about
-why I write my blog and reduce them down to 3 sentences.  The above lines took a number
-of days to arrive at, with lots of writing, even more editing of those words, and even
-more distillation of those edited words until I got down to the plain and simple
-sentences that I arrived at.&lt;/p&gt;
-&lt;p&gt;I hope those two sentences help explain what I see as the audience for my blog.&lt;/p&gt;</content><category term="Website"></category><category term="website"></category><category term="audience"></category></entry></feed>
+&lt;/div&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="linter tokenizer"></category></entry></feed>
