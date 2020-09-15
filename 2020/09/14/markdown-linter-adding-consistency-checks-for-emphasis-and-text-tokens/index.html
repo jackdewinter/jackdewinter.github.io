@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="author" content="Jack De Winter" />
+
+        <meta name="description" content="Summary¶ In my last article, I started to add the proper support for line and column numbers for both the text tokens and the emphasis tokens. In this article, I increase my confidence in the line and column numbers for those two inline tokens by adding the consistency checks for …
+" />
+        <meta property="og:type" content="article" />
+        <meta name="twitter:card" content="summary">
+
+<meta name="keywords" content="markdown linter, core linter, Software Quality, " />
+
+<meta property="og:title" content="Markdown Linter - Adding Consistency Checks for Emphasis and Text Tokens "/>
+<meta property="og:url" content="https://jackdewinter.github.io/2020/09/14/markdown-linter-adding-consistency-checks-for-emphasis-and-text-tokens/" />
+<meta property="og:description" content="Summary¶ In my last article, I started to add the proper support for line and column numbers for both the text tokens and the emphasis tokens. In this article, I increase my confidence in the line and column numbers for those two inline tokens by adding the consistency checks for …" />
+<meta property="og:site_name" content="Jack&#39;s Digital Workbench" />
+<meta property="og:article:author" content="Jack De Winter" />
+<meta property="og:article:published_time" content="2020-09-14T00:00:00-07:00" />
+<meta name="twitter:title" content="Markdown Linter - Adding Consistency Checks for Emphasis and Text Tokens ">
+<meta name="twitter:description" content="Summary¶ In my last article, I started to add the proper support for line and column numbers for both the text tokens and the emphasis tokens. In this article, I increase my confidence in the line and column numbers for those two inline tokens by adding the consistency checks for …">
+
+        <title>Markdown Linter - Adding Consistency Checks for Emphasis and Text Tokens  · Jack&#39;s Digital Workbench
+</title>
+        <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://jackdewinter.github.io/theme/css/style.min.css?bec7d543">
+
+        <link href="https://jackdewinter.github.io/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Jack&#39;s Digital Workbench - Full Atom Feed" />
+
+
+    </head>
+    <body>
+        <div id="content">
+            <div class="navbar navbar-static-top">
+                <div class="navbar-inner">
+                    <div class="container-fluid">
+                        <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                        </a>
+                        <a class="brand" href="https://jackdewinter.github.io/"><span class=site-name>Jack's Digital Workbench</span></a>
+                        <div class="nav-collapse collapse">
+                            <ul class="nav pull-right top-menu">
+                                <li >
+                                    <a href=
+                                       https://jackdewinter.github.io
+                                    >Home</a>
+                                </li>
+                                <li ><a href="https://jackdewinter.github.io/categories">Categories</a></li>
+                                <li ><a href="https://jackdewinter.github.io/tags">Tags</a></li>
+                                <li ><a href="https://jackdewinter.github.io/archives">Archives</a></li>
+                                <li><form class="navbar-search" action="https://jackdewinter.github.io/search.html" onsubmit="return validateForm(this.elements['q'].value);"> <input type="text" class="search-query" placeholder="Search" name="q" id="tipue_search_input"></form></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="container-fluid">
+                <div class="row-fluid">
+                    <div class="span1"></div>
+                    <div class="span10">
+<article itemscope>
+<div class="row-fluid">
+    <header class="page-header span10 offset2">
+        <h1>
+            <a href="https://jackdewinter.github.io/2020/09/14/markdown-linter-adding-consistency-checks-for-emphasis-and-text-tokens/">
+                Markdown Linter - Adding Consistency Checks for Emphasis and Text Tokens
+            </a>
+        </h1>
+    </header>
+</div>
+
+<div class="row-fluid">
+    <div class="span2 table-of-content">
+        <nav>
+        <h4>Contents</h4>
+        <div class="toc">
+<ul>
+<li><a href="#summary">Summary</a></li>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#what-is-the-audience-for-this-article">What Is the Audience for This Article?</a></li>
+<li><a href="#getting-started-with-inline-token-validation">Getting Started With Inline Token Validation</a><ul>
+<li><a href="#clearly-defining-the-problem">Clearly Defining the Problem</a></li>
+<li><a href="#validating-the-first-element">Validating the First Element</a></li>
+<li><a href="#what-did-i-discover">What Did I Discover?</a></li>
+</ul>
+</li>
+<li><a href="#verifying-the-middle-tokens">Verifying the Middle Tokens</a><ul>
+<li><a href="#emphasis-tokens">Emphasis Tokens</a></li>
+<li><a href="#text-tokens">Text Tokens</a></li>
+<li><a href="#blank-line-tokens">Blank Line Tokens</a></li>
+</ul>
+</li>
+<li><a href="#was-it-worth-it">Was It Worth It?</a><ul>
+<li><a href="#issue-1-image-link">Issue #1: Image Link</a></li>
+<li><a href="#issue-2-a-simple-adjustment">Issue 2: A Simple Adjustment</a></li>
+</ul>
+</li>
+<li><a href="#what-was-my-experience-so-far">What Was My Experience So Far?</a></li>
+<li><a href="#what-is-next">What is Next?</a></li>
+</ul>
+</div>
+        </nav>
+    </div>
+    <div class="span8 article-content">
+            
+            
+<h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">¶</a></h2>
+<p>In my
+<a href="https://jackdewinter.github.io/2020/09/07/markdown-linter-starting-to-add-linecolumn-numbers-for-inline-tokens/">last article</a>,
+I started to add the proper support for line and column numbers for both the text
+tokens and the emphasis tokens.  In this article, I increase my confidence in the
+line and column numbers for those two inline tokens by adding the consistency checks
+for those tokens.</p>
+<h2 id="introduction">Introduction<a class="headerlink" href="#introduction" title="Permanent link">¶</a></h2>
+<p>I know that I am fallible.  It therefore stands to
+reason that any code that I write will have some issues with it.  Those issues may be
+obvious issues, or they may be issues that only occur under a bizarre set of
+circumstances, but they are there.   Rather than fight against them, I embrace
+the attitude that good test automation will help me to identify those types of issues
+as early as possible.</p>
+<p>For the PyMarkdown project, this test automation takes the form of scenario tests
+containing consistency checks.  These consistency checks validate that the Markdown
+documents in the scenario tests are properly interpreted by the PyMarkdown project.
+But while these consistency checks are beneficial, the consistency checks have
+taken a long while to complete.  After 3 calendar months have passed, it can easily be
+said that my decision
+to add consistency checks to the project removed 3 months of project development time
+and replaced it with 3 months of project test time.  Plain and simple, those statements
+are facts.</p>
+<p>My confidence about the project and its ability to work correctly is an emotional and
+abstract statement.  However, with effort, I have been able to move it in the direction
+of being more of a fact than a feeling.  The consistency checks are a form
+of test automation that apply a generalized set of rules over a group of tokens,
+looking for each group to behave in a predictable manner.  Before this work,
+my confidence was expressed as a feeling: “I believe the project is stable”.  With
+this work nearing its completion, I can now point to the scenario tests and consistency
+checks that run within those scenario tests.  I can state that each of the scenario
+tests is passing a rigorous set of criteria before it is marked as passing.  That
+confidence can now be expressed as: “Here are the tests that are passing and the
+checks that are being performed on each test.”</p>
+<p>From that point of view, it made sense that before I start working on setting the
+line/column numbers for the remaining inline tokens that I would implement the
+consistency checks for the Text token and the Emphasis tokens.</p>
+<h2 id="what-is-the-audience-for-this-article">What Is the Audience for This Article?<a class="headerlink" href="#what-is-the-audience-for-this-article" title="Permanent link">¶</a></h2>
+<p>While detailed more eloquently in
+<a href="https://jackdewinter.github.io/2020/04/05/what-is-the-audience-for-my-blog/#what-is-the-audience-for-my-blog">this article</a>,
+my goal for this technical article is to focus on the reasoning behind my solutions,
+rather that the solutions themselves.  For a full record of the solutions presented in
+this article, please go to this project’s GitHub repository and consult the
+commit of
+<a href="https://github.com/jackdewinter/pymarkdown/commit/c6cc992fa4c5c7c25f2a93038010dfab84a22da8">02 Sep 2020</a>.</p>
+<h2 id="getting-started-with-inline-token-validation">Getting Started With Inline Token Validation<a class="headerlink" href="#getting-started-with-inline-token-validation" title="Permanent link">¶</a></h2>
+<p>At the start of the week, the code used to verify the consistency of inline tokens was
+extremely simple:</p>
+<div class="highlight"><pre><span></span>    <span class="k">print</span><span class="p">(</span><span class="s2">"&gt;&gt;last_token:"</span> <span class="o">+</span> <span class="n">ParserHelper</span><span class="o">.</span><span class="n">make_value_visible</span><span class="p">(</span><span class="n">last_token</span><span class="p">))</span>
+    <span class="n">next_token_index</span> <span class="o">=</span> <span class="n">last_token_index</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="k">while</span> <span class="n">actual_tokens</span><span class="p">[</span><span class="n">next_token_index</span><span class="p">]</span> <span class="o">!=</span> <span class="n">current_token</span><span class="p">:</span>
+        <span class="k">print</span><span class="p">(</span>
+            <span class="s2">"-token:"</span> <span class="o">+</span> <span class="n">ParserHelper</span><span class="o">.</span><span class="n">make_value_visible</span><span class="p">(</span><span class="n">actual_tokens</span><span class="p">[</span><span class="n">next_token_index</span><span class="p">])</span>
+        <span class="p">)</span>
+        <span class="n">next_token_index</span> <span class="o">+=</span> <span class="mi">1</span>
+</pre></div>
+<p>Added in as a placeholder to allow me to see what was going on with the inline tokens,
+it served its purpose well.  But as I started to work on the inline tokens
+and their line/column numbers, I needed to facilitate better consistency checking of
+those inline tokens.</p>
+<p>To start the work off, I removed that placeholder code from two places in the code
+and replaced both with a call to a new function <code>verify_inline</code>.  The only
+difference between the two
+invocations of the function were the fourth argument, <code>current_token</code>.  Called for
+the first time from the_<code>__verify_token_height</code> function, the <code>current_token</code> variable
+is set to the block token after a series of inline tokens.  The second time it is
+called, it is called at the end of processing to capture any inline tokens that are
+within one of the valid text elements, but at the very end of the document.  When it
+is invoked from that location, that same argument is set to <code>None</code>.  In both cases,
+the inline tokens to be validated were clearly outlined for the <code>verify_inline</code>
+function.</p>
+<h3 id="clearly-defining-the-problem">Clearly Defining the Problem<a class="headerlink" href="#clearly-defining-the-problem" title="Permanent link">¶</a></h3>
+<p>Before doing any real processing with the inline tokens, I needed to create a simple
+list containing the actual inline tokens that I wanted to check.  I could have done that
+with the main list of tokens and the previously document outlining.  However, I thought
+about it and decided that it was clearer to have a separate list that just
+contained the tokens that I was concerned about.  Once I had all the inline tokens
+between the two block tokens in that new list, there was a small amount of work to do
+before the list was usable.  While it was not difficult, the new list had some extra
+end tokens at the end of the list that needed to be removed.  Working around
+those extra end tokens would have been okay, but I just felt that it was simpler to
+remove them from the list before I did any further processing.</p>
+<p>Having a simple list of the inline tokens to work with, the first iteration of the
+checking algorithm started with an easy outline to follow:</p>
+<div class="highlight"><pre><span></span>    <span class="k">if</span> <span class="n">inline_tokens</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">token_index</span><span class="p">,</span> <span class="n">current_inline_token</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">inline_tokens</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">token_index</span><span class="p">:</span>
+                <span class="n">__verify_first_inline</span><span class="p">(</span><span class="n">last_token</span><span class="p">,</span> <span class="n">inline_tokens</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">__verify_next_inline</span><span class="p">(</span>
+                    <span class="n">last_token</span><span class="p">,</span>
+                    <span class="n">inline_tokens</span><span class="p">[</span><span class="n">token_index</span> <span class="o">-</span> <span class="mi">1</span><span class="p">],</span>
+                    <span class="n">current_inline_token</span><span class="p">,</span>
+                <span class="p">)</span>
+
+        <span class="c1"># verify_last_inline(inline_tokens[-1], current_inline_token)</span>
+</pre></div>
+<p>From my viewpoint, the processing of the inline tokens had 3 distinct phases: the first
+element in that list, each element after it, and the last element in that list.  Based
+on their locations, the first and last elements are special in that they anchor the
+other inline tokens to the block tokens on either side of the middle elements.  Without
+those anchors, the middle elements lack a foundation with which they can based their
+positions on.</p>
+<p>Based on those observations, I chose to implement the check for the first inline token
+against the previous block token, and not the check for the last inline token against
+the following block token.  Without validating the first element, validating any of the
+elements on the inside of the list would be useless.  So, whether I liked the idea or
+not, validation of the first element in the list was mandatory.  The last element
+is a different story.  While it would be nice to tie the last inline token to the
+following block token, I felt that it was not as important as the verification of the
+first element.  However, I added in a placeholder to the code to make sure that I
+would follow up on it later.</p>
+<h3 id="validating-the-first-element">Validating the First Element<a class="headerlink" href="#validating-the-first-element" title="Permanent link">¶</a></h3>
+<p>Following the pattern that I have used for validation in the past, I created the
+<code>__verify_first_inline</code> function with my standard starting template:</p>
+<div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">__verify_first_inline</span><span class="p">(</span><span class="n">last_non_inline_token</span><span class="p">,</span> <span class="n">first_inline_token</span><span class="p">):</span>
+    <span class="k">if</span> <span class="o">&lt;</span><span class="n">something</span><span class="o">&gt;</span><span class="p">:</span>
+        <span class="k">pass</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="bp">False</span><span class="p">,</span> <span class="n">last_non_inline_token</span><span class="o">.</span><span class="n">token_name</span>
+</pre></div>
+<p>As this function is comparing the starting position of the first inline token to the
+last valid block token, the <code>&lt;something&gt;</code> in the above code sample was quickly replaced
+with:</p>
+<div class="highlight"><pre><span></span>    <span class="k">if</span> <span class="n">last_non_inline_token</span><span class="o">.</span><span class="n">token_name</span> <span class="o">==</span> <span class="n">MarkdownToken</span><span class="o">.</span><span class="n">token_atx_heading</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="bp">False</span>
+    <span class="k">elif</span> <span class="n">last_non_inline_token</span><span class="o">.</span><span class="n">token_name</span> <span class="o">==</span> <span class="n">MarkdownToken</span><span class="o">.</span><span class="n">token_setext_heading</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="bp">False</span>
+    <span class="k">elif</span> <span class="n">last_non_inline_token</span><span class="o">.</span><span class="n">token_name</span> <span class="o">==</span> <span class="n">MarkdownToken</span><span class="o">.</span><span class="n">token_paragraph</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="bp">False</span>
+    <span class="k">elif</span> <span class="n">last_non_inline_token</span><span class="o">.</span><span class="n">token_name</span> <span class="o">==</span> <span class="n">MarkdownToken</span><span class="o">.</span><span class="n">token_fenced_code_block</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="bp">False</span>
+    <span class="k">elif</span> <span class="n">last_non_inline_token</span><span class="o">.</span><span class="n">token_name</span> <span class="o">==</span> <span class="n">MarkdownToken</span><span class="o">.</span><span class="n">token_indented_code_block</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="bp">False</span>
+    <span class="k">elif</span> <span class="n">last_non_inline_token</span><span class="o">.</span><span class="n">token_name</span> <span class="o">==</span> <span class="n">MarkdownToken</span><span class="o">.</span><span class="n">token_html_block</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="bp">False</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="bp">False</span><span class="p">,</span> <span class="n">last_non_inline_token</span><span class="o">.</span><span class="n">token_name</span>
+</pre></div>
+<p>and one by one I added the validation functions to replace the <code>assert False</code>
+statements.  Following that same pattern for
+resolving these as I have before, I ran the scenario tests over the entire project
+using the command line:</p>
+<div class="highlight"><pre><span></span>pipenv run pytest -m gfm
+</pre></div>
+<p>Each time, I just picked one of the failing tests, and worked on that tests in that
+group until they were all passing.  For each validation function, I repeated the same
+pattern with the first inline
+token that was observed.  For example, the <code>__verify_first_inline_atx</code> function quickly
+evolved to look like:</p>
+<div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">__verify_first_inline_atx</span><span class="p">(</span><span class="n">last_non_inline_token</span><span class="p">,</span> <span class="n">first_inline_token</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Handle the case where the last non-inline token is an Atx Heading token.</span>
+<span class="sd">    """</span>
+
+    <span class="n">col_pos</span> <span class="o">=</span> <span class="n">last_non_inline_token</span><span class="o">.</span><span class="n">column_number</span> <span class="o">+</span> <span class="n">last_non_inline_token</span><span class="o">.</span><span class="n">hash_count</span>
+
+    <span class="k">if</span> <span class="n">first_inline_token</span><span class="o">.</span><span class="n">token_name</span> <span class="o">==</span> <span class="n">MarkdownToken</span><span class="o">.</span><span class="n">token_text</span><span class="p">:</span>
+        <span class="n">replaced_extracted_whitespace</span> <span class="o">=</span> <span class="n">ParserHelper</span><span class="o">.</span><span class="n">resolve_replacement_markers_from_text</span><span class="p">(</span>
+            <span class="n">first_inline_token</span><span class="o">.</span><span class="n">extracted_whitespace</span>
+        <span class="p">)</span>
+        <span class="n">col_pos</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">replaced_extracted_whitespace</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">first_inline_token</span><span class="o">.</span><span class="n">line_number</span> <span class="o">==</span> <span class="n">last_non_inline_token</span><span class="o">.</span><span class="n">line_number</span>
+        <span class="k">assert</span> <span class="n">first_inline_token</span><span class="o">.</span><span class="n">column_number</span> <span class="o">==</span> <span class="n">col_pos</span>
+    <span class="k">elif</span> <span class="n">first_inline_token</span><span class="o">.</span><span class="n">token_name</span> <span class="o">==</span> <span class="n">MarkdownToken</span><span class="o">.</span><span class="n">token_inline_hard_break</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="bp">False</span>
+        <span class="o">...</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="p">(</span>
+            <span class="n">first_inline_token</span><span class="o">.</span><span class="n">token_name</span> <span class="o">!=</span> <span class="n">MarkdownToken</span><span class="o">.</span><span class="n">token_inline_link</span>
+            <span class="ow">and</span> <span class="n">first_inline_token</span><span class="o">.</span><span class="n">token_name</span>
+            <span class="o">!=</span> <span class="n">EndMarkdownToken</span><span class="o">.</span><span class="n">type_name_prefix</span> <span class="o">+</span> <span class="n">MarkdownToken</span><span class="o">.</span><span class="n">token_inline_link</span>
+        <span class="p">),</span> <span class="n">first_inline_token</span><span class="o">.</span><span class="n">token_name</span>
+</pre></div>
+<h3 id="what-did-i-discover">What Did I Discover?<a class="headerlink" href="#what-did-i-discover" title="Permanent link">¶</a></h3>
+<p>Predictably, I discovered that there are 2 groups of text within block tokens: ones
+that support
+inline tokens other than the Text token, and ones that do not.  The ones that do not
+support inline tokens are
+mostly easy: assert that the inline token is a Text token, and then assert on a simple
+calculation of the first line/column number.  The validation of the HTML Block token and
+the Indented Code Block token both followed this pattern, with very simple validation.</p>
+<div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">__verify_first_inline_html_block</span><span class="p">(</span><span class="n">last_non_inline_token</span><span class="p">,</span> <span class="n">first_inline_token</span><span class="p">):</span>
+    <span class="k">assert</span> <span class="n">first_inline_token</span><span class="o">.</span><span class="n">token_name</span> <span class="o">==</span> <span class="n">MarkdownToken</span><span class="o">.</span><span class="n">token_text</span>
+    <span class="n">leading_whitespace_count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">first_inline_token</span><span class="o">.</span><span class="n">extracted_whitespace</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">last_non_inline_token</span><span class="o">.</span><span class="n">line_number</span> <span class="o">==</span> <span class="n">first_inline_token</span><span class="o">.</span><span class="n">line_number</span>
+    <span class="k">assert</span> <span class="p">(</span>
+        <span class="n">last_non_inline_token</span><span class="o">.</span><span class="n">column_number</span> <span class="o">+</span> <span class="n">leading_whitespace_count</span>
+        <span class="o">==</span> <span class="n">first_inline_token</span><span class="o">.</span><span class="n">column_number</span>
+    <span class="p">)</span>
+</pre></div>
+<p>The Fenced Code Block tokens required a bit more effort, but not much. As the Fenced
+Code Blocks can start with 0-3 space characters that then need to be managed on any
+subsequent line in the code block, the owning block token’s <code>leading_spaces</code> variable
+holds the information on what leading spaces were already removed.  As such, when
+calculating the proper position of the first Text token inside of a Fenced Code Block,
+that removed space needs to be accounted for.  To properly facilitate that, the
+<code>last_token_stack</code> argument needed to be plumbed through so the verification function
+could calculate the proper owning blocking token.</p>
+<p>The second group of block tokens were the more interesting group of tokens to deal with.
+This group of tokens includes the Atx Heading tokens (as shown in the above example),
+SetExt Heading tokens, and Paragraph tokens.  The <code>__verify_first_inline_atx</code> function
+and the <code>__verify_first_inline_setext</code> function ended up looking similar: the Text
+inline token case was populated, but all the other types of inline tokens were handled
+with <code>assert False</code> statements.  The <code>__verify_first_inline_paragraph</code> function was
+similar, but also slightly different.  The same template was used to generate the
+function, but each of the conditions in the <code>if-elif-else</code> block were met at least once.
+However, since only the Text token and the Emphasis token have line/column numbers,
+allowing this comparison to be performed for them:</p>
+<div class="highlight"><pre><span></span>        <span class="k">assert</span> <span class="n">first_inline_token</span><span class="o">.</span><span class="n">line_number</span> <span class="o">==</span> <span class="n">last_non_inline_token</span><span class="o">.</span><span class="n">line_number</span>
+        <span class="k">assert</span> <span class="n">first_inline_token</span><span class="o">.</span><span class="n">column_number</span> <span class="o">==</span> <span class="n">last_non_inline_token</span><span class="o">.</span><span class="n">column_number</span>
+</pre></div>
+<p>All the other inline tokens, the ones that did not currently have a line/column assigned
+to them (yet), used the following comparison:</p>
+<div class="highlight"><pre><span></span>        <span class="k">assert</span> <span class="n">first_inline_token</span><span class="o">.</span><span class="n">line_number</span> <span class="o">==</span> <span class="mi">0</span>
+        <span class="k">assert</span> <span class="n">first_inline_token</span><span class="o">.</span><span class="n">column_number</span> <span class="o">==</span> <span class="mi">0</span>
+</pre></div>
+<p>It was not much, but it gave me two important bits of information.  The first was that
+there was at least one case where each available inline token was the first inline
+token inside of a Paragraph token.  The second was that both heading tokens, the Atx
+Heading token and the SetExt Heading token, only contained scenario tests that started
+with Text tokens.  I made a note of that observation in the issue’s list and moved on.</p>
+<h2 id="verifying-the-middle-tokens">Verifying the Middle Tokens<a class="headerlink" href="#verifying-the-middle-tokens" title="Permanent link">¶</a></h2>
+<p>With the validation of the first element out of the way, it was time to start working
+on the <code>__verify_next_inline</code> function.  Now that the middle tokens were anchored at
+the beginning, each of the middle inline tokens could be validated against the inline
+token that preceded it.  Since I knew that most of the inline tokens had not
+been handled yet, I started out that function with a slight change to the template:</p>
+<div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">__verify_next_inline</span><span class="p">(</span>
+    <span class="n">last_token</span><span class="p">,</span> <span class="n">pre_previous_inline_token</span><span class="p">,</span> <span class="n">previous_inline_token</span><span class="p">,</span> <span class="n">current_inline_token</span>
+<span class="p">):</span>
+    <span class="k">if</span> <span class="p">(</span>
+        <span class="n">previous_inline_token</span><span class="o">.</span><span class="n">line_number</span> <span class="o">==</span> <span class="mi">0</span>
+        <span class="ow">and</span> <span class="n">previous_inline_token</span><span class="o">.</span><span class="n">column_number</span> <span class="o">==</span> <span class="mi">0</span>
+    <span class="p">):</span>
+        <span class="k">return</span>
+    <span class="k">if</span> <span class="p">(</span>
+        <span class="n">current_inline_token</span><span class="o">.</span><span class="n">line_number</span> <span class="o">==</span> <span class="mi">0</span>
+        <span class="ow">and</span> <span class="n">current_inline_token</span><span class="o">.</span><span class="n">column_number</span> <span class="o">==</span> <span class="mi">0</span>
+    <span class="p">):</span>
+        <span class="k">return</span>
+
+    <span class="n">estimated_line_number</span> <span class="o">=</span> <span class="n">previous_inline_token</span><span class="o">.</span><span class="n">line_number</span>
+    <span class="n">estiated_column_number</span> <span class="o">=</span> <span class="n">previous_inline_token</span><span class="o">.</span><span class="n">column_number</span>
+    <span class="k">if</span> <span class="n">previous_inline_token</span><span class="o">.</span><span class="n">token_name</span> <span class="o">==</span> <span class="n">MarkdownToken</span><span class="o">.</span><span class="n">token_text</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="bp">False</span>
+    <span class="o">...</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="bp">False</span><span class="p">,</span> <span class="n">previous_inline_token</span><span class="o">.</span><span class="n">token_name</span>
+
+    <span class="k">assert</span> <span class="n">estimated_line_number</span> <span class="o">==</span> <span class="n">current_inline_token</span><span class="o">.</span><span class="n">line_number</span><span class="p">,</span> <span class="p">(</span>
+        <span class="s2">"&gt;&gt;est&gt;"</span>
+        <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">estimated_line_number</span><span class="p">)</span>
+        <span class="o">+</span> <span class="s2">"&gt;act&gt;"</span>
+        <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">current_inline_token</span><span class="o">.</span><span class="n">line_number</span><span class="p">)</span>
+    <span class="p">)</span>
+    <span class="k">assert</span> <span class="n">estiated_column_number</span> <span class="o">==</span> <span class="n">current_inline_token</span><span class="o">.</span><span class="n">column_number</span><span class="p">,</span> <span class="p">(</span>
+        <span class="s2">"&gt;&gt;est&gt;"</span>
+        <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">estiated_column_number</span><span class="p">)</span>
+        <span class="o">+</span> <span class="s2">"&gt;act&gt;"</span>
+        <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">current_inline_token</span><span class="o">.</span><span class="n">column_number</span><span class="p">)</span>
+    <span class="p">)</span>
+</pre></div>
+<p>The first set of <code>if</code> statements made sure that if either the previous inline token or
+the current inline token
+was one that I had not worked on yet, it would return right away.  While this assumed
+that the line/column numbers were correct to a certain extent, I was okay with that
+assumption in the short term.  The second part computed a starting point for the new
+line/column numbers, and then went into the usual pattern of dealing with
+each of the eligible tokens by name.  Finally, the third part compared the modified
+line/column numbers against the actual line/column numbers of the current token,
+asserting with meaningful information if there were any issues.</p>
+<h3 id="emphasis-tokens">Emphasis Tokens<a class="headerlink" href="#emphasis-tokens" title="Permanent link">¶</a></h3>
+<p>I thought it would be quick to get emphasis out of the way, and it was!  As both the
+start and end Emphasis tokens contain the <code>emphasis_length</code>, it was a quick matter of
+adjusting the column number by that amount.  As both tokens are confined to
+a single line, there was no adjusting of the line number to worry about.</p>
+<h3 id="text-tokens">Text Tokens<a class="headerlink" href="#text-tokens" title="Permanent link">¶</a></h3>
+<p>As mentioned in a previous section, there are two major groups of block tokens
+that contain Text tokens: ones that allow all inline tokens and ones that do not allow
+inline tokens except for the Text token.  The ones that do not allow inline tokens are
+simple, as all the
+information about the Text token is contained within the token itself.  It is the
+other group that are interesting to deal with.</p>
+<p>The easy part of dealing with the Text token is determining the new line number.
+With the exception of a Text token that occurs right after a Hard Line Break token,
+the calculation is simple:  split the text by the newline character, subtract 1,
+and that is the number of newlines in the Text token.  If the token before the Text
+token was a Hard Line Break token, it already increased the line number, but the
+Text token that followed also started with a newline character.  To remedy this,
+that pattern is looked for, and the <code>current_line</code> variable adjusted to remove the
+newline character at the start of the line.<sup id="fnref:noted"><a class="footnote-ref" href="#fn:noted">1</a></sup></p>
+<p>Determining the column number is a more interesting task to undertake.  For any
+Text tokens occurring within a block that does not allow for extra inline tokens,
+the column number information is already in the token itself, and the calculation
+is as simple.  The column delta is equal to the number of text characters stored
+within the token<sup id="fnref:processing"><a class="footnote-ref" href="#fn:processing">2</a></sup>.  If there was a newline in the token’s text, this
+count is started after the last newline character.</p>
+<p>The second group of block tokens that can contain text are the Atx Heading token, the
+SetExt Heading token, and the Paragraph token.  Since the Atx Heading token can only
+contain a single line’s worth of data, no extra calculations are required to handle
+multiple line scenarios.  In the case of the other Heading token, the SetExt Heading
+token, the starting whitespace is stored in the Text token’s <code>end_whitespace</code> field.
+The processing of this information is a bit tricky in that the starting and ending
+whitespace for the Text tokens within the SetExt Heading token is stored in that
+field using the <code>\x02</code> character as a separator.  Still, determining the proper
+indent and applying it to the column number is relatively simple.</p>
+<p>Dealing with a Text token within a Paragraph token is a lot more work.  Due to other
+design reasons, the whitespace indent for these Text tokens is stored within the
+owning Paragraph token.  While that is not difficult by itself, keeping track of which
+indent goes with which line is a bit of a chore.  Luckily, when I was working on the
+Markdown transformer, I introduced a variable <code>rehydrate_index</code> to the Text token.
+When rehydrating the Text token, I used this variable to keep track of which stripped
+indent needed to be added back to which line of any subsequent Text tokens. Given
+the prefix whitespace for any line within the Paragraph block, calculating the
+column number delta was easy.</p>
+<h3 id="blank-line-tokens">Blank Line Tokens<a class="headerlink" href="#blank-line-tokens" title="Permanent link">¶</a></h3>
+<p>That left the Blank Line tokens to deal with, and I hoped that the effort needed to
+complete them was more in line with the Emphasis tokens than the Text tokens.  I was
+lucky, and the Blank Line tokens were easy, but with a couple of small twists.
+Intrinsically, a blank line
+increases the line number and resets the column number to 1.  That was the easy part.
+The first twist is that if the current token is a Text token, that text token can
+provide leading whitespace that needs to be considered.  That was easily dealt
+with by adding the following lines to the handler:</p>
+<div class="highlight"><pre><span></span>    <span class="k">if</span> <span class="n">current_inline_token</span><span class="o">.</span><span class="n">token_name</span> <span class="o">==</span> <span class="n">MarkdownToken</span><span class="o">.</span><span class="n">token_text</span><span class="p">:</span>
+            <span class="n">estiated_column_number</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">current_inline_token</span><span class="o">.</span><span class="n">extracted_whitespace</span><span class="p">)</span>
+</pre></div>
+<p>The more difficult problem occurred when 2 blank line tokens appear one after the
+other within a Fenced Code Block token.  Because of how the numbers added up, I needed
+to adjust the <code>estimated_line_number</code> variable by one.</p>
+<div class="highlight"><pre><span></span>    <span class="k">if</span> <span class="n">current_inline_token</span><span class="o">.</span><span class="n">token_name</span> <span class="o">==</span> <span class="n">MarkdownToken</span><span class="o">.</span><span class="n">token_blank_line</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">previous_inline_token</span><span class="o">.</span><span class="n">token_name</span> <span class="o">!=</span> <span class="n">MarkdownToken</span><span class="o">.</span><span class="n">token_blank_line</span><span class="p">:</span>
+            <span class="n">estimated_line_number</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="n">estiated_column_number</span> <span class="o">=</span> <span class="mi">1</span>
+</pre></div>
+<p>With that tweak being done, all the tests were then passing, and it was time to
+wrap it up.</p>
+<h2 id="was-it-worth-it">Was It Worth It?<a class="headerlink" href="#was-it-worth-it" title="Permanent link">¶</a></h2>
+<p>The interesting part about defensive code is that sometimes you are not aware of how
+good that defense is.  Using the analogy of a castle, is a castle better defensible if
+it can withstand attack or if it deters others from attacking the castle?  While I
+did not have any information about potential attacks that were stopped ahead of time,
+there were 2 actual issues that the current round of consistency checks did find.</p>
+<h3 id="issue-1-image-link">Issue #1: Image Link<a class="headerlink" href="#issue-1-image-link" title="Permanent link">¶</a></h3>
+<p>The first of those issues was an issue with the column number for
+<a href="https://github.github.com/gfm/#example-600">example 600</a>
+as follows:</p>
+<div class="highlight"><pre><span></span><span class="err">!\</span><span class="o">[</span><span class="n">foo</span><span class="o">]</span><span class="w"></span>
+
+<span class="o">[</span><span class="n">foo</span><span class="o">]</span><span class="err">:</span><span class="w"> </span><span class="o">/</span><span class="n">url</span><span class="w"> </span><span class="ss">"title"</span><span class="w"></span>
+</pre></div>
+<p>Before these inline consistency checks were added, the text for the <code>]</code>
+character was reported as <code>(1,6)</code>.  By simply counting the characters, the <code>!</code>
+character starts at position 1 and the second <code>o</code> character is at position 6.  As
+such, the <code>]</code> character should be reported as <code>(1,7)</code>.  </p>
+<p>Doing some research, I concluded that the handling of a properly initiated Image
+token was being handled properly.  However, with a failed Image token sequence,
+the <code>!</code> character followed by any other character than the <code>[</code> character, the
+<code>!</code> character was being emitted, but the column number’s delta wasn’t being set.
+Adding the line</p>
+<div class="highlight"><pre><span></span>    <span class="n">inline_response</span><span class="o">.</span><span class="n">delta_column_number</span> <span class="o">=</span> <span class="mi">1</span>
+</pre></div>
+<p>at the end of the <code>__handle_inline_image_link_start_character</code> function solved that
+issue.</p>
+<h3 id="issue-2-a-simple-adjustment">Issue 2: A Simple Adjustment<a class="headerlink" href="#issue-2-a-simple-adjustment" title="Permanent link">¶</a></h3>
+<p>The second of those issues was more of a nitpick that an actual issue.  In the
+tokenization for
+<a href="https://github.github.com/gfm/#example-183">example 183</a>:</p>
+<div class="highlight"><pre><span></span><span class="err">#</span><span class="w"> </span><span class="o">[</span><span class="n">Foo</span><span class="o">]</span><span class="w"></span>
+<span class="o">[</span><span class="n">foo</span><span class="o">]</span><span class="err">:</span><span class="w"> </span><span class="o">/</span><span class="n">url</span><span class="w"></span>
+<span class="o">&gt;</span><span class="w"> </span><span class="n">bar</span><span class="w"></span>
+</pre></div>
+<p>the first line was tokenized as:</p>
+<div class="highlight"><pre><span></span>        "[atx(1,1):1:0:]",
+        "[text(1,3):\a \a\x03\a:]",
+        "[link:shortcut:/url:::::Foo:::::]",
+        "[text(1,4):Foo: ]",
+        "[end-link:::False]",
+        "[end-atx:::False]",
+</pre></div>
+<p>Having a lot of experience sight reading serializations for all the tokens, the
+information in the Text token leapt out at me right away.  In that token, the extra
+data associated with the token is composed by adding the <code>self.token_text</code> field,
+the <code>:</code> character, and the <code>self.extracted_whitespace</code>.  Based on the above
+tokenization, that meant that the text sequence <code>\a \a\x03\a</code> was being considered
+as text instead of whitespace.</p>
+<p>To understand why I thought this is wrong requires an understanding of the
+existence of that character sequence.  The <code>\a</code> sequence is used to denote that
+a sequence of characters in the original Markdown document was interpreted and
+replaced with another sequence of characters.  The <code>\x03</code> character within the
+second half of that sequence means that the <code>{space}</code> character in the first part
+of the sequence is being replaced with the empty string.  Basically, to properly
+represent the space between the <code>#</code> character denoting the Atx Heading element
+and the <code>[</code> that starts the Link element, I needed to add a space character that
+would not appear in any HTML transformation.</p>
+<p>And here is where the nitpicking comes in.  When I originally added that sequence
+when working on the Markdown transformer, it made sense to me to assign it to
+the token’s <code>self.text_token</code> field.  But since then, I have grown to think of
+that sequence as being more extracted whitespace than token text.  To resolve
+that, I decided to move the call to generate the replacement text from the
+<code>self.token_text</code> field to the <code>self.extracted_whitespace</code> field.  It wasn’t
+a big move, but it was something that I thought was the right thing to do.</p>
+<h2 id="what-was-my-experience-so-far">What Was My Experience So Far?<a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link">¶</a></h2>
+<p>While this batch of work wasn’t as laborious as last week’s work, the effort required
+to make sure it was correct was equal to or exceeding last week’s work.  I knew that
+if I made any mistakes last week, they would be caught when I implemented the
+consistency checks.  Well, these were the consistency checks that would capture
+any such issues that slipped through.</p>
+<p>I am both happy and proud that I am coming to the end of implementing the consistency
+checks.  It has been a long 3 month voyage since I decided that consistency checks
+were the best way to ensure that the quality that I wanted in the PyMarkdown project
+was maintained.  And while there were times that I questioned if I made the right
+decision in dedicating this large block of time to this aspect of the project, I was
+confident that I had made the right decision.</p>
+<p>But looking ahead to what I needed to do after the consistency checks, I saw a
+fair number of items in the issues list that would need researching and possibly
+fixing.  While I could start to release the project without them, I didn’t feel
+comfortable doing that.  I wanted to give the project the best chance it could to
+make a first impression, and then move from there.  And that would mean more work
+up front.  So while I was happy that the consistency check work was coming to an
+end, there seemed to be a deep pool of issues that would need to be research… and
+I wasn’t sure how much I was looking forward to that.</p>
+<p>I still believe that adding the consistency checks was the right move.  Of that
+I am still certain.  Instead of a feeling that I have the right code in place to
+do the Markdown transformations, I have hard, solid checks that verify the results
+of each and every scenario test.  It also gave me the interesting bit of information
+that the scenario tests did not include any cases where the Atx Heading token and the
+SetExt Heading token were followed by anything other than a Text token.  Something
+interesting to follow up on later.</p>
+<p>To me, adding more of those checks for the inline
+tokens was just another solid step forward in quality.</p>
+<h2 id="what-is-next">What is Next?<a class="headerlink" href="#what-is-next" title="Permanent link">¶</a></h2>
+<p>Having completed the hardest inline token (Text token) and the easiest inline tokens
+(Emphasis tokens), it was time to buckle down and get the remaining tokens done.  If
+I was lucky, the foundational work that I had already completed would make completing
+those tokens easy.  If I was unlucky, there would be a whole selection of edge cases
+that I needed to account for.  Realistically, I was expecting something square in the
+middle between those two scenarios.  The next batch worth of work would answer that
+question!</p>
+<div class="footnote">
+<hr/>
+<ol>
+<li id="fn:noted">
+<p>This has been noted in the issue’s list, and I am hoping to look at it soon. <a class="footnote-backref" href="#fnref:noted" title="Jump back to footnote 1 in the text">↩</a></p>
+</li>
+<li id="fn:processing">
+<p>That is, after removing any special characters and leaving the original text used to create those special characters. <a class="footnote-backref" href="#fnref:processing" title="Jump back to footnote 2 in the text">↩</a></p>
+</li>
+</ol>
+</div>
+
+
+             
+ 
+                <p id="post-share-links">
+    Like this post? Share on:
+    <a href="https://twitter.com/intent/tweet?text=Markdown%20Linter%20-%20Adding%20Consistency%20Checks%20for%20Emphasis%20and%20Text%20Tokens&url=https%3A//jackdewinter.github.io/2020/09/14/markdown-linter-adding-consistency-checks-for-emphasis-and-text-tokens/&hashtags=markdown-linter,core-linter" target="_blank" rel="nofollow noopener noreferrer" title="Share on Twitter">Twitter</a>
+    ❄
+    <a href="https://www.facebook.com/sharer/sharer.php?u=https%3A//jackdewinter.github.io/2020/09/14/markdown-linter-adding-consistency-checks-for-emphasis-and-text-tokens/" target="_blank" rel="nofollow noopener noreferrer" title="Share on Facebook">Facebook</a>
+    ❄
+    <a href="mailto:?subject=Markdown%20Linter%20-%20Adding%20Consistency%20Checks%20for%20Emphasis%20and%20Text%20Tokens&amp;body=https%3A//jackdewinter.github.io/2020/09/14/markdown-linter-adding-consistency-checks-for-emphasis-and-text-tokens/" target="_blank" rel="nofollow noopener noreferrer" title="Share via Email">Email</a>
+    </p>
+
+            
+            
+
+
+
+
+
+
+<section>
+    <h6 style="display:none;">Comments</h6>
+    <p id="comment-message">So what do you think? Did I miss something? Is any part unclear? Leave your comments below. </p>
+
+    <div class="accordion" id="accordion2">
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                <a class="accordion-toggle disqus-comment-count comment-count"
+                   data-toggle="collapse"
+                   data-parent="#accordion2"
+                   href="https://jackdewinter.github.io/2020/09/14/markdown-linter-adding-consistency-checks-for-emphasis-and-text-tokens/#comment_thread"
+                   id="comment-accordion-toggle">
+                    Comments
+                </a>
+            </div>
+            <div id="comment_thread" class="accordion-body collapse">
+                <div class="accordion-inner">
+                    <div class="comments">
+
+                        <script src="https://utteranc.es/client.js"
+        data-repo="jackdewinter/jackdewinter.github.io"
+        data-issue-term="markdown-linter-adding-consistency-checks-for-emphasis-and-text-tokens"
+        data-label="Comments"
+        data-theme="github-light"
+        crossorigin="anonymous"
+        async>
+</script>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+            <hr/>
+            <aside>
+            <nav>
+            <ul class="articles-timeline">
+                <li class="previous-article">« <a href="https://jackdewinter.github.io/2020/09/07/markdown-linter-starting-to-add-linecolumn-numbers-for-inline-tokens/" title="Previous: Markdown Linter - Starting to Add Line/Column Numbers For Inline Tokens">Markdown Linter - Starting to Add Line/Column Numbers For Inline Tokens</a></li>
+            </ul>
+            </nav>
+            </aside>
+        </div>
+        <section id="article-sidebar" class="span2">
+    <h4>Reading Time</h4>
+    <p>~16 min read</p>
+            <h4>Published</h4>
+            <time itemprop="dateCreated" datetime="2020-09-14T00:00:00-07:00">Sep 14, 2020</time>
+        <h4>Markdown Linter Core</h4>
+    <ul class="multi-parts-list">
+            <li >
+            <a href="https://jackdewinter.github.io/2020/05/04/markdown-linter-core-pre-rule-improvements/" title="Markdown Linter - Core - Pre-Rule Improvements">Part 1: Markdown Linter - Core - Pre-Rule Improvements</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/06/01/markdown-linter-taking-time-to-evaluate/" title="Markdown Linter - Taking Time To Evaluate">Part 2: Markdown Linter - Taking Time To Evaluate</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/06/08/markdown-linter-adding-line-and-column-support/" title="Markdown Linter - Adding Line and Column Support">Part 3: Markdown Linter - Adding Line and Column Support</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/06/15/markdown-linter-rabbit-hole-1-adding-consistency-checks/" title="Markdown Linter - Rabbit Hole 1 - Adding Consistency Checks">Part 4: Markdown Linter - Rabbit Hole 1 - Adding Consistency Checks</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/06/22/markdown-linter-rabbit-hole-2-losing-my-way/" title="Markdown Linter - Rabbit Hole 2 - Losing My Way">Part 5: Markdown Linter - Rabbit Hole 2 - Losing My Way</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/07/06/markdown-linter-weeding-the-projects-issue-list/" title="Markdown Linter - Weeding the Project's Issue List">Part 6: Markdown Linter - Weeding the Project's Issue List</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/06/29/markdown-linter-rabbit-hole-3-trying-to-dig-myself-out/" title="Markdown Linter - Rabbit Hole 3 - Trying To Dig Myself Out">Part 7: Markdown Linter - Rabbit Hole 3 - Trying To Dig Myself Out</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/07/13/markdown-linter-improving-consistency/" title="Markdown Linter - Improving Consistency">Part 8: Markdown Linter - Improving Consistency</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/07/20/markdown-linter-transforming-back-to-markdown/" title="Markdown Linter - Transforming Back to Markdown">Part 9: Markdown Linter - Transforming Back to Markdown</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/07/27/markdown-linter-addressing-the-initial-markdown-transformer-issues/" title="Markdown Linter - Addressing the Initial Markdown Transformer Issues">Part 10: Markdown Linter - Addressing the Initial Markdown Transformer Issues</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/08/03/markdown-linter-improving-the-markdown-transformer/" title="Markdown Linter - Improving the Markdown Transformer">Part 11: Markdown Linter - Improving the Markdown Transformer</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/08/10/markdown-linter-adding-links-to-the-markdown-transformer/" title="Markdown Linter - Adding Links to the Markdown Transformer">Part 12: Markdown Linter - Adding Links to the Markdown Transformer</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/08/17/markdown-linter-adding-lists-to-the-markdown-transformer/" title="Markdown Linter - Adding Lists to the Markdown Transformer">Part 13: Markdown Linter - Adding Lists to the Markdown Transformer</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/08/25/markdown-linter-adding-consistency-to-block-quotes/" title="Markdown Linter - Adding Consistency to Block Quotes">Part 14: Markdown Linter - Adding Consistency to Block Quotes</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/08/31/markdown-linter-adding-consistency-to-token-heights/" title="Markdown Linter - Adding Consistency to Token Heights">Part 15: Markdown Linter - Adding Consistency to Token Heights</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2020/09/07/markdown-linter-starting-to-add-linecolumn-numbers-for-inline-tokens/" title="Markdown Linter - Starting to Add Line/Column Numbers For Inline Tokens">Part 16: Markdown Linter - Starting to Add Line/Column Numbers For Inline Tokens</a>
+            </li>
+            <li  class="active-part">
+            Part 17: Markdown Linter - Adding Consistency Checks for Emphasis and Text Tokens
+            </li>
+    </ul>
+            <h4>Category</h4>
+            <a class="category-link" href="https://jackdewinter.github.io/categories#software-quality-ref">Software Quality</a>
+            <h4>Tags</h4>
+            <ul class="list-of-tags tags-in-article">
+                <li><a href="https://jackdewinter.github.io/tags#core-linter-ref">core linter
+                    <span>20</span>
+</a></li>
+                <li><a href="https://jackdewinter.github.io/tags#markdown-linter-ref">markdown linter
+                    <span>38</span>
+</a></li>
+            </ul>
+<h4>Stay in Touch</h4>
+<div id="sidebar-social-link">
+    <a href="https://github.com/jackdewinter" title="github-alt" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="GitHub" role="img" viewBox="0 0 512 512"><rect width="512" height="512" rx="15%" fill="#1B1817"/><path fill="#fff" d="M335 499c14 0 12 17 12 17H165s-2-17 12-17c13 0 16-6 16-12l-1-50c-71 16-86-28-86-28-12-30-28-37-28-37-24-16 1-16 1-16 26 2 40 26 40 26 22 39 59 28 74 22 2-17 9-28 16-35-57-6-116-28-116-126 0-28 10-51 26-69-3-6-11-32 3-67 0 0 21-7 70 26 42-12 86-12 128 0 49-33 70-26 70-26 14 35 6 61 3 67 16 18 26 41 26 69 0 98-60 120-117 126 10 8 18 24 18 48l-1 70c0 6 3 12 16 12z"/></svg>
+    </a>
+    <a href="https://www.linkedin.com/in/jackdewinter/" title="linkedin" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="LinkedIn" role="img" viewBox="0 0 512 512" fill="#fff"><rect width="512" height="512" rx="15%" fill="#0077b5"/><circle cx="142" cy="138" r="37"/><path stroke="#fff" stroke-width="66" d="M244 194v198M142 194v198"/><path d="M276 282c0-20 13-40 36-40 24 0 33 18 33 45v105h66V279c0-61-32-89-76-89-34 0-51 19-59 32"/></svg>
+    </a>
+    <a href="https://jackdewinter.github.io/feeds/all.atom.xml" title="" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="RSS" role="img" viewBox="0 0 512 512"><rect width="512" height="512" rx="15%" fill="#f80"/><circle cx="145" cy="367" r="35" fill="#fff"/><path fill="none" stroke="#fff" stroke-width="60" d="M109 241c89 0 162 73 162 162M109 127c152 0 276 124 276 276"/></svg>
+    </a>
+</div>
+            
+
+
+
+
+
+            
+
+
+
+
+
+        </section>
+</div>
+</article>
+                    </div>
+                    <div class="span1"></div>
+                </div>
+            </div>
+        </div>
+<footer>
+    <div>
+        
+&copy; Copyright 2020 by Jack De Winter and licensed under a <a rel="license"
+  href="http://creativecommons.org/licenses/by/4.0/">
+  <img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/80x15.png" />
+  Creative Commons Attribution 4.0 International License</a>.
+
+    </div>
+
+
+
+
+    <div id="fpowered">
+        Powered by: <a href="http://getpelican.com/" title="Pelican Home Page" target="_blank" rel="nofollow noopener noreferrer">Pelican</a>
+        Theme: <a href="https://elegant.oncrashreboot.com/" title="Theme Elegant Home Page" target="_blank" rel="nofollow noopener noreferrer">Elegant</a>
+    </div>
+</footer>            <script src="//code.jquery.com/jquery.min.js"></script>
+        <script src="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>
+        <script>
+            function validateForm(query)
+            {
+                return (query.length > 0);
+            }
+        </script>
+
+    <script>
+    (function () {
+        if (window.location.hash.match(/^#comment-\d+$/)) {
+            $('#comment_thread').collapse('show');
+        }
+    })();
+    window.onhashchange=function(){
+        if (window.location.hash.match(/^#comment-\d+$/))
+            window.location.reload(true);
+    }
+    $('#comment_thread').on('shown', function () {
+        var link = document.getElementById('comment-accordion-toggle');
+        var old_innerHTML = link.innerHTML;
+        $(link).fadeOut(200, function() {
+            $(this).text('Click here to hide comments').fadeIn(200);
+        });
+        $('#comment_thread').on('hidden', function () {
+            $(link).fadeOut(200, function() {
+                $(this).text(old_innerHTML).fadeIn(200);
+            });
+        })
+    })
+</script>
+
+    </body>
+    <!-- Theme: Elegant built for Pelican
+        License : MIT -->
+</html>
