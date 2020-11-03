@@ -1,5 +1,391 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench - Software Quality</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/software-quality.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2020-10-26T00:00:00-07:00</updated><entry><title>Markdown Linter - Delving Into the Issues - 5</title><link href="https://jackdewinter.github.io/2020/10/26/markdown-linter-delving-into-the-issues-5/" rel="alternate"></link><published>2020-10-26T00:00:00-07:00</published><updated>2020-10-26T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-10-26:/2020/10/26/markdown-linter-delving-into-the-issues-5/</id><summary type="html">
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench - Software Quality</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/software-quality.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2020-11-02T00:00:00-08:00</updated><entry><title>Markdown Linter - Delving Into the Issues - 6</title><link href="https://jackdewinter.github.io/2020/11/02/markdown-linter-delving-into-the-issues-6/" rel="alternate"></link><published>2020-11-02T00:00:00-08:00</published><updated>2020-11-02T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-11-02:/2020/11/02/markdown-linter-delving-into-the-issues-6/</id><summary type="html">
+&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In my
+&lt;a href="https://jackdewinter.github.io/2020/10/26/markdown-linter-delving-into-the-issues-5/"&gt;last article&lt;/a&gt;,
+I continued in my quest to reduce the size of the issues list.  In this article, I
+make good progress in removing items from the issues list.&lt;/p&gt;
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;After having a week where I felt like I barely made any progress, it was nice to …&lt;/p&gt;</summary><content type="html">
+&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In my
+&lt;a href="https://jackdewinter.github.io/2020/10/26/markdown-linter-delving-into-the-issues-5/"&gt;last article&lt;/a&gt;,
+I continued in my quest to reduce the size of the issues list.  In this article, I
+make good progress in removing items from the issues list.&lt;/p&gt;
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;After having a week where I felt like I barely made any progress, it was nice to get
+a week where I was able to get some work done while keeping balance with my personal
+life.  For some reason, the stop-and-go nature of last week was not repeated this
+week, and I was grateful for it.  But this week was not really about any one of
+those issues, just getting some good, solid work in to reduce the size of the
+issues list.&lt;/p&gt;
+&lt;h2 id="what-is-the-audience-for-this-article"&gt;What Is the Audience for This Article?&lt;a class="headerlink" href="#what-is-the-audience-for-this-article" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;While detailed more eloquently in
+&lt;a href="https://jackdewinter.github.io/2020/04/05/what-is-the-audience-for-my-blog/#what-is-the-audience-for-my-blog"&gt;this article&lt;/a&gt;,
+my goal for this technical article is to focus on the reasoning behind my solutions,
+rather that the solutions themselves.  For a full record of the solutions presented in
+this article, please go to this project’s GitHub repository and consult the
+commits between
+&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/ea62ec32ce232668df57c232a94d5311cc6107f9"&gt;14 Oct 2020&lt;/a&gt;
+and
+&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/7ac7e655e3aabe6b220e9ba179f59620284ac9e1"&gt;18 Oct 2020&lt;/a&gt;.&lt;/p&gt;
+&lt;h2 id="finishing-up-the-work"&gt;Finishing Up the Work&lt;a class="headerlink" href="#finishing-up-the-work" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;After a day’s rest from writing that week’s article, I looked at my notes and noticed
+there was one little issue that was left over from the last weeks’ worth of work:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;- test_paragraph_extra_b5 - adding extra newline somewhere, possibly not clearing after previous image?
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Basically, I was not able to get the &lt;code&gt;test_paragraph_extra_b5&lt;/code&gt; function to pass before
+the end of the previous week, so I marked it with &lt;code&gt;@pytest.mark.skip&lt;/code&gt; to disable the
+test until I could look at it.  Not wanting to leave things undone, this was the number
+one thing on my list for this week.&lt;/p&gt;
+&lt;p&gt;Looking at the Markdown document and the HTML output, everything looked fine.  It was
+when I looked at the tokens and saw the issue that it came flooding back to me: there
+was a problem with the newlines.  Specifically, there was a problem with the Text token
+following the test document’s Image token:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="s2"&gt;"[text(3,19):&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;def::&lt;/span&gt;&lt;span class="se"&gt;\n\n&lt;/span&gt;&lt;span class="s2"&gt;]"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;If things are working properly, the number of newline characters in the text field is
+equal to the number of new characters in the extracted field.  In this case, the text
+field contains one newline character, but the extracted whitespace contains two newline
+characters.  And once I saw that pattern, I was able to see it in other similar tests.
+In total, there were 16 Paragraph token tests and 12 SetExt Heading token tests that
+exhibited this behavior.  The key was that in each case, the Text token followed an
+Image token and preceded the end of block token.&lt;/p&gt;
+&lt;h3 id="digging-in"&gt;Digging In&lt;a class="headerlink" href="#digging-in" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Now I had a pattern, so it was time to fix it. I started by turning the debug log on and
+working my way through the data for the test.  There was a substantial amount of data,
+but using my experience on the project, I was able to quickly narrow the search to
+something
+in the inline processing section.  Taking a look at the tokens produced right before
+the inline processing started, everything looked right.  I then decided to focus on the
+inline processing based on that information.&lt;/p&gt;
+&lt;p&gt;Digging into the Inline Processor, I followed the processing along token by token,
+right up to and including the Image token and everything looked fine.  Even the
+processing for the Text token itself looked fine if it was not for that extra newline
+character in the extracted whitespace field.  To narrow down where that character was
+being added,
+I started with some debug to log the tokens at various stages of the processing,
+and the data confirmed my previous statement.  From a token point of view, everything
+looked perfect.&lt;/p&gt;
+&lt;p&gt;To me, that just left the tidying up after the tokens.  Because of the way the parser
+is designed, the inline text is accumulated until an inline token is required.  Once
+that token is created, the parser then grabs all the characters up to the start of that
+token, creates a Text token with that information, and adds it before adding the new
+token.  I stared at the code that created the token, and wondered what the problem
+could be.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="n"&gt;inline_blocks&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;append&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+        &lt;span class="n"&gt;TextMarkdownToken&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+            &lt;span class="n"&gt;current_string&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+            &lt;span class="n"&gt;starting_whitespace&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+            &lt;span class="n"&gt;end_whitespace&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;end_string&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+            &lt;span class="n"&gt;line_number&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;last_line_number&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+            &lt;span class="n"&gt;column_number&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;last_column_number&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;It was on a hunch more than anything else that I decided to look at the &lt;code&gt;end_string&lt;/code&gt;
+variable. This variable is where the extra whitespace stripped from the end of the line
+is stored. Looking at this variable’s impact on the logs, I noticed a couple of “holes”
+that I filled with extra debug log statements.  It was with that information that I was
+able to pinpoint that along the way to the creation of that Text token, the extra
+newline character was appearing.  Tracking backwards, it soon became clear that the
+issue was that the &lt;code&gt;end_string&lt;/code&gt; was being assigned that newline character, but it was
+not been cleared properly.&lt;/p&gt;
+&lt;h3 id="fixing-the-issue"&gt;Fixing the Issue&lt;a class="headerlink" href="#fixing-the-issue" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;After about 45 minutes of additional debugging and fiddling, the answer final came to
+me.  When the &lt;code&gt;inline_response.consume_rest_of_line&lt;/code&gt; field was set, four different
+fields and variables were being reset.  The thinking here was that if the different
+handlers indicated that they had consumed the rest of the data on the line, there
+was not anything else to do.  But one thing was forgotten: the resetting of the
+&lt;code&gt;end_string&lt;/code&gt; variable.&lt;/p&gt;
+&lt;p&gt;Sometimes a fix is rewriting some logic, and sometimes a fix is adding some new logic to
+handle a missed case. This time, the fix was just about completing the reset action.
+Adding a single line in the &lt;code&gt;if inline_response.consume_rest_of_line:&lt;/code&gt; block was
+all that was needed:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;        &lt;span class="n"&gt;end_string&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Anticlimactic that it was only resetting one variable on one line, but that is the way
+it sometimes is.  Lots of looking only to find out something small was missed.  With
+the research I completed, it did make sense though.  Without that variable being reset
+to &lt;code&gt;None&lt;/code&gt;, the newline character from a previous line was being carried through to
+the Text token after the Image token.&lt;/p&gt;
+&lt;p&gt;Once I verified that the fix worked with that one test, I ran the entire suite of tests
+with the new code in place.  Comparing the test failures to the set of 16 Paragraph
+token tests and 12 SetExt Heading token tests, there was a 100% match!  After
+approximately 3 hours of work, I had found that small but required change!&lt;/p&gt;
+&lt;h2 id="being-more-precise"&gt;Being More Precise&lt;a class="headerlink" href="#being-more-precise" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;The first part of this task was to perform some catch-up work on code coverage.  Having
+forgotten to check the coverage with recent changes, I was happy that there were only
+two small areas that
+I needed to improve on.  Even better, both were cases where I had added defensive
+code that was not being utilized.  As such, removing that code from the
+&lt;code&gt;__consume_text_for_image_alt_text&lt;/code&gt; function and the
+&lt;code&gt;__complete_inline_block_processing&lt;/code&gt; function returned the code coverage numbers to
+their normal levels.&lt;/p&gt;
+&lt;p&gt;With that task under my belt, I decided to address an issue that has been bugging me
+for a couple of weeks: the &lt;code&gt;rehydrate_index&lt;/code&gt; assert.  Located in the
+&lt;code&gt;__handle_last_token_text&lt;/code&gt; function, I have improved this assert over the last few
+weeks.  While it started off as a simple “less than” expression, it was now down
+to a comparison between the count of newlines in the tokens and the &lt;code&gt;rehydrate_index&lt;/code&gt;
+field.  My problem with it?  As improved as it was, it was still checking to see if
+the &lt;code&gt;rehydrate_index&lt;/code&gt; field was either equal to &lt;code&gt;num_newlines&lt;/code&gt; or &lt;code&gt;num_newlines + 1&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;As documented in past articles, I have incrementally improved this check to the
+point where it was when I started this work.  But the real target was always to get
+that assert statement down to a one-part expression.  Specifically, based on its usage,
+the goal was to get the statement down to:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;assert&lt;/span&gt; &lt;span class="n"&gt;last_block_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;rehydrate_index&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;num_newlines&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;h3 id="debugging"&gt;Debugging&lt;a class="headerlink" href="#debugging" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Starting the work on this task, the first thing I did was to figure out the amount of
+work I needed to do.  In this case, the best way to do this was to make the change
+detailed at the end of the last section and look for failures.  While it was not
+research in the typical way that I do it, it was useful.  It pointed out that all the
+scenario test expect for approximately 15 scenario tests were passing.  This was
+useful for both marking a starting point and for my confidence.&lt;/p&gt;
+&lt;p&gt;As I started digging into the failures, those tests started to separate themselves
+into two distinct groups: those with code spans including newline characters and
+Text tokens occurring at the end of Paragraph blocks.  While the work took a long
+time, in both cases the process was the same.  I started by isolating one test in the
+group I was looking at, then looked at the consistency check output to find a pattern
+that made sense.  Then I just kept on drilling and adding debug where needed until
+the pattern became visible to me.  Now, as I have been working on this project for
+a while, the “until a pattern became visible” to me is guided by experience and
+enhanced by luck, and both just take time.&lt;/p&gt;
+&lt;p&gt;After a while, the pattern that leapt out at me for the code span tests was simple:
+the line number was being updated properly, but the &lt;code&gt;rehydrate_index&lt;/code&gt; field was not
+being updated.  Adding some extra debug, I was able to validate that quickly, then
+adding the follow code to remedy that problem:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;last_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_name&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="n"&gt;MarkdownToken&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_paragraph&lt;/span&gt; &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="n"&gt;link_stack&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="n"&gt;last_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;rehydrate_index&lt;/span&gt; &lt;span class="o"&gt;+=&lt;/span&gt; &lt;span class="n"&gt;num_columns&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Having found and fixed that issue, the second group was then easier to see.  Seeing
+as a not updated &lt;code&gt;rehydrate_index&lt;/code&gt; field was the issue with the problem, I gave it
+a short with this one, and it worked here as well!  Once again, a quick fix solved
+the issue.  Executing the tests with the new changes in place, the consistency checks
+were now testing against my intended target of:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;assert&lt;/span&gt; &lt;span class="n"&gt;last_block_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;rehydrate_index&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;num_newlines&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;h2 id="paragraphs-ending-with-multiline-non-text-inlines"&gt;Paragraphs Ending with Multiline Non-text Inlines&lt;a class="headerlink" href="#paragraphs-ending-with-multiline-non-text-inlines" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;That title is a mouthful, but accurate.  The next issue that I tackled was:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt; - repeat __handle_last_token_text with paragraphs ending with other inlines
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;I was not sure if this was going to be a problem, but I can see why I added this to
+the issues list.  Most of the existing tests were focused on a specific Markdown
+element and either ended with that element or text following that element.  Even
+harder to find were tests where the element at the end of the block contained a
+newline character in the middle of it.  So, while I found an isolated scenario test
+here and there that tackled some of these combinations, there was not a good solid
+“here it is” block of tests.&lt;/p&gt;
+&lt;p&gt;Time to change that!  To address this, I added test functions &lt;code&gt;test_paragraph_extra_c7&lt;/code&gt;
+to &lt;code&gt;test_paragraph_extra_d4&lt;/code&gt;.  Quite simply, I added 8 tests, 4 tests for links and
+4 tests for images.  Within each group of 4 tests, I added a split Text element,
+a split Code Span element, a split Raw Html element, and a split Emphasis element.
+It was not rocket science, but it was good to have all those tests in one place,
+ensuring that I was addressing that concern.  Even better?  They all worked on the
+first try.&lt;/p&gt;
+&lt;h2 id="expanding-paragraph-tests-to-setext-heading-tests"&gt;Expanding Paragraph Tests to SetExt Heading Tests&lt;a class="headerlink" href="#expanding-paragraph-tests-to-setext-heading-tests" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;With a metaphorical bounce in my step after addressing the last issue,  I decided to
+tackle the copying and transformation of Paragraph tests to SetExt Heading tests.
+While not officially on the issues list, my goal was to keep the extra Paragraph tests
+synced up with their cousins, the extra SetExt Heading tests.  I am not sure if the
+right term is cousins, but that is how I thought of them, as the only difference between
+the two groups of tests was their
+parent blocks.  The contents of the tests remaining the same, except for the addition
+of a SetExt Heading block terminator.&lt;/p&gt;
+&lt;p&gt;As I knew that these tests were based off existing Paragraph tests, it was pretty
+simple to go through the new tests and adjust them to use a SetExt Heading token instead
+of a Paragraph heading token.  While simple, even the creation of copied test
+functions &lt;code&gt;test_setext_headings_extra_a3&lt;/code&gt; to &lt;code&gt;test_setext_headings_extra_d4&lt;/code&gt; took some
+time to get right.  But once again, I was rewarded for my hard work with tests that all
+passed, with no failures.&lt;/p&gt;
+&lt;h2 id="are-links-being-verified-properly"&gt;Are Links Being Verified Properly?&lt;a class="headerlink" href="#are-links-being-verified-properly" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;This task was not to solve the following issue, but to research it:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;- are links getting verified properly in checks? images are, cannot find link code for same
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Based on previous tasks, I have done extensive work on making sure that any image
+links were verified properly.  However, I have previously noticed that the same
+rigor had not been applied to the Link token.  While I did not want to solve the
+issue right away, I wanted to make sure I had the right information to resolve it
+later.&lt;/p&gt;
+&lt;p&gt;And it did not take me long to finally figure out why this issue that had been bothering
+me for a while.  The big issue here was that I was missing validation in cases where
+an end token was present.  Specifically, while the end Emphasis token has a line/column
+number attached to it, the end Link token does not.  That meant that when the previous
+token validation was occurring, the existing code was doing the equivalent of a digital
+shrug and letting it go.  That was the real crux of the problem.&lt;/p&gt;
+&lt;p&gt;Additionally, the Image token was of interest.  Doing a double check of my findings, it
+became
+immediately obvious why it escaped the same fate: it is a whole token.  Whereas the
+Link token has a start token, the inner text, and then an end token, the Image token is
+entirely self-contained.  As such, everything is processed at one time, and no end token
+handling is required, thus the processing for an empty line/column number was avoided.&lt;/p&gt;
+&lt;p&gt;It was clear to me that solving this would require some serious planning and thinking.&lt;/p&gt;
+&lt;h2 id="adding-proper-link-verification"&gt;Adding Proper Link Verification&lt;a class="headerlink" href="#adding-proper-link-verification" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Given the research from the last section, I decided to take the time needed to tackle
+that issue properly.  Dedicating a minimum of 4 hours to this task, I sat down and
+started to work the problem.&lt;/p&gt;
+&lt;p&gt;To keep things simple, I am going to keep track of the pseudo-code for this solution
+instead of the actual code.  While it is true that the code needs some major refactoring
+to occur, the more important reason is that it is just very verbose.  The big reason
+for me to relay this information is that I found this useful during my development
+of the solution.  While the algorithm at its base components is simple, I just found
+keeping it in my head in a clear and concise form was too much.&lt;/p&gt;
+&lt;h3 id="step-1"&gt;Step 1&lt;a class="headerlink" href="#step-1" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;The first issue was that I needed to have an anchor to base the consistency check’s
+line/column numbers from.  As the end Link token does not have a line/column
+number associated with it, I first needed to add some code to look backwards in the
+token stream for the first valid line/column number.   While I was initially worried
+about possible interactions between the end Emphasis token and the end Link token,
+I eventually determined that exploring that path was a dead end.  Because the end
+Emphasis token has a line/column number, it can serve as an anchor token just as
+well as any other token.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="nv"&gt;search&lt;/span&gt; &lt;span class="nv"&gt;backwards&lt;/span&gt; &lt;span class="nv"&gt;from&lt;/span&gt; &lt;span class="nv"&gt;the&lt;/span&gt; &lt;span class="nv"&gt;current&lt;/span&gt; &lt;span class="nv"&gt;token&lt;/span&gt; &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="nv"&gt;the&lt;/span&gt; &lt;span class="nv"&gt;last&lt;/span&gt; &lt;span class="nv"&gt;token&lt;/span&gt; &lt;span class="nv"&gt;to&lt;/span&gt; &lt;span class="nv"&gt;have&lt;/span&gt; &lt;span class="nv"&gt;a&lt;/span&gt; &lt;span class="nv"&gt;valid&lt;/span&gt; &lt;span class="nv"&gt;line&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="nv"&gt;column&lt;/span&gt; &lt;span class="nv"&gt;number&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;h3 id="step-2"&gt;Step 2&lt;a class="headerlink" href="#step-2" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;With that anchor in place, it was then possible to apply the translations to the
+line/column number.  This was mostly due to how the link is constructed.  In the
+case of a simple inline link such as &lt;code&gt;[link](/url)&lt;/code&gt;, the &lt;code&gt;[&lt;/code&gt; is processed,
+then the link label text &lt;code&gt;link&lt;/code&gt;, and then the rest of the link text.  When the
+end Link token is encountered, the remaining text &lt;code&gt;](/url)&lt;/code&gt; needs to be accounted
+for.&lt;/p&gt;
+&lt;p&gt;Starting with the code for the handling of the Image token, I was able to quickly
+build up a similar block of code that provided the translations for the line/column
+number.  As I had a pattern to work off of, this work went by fairly quickly.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="nv"&gt;search&lt;/span&gt; &lt;span class="nv"&gt;backwards&lt;/span&gt; &lt;span class="nv"&gt;from&lt;/span&gt; &lt;span class="nv"&gt;the&lt;/span&gt; &lt;span class="nv"&gt;current&lt;/span&gt; &lt;span class="nv"&gt;token&lt;/span&gt; &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="nv"&gt;the&lt;/span&gt; &lt;span class="nv"&gt;last&lt;/span&gt; &lt;span class="nv"&gt;token&lt;/span&gt; &lt;span class="nv"&gt;to&lt;/span&gt; &lt;span class="nv"&gt;have&lt;/span&gt; &lt;span class="nv"&gt;a&lt;/span&gt; &lt;span class="nv"&gt;valid&lt;/span&gt; &lt;span class="nv"&gt;line&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="nv"&gt;column&lt;/span&gt; &lt;span class="nv"&gt;number&lt;/span&gt;
+&lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="nv"&gt;apply&lt;/span&gt; &lt;span class="nv"&gt;the&lt;/span&gt; &lt;span class="nv"&gt;translations&lt;/span&gt; &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="nv"&gt;the&lt;/span&gt; &lt;span class="nv"&gt;line&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="nv"&gt;column&lt;/span&gt; &lt;span class="nv"&gt;number&lt;/span&gt; &lt;span class="nv"&gt;due&lt;/span&gt; &lt;span class="nv"&gt;to&lt;/span&gt; &lt;span class="nv"&gt;the&lt;/span&gt; &lt;span class="nv"&gt;rest&lt;/span&gt; &lt;span class="nv"&gt;of&lt;/span&gt; &lt;span class="nv"&gt;the&lt;/span&gt; &lt;span class="nv"&gt;Link&lt;/span&gt; &lt;span class="nv"&gt;token&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;h3 id="step-3"&gt;Step 3&lt;a class="headerlink" href="#step-3" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;With that work in place, I then went to handle the previous token in the normal
+case and hit an issue.  The anchor line/column number did not seem to be correctly
+calculated. I double checked my code, and everything looked fine.  Doing some
+deep digging, I started to understand why.  When I figured out which token to use as
+the anchor, I did not take into account any changes introduced
+to the line/column number by the anchor token itself.  Basically, if I was
+using a Text token containing &lt;code&gt;text&lt;/code&gt; at &lt;code&gt;(2,7)&lt;/code&gt; as an anchor, I was using that
+&lt;code&gt;(2,7)&lt;/code&gt; as the starting point, ignoring any changes introduced by its contents.
+Instead, I needed to use &lt;code&gt;(2,11)&lt;/code&gt; as the starting point, taking the length of
+the token’s original Markdown into account.&lt;/p&gt;
+&lt;p&gt;The saving grace here was that immediate calculations were okay, so I just added the
+code following the previously added code.  While it does not affect the results, in
+hindsight I might want to move the translation code for the anchor token up to make sure
+that the code logically flows better.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="nv"&gt;search&lt;/span&gt; &lt;span class="nv"&gt;backwards&lt;/span&gt; &lt;span class="nv"&gt;from&lt;/span&gt; &lt;span class="nv"&gt;the&lt;/span&gt; &lt;span class="nv"&gt;current&lt;/span&gt; &lt;span class="nv"&gt;token&lt;/span&gt; &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="nv"&gt;the&lt;/span&gt; &lt;span class="nv"&gt;last&lt;/span&gt; &lt;span class="nv"&gt;token&lt;/span&gt; &lt;span class="nv"&gt;to&lt;/span&gt; &lt;span class="nv"&gt;have&lt;/span&gt; &lt;span class="nv"&gt;a&lt;/span&gt; &lt;span class="nv"&gt;valid&lt;/span&gt; &lt;span class="nv"&gt;line&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="nv"&gt;column&lt;/span&gt; &lt;span class="nv"&gt;number&lt;/span&gt; &lt;span class="ss"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;anchor&lt;/span&gt; &lt;span class="nv"&gt;token&lt;/span&gt;&lt;span class="ss"&gt;)&lt;/span&gt;
+&lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="nv"&gt;apply&lt;/span&gt; &lt;span class="nv"&gt;the&lt;/span&gt; &lt;span class="nv"&gt;translations&lt;/span&gt; &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="nv"&gt;the&lt;/span&gt; &lt;span class="nv"&gt;line&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="nv"&gt;column&lt;/span&gt; &lt;span class="nv"&gt;number&lt;/span&gt; &lt;span class="nv"&gt;due&lt;/span&gt; &lt;span class="nv"&gt;to&lt;/span&gt; &lt;span class="nv"&gt;the&lt;/span&gt; &lt;span class="nv"&gt;rest&lt;/span&gt; &lt;span class="nv"&gt;of&lt;/span&gt; &lt;span class="nv"&gt;the&lt;/span&gt; &lt;span class="nv"&gt;Link&lt;/span&gt; &lt;span class="nv"&gt;token&lt;/span&gt;
+&lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="nv"&gt;apply&lt;/span&gt; &lt;span class="nv"&gt;the&lt;/span&gt; &lt;span class="nv"&gt;translations&lt;/span&gt; &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="nv"&gt;the&lt;/span&gt; &lt;span class="nv"&gt;line&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="nv"&gt;column&lt;/span&gt; &lt;span class="nv"&gt;number&lt;/span&gt; &lt;span class="nv"&gt;due&lt;/span&gt; &lt;span class="nv"&gt;to&lt;/span&gt; &lt;span class="nv"&gt;the&lt;/span&gt; &lt;span class="nv"&gt;anchor&lt;/span&gt; &lt;span class="nv"&gt;token&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;h3 id="testing-the-changes-and-further-adjustments"&gt;Testing the Changes and Further Adjustments&lt;a class="headerlink" href="#testing-the-changes-and-further-adjustments" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Having executed an isolated scenario test or two during these changes, I then went to
+execute those tests again, and the results were hopeful.  From what I could see, the
+line/column number calculations
+were working properly, but another assert was getting fired.  After a quick check,
+I came to an interesting observation: while looking at the line/column numbers and
+making sure they were being adjusted properly, I totally forgot about the
+&lt;code&gt;rehydrate_index&lt;/code&gt; field.&lt;/p&gt;
+&lt;p&gt;Most of the adjusting went off without a hitch, but a couple of outlying tests
+were still failing with the assert for the &lt;code&gt;rehydrate_index&lt;/code&gt; field.  It took me
+a good couple of hours of adding debug statements and scanning the consistency
+check output before I found the pattern.  While I had just added code to adjust
+the &lt;code&gt;rehydrate_index&lt;/code&gt; field to account for the Link token, I had failed to adjust
+the field to account for the anchor token.  As such, if the token before the end
+Link token (the anchor token) contained one or more newline characters, those
+newline characters were missed.&lt;/p&gt;
+&lt;p&gt;Fixing that problem took a bit of creativity.  I already had the code to properly
+calculate the proper values, but they were in the &lt;code&gt;__process_previous_token&lt;/code&gt; function.
+The problem with reusing that function was that it modifies the &lt;code&gt;rehydrate_index&lt;/code&gt; field
+as a side effect, something I was not sure that I wanted to happen.  In the end, I
+worked around this problem by doing a sample call to the &lt;code&gt;__process_previous_token&lt;/code&gt;
+function and getting the change in the line number, then invoking that function
+again on the anchor token, applying the proper change and restoring the
+&lt;code&gt;rehydrate_index&lt;/code&gt; field.  It took a while to figure that out and get it working, but
+it was worth it.&lt;/p&gt;
+&lt;p&gt;With that code in place, I ran those tests again, and the consistency checks for
+the small sample of tests I was using passed.  Crossing my fingers, I ran it for
+the entire set of scenario tests and was happy to see that they all had passed.
+While it took quite the while to accomplish, it was good to finally put that issue
+to rest.&lt;/p&gt;
+&lt;h2 id="needing-some-extra-emphasis"&gt;Needing Some Extra Emphasis&lt;a class="headerlink" href="#needing-some-extra-emphasis" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;While the description for this issue was:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;- add verification for links with the endlink as the last element
+- add verification for links+emphasis as the last 2 inline elements
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;I felt that it really did not describe the problem properly.  Added when addressing
+the previous issue, what I believe I was trying to note is that I wanted more
+testing with the interaction with the end Link token and the end Emphasis token.  At
+the time when I added that note, I remember thinking that there might be some weird
+interaction between the two end tokens.  It was only later that I remembered that the
+end Emphasis token was the rare end token that has a line/column number attached to it.&lt;/p&gt;
+&lt;p&gt;Still, it made sense to add some extra tests for emphasis and interactions with the
+link tokens, as I did not believe I had good coverage of that so far.  To remedy that,
+I added test functions &lt;code&gt;test_paragraph_extra_d7&lt;/code&gt; to &lt;code&gt;test_paragraph_extra_e0&lt;/code&gt;, with
+emphasis around the the link and image elements followed by emphasis within the link
+label of the link and image elements.  These tests were not at all complicated to add
+and I am also not sure they are actually needed.  However, as I perceived testing in
+that area to be a bit thin, adding those tests just seems to me to be a good idea.
+And luckily, after running those new tests, everything passed without incident.&lt;/p&gt;
+&lt;h2 id="just-before-the-end"&gt;Just Before the End&lt;a class="headerlink" href="#just-before-the-end" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;I remember looking at the clock and noticing that I had around 20 minutes left before I
+started writing that week’s article at noon.  While I used to start writing first thing
+Sunday morning, as
+of recently I have tried to keep my notes in a way that I could more easily mine them
+for the articles.  Still in the proving stage, it has helped me out with the writing
+process, allowing me to find my flow more easily on Sunday at noon when I now start
+writing.&lt;/p&gt;
+&lt;p&gt;Anyhow, with somewhere near 20 minutes left before noon on a Sunday and me wanting to
+milk the clock for every minute that I could, I quickly looked at the issues list.
+I was hopeful that I could find some
+&lt;a href="https://www.merriam-webster.com/dictionary/low-hanging%20fruit"&gt;low-hanging-fruit&lt;/a&gt;
+to work on in the time remaining, and quickly came across this little gem:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;- code span
+  - multiple lengths of ticks, whitespace
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;I felt that this was a good candidate, but I still needed to investigate it.  At the
+very least, I could get the research done and have it ready for next week.&lt;/p&gt;
+&lt;h3 id="the-research"&gt;The Research&lt;a class="headerlink" href="#the-research" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;After some quick research, I found out that while the scenario tests between (and
+including) the &lt;code&gt;test_code_spans_338&lt;/code&gt; function and the &lt;code&gt;test_code_spans_359&lt;/code&gt;
+function has some interesting variations, I felt that they were missing some basic
+coverage.  Looking at those tests, it was pretty evident that tests with variations
+on the number of backticks and the amount of whitespace were in the minority.  Doing
+some quick scans for the number of backticks in the tests, my suspicions were confirmed
+with only 4 tests dealing with double backticks and no tests dealing with more than two
+backticks.  As for whitespace, the tally was similar: 5 tests with one whitespace
+character and 1 test with 2 whitespace characters.&lt;/p&gt;
+&lt;h3 id="fixing-the-issue_1"&gt;Fixing the Issue&lt;a class="headerlink" href="#fixing-the-issue_1" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;With that research in hand, I could either document the issue more thoroughly, or fix
+the issue.  Looking back at the description of the issue, I inferred that what I was
+really looking for was a centralized place where those tests kept, not having to look
+for them all over the place.  If that were the case, I figured I could solve the issue
+by adding 3 new tests, so I decided to fix the issue.&lt;/p&gt;
+&lt;p&gt;The 3 new tests?  I started with the text &lt;code&gt;aa`aa`aa&lt;/code&gt;, adding one backtick and
+one whitespace in critical areas to get &lt;code&gt;aa `` aa `` aa&lt;/code&gt; and then finally
+&lt;code&gt;aa  ```  aa  ```  aa&lt;/code&gt;.  I just kept it simple and created 3 new tests, each
+one clearly handling an increasing number of backticks and whitespace.   A quick
+execution of the new scenario tests, and… no issues.  Assuming my inference was
+correct, problem solved!&lt;/p&gt;
+&lt;h2 id="what-was-my-experience-so-far"&gt;What Was My Experience So Far?&lt;a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;While there were only a couple of issues that made me really think about how
+to solve them, this was a good week for just getting some issues taken care of.
+At this point in the project, I am confident that I have 95 percent of the
+code working properly.  My hope is that by adding new tests and making sure
+that existing tests are grouped properly, I can find those outlier scenarios
+that I have not thought of.  Whether those scenarios end up working or failing
+is something I cannot control.  But I can strive to find as many of those
+scenarios as possible.&lt;/p&gt;
+&lt;p&gt;And I have noticed that this hope is being largely reflected in the work I am
+doing.  Less and less work is in the project’s parser itself, with more
+changes being attributed to improving the verification of the parser.  From where
+I sit, that is a good place to be in.  The other observation?  In times when I do
+need to change the parser, those changes are usually small changes of five lines or
+less.  That statistic alone fills me with confidence.&lt;/p&gt;
+&lt;p&gt;Now, while I do want to find as many scenarios as possible, I need to balance that
+with trying to wrap up the initial phase of this project so I can use it and get the
+project out there.  For me, that means I need to start buckling down and shifting
+my focus away from issues in the “Nice to Have” category and work on the other
+issues.  Here’s hoping I can action on that!&lt;/p&gt;
+&lt;h2 id="what-is-next"&gt;What is Next?&lt;a class="headerlink" href="#what-is-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;From my viewpoint, next week’s article will be interesting as I talk about my
+efforts to group the tests together more concisely, with documentation to back
+up the reasons for those tests.&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry><entry><title>Markdown Linter - Delving Into the Issues - 5</title><link href="https://jackdewinter.github.io/2020/10/26/markdown-linter-delving-into-the-issues-5/" rel="alternate"></link><published>2020-10-26T00:00:00-07:00</published><updated>2020-10-26T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-10-26:/2020/10/26/markdown-linter-delving-into-the-issues-5/</id><summary type="html">
 &lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;In my
 &lt;a href="https://jackdewinter.github.io/2020/10/19/markdown-linter-delving-into-the-issues-4/"&gt;last article&lt;/a&gt;,
@@ -46,7 +432,7 @@ commits
 &lt;a href="https://github.com/jackdewinter/pymarkdown/commit/98e691cc253e03769acecf087e546f0b90507e23"&gt;07 Oct 2020&lt;/a&gt;
 and
 &lt;a href="https://github.com/jackdewinter/pymarkdown/commit/59c624c08a7fe6f9f3072123c5ec9beac8e5c6ad"&gt;11 Oct 2020&lt;/a&gt;.&lt;/p&gt;
-&lt;h2 id="starting-with-some-cleanup"&gt;Starting with some cleanup&lt;a class="headerlink" href="#starting-with-some-cleanup" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;h2 id="starting-with-some-cleanup"&gt;Starting With Some Cleanup&lt;a class="headerlink" href="#starting-with-some-cleanup" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;As usual, there were some issues left over from the previous week that I needed to
 take care of.  While not pivotal to my efforts going forward, I spent a brief amount of
 time going through the &lt;code&gt;Bugs - General - Uncategorized&lt;/code&gt; section of the issues list,
@@ -10018,407 +10404,6 @@ rules.&lt;/p&gt;
 &lt;ol&gt;
 &lt;li id="fn:Babelmark"&gt;
 &lt;p&gt;Babelmark is a useful online tool that converts a given piece of Markdown text into HTML using a wide variety of Markdown parsers.  I find tools like this very useful in exploring possibilities for how to solve issues that I have. &lt;a class="footnote-backref" href="#fnref:Babelmark" title="Jump back to footnote 1 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
-&lt;/li&gt;
-&lt;/ol&gt;
-&lt;/div&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="linter rules"></category></entry><entry><title>Markdown Linter - Rules - Headings - Part 1</title><link href="https://jackdewinter.github.io/2020/05/18/markdown-linter-rules-headings-part-1/" rel="alternate"></link><published>2020-05-18T00:00:00-07:00</published><updated>2020-05-18T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-05-18:/2020/05/18/markdown-linter-rules-headings-part-1/</id><summary type="html">
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;After setting up a good, easy process for
-&lt;a href="https://jackdewinter.github.io/2020/05/11/markdown-linter-rules-the-first-three/#adding-the-rule"&gt;writing new rules&lt;/a&gt;,
-it was now time to make some headway on the task of writing those new rules.  While the
-title “Headings - Part 1” is not glamorous, it is a very apt description for the way
-that I planned out …&lt;/p&gt;</summary><content type="html">
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;After setting up a good, easy process for
-&lt;a href="https://jackdewinter.github.io/2020/05/11/markdown-linter-rules-the-first-three/#adding-the-rule"&gt;writing new rules&lt;/a&gt;,
-it was now time to make some headway on the task of writing those new rules.  While the
-title “Headings - Part 1” is not glamorous, it is a very apt description for the way
-that I planned out the development of this group of rules dealing with Markdown
-headings. In
-&lt;a href="https://github.com/DavidAnson/markdownlint"&gt;David Anson’s MarkDownLint&lt;/a&gt;,
-there are a total of 15 linter rules that specifically deal with headings.
-The first 3 of those rules were used as examples in the previous article, leaving
-12 rules to implement.  For reasons I will follow up on, I decided to leave the
-implementation of rules MD041 and MD043 for later, reducing the number of rules to
-a nice manageable 10.&lt;/p&gt;
-&lt;p&gt;Without any unnecessary embellishment, the article’s title simply denotes that I am
-going to talk about the implementation of the first half of those rules.  Sure, I could
-come up with a name like “The 5 Most Important Rules for Headings!” or “5 Rules
-for Headings That You Cannot Live Without!”, but the truth is that they were simply the
-next group of rules.  Nothing fancy, nothing misleading, just the plain truth.&lt;/p&gt;
-&lt;h2 id="what-is-the-audience-for-this-article"&gt;What Is the Audience for This Article?&lt;a class="headerlink" href="#what-is-the-audience-for-this-article" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;While detailed more eloquently in
-&lt;a href="https://jackdewinter.github.io/2020/04/05/what-is-the-audience-for-my-blog/#what-is-the-audience-for-my-blog"&gt;this article&lt;/a&gt;,
-my goal for this technical article is to focus on the reasoning behind my solutions,
-rather that the solutions themselves.  For a full record of the solutions presented in
-this article, please go to this project’s GitHub repository and consult the
-commits between
-&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/c07dd31cf85db9905693191fb022705b4d641305"&gt;24 April 2020&lt;/a&gt; and
-&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/1c4a87c88f45417ddc70c537a3c598a4349ed7ad"&gt;26 April 2020&lt;/a&gt;.&lt;/p&gt;
-&lt;h2 id="what-about-those-two-rules-that-were-left-out"&gt;What About Those Two Rules That Were Left Out?&lt;a class="headerlink" href="#what-about-those-two-rules-that-were-left-out" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Just to get this out of the way: because it was expedient.&lt;/p&gt;
-&lt;p&gt;I started to look at rule MD041 when I was implementing rule MD002, as documented in
-&lt;a href="https://jackdewinter.github.io/2020/05/11/markdown-linter-rules-the-first-three/#rule-md002-deprecated-first-heading-should-be-top-level"&gt;the last article&lt;/a&gt;.
-At that time, I looked at rule MD041 to determine if I could just include the work for
-MD041 with the work to write rule MD002.  While the only difference between the two
-rules is the inclusion of “YAML front matter” into the rule, I felt that the
-difference was a large one at that stage of the project.  I knew that I needed to
-added metadata support to the parser as a requirement for my use of the linter.  But
-the overriding question I had to answer was: Was this the right time to add this
-new feature to the parser?&lt;/p&gt;
-&lt;p&gt;After a decent amount of back and forth on the subject, I decided against adding it at
-that moment. From my point of view, at that time it was better to focus on additional
-linter rules for the project rather than focus on additional features for the parser.
-While it would be fun to add more functionality to the parser to allow for MD041 to be
-implemented, I made a judgement call that it could wait a bit.&lt;/p&gt;
-&lt;p&gt;For rule MD043, my decision was based on a combination of the
-complexity of the feature and the usefulness of the feature to me.  Without a deep dive
-into the rule, it looks like there will be a fair number of edge cases that I will have
-to consider for rule MD043, easily increasing its complexity.  From the usefulness
-point of view, while I can
-see how it may be useful, this is not a feature that I see myself using a lot.  While I
-took a different path to the judgement call, the result was the same: Rule MD043 could
-wait for later.&lt;/p&gt;
-&lt;h2 id="why-is-this-group-of-rules-important"&gt;Why Is This Group of Rules Important?&lt;a class="headerlink" href="#why-is-this-group-of-rules-important" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;While I didn’t think about it at the time, I needed this group of rules to prove
-two important things to myself: that I had chosen the right base framework to write
-linter rules with, and that I had chosen a good development process with which to
-write and test those rules.  It was only after the development was completed and
-I was writing this article that I was able to recognize their importance in proving
-or disproving those two things to myself.&lt;/p&gt;
-&lt;h2 id="rule-md018-no-space-after-hash-on-atx-style-heading"&gt;Rule MD018 - No space after hash on atx style heading&lt;a class="headerlink" href="#rule-md018-no-space-after-hash-on-atx-style-heading" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;This section describes the initial implementation of PyMarkdown’s
-&lt;a href="https://github.com/jackdewinter/pymarkdown/blob/master/pymarkdown/plugins/rule_md_018.py"&gt;Rule MD018&lt;/a&gt;.&lt;/p&gt;
-&lt;h3 id="why-does-this-rule-make-sense"&gt;Why Does This Rule Make Sense?&lt;a class="headerlink" href="#why-does-this-rule-make-sense" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;This rule is all about catching a
-&lt;a href="https://www.merriam-webster.com/dictionary/typo"&gt;typo&lt;/a&gt;.
-This rule surmises that when someone types:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;#&lt;/span&gt;&lt;span class="n"&gt;Heading&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;they probably forgot to add a space and really meant to type this:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;#&lt;/span&gt; &lt;span class="n"&gt;Heading&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;While it is possible that the author intended to start a new line with the text
-&lt;code&gt;#Heading&lt;/code&gt;, I believe that it is far more likely that a typo occurred.&lt;/p&gt;
-&lt;h3 id="adding-the-rule"&gt;Adding the Rule&lt;a class="headerlink" href="#adding-the-rule" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;The two important parts of adding this rule were recognizing that it can take place
-in a normal paragraph and that it can occur at the start of any line in that paragraph.&lt;/p&gt;
-&lt;p&gt;While I did consider the possibility of text like &lt;code&gt;#Heading&lt;/code&gt; being
-captured as part of another block element, my experimentation with the CommonMark
-parser did not reveal any case that causes another block element to stop
-capturing on a line like &lt;code&gt;# Heading&lt;/code&gt;.  As such, by default the text ends up being
-captured within a paragraph block using a text token. As is shown in
-&lt;a href="https://github.github.com/gfm/#example-47"&gt;example 47&lt;/a&gt;,
-an Atx heading can interrupt other blocks, but more importantly, it can interrupt a
-paragraph block.  With these two constraints understood, I was ready to start
-coding the rule.&lt;/p&gt;
-&lt;p&gt;Leveraging the first constraint allowed me to add code to the &lt;code&gt;next_token&lt;/code&gt;
-function to consider any text token within a paragraph block eligible for further
-examination.  From there, I applied the second constraint by enhancing the
-rule to look for an Atx heading-like pattern at the start of each line within those
-eligible text tokens.
-This was accomplished by breaking down each text token into separate lines and checking
-them against a
-&lt;a href="https://docs.python.org/3/howto/regex.html"&gt;Python regular expression&lt;/a&gt;.
-By carefully reading the GFM specification’s section on
-&lt;a href="https://github.github.com/gfm/#atx-headings"&gt;Atx headings&lt;/a&gt;,
-I was able to construct the regular expression &lt;code&gt;^\s{0,3}#{1,6}\S&lt;/code&gt;, which breaks down
-into the following components:&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;code&gt;^&lt;/code&gt; - start matching at the start of the line&lt;/li&gt;
-&lt;li&gt;&lt;code&gt;\s{0,3}&lt;/code&gt; - look for between 0 and 3 whitespace characters&lt;/li&gt;
-&lt;li&gt;&lt;code&gt;#{1,6}&lt;/code&gt; - look for between 1 and 6 &lt;code&gt;#&lt;/code&gt; characters&lt;/li&gt;
-&lt;li&gt;&lt;code&gt;\S&lt;/code&gt; - look for one non-whitespace character&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;I needed the regular expression to be a form of the regular expression to recognize the
-proper GRM specification form but modified to look for the specific case that I wanted
-to look for.  In this instance, I was looking for heading-like text that is missing
-at least one space after the starting &lt;code&gt;#&lt;/code&gt; characters.  To satisfy this constraint I
-used the &lt;code&gt;\S&lt;/code&gt; sequence,
-matching any single non-whitespace character, at the end of the regular expression
-specifically looking for no whitespace characters at the end of the expression. Using my
-favorite online &lt;a href="https://pythex.org/"&gt;Python regular expression tester&lt;/a&gt;, I was able to
-verify that I had the correct regular expression right away.&lt;/p&gt;
-&lt;p&gt;The rigorous testing for this rule involved more testing of cases where the rule should
-not fail than cases where it should fail.  But when I boiled all those tests down into
-what was relevant, there were a couple of patterns that I just needed to test.  In
-testing, this is referred to as equivalence class testing.&lt;/p&gt;
-&lt;p&gt;While sites like
-&lt;a href="https://www.professionalqa.com/equivalence-class-testing"&gt;this one&lt;/a&gt;
-go on and on about what it is, it breaks down into one statement.  Unless there
-is something special (usually around boundary conditions), entire groups of tests can
-be considered equivalent and be represented by a single test, if their relevant
-behavior is consistent across that entire group.  Consider a simple calculator
-application that allows for the addition of 2 integers together.  The testing of that
-application does not need to test every single integer added to every single integer.
-Just thinking about the work required for that is exhausting!  Instead, the testing can
-be broken down into representative
-groups such as “any integer added to 0 equals that integer”, drastically reducing the
-number of tests required to cover a specific component.&lt;/p&gt;
-&lt;p&gt;Applying this concept to the test cases for this rule, I was able to reduce over 20
-tests down to a more reasonable 8 tests.  Some of these groups were making sure
-the rule does not fail if eligible text is in any of the text-containing leaf blocks
-except for the paragraph block, in which it should fail.  The rest of the groups were
-simple cases based on variations of the regular expression above, that regular
-expression a reflection of the specification.&lt;/p&gt;
-&lt;p&gt;Confident that I had covered all the conditions for this rule, it was time to move
-on to the next one!&lt;/p&gt;
-&lt;h2 id="rule-md019-multiple-spaces-after-hash-on-atx-style-heading"&gt;Rule MD019 - Multiple spaces after hash on atx style heading&lt;a class="headerlink" href="#rule-md019-multiple-spaces-after-hash-on-atx-style-heading" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;This section describes the initial implementation of PyMarkdown’s
-&lt;a href="https://github.com/jackdewinter/pymarkdown/blob/master/pymarkdown/plugins/rule_md_019.py"&gt;Rule MD019&lt;/a&gt;.&lt;/p&gt;
-&lt;h3 id="why-does-this-rule-make-sense_1"&gt;Why Does This Rule Make Sense?&lt;a class="headerlink" href="#why-does-this-rule-make-sense_1" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;Like a fair number of the other rules that are defined, this rule is about
-consistency.  While the opening paragraph for the GFM specification for
-&lt;a href="https://github.github.com/gfm/#atx-headings"&gt;Atx headings&lt;/a&gt;
-does allow for more than one space after the initial set of &lt;code&gt;#&lt;/code&gt; characters, it also
-specifies that those leading spaces are stripped before the rest of the line is
-parsed as inline content.  Essentially:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;#&lt;/span&gt; &lt;span class="n"&gt;Heading&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;and&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;#&lt;/span&gt;                                            &lt;span class="n"&gt;Heading&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;are syntactically equivalent.  As they are equivalent, it makes sense to use the simpler
-form of the heading to keep things consistent.&lt;/p&gt;
-&lt;h3 id="adding-the-rule_1"&gt;Adding the Rule&lt;a class="headerlink" href="#adding-the-rule_1" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;The code to evaluate this rule was very simple.  When the content of the Atx heading is
-parsed into a text token, any spaces that are stripped from that token are kept as part
-of the text token in a separate part specifically reserved for stripped whitespace.  To
-check for multiple spaces, I simply added code that checked to see if a
-text token existed within an Atx heading, and if so checked to see if that token
-contained more than one space in that stripped whitespace area of the token.&lt;/p&gt;
-&lt;p&gt;As the code was simple, the tests themselves were simple.  The examples from the
-&lt;a href="https://github.com/DavidAnson/markdownlint/blob/master/doc/Rules.md#md019---multiple-spaces-after-hash-on-atx-style-heading"&gt;MD019 rule description page&lt;/a&gt;
-were used verbatim as the only cases needed as that is how simple this rule is.  At
-least it was that simple until I looked more closely at the next two rules.&lt;/p&gt;
-&lt;h2 id="rules-md020-and-md021"&gt;Rules MD020 and MD021&lt;a class="headerlink" href="#rules-md020-and-md021" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;This section describes the initial implementation of PyMarkdown’s
-&lt;a href="https://github.com/jackdewinter/pymarkdown/blob/master/pymarkdown/plugins/rule_md_020.py"&gt;Rule MD020&lt;/a&gt; and
-&lt;a href="https://github.com/jackdewinter/pymarkdown/blob/master/pymarkdown/plugins/rule_md_021.py"&gt;Rule MD021&lt;/a&gt;.&lt;/p&gt;
-&lt;h3 id="these-rules-look-very-familiar"&gt;These Rules Look Very Familiar&lt;a class="headerlink" href="#these-rules-look-very-familiar" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;While preparing for the work detailed in
-&lt;a href="https://jackdewinter.github.io/2020/05/11/markdown-linter-rules-the-first-three/"&gt;the last article&lt;/a&gt;,
-I quickly read through the list of rules before starting that work.  I believe that
-because I was focusing on those first 3 rules, I missed an interesting
-piece of information on rules MD020 and MD021.  The piece of information is that
-rules MD020 and MD021 are variations of the rules for MD018 and MD019 that apply
-specifically to Atx headings with the
-&lt;a href="https://jackdewinter.github.io/2020/05/11/markdown-linter-rules-the-first-three/#atx-headings-vs-atx_closed-headings"&gt;Atx_Closed style&lt;/a&gt;.&lt;/p&gt;
-&lt;p&gt;That information was both good news and bad news.  The good news part was that since I
-had the code and tests already written for the previous two rules, I could repurpose a
-lot of that code for these new rules.  The bad news part was that I was going to have
-to rewrite parts of those two previous rules to exclude cases where the latter two rules
-will fail.  However, I believe that the good news here definitely outweighs the bad
-news, so on to the coding!&lt;/p&gt;
-&lt;h3 id="adjusting-the-old-rules"&gt;Adjusting the Old Rules&lt;a class="headerlink" href="#adjusting-the-old-rules" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;The first part of adding these new rules was modifying the old rules to not fail if an
-Atx_Closed style of Atx heading is found.  Rule Md019 was the easiest one to adjust,
-requiring only a small change. As part of the normal Atx heading parsing, the number of
-trailing &lt;code&gt;#&lt;/code&gt; characters in the heading is collected in the Atx heading’s
-&lt;code&gt;remove_trailing_count&lt;/code&gt; variable.  The small change I made was to only fail rule MD019
-if that variable was zero, an easy change in anyone’s viewpoint.
-The change for rule MD018 was only slightly more difficult, adding an additional check
-for the regular expression &lt;code&gt;#\s*$&lt;/code&gt;&lt;sup id="fnref:closeAtx"&gt;&lt;a class="footnote-ref" href="#fn:closeAtx"&gt;1&lt;/a&gt;&lt;/sup&gt; to the existing condition.  In both
-cases, simple test cases were added to expressly test the rule to make sure they did
-not fail if presented with an Atx_Closed style heading.&lt;/p&gt;
-&lt;p&gt;Simple changes, and simple tests to verify those changes.&lt;/p&gt;
-&lt;h3 id="adding-the-new-rules"&gt;Adding the New Rules&lt;a class="headerlink" href="#adding-the-new-rules" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;Adjusting rule MD019 to fit the parameters of rule MD021 was interesting, but not too
-difficult.  The original check for spaces was modified to set the variable
-&lt;code&gt;is_left_in_error&lt;/code&gt; instead of failing immediately.  When the end token for the Atx
-heading token is seen, it checks to see if that &lt;code&gt;is_left_in_error&lt;/code&gt; was set or if the
-closing &lt;code&gt;#&lt;/code&gt;
-count is greater than 1, failing if either part is true.  Checking the end token was
-required as the parser’s pattern is that any leading spaces are applied to the token
-that follows those spaces, meaning that those spaces before the closing &lt;code&gt;#&lt;/code&gt; characters
-is stored with the Atx heading’s end token.&lt;/p&gt;
-&lt;p&gt;Making similar changes to rule MD020 proved to be a bit more difficult.  The
-constraints from rule MD018 were still present, but rule MD020 added the constraint of
-looking for bad spacing before the closing set of &lt;code&gt;#&lt;/code&gt; characters.  Starting with the
-previous regular expression for finding normal Atx headings in paragraphs
-(&lt;code&gt;^\s{0,3}#{1,6}\S&lt;/code&gt;) and merging it together with the the regular expression
-for excluding Atx_Closed line failures from rule MD019 (&lt;code&gt;#\s*$&lt;/code&gt;), I ended up with the
-expression &lt;code&gt;^\s{0,3}#{1,6}.*#+\s*$&lt;/code&gt;.  To merge the two expression together, I made two
-small changes.  The &lt;code&gt;\S&lt;/code&gt; expression used to indicate the matching of any character that
-is not whitespace was replaced with the &lt;code&gt;.*&lt;/code&gt; expression to match zero or
-more instances of any character.  The &lt;code&gt;#&lt;/code&gt; character used to indicate a single &lt;code&gt;#&lt;/code&gt;
-character was then replaced with the &lt;code&gt;#+&lt;/code&gt; expression to match 1 or more &lt;code&gt;#&lt;/code&gt; characters,
-allowing for any number of closing &lt;code&gt;#&lt;/code&gt; characters in the Atx heading.  &lt;/p&gt;
-&lt;p&gt;Before adding any extra test cases, I used my favorite
-&lt;a href="https://pythex.org/"&gt;Python regular expression tester&lt;/a&gt; to do some extensive testing
-on the regular expression.  I am happy to report that except for a simple
-typo, I got the regular expression right on the first try!&lt;/p&gt;
-&lt;p&gt;With the regular expression
-verification concluding successfully, I moved to add the test cases for both rules.
-For both rules, I started by adding copies of the test cases from the original rules
-but modified each one to represent missing spaces at the start of the Atx_Closed style
-headings instead of normal Atx style headings.  From there, I added test cases where
-spaces were
-missing from both the start and the end of the Atx heading as well as where spaces
-were only missing from the end of the Atx_Closed style headings.  It was there that I
-ran into an interesting case.&lt;/p&gt;
-&lt;h3 id="is-this-really-a-failure"&gt;Is This Really A Failure?&lt;a class="headerlink" href="#is-this-really-a-failure" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;While the original rules do not specifically identify this as a distinct case, consider
-the following Markdown:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;#&lt;/span&gt; &lt;span class="n"&gt;Heading&lt;/span&gt;&lt;span class="o"&gt;#&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;While this obviously qualifies as an Atx heading, I can credibly argue that it should
-be included in MD020’s definition of a typo in an Atx_Closed styled heading.  While I
-could have left it out, I felt strongly that this was most likely a typo and the rule
-should fail on this input as well.  &lt;/p&gt;
-&lt;p&gt;Adding this into the rule for MD020 was easy.  If the last token is a text token and the
-rule is currently looking at an end Atx heading token, the rule checks to see if that
-previous text token ends with a &lt;code&gt;#&lt;/code&gt; character.  If the &lt;code&gt;#&lt;/code&gt; character is found, it fails
-the rule.&lt;/p&gt;
-&lt;p&gt;After adding the code for this newly discovered case, I spent some time exploring
-different possible combinations, making sure that I had the right equivalence classes
-for all 4 new rules.  When I was satisfied that I had not missed anything, I move on
-to the next rule.&lt;/p&gt;
-&lt;h2 id="rule-md022-headings-should-be-surrounded-by-blank-lines"&gt;Rule MD022 - Headings should be surrounded by blank lines&lt;a class="headerlink" href="#rule-md022-headings-should-be-surrounded-by-blank-lines" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;This section describes the initial implementation of PyMarkdown’s
-&lt;a href="https://github.com/jackdewinter/pymarkdown/blob/master/pymarkdown/plugins/rule_md_022.py"&gt;Rule MD022&lt;/a&gt;.&lt;/p&gt;
-&lt;h3 id="why-does-this-rule-make-sense_2"&gt;Why Does This Rule Make Sense?&lt;a class="headerlink" href="#why-does-this-rule-make-sense_2" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;While I could stay with the consistency answer I used for MD019, a better answer for
-this rule is  compatibility and readability.  Speaking to compatibility,
-there are some Markdown parsers that will not recognize Atx headings unless they are
-preceded by a blank line or followed by a blank line.  To keep things simple, having
-at least one blank line on either side of the Atx heading keeps the options for parser
-choices open.&lt;/p&gt;
-&lt;p&gt;From a readability point of view, hopefully it is obvious that:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nv"&gt;Lorem&lt;/span&gt; &lt;span class="nv"&gt;ipsum&lt;/span&gt; &lt;span class="nv"&gt;dolor&lt;/span&gt; &lt;span class="nv"&gt;sit&lt;/span&gt; &lt;span class="nv"&gt;amet&lt;/span&gt;, &lt;span class="nv"&gt;consectetur&lt;/span&gt; &lt;span class="nv"&gt;adipiscing&lt;/span&gt;.
-
-## &lt;span class="k"&gt;Next&lt;/span&gt; &lt;span class="nv"&gt;Section&lt;/span&gt;
-
-&lt;span class="nv"&gt;Morbi&lt;/span&gt; &lt;span class="nv"&gt;dictum&lt;/span&gt; &lt;span class="nv"&gt;tortor&lt;/span&gt; &lt;span class="nv"&gt;a&lt;/span&gt; &lt;span class="nv"&gt;diam&lt;/span&gt; &lt;span class="nv"&gt;volutpat&lt;/span&gt;, &lt;span class="nv"&gt;ut&lt;/span&gt;.
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;is a lot easier to read than:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nv"&gt;Lorem&lt;/span&gt; &lt;span class="nv"&gt;ipsum&lt;/span&gt; &lt;span class="nv"&gt;dolor&lt;/span&gt; &lt;span class="nv"&gt;sit&lt;/span&gt; &lt;span class="nv"&gt;amet&lt;/span&gt;, &lt;span class="nv"&gt;consectetur&lt;/span&gt; &lt;span class="nv"&gt;adipiscing&lt;/span&gt;.
-## &lt;span class="k"&gt;Next&lt;/span&gt; &lt;span class="nv"&gt;Section&lt;/span&gt;
-&lt;span class="nv"&gt;Morbi&lt;/span&gt; &lt;span class="nv"&gt;dictum&lt;/span&gt; &lt;span class="nv"&gt;tortor&lt;/span&gt; &lt;span class="nv"&gt;a&lt;/span&gt; &lt;span class="nv"&gt;diam&lt;/span&gt; &lt;span class="nv"&gt;volutpat&lt;/span&gt;, &lt;span class="nv"&gt;ut&lt;/span&gt;.
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Between the coloring of the Atx heading in my editor and the spacing around the Atx
-heading, it is easy to find the different sections.  Without that spacing, I know it
-takes me a lot more effort to find headings, especially in a large document.&lt;/p&gt;
-&lt;p&gt;In addition to these reasons, I believe that different people have varying requirements
-on what is acceptable or proper amounts of spacing before and after a heading.  I
-personally know of a few people with visual impairments that find it easier to
-acknowledge the change in sections if accompanied by extra spacing.  To support varying
-requirements like these, rule MD022 has the &lt;code&gt;lines_above&lt;/code&gt; and &lt;code&gt;lines_below&lt;/code&gt;
-configuration values that allows the user to alter the required number of blank lines
-before and after each heading element.  From my point of view, the benefit provided
-by allowing the user to configure this rule easily outweighs the work that was
-required to add it.&lt;/p&gt;
-&lt;h3 id="adding-the-rule_2"&gt;Adding the Rule&lt;a class="headerlink" href="#adding-the-rule_2" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;In documenting the previous 4 rules, I noticed that I almost always talk about
-testing as a final step, which is far from my practice.  As such, I thought it would
-be useful to use this rule’s development as an example of my normal development
-process.&lt;/p&gt;
-&lt;h4 id="testing-done-right"&gt;Testing Done Right&lt;a class="headerlink" href="#testing-done-right" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h4&gt;
-&lt;p&gt;As I documented in &lt;a href="https://jackdewinter.github.io/2020/05/11/markdown-linter-rules-the-first-three/"&gt;my last post&lt;/a&gt;,
-my usual process for developing a new rule is:&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;Creating a New Rule&lt;/li&gt;
-&lt;li&gt;Creating the Initial Tests&lt;/li&gt;
-&lt;li&gt;Implementing the Rule&lt;/li&gt;
-&lt;li&gt;Thorough Rule Validation&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;I usually talk about running the tests after I talk about creating a rule, because it
-is in the “Thorough Rule Validation” phase that most of the interesting things happen.
-In this case, it was the “Creating the Initial Tests” phase that was interesting.&lt;/p&gt;
-&lt;p&gt;Creating a new rule is a task that I can now perform while sleeping, as I have done it
-enough times that adding a new rule to the project only requires a little bit of my
-attention to accomplish correctly.  I was then wakened out of slumber when I proceeded
-to the next step and started going through the initial combinations of test data for
-this rule.  Honestly, keeping all that data in my head caused me to get confused
-somewhat quickly.  There were simply too many
-combinations to keep in my head with any degree of confidence.  As such, I started
-creating the initial test cases for rule MD022, adding
-one test case per file just like normal.  Working through each set of combinations,
-I was surprised that at the end of that exercise, I had 22 test files ready to go for
-testing.  Reviewing the variations of text block types, SetExt/Atx headings,
-valid/invalid spacing, and alternate spacing configurations, it did seem justified that
-22 test files were required to properly test the rule. And that number was kept low as
-I cheated a little bit, leaving any combinations with container blocks (block quotes
-and list blocks) out of the
-equation until I could do a bit more research and thinking on them.&lt;/p&gt;
-&lt;h4 id="writing-the-rule"&gt;Writing the Rule&lt;a class="headerlink" href="#writing-the-rule" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h4&gt;
-&lt;p&gt;Having so many test cases, I was concerned that the logic was going to be incredibly
-complex, but I was able to boil it down to two simple metrics: the number of blank lines
-before a heading and the number of blank lines after a heading.  The count
-of lines before any heading is equal to the number of blank lines after a leaf block
-completes and the heading block starts.  The count of lines after any heading is equal
-to the number of blank lines after the end of the heading until the next leaf block
-starts.  This is where excluding the container blocks paid off, as adding those blocks
-in to this rule with their containing conditions and ending conditions would have
-complicated those calculations by a fair amount.&lt;/p&gt;
-&lt;p&gt;Given the calculations as specified in the last paragraph, the code to determine these
-values was simple, but required some thinking.  The &lt;code&gt;blank_line_count&lt;/code&gt; variable is
-incremented if it is not
-&lt;code&gt;None&lt;/code&gt; and is greater than zero.  At the start of the document, the &lt;code&gt;blank_line_count&lt;/code&gt;
-variable is set to &lt;code&gt;-1&lt;/code&gt; to make sure it does not fail for a heading at the very start of
-the document.  Whenever the end of a leaf block is encountered, the &lt;code&gt;blank_line_count&lt;/code&gt;
-variable is set to &lt;code&gt;0&lt;/code&gt; to allow the counting of blank lines to commence.  The end token
-for anything other than leaf blocks is not important to this rule, so in that case, the
-&lt;code&gt;blank_line_count&lt;/code&gt; is set to &lt;code&gt;None&lt;/code&gt; to stop counting until the next qualifying end token
-starts it again.&lt;/p&gt;
-&lt;p&gt;Once I had the calculation of &lt;code&gt;blank_line_count&lt;/code&gt; worked out properly, the rest was a
-matter of perspective.  The before count is simply the value of &lt;code&gt;blank_line_count&lt;/code&gt; at
-the time that the Atx heading is encountered.  Likewise, the after count is the value
-of &lt;code&gt;blank_line_count&lt;/code&gt; at the time that the next leaf block is encountered.  But what
-if there is no next leaf block?  What if the heading block is the last block in the
-document?  That is where the &lt;code&gt;completed_file&lt;/code&gt; function comes in handy. Added
-to the plugin manager for cases like this, this function is called after all the
-line and token processing for the Markdown has completed.  When the
-&lt;code&gt;completed_file&lt;/code&gt; function is called for this rule, it performs the usual check for
-closing conditions, failing the rule if the conditions are right.&lt;/p&gt;
-&lt;p&gt;With the 22 test cases identified at the start of the development for this rule,
-the testing was simple, with almost no errors in the implementation of the rule
-itself, just the normal semantic and typo stuff.  I do feel that I must acknowledge
-that I believe part of the reason this went off so cleanly was because the container
-blocks are not yet implemented.  I do think those 2 blocks alone will easily
-&lt;a href="https://idioms.thefreedictionary.com/throw+a+wrench+in+the+works"&gt;throw a monkey wrench&lt;/a&gt;
-into the works.  But for now, it is a good place to stop with development of this rule.&lt;/p&gt;
-&lt;h2 id="what-was-my-experience-so-far"&gt;What Was My Experience So Far?&lt;a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;After the stress of adding the first three rules, as documented in
-&lt;a href="https://jackdewinter.github.io/2020/05/11/markdown-linter-rules-the-first-three/"&gt;the previous article&lt;/a&gt;,
-adding these rules to PyMarkdown was comparatively easy.  While I still had to contend
-with the line numbers and column numbers not being reported&lt;sup id="fnref:yes"&gt;&lt;a class="footnote-ref" href="#fn:yes"&gt;2&lt;/a&gt;&lt;/sup&gt;, everything else in
-my “rule development process” was working fine.  There are times that I want to skip
-the tests and get to the development of the rule and have fun, as I am only human.
-But if there is anything that
-my experience as a developer has taught me, it is that having a clear picture of what
-you want to do before your write the code is essential to shaping the code.  If you
-start with a poor picture for what your code will do, you get poor results.  I find it
-almost always pays off to take the time to draw that good picture, getting together
-solid test cases and manually calculating their anticipated results once executed
-against the project.&lt;/p&gt;
-&lt;p&gt;While the ease of rule development is nice, it is the solid nature and usefulness of the
-core rule engine that is making me happy.  In implementing this batch of 5 rules, I
-did not have to make any changes to the core rule engine.  At the same time, the
-development of the rules was easy, my focus centering on the particulars of the rule
-itself, and not the infrastructure required to support the rule.  While I am not sure
-if it is happiness or pride, it is a good
-feeling that the work to get the project to this point is paying off.  And while I
-do know refactoring is needed in some areas, I also have a growing collection of
-proof that my approach to this project is solid and should be continued.&lt;/p&gt;
-&lt;p&gt;Based on those observations, I believe that any earlier questions about whether I
-had chosen the right framework and the right development process were answered
-positively.  As an added benefit, I also sincerely believe that my early choices to do
-things “this way” are paying off for the project.  While not 100% frictionless,
-the minimal effort that I require to write new rules is challenging but not difficult,
-increasing the “fun quotient” for the project.&lt;/p&gt;
-&lt;p&gt;I honestly couldn’t wait to keep the progress going with the next set of rules.&lt;/p&gt;
-&lt;h2 id="what-is-next"&gt;What is Next?&lt;a class="headerlink" href="#what-is-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Without much fanfare, since this first group of 5 heading rules was accomplished
-with ease, next on the list if the second group of 5 rules.  I do hope that I
-will have a similar result with those rules!&lt;/p&gt;
-&lt;div class="footnote"&gt;
-&lt;hr/&gt;
-&lt;ol&gt;
-&lt;li id="fn:closeAtx"&gt;
-&lt;p&gt;Look for any &lt;code&gt;#&lt;/code&gt; character followed by any number of whitespace characters, anchored to the end of the line. &lt;a class="footnote-backref" href="#fnref:closeAtx" title="Jump back to footnote 1 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
-&lt;/li&gt;
-&lt;li id="fn:yes"&gt;
-&lt;p&gt;Yes, I am still kicking myself over that, just not as much. &lt;a class="footnote-backref" href="#fnref:yes" title="Jump back to footnote 2 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
 &lt;/li&gt;
 &lt;/ol&gt;
 &lt;/div&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="linter rules"></category></entry></feed>
