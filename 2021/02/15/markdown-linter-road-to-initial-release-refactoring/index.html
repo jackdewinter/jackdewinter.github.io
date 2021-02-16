@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="author" content="Jack De Winter" />
+
+        <meta name="description" content="Summary¶ In my last article, I took a break to look back over the last year’s work and what I learned on my path to this point. In this article, I look at some refactoring that I have wanted to do for a while, and why I can accomplish …
+" />
+        <meta property="og:type" content="article" />
+        <meta name="twitter:card" content="summary">
+
+<meta name="keywords" content="markdown linter, core linter, Software Quality, " />
+
+<meta property="og:title" content="Markdown Linter - Road To Initial Release - Refactoring "/>
+<meta property="og:url" content="https://jackdewinter.github.io/2021/02/15/markdown-linter-road-to-initial-release-refactoring/" />
+<meta property="og:description" content="Summary¶ In my last article, I took a break to look back over the last year’s work and what I learned on my path to this point. In this article, I look at some refactoring that I have wanted to do for a while, and why I can accomplish …" />
+<meta property="og:site_name" content="Jack&#39;s Digital Workbench" />
+<meta property="og:article:author" content="Jack De Winter" />
+<meta property="og:article:published_time" content="2021-02-15T00:00:00-08:00" />
+<meta name="twitter:title" content="Markdown Linter - Road To Initial Release - Refactoring ">
+<meta name="twitter:description" content="Summary¶ In my last article, I took a break to look back over the last year’s work and what I learned on my path to this point. In this article, I look at some refactoring that I have wanted to do for a while, and why I can accomplish …">
+
+        <title>Markdown Linter - Road To Initial Release - Refactoring  · Jack&#39;s Digital Workbench
+</title>
+        <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://jackdewinter.github.io/theme/css/style.min.css?bec7d543">
+
+        <link href="https://jackdewinter.github.io/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Jack&#39;s Digital Workbench - Full Atom Feed" />
+
+
+    </head>
+    <body>
+        <div id="content">
+            <div class="navbar navbar-static-top">
+                <div class="navbar-inner">
+                    <div class="container-fluid">
+                        <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                        </a>
+                        <a class="brand" href="https://jackdewinter.github.io/"><span class=site-name>Jack's Digital Workbench</span></a>
+                        <div class="nav-collapse collapse">
+                            <ul class="nav pull-right top-menu">
+                                <li >
+                                    <a href=
+                                       https://jackdewinter.github.io
+                                    >Home</a>
+                                </li>
+                                <li ><a href="https://jackdewinter.github.io/categories">Categories</a></li>
+                                <li ><a href="https://jackdewinter.github.io/tags">Tags</a></li>
+                                <li ><a href="https://jackdewinter.github.io/archives">Archives</a></li>
+                                <li><form class="navbar-search" action="https://jackdewinter.github.io/search.html" onsubmit="return validateForm(this.elements['q'].value);"> <input type="text" class="search-query" placeholder="Search" name="q" id="tipue_search_input"></form></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="container-fluid">
+                <div class="row-fluid">
+                    <div class="span1"></div>
+                    <div class="span10">
+<article itemscope>
+<div class="row-fluid">
+    <header class="page-header span10 offset2">
+        <h1>
+            <a href="https://jackdewinter.github.io/2021/02/15/markdown-linter-road-to-initial-release-refactoring/">
+                Markdown Linter - Road To Initial Release - Refactoring
+            </a>
+        </h1>
+    </header>
+</div>
+
+<div class="row-fluid">
+    <div class="span2 table-of-content">
+        <nav>
+        <h4>Contents</h4>
+        <div class="toc">
+<ul>
+<li><a href="#summary">Summary</a></li>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#what-is-the-audience-for-this-article">What Is the Audience for This Article?</a></li>
+<li><a href="#refactoring">Refactoring</a><ul>
+<li><a href="#how-i-work">How I Work</a></li>
+<li><a href="#cleaning-up-requeuing">Cleaning Up Requeuing</a><ul>
+<li><a href="#phase-1-search-and-replace">Phase 1: Search and Replace</a></li>
+<li><a href="#phase-2-reduce-the-instances">Phase 2: Reduce the Instances</a></li>
+<li><a href="#phase-3-and-then-there-was-one">Phase 3: And Then There Was One</a></li>
+<li><a href="#the-result">The Result</a></li>
+</ul>
+</li>
+<li><a href="#bolstering-the-consistency-checks">Bolstering The Consistency Checks</a></li>
+<li><a href="#validating-inline-tokens">Validating Inline Tokens</a></li>
+<li><a href="#a-quick-refactor">A Quick Refactor</a></li>
+</ul>
+</li>
+<li><a href="#doing-more-of-a-heavy-lift">Doing More Of A Heavy Lift</a><ul>
+<li><a href="#count_newlines_in_text">count_newlines_in_text</a></li>
+<li><a href="#calculate_deltas">calculate_deltas</a></li>
+<li><a href="#calculate_last_line">calculate_last_line</a></li>
+<li><a href="#recombine_string_with_whitespace">recombine_string_with_whitespace</a></li>
+<li><a href="#calculate_next_leading_space_part">calculate_next_leading_space_part</a></li>
+<li><a href="#and-it-logically-follows">And It Logically Follows</a></li>
+</ul>
+</li>
+<li><a href="#ending-on-a-high-note">Ending On A High Note</a></li>
+<li><a href="#what-was-my-experience-so-far">What Was My Experience So Far?</a></li>
+<li><a href="#what-is-next">What is Next?</a></li>
+</ul>
+</div>
+        </nav>
+    </div>
+    <div class="span8 article-content">
+            
+            
+<h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">¶</a></h2>
+<p>In my
+<a href="https://jackdewinter.github.io/2021/02/08/markdown-linter-road-to-initial-release-learned-and-useful-things/">last article</a>, I took a break
+to look back over the last year’s work and what I learned on my path to this point.
+In this article, I look at some refactoring that I have wanted to do for a while,
+and why I can accomplish those changes successfully.</p>
+<h2 id="introduction">Introduction<a class="headerlink" href="#introduction" title="Permanent link">¶</a></h2>
+<p>Refactoring can often be a tricky subject to bring up with software developers.  Depending
+on the specific goals and experiences of a given software developer, saying the phrase
+“Can we talk about refactoring your code?” can either be met with enthusiasm, with
+judgement, or with something in between.  In the majority of situations, developers have
+been trained
+to only write code that is good enough to meet the set of requirements before them, and
+not more.  While this satisfies the immediate needs of the project, it can often cause
+long term problems in terms of maintenance and support.
+As with the more personal reactions to the phrase, I find that they occur more rarely
+these days, but they still occur.  If someone hears that phrase, it is possible that they
+think you are judging their code to not be correct or “good enough”.  In those cases,
+you want to try and remove that judgement aspect from their and move on.</p>
+<p>Luckily for me, I am the only one on this project and I have a very enthusiastic response
+to that phrase.  For me, if someone asks that questions, they are seeing the same problem
+that I solved, but through a different light. I see it as a chance to see the given
+project from a different viewpont, engaging in a good discussion along the way.
+From there, if it is agree that I need to work on the refactoring, it is just a question of
+making sure that I have solid requirements for any refactoring and a solid block of time
+to work on them.</p>
+<p>As luck would have it, I control both for the PyMarkdown project, so let’s go!</p>
+<h2 id="what-is-the-audience-for-this-article">What Is the Audience for This Article?<a class="headerlink" href="#what-is-the-audience-for-this-article" title="Permanent link">¶</a></h2>
+<p>While detailed more eloquently in
+<a href="https://jackdewinter.github.io/2020/04/05/what-is-the-audience-for-my-blog/#what-is-the-audience-for-my-blog">this article</a>,
+my goal for this technical article is to focus on the reasoning behind my solutions,
+rather that the solutions themselves.  For a full record of the solutions presented in
+this article, please go to this project’s GitHub repository and consult the
+commits between
+<a href="https://github.com/jackdewinter/pymarkdown/commit/10473f951bc17c4f74eeb067b40e6417bcad8a25">27 Jan 2021</a>
+and
+<a href="https://github.com/jackdewinter/pymarkdown/commit/9433471e996e83bea13dbd6472ff447f29fff9a7">02 Feb 2021</a>.</p>
+<h2 id="refactoring">Refactoring<a class="headerlink" href="#refactoring" title="Permanent link">¶</a></h2>
+<p>The most concise and accurate definition of what I believe refactoring to be, comes from
+the website
+<a href="https://www.refactoring.com/#:~:text=verb%3A%20to%20restructure%20software%20%20by%20applying%20a,technique%20for%20improving%20the%20health%20of%20a%20code-base.">Refactoring.Com</a>
+which defines refactoring as:</p>
+<blockquote>
+<p>verb: to restructure software by applying a series of refactorings without changing its observable behavior.</p>
+</blockquote>
+<p>For me, that definition hits all the salient points that I believe need to be in the
+definition. The first point is “to restructure software”.  Refactoring is not about
+adding any new features to the software project, it is about improving some aspect of
+the software in question.  The second point is that it is “a series of refactorings”.
+Very rarely in my years of experience have I found that a refactoring is as simple as
+just a small change.  Usually, it involves a number of small changes that bring about
+the stated requirements of the refactorings, each one doing their part to meet the
+goal.</p>
+<p>The third point is “without changing its observable behavior”, and I mostly agree with
+that statement.  In my eyes, to be more correct, I would add the phrase “unless directed
+to” to the end of that statement.  It is normally correct that any refactoring should
+not change
+the observable behavior.  However, I would argue that there are times where the
+purpose of the refactoring is to change that observable behavior along a very narrow and
+specific axis.
+A good example of this is performance refactoring.  In that case, I want every other
+observable part of the system to remain the same, but I want the observed time taken
+to process the data to be reduced.</p>
+<p>But with my little caveat at the end, I think it is a solid definition of refactoring.</p>
+<h3 id="how-i-work">How I Work<a class="headerlink" href="#how-i-work" title="Permanent link">¶</a></h3>
+<p>It is my usual practice to start writing a new feature or resolving an issue by having
+a group of scenario tests that clearly define the problem.  From there, I write the code
+as it comes to me, iterating over it in a natural way until it passes the scenario tests
+that I am coding against.  While this may not be the way others work, I find that it helps
+me keep the big concepts broken up into smaller concepts that I can more deftly handle.
+Once I am finished with the code and all the scenario tests are passing, I usually look
+locally and see if there are any simple refactorings that I can do.  If I have something
+specific in mind, I may look globally to see if I can apply whatever I just coded on a
+more global scale, but in many cases, I leave that for later.</p>
+<p>This process is very useful to me because I am very insistent on keeping my code coverage
+numbers above the 95% mark, and in many cases above the 99% mark.  While this can often
+lead to some tests that are frustrating to write, the reward for that pain is in the
+confidence with which I can make changes.  Due to my high code coverage percentage, I
+can make changes in any given piece of code, knowing that if there are any unintended
+side effects, the scenario tests providing that high code coverage will detect them.</p>
+<p>For me, that is a plus that allows me to perform certain tasks, such as refactoring,
+with a very high degree of confidence.</p>
+<h3 id="cleaning-up-requeuing">Cleaning Up Requeuing<a class="headerlink" href="#cleaning-up-requeuing" title="Permanent link">¶</a></h3>
+<p>One of the first things that I wanted to cleanup was my use of the parameters
+<code>lines_to_requeue</code> and <code>force_ignore_first_as_lrd</code>.  A long time ago (in project years),
+I needed to add code throughout the code base to handle the requeuing needed by Link
+Reference Definition parsing.  That concept of requeuing was introduced
+<a href="https://jackdewinter.github.io/2020/04/06/markdown-linter-adding-link-reference-definitions/">in April 2020</a>
+along with an explanation of why Link Reference Definition parsing needs the ability to
+rewind the stack.  At the time, I wasn’t sure if those two parameters were the only
+two parameters that I would need for any needed requeues, or if there were any other
+elements that would
+require requeues.  After more than nine months with no changes, I believed that those two
+parameters were the first target for refactoring.</p>
+<p>When I looked at that code, there were two possible refactorings that came to mind:
+reducing the number of parameters to one and raising an exception instead of using
+return codes.  Since the second refactoring would make use of the work done for the
+first refactoring, it made sense to start with that refactoring.  But replacing
+those two parameters with an instance of a new class would require some work.</p>
+<h4 id="phase-1-search-and-replace">Phase 1: Search and Replace<a class="headerlink" href="#phase-1-search-and-replace" title="Permanent link">¶</a></h4>
+<p>The first phase of the refactoring was dead simple: locate any instances of the variables
+<code>lines_to_requeue</code> and <code>force_ignore_first_as_lrd</code> and place them within a new instance
+of the newly created <code>RequeueLineInfo</code> class.  This took a while to complete but it was
+relatively easy
+to do.  In each case, I started with a call to the <code>process_link_reference_definition</code>
+function and worked backwards through the code.  As I worked backwards from that function,
+I changed the
+calling function’s two return values to a new single instance of the <code>RequeueLineInfo</code>
+class.  To ensure that there were no external changes other than that, I
+immediately dereferenced both member variables as local variables.  Because that practice
+kept any changes localized, I was able to execute the scenario tests after each step to
+verify that the current set of changes were correct.</p>
+<p>The big issues that I ran into with these changes were the blank line function
+<code>handle_blank_line_fn</code> and the close blocks function <code>close_open_blocks_fn</code>.  As both
+functions can terminate a Link Reference Definition, both had to be changed to return a
+single argument instead of the double arguments.  While the change for the
+<code>handle_blank_line_fn</code> function only required 1 change, the change for the
+<code>close_open_blocks_fn</code> function had to be implemented in 22 separate calls, each change
+following the pattern mentioned above.  It was a handful but was completed without
+incident. Well, without incident after I corrected some typos.</p>
+<p>A good example of these changes are the changes performed to the
+<code>__close_required_lists_after_start</code> function.  Before this change, the function’s code
+around the call to the <code>close_open_blocks_fn</code> function looked like this:</p>
+<div class="highlight"><pre><span></span>        <span class="p">(</span>
+            <span class="n">container_level_tokens</span><span class="p">,</span>
+            <span class="n">lines_to_requeue</span><span class="p">,</span>
+            <span class="n">force_ignore_first_as_lrd</span><span class="p">,</span>
+        <span class="p">)</span> <span class="o">=</span> <span class="n">parser_state</span><span class="o">.</span><span class="n">close_open_blocks_fn</span><span class="p">(</span>
+            <span class="n">parser_state</span><span class="p">,</span>
+            <span class="n">until_this_index</span><span class="o">=</span><span class="n">last_list_index</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="n">caller_can_handle_requeue</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">lines_to_requeue</span><span class="p">:</span>
+</pre></div>
+<p>After the change, this code was changed to:</p>
+<div class="highlight"><pre><span></span>        <span class="p">(</span>
+            <span class="n">container_level_tokens</span><span class="p">,</span>
+            <span class="n">requeue_line_info</span><span class="p">,</span>
+        <span class="p">)</span> <span class="o">=</span> <span class="n">parser_state</span><span class="o">.</span><span class="n">close_open_blocks_fn</span><span class="p">(</span>
+            <span class="n">parser_state</span><span class="p">,</span>
+            <span class="n">until_this_index</span><span class="o">=</span><span class="n">last_list_index</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="n">caller_can_handle_requeue</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">requeue_line_info</span> <span class="ow">and</span> <span class="n">requeue_line_info</span><span class="o">.</span><span class="n">lines_to_requeue</span><span class="p">:</span>
+            <span class="n">lines_to_requeue</span> <span class="o">=</span> <span class="n">requeue_line_info</span><span class="o">.</span><span class="n">lines_to_requeue</span>
+            <span class="n">force_ignore_first_as_lrd</span> <span class="o">=</span> <span class="n">requeue_line_info</span><span class="o">.</span><span class="n">force_ignore_first_as_lrd</span>
+</pre></div>
+<p>The pivotal thing to notice here is that while the function was handling the single
+<code>requeue_line_info</code> return value instead of the two return values <code>lines_to_requeue</code>
+and <code>force_ignore_first_as_lrd</code>, those changes are completely localized.  That isolation
+of the change is what helped make this a great refactoring.</p>
+<h4 id="phase-2-reduce-the-instances">Phase 2: Reduce the Instances<a class="headerlink" href="#phase-2-reduce-the-instances" title="Permanent link">¶</a></h4>
+<p>With the scenario tests still verifying that everything was working properly, I started to
+work on reducing the number of new instances of the <code>RequeueLineInfo</code> class.  While
+isolating the changes was a good priority for Phase 1, it resulted in a lot of extra
+overhead whenever those new instances were returned from a function.  For this phase, the
+focus was on identifying paths where that dereferencing was not necessary, replacing
+them with the returned instance of the <code>RequeueLineInfo</code> class.</p>
+<p>Following along with the example of the <code>__close_required_lists_after_start</code> function,
+that function was again modified.  Inside of that function, any references to the variable
+<code>lines_to_requeue</code> was replaced with a reference to <code>requeue_line_info.lines_to_requeue</code>,
+with a similar change being made for the <code>force_ignore_first_as_lrd</code> variable.  At the end
+of the function, instead of returning:</p>
+<div class="highlight"><pre><span></span>    <span class="k">return</span> <span class="bp">None</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="n">lines_to_requeue</span><span class="p">,</span> <span class="n">force_ignore_first_as_lrd</span>
+</pre></div>
+<p>the following was returned:</p>
+<div class="highlight"><pre><span></span>    <span class="k">return</span> <span class="bp">None</span><span class="p">,</span> <span class="bp">None</span><span class="p">,</span> <span class="n">requeue_line_info</span>
+</pre></div>
+<p>At that point, any function that calls the function was located, and switched to use the
+new single value instead of the old double value.  This was usually repeated until the
+function to be modified was the main <code>parse_line_for_container_blocks</code> function.</p>
+<p>Executing scenario tests as I went, there were only two issues that popped up.  The first
+issue had to do with the <code>requeue_line_info</code> being <code>None</code>.  In those cases, I had to make
+sure to add some <code>if requeue_line_info:</code> statements around sensitive code, ensuring that it
+wouldn’t fail.  As I worked my way back up to the main function, most of those <code>if</code>
+statements that I added were removed as I refactored my way up towards the main function.
+The second issue occurred in
+functions that had multiple paths that required the changes.  In that case, I simply noted
+down the name of the functions as I went.  When I finished all the “easy” paths, I went
+back to that list as started checking items off that list one-by-one.</p>
+<p>By the end of this phase, there were only a few handfuls of new instances being created.
+Cleaning those up were my next priority.</p>
+<h4 id="phase-3-and-then-there-was-one">Phase 3: And Then There Was One<a class="headerlink" href="#phase-3-and-then-there-was-one" title="Permanent link">¶</a></h4>
+<p>With the above work accomplished, there was only a little bit of cleanup left to do.
+My goal was to get from the few new instances that still existed down to one new instance.
+Ideally, the
+<code>process_link_reference_definition</code> function was the only function that needed to create
+a new instance, and I wanted to make that so.</p>
+<p>The new instances that were usually in places that had already been transformed before
+this refactoring began.  These were usually functions like the
+<code>parse_line_for_container_blocks</code> function which had been one of my test functions for
+this refactoring.  In those cases, I simply repeated the process that I
+used in Phase 2 to remove those extra instances.  In cleaning up those instances, there
+were a few cases where a “non-requeue” was being returned in a <code>requeue_line_info</code>
+instance, accomplished by setting the <code>lines_to_requeue</code> member variable to <code>None</code>.  While
+these were not difficult to deal with, it did increase the challenge factor for the
+refactoring.</p>
+<h4 id="the-result">The Result<a class="headerlink" href="#the-result" title="Permanent link">¶</a></h4>
+<p>At each step of each phase, I was able to execute the scenario tests, ensuring that the
+changes were not changing the output of the parser.  This was pivotal.  With 238 additions
+and 271 deletions over 11 changed files, I would not have noticed any bad effects from
+some of these changes without those scenario tests.  This refactoring was also very pivotal
+in ensuring that I had confidence to make other refactorings.  Because this was not a
+simple refactoring, I knew that completing this refactoring meant many others were
+not only possible, but possible with confidence that they could be accomplished.</p>
+<p>What about raising exceptions instead of returning the instances? After having done this
+work, I had a high degree of confidence that there will be issues with that approach.
+The main issue that I saw was that a few functions recursively call the
+<code>parse_line_for_container_blocks</code> function.  While I think that it may be possible,
+I wanted to focus on refactorings that I believe will positively impact the code with
+a high probability of success.  At the time that I wrapped the refactoring up, I made
+a decision that raising an exception with the information fell below my definition of
+“a high probability of success”.</p>
+<h3 id="bolstering-the-consistency-checks">Bolstering The Consistency Checks<a class="headerlink" href="#bolstering-the-consistency-checks" title="Permanent link">¶</a></h3>
+<p>As I scanned through items in the issues list, there were a couple of items that I
+thought would be easy to either verify or complete.  The first one was about
+confirming that the <code>rehydrate_index</code> was being verified in the consistency checks.
+Looking into that one, I was pleased to find that there was already a check in the
+Markdown transformer.  Looking at the <code>verify_line_and_column_numbers.py</code> module,
+I did not find the same check, but adding it was very easy. Similarly, confirming the
+presence of the same types of checks for the <code>leading_space_index</code> was just as easy.
+However, in this case, all the needed checks were already in place, so no code changes
+were required.</p>
+<h3 id="validating-inline-tokens">Validating Inline Tokens<a class="headerlink" href="#validating-inline-tokens" title="Permanent link">¶</a></h3>
+<p>The next item was not as easy, but it was close to it.  For some reason that is now lost
+to me, I had a suspicion that I had a blind spot with the inline tokens at the end of
+a Text block.  If I had to guess, I was worried that I did not have at least one example
+of every Inline token and end Inline token at the end of a Text block, meaning there was
+a possibility that one of those calculations were off.</p>
+<p>While I was pretty sure that I had since covered that item, I wanted to make sure that
+I had concrete proof of that.  Looking around the scenario test groups, I was happy to
+find that the Paragraph Series D tests were constructed to have only a single inline
+element in each paragraph.  By that very definition, each of the inline elements used
+in those tests were both the first and the last token in each paragraph.  After verifying
+that each inline token was present at least once, I resolved that item.</p>
+<h3 id="a-quick-refactor">A Quick Refactor<a class="headerlink" href="#a-quick-refactor" title="Permanent link">¶</a></h3>
+<p>Before moving on to some more substantial refactorings, I wanted to make sure I had
+a bit more practice to boost my confidence.  To that extent, I started by taking the
+function <code>count_of_block_quotes_on_stack</code> from the <code>BlockQuoteProcessor</code> class
+and moving it to the <code>ParserHelper</code> class.  It just did not feel right being in the
+<code>BlockQuoteProcessor</code> class, and this took care of that problem.</p>
+<p>Once that task was accomplished, I started work on a new related function:
+<code>find_last_block_quote_on_stack</code>.  The purpose of function itself was simple.  Start at
+the end of the <code>token_stack</code> list and work backwards until a Block Quote token was
+encountered. I was doing this manually in four different places, and this change
+simplified that code in those four locations.</p>
+<div class="highlight"><pre><span></span>    <span class="k">def</span> <span class="nf">find_last_block_quote_on_stack</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">last_stack_index</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">token_stack</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="k">while</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">token_stack</span><span class="p">[</span><span class="n">last_stack_index</span><span class="p">]</span><span class="o">.</span><span class="n">is_document</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">token_stack</span><span class="p">[</span><span class="n">last_stack_index</span><span class="p">]</span><span class="o">.</span><span class="n">is_block_quote</span><span class="p">:</span>
+                <span class="k">break</span>
+            <span class="n">last_stack_index</span> <span class="o">-=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="n">last_stack_index</span>
+</pre></div>
+<p>Once that was completed, I also created variants of that function, the
+<code>find_last_container_on_stack</code> for finding the last container block on the stack
+(which was useful) and the <code>find_last_list_block_on_stack</code> function (which was not
+useful).  While these refactorings did not have the impact that I had hoped, each
+one still left the code more readable by describing what they were doing in their function
+name.</p>
+<h2 id="doing-more-of-a-heavy-lift">Doing More Of A Heavy Lift<a class="headerlink" href="#doing-more-of-a-heavy-lift" title="Permanent link">¶</a></h2>
+<p>After completing the above tasks, I felt sufficiently confident to attempt some
+more interesting refactorings.  These refactorings were only interesting in that the
+code that used them was all over the place, usually in calculations that would have
+to be individually examined before each refactoring.  But, as this group of refactorings is
+a group that I have noted in the issues list, I need to push through them.  On top of that,
+with my recent successes, it just felt
+like the right time to deal with those issues.</p>
+<p>On the surface, none of these new functions created for the refactorings are special.
+Each one does a single, very basic thing, but it does it once.  In visiting different
+parts of the project’s code base, I had a
+loosely organized picture of which patterns were common, and I started looking for them
+to confirm that they were indeed common.  While I talk about the five patterns that I
+noticed here, there were also two other patterns that I chose not to do as I did not see
+a common pattern in them.  While I do believe that refactoring those patterns to clean
+up the code would be useful, I do not believe that a refactoring of either one of those two
+patterns would substantially benefit the code base.  At least not yet.</p>
+<h3 id="count_newlines_in_text">count_newlines_in_text<a class="headerlink" href="#count_newlines_in_text" title="Permanent link">¶</a></h3>
+<p>This function was already in the <code>ParserHelper</code> class, but it was not widely used outside
+of the parser code itself.  In particular, every instance of this pattern was found in
+the consitency checks.  In each case, a pattern like:</p>
+<div class="highlight"><pre><span></span><span class="n">inline_height</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">resolved_text</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">ParserHelper</span><span class="o">.</span><span class="n">newline_character</span><span class="p">))</span> <span class="o">-</span> <span class="mi">1</span>
+</pre></div>
+<p>was replaced with:</p>
+<div class="highlight"><pre><span></span><span class="n">inline_height</span> <span class="o">=</span> <span class="n">ParserHelper</span><span class="o">.</span><span class="n">count_newlines_in_text</span><span class="p">(</span><span class="n">resolved_text</span><span class="p">)</span>
+</pre></div>
+<p>It just made sense to replace the old code with the function call.  The function was
+already in the <code>ParserHelper</code> class and it was already battle tested.  In addition,
+by using the function, the function itself could be tweaked to be more performant
+without having to change the calling code.</p>
+<h3 id="calculate_deltas">calculate_deltas<a class="headerlink" href="#calculate_deltas" title="Permanent link">¶</a></h3>
+<p>Always near the top of my “refactor list” was a new function to calculate the deltas
+for the line number and column number for a given text string.  I already knew that I
+had this copied this in various forms into at least eight locations, and it just seemed
+bad form not to refactor it. While
+this code was easy to use once tested, there were a number of small tunings that could
+make it more performant once its various implementations were gathered together in a
+function with one single implementation.</p>
+<p>The essence of this new function is the logic to ensure that the line/column number pair
+is updated to properly account for any element that was just parsed.  While the case for
+updating a single line element is trivial, there are a few steps that must be
+followed to ensure that a multiple line element’s position is updated properly.  The
+change in the line number is the simple part, being a count of the number of newline
+characters in the element’s source text.  The column is trickier.  Once any special
+characters have been removed, the new column number is the number of characters that
+occur after the last newline character.  With its little nuances, it just seemed right
+to do this properly once.</p>
+<div class="highlight"><pre><span></span>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">calculate_deltas</span><span class="p">(</span><span class="n">text_to_analyze</span><span class="p">):</span>
+
+        <span class="n">delta_line_number</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">delta_column_number</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="n">ParserHelper</span><span class="o">.</span><span class="n">newline_character</span> <span class="ow">in</span> <span class="n">text_to_analyze</span><span class="p">:</span>
+            <span class="n">split_raw_tag</span> <span class="o">=</span> <span class="n">text_to_analyze</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">ParserHelper</span><span class="o">.</span><span class="n">newline_character</span><span class="p">)</span>
+            <span class="n">delta_line_number</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">split_raw_tag</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+
+            <span class="n">last_element</span> <span class="o">=</span> <span class="n">split_raw_tag</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">last_element</span> <span class="o">=</span> <span class="n">ParserHelper</span><span class="o">.</span><span class="n">resolve_replacement_markers_from_text</span><span class="p">(</span>
+                <span class="n">last_element</span>
+            <span class="p">)</span>
+            <span class="n">last_element</span> <span class="o">=</span> <span class="n">ParserHelper</span><span class="o">.</span><span class="n">remove_escapes_from_text</span><span class="p">(</span><span class="n">last_element</span><span class="p">)</span>
+            <span class="n">length_of_last_elements</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">last_element</span><span class="p">)</span>
+
+            <span class="n">delta_column_number</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="n">length_of_last_elements</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">delta_column_number</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">text_to_analyze</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">delta_line_number</span><span class="p">,</span> <span class="n">delta_column_number</span>
+</pre></div>
+<p>I picked up the code from one of the three places that I found the code and was able
+to easily create the <code>calculate_deltas</code> function.  Replacing the code from the original
+function that I copied it from, I found it just as easy to replace the other two instances
+of that code.  To make its use simpler, I did some extra work to massage the input to
+include surrounding characters in the calculation, to avoid extra math.  For example,
+in the <code>handle_angle_brackets</code> function, instead of a more complex calculation of the
+column number, I simply adjusted the <code>between_brackets</code> variable passed to the
+<code>calculate_deltas</code> function to include the actual angle brackets that were used.</p>
+<h3 id="calculate_last_line">calculate_last_line<a class="headerlink" href="#calculate_last_line" title="Permanent link">¶</a></h3>
+<p>This is one that I thought I had in more places than I found when I started
+looking.  I thought that I was splitting a line in more than two places, using that
+last line to determine what was left on a line.  My best guess is that most of those
+cases were removed when I condensed most of that logic into the <code>calculate_deltas</code>
+function.</p>
+<div class="highlight"><pre><span></span>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">calculate_last_line</span><span class="p">(</span><span class="n">text_string</span><span class="p">):</span>
+
+        <span class="n">split_label</span> <span class="o">=</span> <span class="n">text_string</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">ParserHelper</span><span class="o">.</span><span class="n">newline_character</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">split_label</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+</pre></div>
+<p>But even so, clearly spelling out that the code was working with the last line of
+text in a multiple line string was worth it to me!</p>
+<h3 id="recombine_string_with_whitespace">recombine_string_with_whitespace<a class="headerlink" href="#recombine_string_with_whitespace" title="Permanent link">¶</a></h3>
+<p>The last refactoring that I wanted to get out of the way was essentially a
+<a href="https://en.wikipedia.org/wiki/Swiss_Army_knife">Swiss Army Knife</a> function
+that I could use to recombine a string with its leading whitespace.  In each case,
+the pattern started the same: split the text, split the whitespace.  It was the next
+part, piecing the whitespace and the text together once split, where the various
+functions varied in their approach.  But, taking my time, I was able to assemble
+a single function with five default parameters that worked in each of the twelve
+instances where that logic appeared.</p>
+<div class="highlight"><pre><span></span>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">recombine_string_with_whitespace</span><span class="p">(</span>
+        <span class="n">text_string</span><span class="p">,</span> <span class="n">whitespace_string</span><span class="p">,</span> <span class="n">start_index</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">add_replace_marker_if_empty</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+        <span class="n">post_increment_index</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">start_text_index</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">add_whitespace_after</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="n">split_text_string</span> <span class="o">=</span> <span class="n">text_string</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">ParserHelper</span><span class="o">.</span><span class="n">newline_character</span><span class="p">)</span>
+        <span class="n">split_whitespace_string</span> <span class="o">=</span> <span class="n">whitespace_string</span><span class="o">.</span><span class="n">split</span><span class="p">(</span>
+            <span class="n">ParserHelper</span><span class="o">.</span><span class="n">newline_character</span>
+        <span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">start_text_index</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">split_text_string</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">post_increment_index</span><span class="p">:</span>
+                <span class="n">start_index</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="n">ew_part</span> <span class="o">=</span> <span class="n">split_whitespace_string</span><span class="p">[</span><span class="n">start_index</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">ew_part</span> <span class="ow">and</span> <span class="n">add_replace_marker_if_empty</span><span class="p">:</span>
+                <span class="n">ew_part</span> <span class="o">=</span> <span class="n">ParserHelper</span><span class="o">.</span><span class="n">create_replace_with_nothing_marker</span><span class="p">(</span><span class="n">ew_part</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">add_whitespace_after</span><span class="p">:</span>
+                <span class="n">split_text_string</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">split_text_string</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">ew_part</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">split_text_string</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">ew_part</span> <span class="o">+</span> <span class="n">split_text_string</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">post_increment_index</span><span class="p">:</span>
+                <span class="n">start_index</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="n">ParserHelper</span><span class="o">.</span><span class="n">newline_character</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">split_text_string</span><span class="p">),</span> <span class="n">start_index</span>
+</pre></div>
+<p>It looks a bit ugly because of the optional parameters, but it is basically simple.
+Given a processed string with its leading spaces removed and a separate string with
+those leading spaces that were removed, recombine them into the original string.
+All the “ugliness” is making sure to handle the various combinations and twists
+needed to accommodate each use of this function.</p>
+<h3 id="calculate_next_leading_space_part">calculate_next_leading_space_part<a class="headerlink" href="#calculate_next_leading_space_part" title="Permanent link">¶</a></h3>
+<p>Unlike the other refactorings in this section, this refactoring was added to the
+<code>ContainerMarkdownToken</code> class.  One pattern that I found was that I kept on
+copying and pasting code to to deal with Block Quote tokens, specifically to determine
+what part of the <code>leading_spaces</code> property of a Block Quote token was current.
+Furthermore, I also
+needed to ensure that in multiple cases, if I used that leading space, that I incremented
+the <code>leading_text_index</code> member variable to reflect that usage.</p>
+<p>Hence, the <code>calculate_next_leading_space_part</code> was created:</p>
+<div class="highlight"><pre><span></span>    <span class="k">def</span> <span class="nf">calculate_next_leading_space_part</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">increment_index</span><span class="o">=</span><span class="bp">True</span><span class="p">):</span>
+
+        <span class="n">split_leading_spaces</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">leading_spaces</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">ParserHelper</span><span class="o">.</span><span class="n">newline_character</span><span class="p">)</span>
+        <span class="n">leading_text</span> <span class="o">=</span> <span class="n">split_leading_spaces</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">leading_text_index</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">increment_index</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">leading_text_index</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="n">leading_text</span>
+</pre></div>
+<h3 id="and-it-logically-follows">And It Logically Follows<a class="headerlink" href="#and-it-logically-follows" title="Permanent link">¶</a></h3>
+<p>After completing the last set of refactorings, I took a bit of time to look around the code
+and see if I could see anything that jumped out at me.  The first thing that I noticed
+was that the <code>recombine_string_with_whitespace</code> was already set up to handle both single
+line and multiple line strings.  As such, doing a check to see if the string being passed
+into the <code>recombine_string_with_whitespace</code> function contained a newline character did
+not have any benefit.  Hence, I simplified a few <code>if</code> statements that occurred before
+a call to <code>recombine_string_with_whitespace</code>.</p>
+<p>Once that was done, I also noticed that the <code>__handle_extracted_paragraph_whitespace</code>
+function was almost a duplicate for the <code>recombine_string_with_whitespace</code> function.
+This meant that I could rewrite the <code>__rehydrate_inline_code_span</code> function to use
+the <code>recombine_string_with_whitespace</code> function instead.  The only other reference
+to the <code>__handle_extracted_paragraph_whitespace</code> function was in the
+<code>__rehydrate_inline_raw_html</code> function, which was mainly using it to increase the
+<code>rehydrate_index</code> if it was within a paragraph.  Once that code was written inline,
+the entire <code>__handle_extracted_paragraph_whitespace</code> function was deleted.</p>
+<p>While neither of these refactorings were needed, they both left the source code in
+a better condition, so I went ahead and completed them.  In my evaluation, as I was
+refactoring the code in that area anyways, it did not seem right to not do those
+refactorings as a cleanup task.</p>
+<h2 id="ending-on-a-high-note">Ending On A High Note<a class="headerlink" href="#ending-on-a-high-note" title="Permanent link">¶</a></h2>
+<p>In some cases, a refactor is simple but looks really messy.  That is the case with the
+commit for
+<a href="https://github.com/jackdewinter/pymarkdown/commit/9433471e996e83bea13dbd6472ff447f29fff9a7">this refactoring</a>.
+If you look at the commit, it looks like I changed the entire function to do something,
+but what that something is seems obscured by the changes.  Looking at that commit
+closely, there are only two small changes.</p>
+<p>The first change was an extremely simple one.  I changed the code in the <code>except</code> block
+of the <code>__transform</code> function from:</p>
+<div class="highlight"><pre><span></span><span class="k">raise</span> <span class="n">BadTokenizationError</span><span class="p">()</span> <span class="kn">from</span> <span class="nn">this_exception</span>
+</pre></div>
+<p>to:</p>
+<div class="highlight"><pre><span></span><span class="k">raise</span> <span class="n">BadTokenizationError</span><span class="p">(</span><span class="s2">"An unhandled error occurred processing the document."</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">this_exception</span>
+</pre></div>
+<p>to provide more information to the user if such an exception is ever caught.  That change
+is very clear in the commit referenced above.</p>
+<p>The second change in the commit was also an equally simple one.  I changed the bulk of the
+code in the
+<code>__parse_blocks_pass</code> function to be enclosed in a <code>try/except</code> block to be able to
+more accurately report on any assertions that were fired within the code.  To be clear,
+I added a <code>try:</code> near the top of the function and the following code at the end of the
+function:</p>
+<div class="highlight"><pre><span></span>        <span class="k">except</span> <span class="ne">AssertionError</span> <span class="k">as</span> <span class="n">this_exception</span><span class="p">:</span>
+            <span class="n">error_message</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="s2">"A project assertion failed on line "</span>
+                <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">line_number</span><span class="p">)</span>
+                <span class="o">+</span> <span class="s2">" of the current document."</span>
+            <span class="p">)</span>
+            <span class="k">raise</span> <span class="n">BadTokenizationError</span><span class="p">(</span><span class="n">error_message</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">this_exception</span>
+</pre></div>
+<p>The rest of the changes that are reported?  Indentation.  Yes, adding an indentation of
+four to ensure that it compiled properly created the mess that shows up as differences
+in the commit log.</p>
+<h2 id="what-was-my-experience-so-far">What Was My Experience So Far?<a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link">¶</a></h2>
+<p>While I am not a perfectionist in my coding, I do believe that I have a different sense
+of weights when trying to figure out what level of weight to associate with an aspect of
+a project.  For me, having 10 mostly working and tested scenarios is not as important as
+having 3 or 4 well tested and maintainable scenarios.  While that is my default weighting,
+I have also learned to be able to adjust that weighting depending on certain situations.
+In my professional life, I think what helps me be successful with those changing weightings
+is that I usually state each of the relevant options, their weightings, and how I
+calculated the weighting.</p>
+<p>For this project, I am both the developer, the tester, and the manager, so it is a bit
+more nuanced.  During most of the duration of this project, my focus was to drive
+the project towards completion, so I use the set of weightings that allowed me to
+develop and test more efficiently.  But I always knew that those weightings would be
+temporary, and that I am now moving towards the proper set of weightings for this project.</p>
+<p>So why that long description?  It is to back up my statement which is: meh.  I am still
+confident about this project, but refactorings of this type were always expected, and I
+realized that.  As such, it is just something to get done.  No hype, no fanfare, just
+grunt work.</p>
+<p>Don’t get me wrong, I am happy that it moves me one more step towards the release, and
+I am happy that it went off without that many issues, but it is just a step.  To me,
+refactorings are just a fact of life when you are a software developer.  If you are doing
+them right, they will be simple, methodical, and uneventful. As they should be.</p>
+<p>I was able to keep the refactorings uneventful by having some clear goals in mind.
+The first goal I have is to maintain a set of scenario tests that provide a high percentage
+of test coverage for the project.  If something changes, I want to know about it as
+quickly as possbile. The second goal I have it to always take small enough steps that I
+can use my scenario tests to continually ensure that any changes are going in the right
+direction.  Finally, my third goal is to have a solid plan going into each refactoring,
+ensuring that I don’t get distracted along the way.</p>
+<p>I believe it was by following these goals that I was able to keep these refactorings
+simple, methodical, and uneventful!</p>
+<h2 id="what-is-next">What is Next?<a class="headerlink" href="#what-is-next" title="Permanent link">¶</a></h2>
+<p>While I do continue with some refactorings next week, my big focus was to apply some
+of my recent learnings regarding performance to the project.  Stay tuned!</p>
+
+
+             
+ 
+                <p id="post-share-links">
+    Like this post? Share on:
+    <a href="https://twitter.com/intent/tweet?text=Markdown%20Linter%20-%20Road%20To%20Initial%20Release%20-%20Refactoring&url=https%3A//jackdewinter.github.io/2021/02/15/markdown-linter-road-to-initial-release-refactoring/&hashtags=markdown-linter,core-linter" target="_blank" rel="nofollow noopener noreferrer" title="Share on Twitter">Twitter</a>
+    ❄
+    <a href="https://www.facebook.com/sharer/sharer.php?u=https%3A//jackdewinter.github.io/2021/02/15/markdown-linter-road-to-initial-release-refactoring/" target="_blank" rel="nofollow noopener noreferrer" title="Share on Facebook">Facebook</a>
+    ❄
+    <a href="mailto:?subject=Markdown%20Linter%20-%20Road%20To%20Initial%20Release%20-%20Refactoring&amp;body=https%3A//jackdewinter.github.io/2021/02/15/markdown-linter-road-to-initial-release-refactoring/" target="_blank" rel="nofollow noopener noreferrer" title="Share via Email">Email</a>
+    </p>
+
+            
+            
+
+
+
+
+
+
+<section>
+    <h6 style="display:none;">Comments</h6>
+    <p id="comment-message">So what do you think? Did I miss something? Is any part unclear? Leave your comments below. </p>
+
+    <div class="accordion" id="accordion2">
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                <a class="accordion-toggle disqus-comment-count comment-count"
+                   data-toggle="collapse"
+                   data-parent="#accordion2"
+                   href="https://jackdewinter.github.io/2021/02/15/markdown-linter-road-to-initial-release-refactoring/#comment_thread"
+                   id="comment-accordion-toggle">
+                    Comments
+                </a>
+            </div>
+            <div id="comment_thread" class="accordion-body collapse">
+                <div class="accordion-inner">
+                    <div class="comments">
+
+                        <script src="https://utteranc.es/client.js"
+        data-repo="jackdewinter/jackdewinter.github.io"
+        data-issue-term="markdown-linter-road-to-release-b"
+        data-label="Comments"
+        data-theme="github-light"
+        crossorigin="anonymous"
+        async>
+</script>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+            <hr/>
+            <aside>
+            <nav>
+            <ul class="articles-timeline">
+                <li class="previous-article">« <a href="https://jackdewinter.github.io/2021/02/08/markdown-linter-road-to-initial-release-learned-and-useful-things/" title="Previous: Markdown Linter - Road To Initial Release - Learned and Useful Things">Markdown Linter - Road To Initial Release - Learned and Useful Things</a></li>
+            </ul>
+            </nav>
+            </aside>
+        </div>
+        <section id="article-sidebar" class="span2">
+    <h4>Reading Time</h4>
+    <p>~19 min read</p>
+            <h4>Published</h4>
+            <time itemprop="dateCreated" datetime="2021-02-15T00:00:00-08:00">Feb 15, 2021</time>
+        <h4>Markdown Linter Road To Initial Release</h4>
+    <ul class="multi-parts-list">
+            <li >
+            <a href="https://jackdewinter.github.io/2021/02/08/markdown-linter-road-to-initial-release-learned-and-useful-things/" title="Markdown Linter - Road To Initial Release - Learned and Useful Things">Part 1: Markdown Linter - Road To Initial Release - Learned and Useful Things</a>
+            </li>
+            <li  class="active-part">
+            Part 2: Markdown Linter - Road To Initial Release - Refactoring
+            </li>
+    </ul>
+            <h4>Category</h4>
+            <a class="category-link" href="https://jackdewinter.github.io/categories#software-quality-ref">Software Quality</a>
+            <h4>Tags</h4>
+            <ul class="list-of-tags tags-in-article">
+                <li><a href="https://jackdewinter.github.io/tags#core-linter-ref">core linter
+                    <span>42</span>
+</a></li>
+                <li><a href="https://jackdewinter.github.io/tags#markdown-linter-ref">markdown linter
+                    <span>60</span>
+</a></li>
+            </ul>
+<h4>Stay in Touch</h4>
+<div id="sidebar-social-link">
+    <a href="https://github.com/jackdewinter" title="github-alt" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="GitHub" role="img" viewBox="0 0 512 512"><rect width="512" height="512" rx="15%" fill="#1B1817"/><path fill="#fff" d="M335 499c14 0 12 17 12 17H165s-2-17 12-17c13 0 16-6 16-12l-1-50c-71 16-86-28-86-28-12-30-28-37-28-37-24-16 1-16 1-16 26 2 40 26 40 26 22 39 59 28 74 22 2-17 9-28 16-35-57-6-116-28-116-126 0-28 10-51 26-69-3-6-11-32 3-67 0 0 21-7 70 26 42-12 86-12 128 0 49-33 70-26 70-26 14 35 6 61 3 67 16 18 26 41 26 69 0 98-60 120-117 126 10 8 18 24 18 48l-1 70c0 6 3 12 16 12z"/></svg>
+    </a>
+    <a href="https://www.linkedin.com/in/jackdewinter/" title="linkedin" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="LinkedIn" role="img" viewBox="0 0 512 512" fill="#fff"><rect width="512" height="512" rx="15%" fill="#0077b5"/><circle cx="142" cy="138" r="37"/><path stroke="#fff" stroke-width="66" d="M244 194v198M142 194v198"/><path d="M276 282c0-20 13-40 36-40 24 0 33 18 33 45v105h66V279c0-61-32-89-76-89-34 0-51 19-59 32"/></svg>
+    </a>
+    <a href="https://jackdewinter.github.io/feeds/all.atom.xml" title="" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="RSS" role="img" viewBox="0 0 512 512"><rect width="512" height="512" rx="15%" fill="#f80"/><circle cx="145" cy="367" r="35" fill="#fff"/><path fill="none" stroke="#fff" stroke-width="60" d="M109 241c89 0 162 73 162 162M109 127c152 0 276 124 276 276"/></svg>
+    </a>
+</div>
+            
+
+
+
+
+
+            
+
+
+
+
+
+        </section>
+</div>
+</article>
+                    </div>
+                    <div class="span1"></div>
+                </div>
+            </div>
+        </div>
+<footer>
+    <div>
+        
+&copy; Copyright 2020 by Jack De Winter and licensed under a <a rel="license"
+  href="http://creativecommons.org/licenses/by/4.0/">
+  <img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/80x15.png" />
+  Creative Commons Attribution 4.0 International License</a>.
+
+    </div>
+
+
+
+
+    <div id="fpowered">
+        Powered by: <a href="http://getpelican.com/" title="Pelican Home Page" target="_blank" rel="nofollow noopener noreferrer">Pelican</a>
+        Theme: <a href="https://elegant.oncrashreboot.com/" title="Theme Elegant Home Page" target="_blank" rel="nofollow noopener noreferrer">Elegant</a>
+    </div>
+</footer>            <script src="//code.jquery.com/jquery.min.js"></script>
+        <script src="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>
+        <script>
+            function validateForm(query)
+            {
+                return (query.length > 0);
+            }
+        </script>
+
+    <script>
+    (function () {
+        if (window.location.hash.match(/^#comment-\d+$/)) {
+            $('#comment_thread').collapse('show');
+        }
+    })();
+    window.onhashchange=function(){
+        if (window.location.hash.match(/^#comment-\d+$/))
+            window.location.reload(true);
+    }
+    $('#comment_thread').on('shown', function () {
+        var link = document.getElementById('comment-accordion-toggle');
+        var old_innerHTML = link.innerHTML;
+        $(link).fadeOut(200, function() {
+            $(this).text('Click here to hide comments').fadeIn(200);
+        });
+        $('#comment_thread').on('hidden', function () {
+            $(link).fadeOut(200, function() {
+                $(this).text(old_innerHTML).fadeIn(200);
+            });
+        })
+    })
+</script>
+
+    </body>
+    <!-- Theme: Elegant built for Pelican
+        License : MIT -->
+</html>

@@ -1,5 +1,502 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/all.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2021-02-08T00:00:00-08:00</updated><entry><title>Markdown Linter - Road To Initial Release - Learned and Useful Things</title><link href="https://jackdewinter.github.io/2021/02/08/markdown-linter-road-to-initial-release-learned-and-useful-things/" rel="alternate"></link><published>2021-02-08T00:00:00-08:00</published><updated>2021-02-08T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2021-02-08:/2021/02/08/markdown-linter-road-to-initial-release-learned-and-useful-things/</id><summary type="html">
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/all.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2021-02-15T00:00:00-08:00</updated><entry><title>Markdown Linter - Road To Initial Release - Refactoring</title><link href="https://jackdewinter.github.io/2021/02/15/markdown-linter-road-to-initial-release-refactoring/" rel="alternate"></link><published>2021-02-15T00:00:00-08:00</published><updated>2021-02-15T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2021-02-15:/2021/02/15/markdown-linter-road-to-initial-release-refactoring/</id><summary type="html">
+&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In my
+&lt;a href="https://jackdewinter.github.io/2021/02/08/markdown-linter-road-to-initial-release-learned-and-useful-things/"&gt;last article&lt;/a&gt;, I took a break
+to look back over the last year’s work and what I learned on my path to this point.
+In this article, I look at some refactoring that I have wanted to do for a while,
+and why I can accomplish …&lt;/p&gt;</summary><content type="html">
+&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In my
+&lt;a href="https://jackdewinter.github.io/2021/02/08/markdown-linter-road-to-initial-release-learned-and-useful-things/"&gt;last article&lt;/a&gt;, I took a break
+to look back over the last year’s work and what I learned on my path to this point.
+In this article, I look at some refactoring that I have wanted to do for a while,
+and why I can accomplish those changes successfully.&lt;/p&gt;
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Refactoring can often be a tricky subject to bring up with software developers.  Depending
+on the specific goals and experiences of a given software developer, saying the phrase
+“Can we talk about refactoring your code?” can either be met with enthusiasm, with
+judgement, or with something in between.  In the majority of situations, developers have
+been trained
+to only write code that is good enough to meet the set of requirements before them, and
+not more.  While this satisfies the immediate needs of the project, it can often cause
+long term problems in terms of maintenance and support.
+As with the more personal reactions to the phrase, I find that they occur more rarely
+these days, but they still occur.  If someone hears that phrase, it is possible that they
+think you are judging their code to not be correct or “good enough”.  In those cases,
+you want to try and remove that judgement aspect from their and move on.&lt;/p&gt;
+&lt;p&gt;Luckily for me, I am the only one on this project and I have a very enthusiastic response
+to that phrase.  For me, if someone asks that questions, they are seeing the same problem
+that I solved, but through a different light. I see it as a chance to see the given
+project from a different viewpont, engaging in a good discussion along the way.
+From there, if it is agree that I need to work on the refactoring, it is just a question of
+making sure that I have solid requirements for any refactoring and a solid block of time
+to work on them.&lt;/p&gt;
+&lt;p&gt;As luck would have it, I control both for the PyMarkdown project, so let’s go!&lt;/p&gt;
+&lt;h2 id="what-is-the-audience-for-this-article"&gt;What Is the Audience for This Article?&lt;a class="headerlink" href="#what-is-the-audience-for-this-article" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;While detailed more eloquently in
+&lt;a href="https://jackdewinter.github.io/2020/04/05/what-is-the-audience-for-my-blog/#what-is-the-audience-for-my-blog"&gt;this article&lt;/a&gt;,
+my goal for this technical article is to focus on the reasoning behind my solutions,
+rather that the solutions themselves.  For a full record of the solutions presented in
+this article, please go to this project’s GitHub repository and consult the
+commits between
+&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/10473f951bc17c4f74eeb067b40e6417bcad8a25"&gt;27 Jan 2021&lt;/a&gt;
+and
+&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/9433471e996e83bea13dbd6472ff447f29fff9a7"&gt;02 Feb 2021&lt;/a&gt;.&lt;/p&gt;
+&lt;h2 id="refactoring"&gt;Refactoring&lt;a class="headerlink" href="#refactoring" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;The most concise and accurate definition of what I believe refactoring to be, comes from
+the website
+&lt;a href="https://www.refactoring.com/#:~:text=verb%3A%20to%20restructure%20software%20%20by%20applying%20a,technique%20for%20improving%20the%20health%20of%20a%20code-base."&gt;Refactoring.Com&lt;/a&gt;
+which defines refactoring as:&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;verb: to restructure software by applying a series of refactorings without changing its observable behavior.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;For me, that definition hits all the salient points that I believe need to be in the
+definition. The first point is “to restructure software”.  Refactoring is not about
+adding any new features to the software project, it is about improving some aspect of
+the software in question.  The second point is that it is “a series of refactorings”.
+Very rarely in my years of experience have I found that a refactoring is as simple as
+just a small change.  Usually, it involves a number of small changes that bring about
+the stated requirements of the refactorings, each one doing their part to meet the
+goal.&lt;/p&gt;
+&lt;p&gt;The third point is “without changing its observable behavior”, and I mostly agree with
+that statement.  In my eyes, to be more correct, I would add the phrase “unless directed
+to” to the end of that statement.  It is normally correct that any refactoring should
+not change
+the observable behavior.  However, I would argue that there are times where the
+purpose of the refactoring is to change that observable behavior along a very narrow and
+specific axis.
+A good example of this is performance refactoring.  In that case, I want every other
+observable part of the system to remain the same, but I want the observed time taken
+to process the data to be reduced.&lt;/p&gt;
+&lt;p&gt;But with my little caveat at the end, I think it is a solid definition of refactoring.&lt;/p&gt;
+&lt;h3 id="how-i-work"&gt;How I Work&lt;a class="headerlink" href="#how-i-work" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;It is my usual practice to start writing a new feature or resolving an issue by having
+a group of scenario tests that clearly define the problem.  From there, I write the code
+as it comes to me, iterating over it in a natural way until it passes the scenario tests
+that I am coding against.  While this may not be the way others work, I find that it helps
+me keep the big concepts broken up into smaller concepts that I can more deftly handle.
+Once I am finished with the code and all the scenario tests are passing, I usually look
+locally and see if there are any simple refactorings that I can do.  If I have something
+specific in mind, I may look globally to see if I can apply whatever I just coded on a
+more global scale, but in many cases, I leave that for later.&lt;/p&gt;
+&lt;p&gt;This process is very useful to me because I am very insistent on keeping my code coverage
+numbers above the 95% mark, and in many cases above the 99% mark.  While this can often
+lead to some tests that are frustrating to write, the reward for that pain is in the
+confidence with which I can make changes.  Due to my high code coverage percentage, I
+can make changes in any given piece of code, knowing that if there are any unintended
+side effects, the scenario tests providing that high code coverage will detect them.&lt;/p&gt;
+&lt;p&gt;For me, that is a plus that allows me to perform certain tasks, such as refactoring,
+with a very high degree of confidence.&lt;/p&gt;
+&lt;h3 id="cleaning-up-requeuing"&gt;Cleaning Up Requeuing&lt;a class="headerlink" href="#cleaning-up-requeuing" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;One of the first things that I wanted to cleanup was my use of the parameters
+&lt;code&gt;lines_to_requeue&lt;/code&gt; and &lt;code&gt;force_ignore_first_as_lrd&lt;/code&gt;.  A long time ago (in project years),
+I needed to add code throughout the code base to handle the requeuing needed by Link
+Reference Definition parsing.  That concept of requeuing was introduced
+&lt;a href="https://jackdewinter.github.io/2020/04/06/markdown-linter-adding-link-reference-definitions/"&gt;in April 2020&lt;/a&gt;
+along with an explanation of why Link Reference Definition parsing needs the ability to
+rewind the stack.  At the time, I wasn’t sure if those two parameters were the only
+two parameters that I would need for any needed requeues, or if there were any other
+elements that would
+require requeues.  After more than nine months with no changes, I believed that those two
+parameters were the first target for refactoring.&lt;/p&gt;
+&lt;p&gt;When I looked at that code, there were two possible refactorings that came to mind:
+reducing the number of parameters to one and raising an exception instead of using
+return codes.  Since the second refactoring would make use of the work done for the
+first refactoring, it made sense to start with that refactoring.  But replacing
+those two parameters with an instance of a new class would require some work.&lt;/p&gt;
+&lt;h4 id="phase-1-search-and-replace"&gt;Phase 1: Search and Replace&lt;a class="headerlink" href="#phase-1-search-and-replace" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h4&gt;
+&lt;p&gt;The first phase of the refactoring was dead simple: locate any instances of the variables
+&lt;code&gt;lines_to_requeue&lt;/code&gt; and &lt;code&gt;force_ignore_first_as_lrd&lt;/code&gt; and place them within a new instance
+of the newly created &lt;code&gt;RequeueLineInfo&lt;/code&gt; class.  This took a while to complete but it was
+relatively easy
+to do.  In each case, I started with a call to the &lt;code&gt;process_link_reference_definition&lt;/code&gt;
+function and worked backwards through the code.  As I worked backwards from that function,
+I changed the
+calling function’s two return values to a new single instance of the &lt;code&gt;RequeueLineInfo&lt;/code&gt;
+class.  To ensure that there were no external changes other than that, I
+immediately dereferenced both member variables as local variables.  Because that practice
+kept any changes localized, I was able to execute the scenario tests after each step to
+verify that the current set of changes were correct.&lt;/p&gt;
+&lt;p&gt;The big issues that I ran into with these changes were the blank line function
+&lt;code&gt;handle_blank_line_fn&lt;/code&gt; and the close blocks function &lt;code&gt;close_open_blocks_fn&lt;/code&gt;.  As both
+functions can terminate a Link Reference Definition, both had to be changed to return a
+single argument instead of the double arguments.  While the change for the
+&lt;code&gt;handle_blank_line_fn&lt;/code&gt; function only required 1 change, the change for the
+&lt;code&gt;close_open_blocks_fn&lt;/code&gt; function had to be implemented in 22 separate calls, each change
+following the pattern mentioned above.  It was a handful but was completed without
+incident. Well, without incident after I corrected some typos.&lt;/p&gt;
+&lt;p&gt;A good example of these changes are the changes performed to the
+&lt;code&gt;__close_required_lists_after_start&lt;/code&gt; function.  Before this change, the function’s code
+around the call to the &lt;code&gt;close_open_blocks_fn&lt;/code&gt; function looked like this:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;        &lt;span class="p"&gt;(&lt;/span&gt;
+            &lt;span class="n"&gt;container_level_tokens&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+            &lt;span class="n"&gt;lines_to_requeue&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+            &lt;span class="n"&gt;force_ignore_first_as_lrd&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;parser_state&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;close_open_blocks_fn&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+            &lt;span class="n"&gt;parser_state&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+            &lt;span class="n"&gt;until_this_index&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;last_list_index&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+            &lt;span class="n"&gt;caller_can_handle_requeue&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="bp"&gt;True&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;lines_to_requeue&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;After the change, this code was changed to:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;        &lt;span class="p"&gt;(&lt;/span&gt;
+            &lt;span class="n"&gt;container_level_tokens&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+            &lt;span class="n"&gt;requeue_line_info&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;parser_state&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;close_open_blocks_fn&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+            &lt;span class="n"&gt;parser_state&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+            &lt;span class="n"&gt;until_this_index&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;last_list_index&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+            &lt;span class="n"&gt;caller_can_handle_requeue&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="bp"&gt;True&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;requeue_line_info&lt;/span&gt; &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="n"&gt;requeue_line_info&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;lines_to_requeue&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="n"&gt;lines_to_requeue&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;requeue_line_info&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;lines_to_requeue&lt;/span&gt;
+            &lt;span class="n"&gt;force_ignore_first_as_lrd&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;requeue_line_info&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;force_ignore_first_as_lrd&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;The pivotal thing to notice here is that while the function was handling the single
+&lt;code&gt;requeue_line_info&lt;/code&gt; return value instead of the two return values &lt;code&gt;lines_to_requeue&lt;/code&gt;
+and &lt;code&gt;force_ignore_first_as_lrd&lt;/code&gt;, those changes are completely localized.  That isolation
+of the change is what helped make this a great refactoring.&lt;/p&gt;
+&lt;h4 id="phase-2-reduce-the-instances"&gt;Phase 2: Reduce the Instances&lt;a class="headerlink" href="#phase-2-reduce-the-instances" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h4&gt;
+&lt;p&gt;With the scenario tests still verifying that everything was working properly, I started to
+work on reducing the number of new instances of the &lt;code&gt;RequeueLineInfo&lt;/code&gt; class.  While
+isolating the changes was a good priority for Phase 1, it resulted in a lot of extra
+overhead whenever those new instances were returned from a function.  For this phase, the
+focus was on identifying paths where that dereferencing was not necessary, replacing
+them with the returned instance of the &lt;code&gt;RequeueLineInfo&lt;/code&gt; class.&lt;/p&gt;
+&lt;p&gt;Following along with the example of the &lt;code&gt;__close_required_lists_after_start&lt;/code&gt; function,
+that function was again modified.  Inside of that function, any references to the variable
+&lt;code&gt;lines_to_requeue&lt;/code&gt; was replaced with a reference to &lt;code&gt;requeue_line_info.lines_to_requeue&lt;/code&gt;,
+with a similar change being made for the &lt;code&gt;force_ignore_first_as_lrd&lt;/code&gt; variable.  At the end
+of the function, instead of returning:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;lines_to_requeue&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;force_ignore_first_as_lrd&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;the following was returned:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;requeue_line_info&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;At that point, any function that calls the function was located, and switched to use the
+new single value instead of the old double value.  This was usually repeated until the
+function to be modified was the main &lt;code&gt;parse_line_for_container_blocks&lt;/code&gt; function.&lt;/p&gt;
+&lt;p&gt;Executing scenario tests as I went, there were only two issues that popped up.  The first
+issue had to do with the &lt;code&gt;requeue_line_info&lt;/code&gt; being &lt;code&gt;None&lt;/code&gt;.  In those cases, I had to make
+sure to add some &lt;code&gt;if requeue_line_info:&lt;/code&gt; statements around sensitive code, ensuring that it
+wouldn’t fail.  As I worked my way back up to the main function, most of those &lt;code&gt;if&lt;/code&gt;
+statements that I added were removed as I refactored my way up towards the main function.
+The second issue occurred in
+functions that had multiple paths that required the changes.  In that case, I simply noted
+down the name of the functions as I went.  When I finished all the “easy” paths, I went
+back to that list as started checking items off that list one-by-one.&lt;/p&gt;
+&lt;p&gt;By the end of this phase, there were only a few handfuls of new instances being created.
+Cleaning those up were my next priority.&lt;/p&gt;
+&lt;h4 id="phase-3-and-then-there-was-one"&gt;Phase 3: And Then There Was One&lt;a class="headerlink" href="#phase-3-and-then-there-was-one" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h4&gt;
+&lt;p&gt;With the above work accomplished, there was only a little bit of cleanup left to do.
+My goal was to get from the few new instances that still existed down to one new instance.
+Ideally, the
+&lt;code&gt;process_link_reference_definition&lt;/code&gt; function was the only function that needed to create
+a new instance, and I wanted to make that so.&lt;/p&gt;
+&lt;p&gt;The new instances that were usually in places that had already been transformed before
+this refactoring began.  These were usually functions like the
+&lt;code&gt;parse_line_for_container_blocks&lt;/code&gt; function which had been one of my test functions for
+this refactoring.  In those cases, I simply repeated the process that I
+used in Phase 2 to remove those extra instances.  In cleaning up those instances, there
+were a few cases where a “non-requeue” was being returned in a &lt;code&gt;requeue_line_info&lt;/code&gt;
+instance, accomplished by setting the &lt;code&gt;lines_to_requeue&lt;/code&gt; member variable to &lt;code&gt;None&lt;/code&gt;.  While
+these were not difficult to deal with, it did increase the challenge factor for the
+refactoring.&lt;/p&gt;
+&lt;h4 id="the-result"&gt;The Result&lt;a class="headerlink" href="#the-result" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h4&gt;
+&lt;p&gt;At each step of each phase, I was able to execute the scenario tests, ensuring that the
+changes were not changing the output of the parser.  This was pivotal.  With 238 additions
+and 271 deletions over 11 changed files, I would not have noticed any bad effects from
+some of these changes without those scenario tests.  This refactoring was also very pivotal
+in ensuring that I had confidence to make other refactorings.  Because this was not a
+simple refactoring, I knew that completing this refactoring meant many others were
+not only possible, but possible with confidence that they could be accomplished.&lt;/p&gt;
+&lt;p&gt;What about raising exceptions instead of returning the instances? After having done this
+work, I had a high degree of confidence that there will be issues with that approach.
+The main issue that I saw was that a few functions recursively call the
+&lt;code&gt;parse_line_for_container_blocks&lt;/code&gt; function.  While I think that it may be possible,
+I wanted to focus on refactorings that I believe will positively impact the code with
+a high probability of success.  At the time that I wrapped the refactoring up, I made
+a decision that raising an exception with the information fell below my definition of
+“a high probability of success”.&lt;/p&gt;
+&lt;h3 id="bolstering-the-consistency-checks"&gt;Bolstering The Consistency Checks&lt;a class="headerlink" href="#bolstering-the-consistency-checks" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;As I scanned through items in the issues list, there were a couple of items that I
+thought would be easy to either verify or complete.  The first one was about
+confirming that the &lt;code&gt;rehydrate_index&lt;/code&gt; was being verified in the consistency checks.
+Looking into that one, I was pleased to find that there was already a check in the
+Markdown transformer.  Looking at the &lt;code&gt;verify_line_and_column_numbers.py&lt;/code&gt; module,
+I did not find the same check, but adding it was very easy. Similarly, confirming the
+presence of the same types of checks for the &lt;code&gt;leading_space_index&lt;/code&gt; was just as easy.
+However, in this case, all the needed checks were already in place, so no code changes
+were required.&lt;/p&gt;
+&lt;h3 id="validating-inline-tokens"&gt;Validating Inline Tokens&lt;a class="headerlink" href="#validating-inline-tokens" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;The next item was not as easy, but it was close to it.  For some reason that is now lost
+to me, I had a suspicion that I had a blind spot with the inline tokens at the end of
+a Text block.  If I had to guess, I was worried that I did not have at least one example
+of every Inline token and end Inline token at the end of a Text block, meaning there was
+a possibility that one of those calculations were off.&lt;/p&gt;
+&lt;p&gt;While I was pretty sure that I had since covered that item, I wanted to make sure that
+I had concrete proof of that.  Looking around the scenario test groups, I was happy to
+find that the Paragraph Series D tests were constructed to have only a single inline
+element in each paragraph.  By that very definition, each of the inline elements used
+in those tests were both the first and the last token in each paragraph.  After verifying
+that each inline token was present at least once, I resolved that item.&lt;/p&gt;
+&lt;h3 id="a-quick-refactor"&gt;A Quick Refactor&lt;a class="headerlink" href="#a-quick-refactor" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Before moving on to some more substantial refactorings, I wanted to make sure I had
+a bit more practice to boost my confidence.  To that extent, I started by taking the
+function &lt;code&gt;count_of_block_quotes_on_stack&lt;/code&gt; from the &lt;code&gt;BlockQuoteProcessor&lt;/code&gt; class
+and moving it to the &lt;code&gt;ParserHelper&lt;/code&gt; class.  It just did not feel right being in the
+&lt;code&gt;BlockQuoteProcessor&lt;/code&gt; class, and this took care of that problem.&lt;/p&gt;
+&lt;p&gt;Once that task was accomplished, I started work on a new related function:
+&lt;code&gt;find_last_block_quote_on_stack&lt;/code&gt;.  The purpose of function itself was simple.  Start at
+the end of the &lt;code&gt;token_stack&lt;/code&gt; list and work backwards until a Block Quote token was
+encountered. I was doing this manually in four different places, and this change
+simplified that code in those four locations.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;find_last_block_quote_on_stack&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="n"&gt;last_stack_index&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_stack&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
+        &lt;span class="k"&gt;while&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;last_stack_index&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_document&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;last_stack_index&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_block_quote&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+                &lt;span class="k"&gt;break&lt;/span&gt;
+            &lt;span class="n"&gt;last_stack_index&lt;/span&gt; &lt;span class="o"&gt;-=&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;last_stack_index&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Once that was completed, I also created variants of that function, the
+&lt;code&gt;find_last_container_on_stack&lt;/code&gt; for finding the last container block on the stack
+(which was useful) and the &lt;code&gt;find_last_list_block_on_stack&lt;/code&gt; function (which was not
+useful).  While these refactorings did not have the impact that I had hoped, each
+one still left the code more readable by describing what they were doing in their function
+name.&lt;/p&gt;
+&lt;h2 id="doing-more-of-a-heavy-lift"&gt;Doing More Of A Heavy Lift&lt;a class="headerlink" href="#doing-more-of-a-heavy-lift" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;After completing the above tasks, I felt sufficiently confident to attempt some
+more interesting refactorings.  These refactorings were only interesting in that the
+code that used them was all over the place, usually in calculations that would have
+to be individually examined before each refactoring.  But, as this group of refactorings is
+a group that I have noted in the issues list, I need to push through them.  On top of that,
+with my recent successes, it just felt
+like the right time to deal with those issues.&lt;/p&gt;
+&lt;p&gt;On the surface, none of these new functions created for the refactorings are special.
+Each one does a single, very basic thing, but it does it once.  In visiting different
+parts of the project’s code base, I had a
+loosely organized picture of which patterns were common, and I started looking for them
+to confirm that they were indeed common.  While I talk about the five patterns that I
+noticed here, there were also two other patterns that I chose not to do as I did not see
+a common pattern in them.  While I do believe that refactoring those patterns to clean
+up the code would be useful, I do not believe that a refactoring of either one of those two
+patterns would substantially benefit the code base.  At least not yet.&lt;/p&gt;
+&lt;h3 id="count_newlines_in_text"&gt;count_newlines_in_text&lt;a class="headerlink" href="#count_newlines_in_text" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;This function was already in the &lt;code&gt;ParserHelper&lt;/code&gt; class, but it was not widely used outside
+of the parser code itself.  In particular, every instance of this pattern was found in
+the consitency checks.  In each case, a pattern like:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;inline_height&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;resolved_text&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;split&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;ParserHelper&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;newline_character&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;was replaced with:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;inline_height&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;ParserHelper&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;count_newlines_in_text&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;resolved_text&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;It just made sense to replace the old code with the function call.  The function was
+already in the &lt;code&gt;ParserHelper&lt;/code&gt; class and it was already battle tested.  In addition,
+by using the function, the function itself could be tweaked to be more performant
+without having to change the calling code.&lt;/p&gt;
+&lt;h3 id="calculate_deltas"&gt;calculate_deltas&lt;a class="headerlink" href="#calculate_deltas" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Always near the top of my “refactor list” was a new function to calculate the deltas
+for the line number and column number for a given text string.  I already knew that I
+had this copied this in various forms into at least eight locations, and it just seemed
+bad form not to refactor it. While
+this code was easy to use once tested, there were a number of small tunings that could
+make it more performant once its various implementations were gathered together in a
+function with one single implementation.&lt;/p&gt;
+&lt;p&gt;The essence of this new function is the logic to ensure that the line/column number pair
+is updated to properly account for any element that was just parsed.  While the case for
+updating a single line element is trivial, there are a few steps that must be
+followed to ensure that a multiple line element’s position is updated properly.  The
+change in the line number is the simple part, being a count of the number of newline
+characters in the element’s source text.  The column is trickier.  Once any special
+characters have been removed, the new column number is the number of characters that
+occur after the last newline character.  With its little nuances, it just seemed right
+to do this properly once.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="nd"&gt;@staticmethod&lt;/span&gt;
+    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;calculate_deltas&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;text_to_analyze&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+
+        &lt;span class="n"&gt;delta_line_number&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;
+        &lt;span class="n"&gt;delta_column_number&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;ParserHelper&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;newline_character&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;text_to_analyze&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="n"&gt;split_raw_tag&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;text_to_analyze&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;split&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;ParserHelper&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;newline_character&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+            &lt;span class="n"&gt;delta_line_number&lt;/span&gt; &lt;span class="o"&gt;+=&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;split_raw_tag&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
+
+            &lt;span class="n"&gt;last_element&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;split_raw_tag&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+            &lt;span class="n"&gt;last_element&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;ParserHelper&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;resolve_replacement_markers_from_text&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+                &lt;span class="n"&gt;last_element&lt;/span&gt;
+            &lt;span class="p"&gt;)&lt;/span&gt;
+            &lt;span class="n"&gt;last_element&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;ParserHelper&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;remove_escapes_from_text&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;last_element&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+            &lt;span class="n"&gt;length_of_last_elements&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;last_element&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+            &lt;span class="n"&gt;delta_column_number&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;length_of_last_elements&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="k"&gt;else&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="n"&gt;delta_column_number&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;text_to_analyze&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;delta_line_number&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;delta_column_number&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;I picked up the code from one of the three places that I found the code and was able
+to easily create the &lt;code&gt;calculate_deltas&lt;/code&gt; function.  Replacing the code from the original
+function that I copied it from, I found it just as easy to replace the other two instances
+of that code.  To make its use simpler, I did some extra work to massage the input to
+include surrounding characters in the calculation, to avoid extra math.  For example,
+in the &lt;code&gt;handle_angle_brackets&lt;/code&gt; function, instead of a more complex calculation of the
+column number, I simply adjusted the &lt;code&gt;between_brackets&lt;/code&gt; variable passed to the
+&lt;code&gt;calculate_deltas&lt;/code&gt; function to include the actual angle brackets that were used.&lt;/p&gt;
+&lt;h3 id="calculate_last_line"&gt;calculate_last_line&lt;a class="headerlink" href="#calculate_last_line" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;This is one that I thought I had in more places than I found when I started
+looking.  I thought that I was splitting a line in more than two places, using that
+last line to determine what was left on a line.  My best guess is that most of those
+cases were removed when I condensed most of that logic into the &lt;code&gt;calculate_deltas&lt;/code&gt;
+function.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="nd"&gt;@staticmethod&lt;/span&gt;
+    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;calculate_last_line&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;text_string&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+
+        &lt;span class="n"&gt;split_label&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;text_string&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;split&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;ParserHelper&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;newline_character&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;split_label&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;But even so, clearly spelling out that the code was working with the last line of
+text in a multiple line string was worth it to me!&lt;/p&gt;
+&lt;h3 id="recombine_string_with_whitespace"&gt;recombine_string_with_whitespace&lt;a class="headerlink" href="#recombine_string_with_whitespace" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;The last refactoring that I wanted to get out of the way was essentially a
+&lt;a href="https://en.wikipedia.org/wiki/Swiss_Army_knife"&gt;Swiss Army Knife&lt;/a&gt; function
+that I could use to recombine a string with its leading whitespace.  In each case,
+the pattern started the same: split the text, split the whitespace.  It was the next
+part, piecing the whitespace and the text together once split, where the various
+functions varied in their approach.  But, taking my time, I was able to assemble
+a single function with five default parameters that worked in each of the twelve
+instances where that logic appeared.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="nd"&gt;@staticmethod&lt;/span&gt;
+    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;recombine_string_with_whitespace&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+        &lt;span class="n"&gt;text_string&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;whitespace_string&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;start_index&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;add_replace_marker_if_empty&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="bp"&gt;False&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="n"&gt;post_increment_index&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="bp"&gt;False&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;start_text_index&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;add_whitespace_after&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="bp"&gt;False&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="n"&gt;split_text_string&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;text_string&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;split&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;ParserHelper&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;newline_character&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="n"&gt;split_whitespace_string&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;whitespace_string&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;split&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+            &lt;span class="n"&gt;ParserHelper&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;newline_character&lt;/span&gt;
+        &lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="nb"&gt;range&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;start_text_index&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;split_text_string&lt;/span&gt;&lt;span class="p"&gt;)):&lt;/span&gt;
+            &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="n"&gt;post_increment_index&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+                &lt;span class="n"&gt;start_index&lt;/span&gt; &lt;span class="o"&gt;+=&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
+            &lt;span class="n"&gt;ew_part&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;split_whitespace_string&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;start_index&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+            &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;ew_part&lt;/span&gt; &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="n"&gt;add_replace_marker_if_empty&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+                &lt;span class="n"&gt;ew_part&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;ParserHelper&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;create_replace_with_nothing_marker&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;ew_part&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+            &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;add_whitespace_after&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+                &lt;span class="n"&gt;split_text_string&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;split_text_string&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;ew_part&lt;/span&gt;
+            &lt;span class="k"&gt;else&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+                &lt;span class="n"&gt;split_text_string&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;ew_part&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;split_text_string&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+            &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;post_increment_index&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+                &lt;span class="n"&gt;start_index&lt;/span&gt; &lt;span class="o"&gt;+=&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;ParserHelper&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;newline_character&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;join&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;split_text_string&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt; &lt;span class="n"&gt;start_index&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;It looks a bit ugly because of the optional parameters, but it is basically simple.
+Given a processed string with its leading spaces removed and a separate string with
+those leading spaces that were removed, recombine them into the original string.
+All the “ugliness” is making sure to handle the various combinations and twists
+needed to accommodate each use of this function.&lt;/p&gt;
+&lt;h3 id="calculate_next_leading_space_part"&gt;calculate_next_leading_space_part&lt;a class="headerlink" href="#calculate_next_leading_space_part" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Unlike the other refactorings in this section, this refactoring was added to the
+&lt;code&gt;ContainerMarkdownToken&lt;/code&gt; class.  One pattern that I found was that I kept on
+copying and pasting code to to deal with Block Quote tokens, specifically to determine
+what part of the &lt;code&gt;leading_spaces&lt;/code&gt; property of a Block Quote token was current.
+Furthermore, I also
+needed to ensure that in multiple cases, if I used that leading space, that I incremented
+the &lt;code&gt;leading_text_index&lt;/code&gt; member variable to reflect that usage.&lt;/p&gt;
+&lt;p&gt;Hence, the &lt;code&gt;calculate_next_leading_space_part&lt;/code&gt; was created:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;calculate_next_leading_space_part&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;increment_index&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="bp"&gt;True&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+
+        &lt;span class="n"&gt;split_leading_spaces&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;leading_spaces&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;split&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;ParserHelper&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;newline_character&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="n"&gt;leading_text&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;split_leading_spaces&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;leading_text_index&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;increment_index&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;leading_text_index&lt;/span&gt; &lt;span class="o"&gt;+=&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;leading_text&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;h3 id="and-it-logically-follows"&gt;And It Logically Follows&lt;a class="headerlink" href="#and-it-logically-follows" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;After completing the last set of refactorings, I took a bit of time to look around the code
+and see if I could see anything that jumped out at me.  The first thing that I noticed
+was that the &lt;code&gt;recombine_string_with_whitespace&lt;/code&gt; was already set up to handle both single
+line and multiple line strings.  As such, doing a check to see if the string being passed
+into the &lt;code&gt;recombine_string_with_whitespace&lt;/code&gt; function contained a newline character did
+not have any benefit.  Hence, I simplified a few &lt;code&gt;if&lt;/code&gt; statements that occurred before
+a call to &lt;code&gt;recombine_string_with_whitespace&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;Once that was done, I also noticed that the &lt;code&gt;__handle_extracted_paragraph_whitespace&lt;/code&gt;
+function was almost a duplicate for the &lt;code&gt;recombine_string_with_whitespace&lt;/code&gt; function.
+This meant that I could rewrite the &lt;code&gt;__rehydrate_inline_code_span&lt;/code&gt; function to use
+the &lt;code&gt;recombine_string_with_whitespace&lt;/code&gt; function instead.  The only other reference
+to the &lt;code&gt;__handle_extracted_paragraph_whitespace&lt;/code&gt; function was in the
+&lt;code&gt;__rehydrate_inline_raw_html&lt;/code&gt; function, which was mainly using it to increase the
+&lt;code&gt;rehydrate_index&lt;/code&gt; if it was within a paragraph.  Once that code was written inline,
+the entire &lt;code&gt;__handle_extracted_paragraph_whitespace&lt;/code&gt; function was deleted.&lt;/p&gt;
+&lt;p&gt;While neither of these refactorings were needed, they both left the source code in
+a better condition, so I went ahead and completed them.  In my evaluation, as I was
+refactoring the code in that area anyways, it did not seem right to not do those
+refactorings as a cleanup task.&lt;/p&gt;
+&lt;h2 id="ending-on-a-high-note"&gt;Ending On A High Note&lt;a class="headerlink" href="#ending-on-a-high-note" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In some cases, a refactor is simple but looks really messy.  That is the case with the
+commit for
+&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/9433471e996e83bea13dbd6472ff447f29fff9a7"&gt;this refactoring&lt;/a&gt;.
+If you look at the commit, it looks like I changed the entire function to do something,
+but what that something is seems obscured by the changes.  Looking at that commit
+closely, there are only two small changes.&lt;/p&gt;
+&lt;p&gt;The first change was an extremely simple one.  I changed the code in the &lt;code&gt;except&lt;/code&gt; block
+of the &lt;code&gt;__transform&lt;/code&gt; function from:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;raise&lt;/span&gt; &lt;span class="n"&gt;BadTokenizationError&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt; &lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;this_exception&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;to:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;raise&lt;/span&gt; &lt;span class="n"&gt;BadTokenizationError&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"An unhandled error occurred processing the document."&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;this_exception&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;to provide more information to the user if such an exception is ever caught.  That change
+is very clear in the commit referenced above.&lt;/p&gt;
+&lt;p&gt;The second change in the commit was also an equally simple one.  I changed the bulk of the
+code in the
+&lt;code&gt;__parse_blocks_pass&lt;/code&gt; function to be enclosed in a &lt;code&gt;try/except&lt;/code&gt; block to be able to
+more accurately report on any assertions that were fired within the code.  To be clear,
+I added a &lt;code&gt;try:&lt;/code&gt; near the top of the function and the following code at the end of the
+function:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;        &lt;span class="k"&gt;except&lt;/span&gt; &lt;span class="ne"&gt;AssertionError&lt;/span&gt; &lt;span class="k"&gt;as&lt;/span&gt; &lt;span class="n"&gt;this_exception&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="n"&gt;error_message&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
+                &lt;span class="s2"&gt;"A project assertion failed on line "&lt;/span&gt;
+                &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="nb"&gt;str&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;line_number&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+                &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s2"&gt;" of the current document."&lt;/span&gt;
+            &lt;span class="p"&gt;)&lt;/span&gt;
+            &lt;span class="k"&gt;raise&lt;/span&gt; &lt;span class="n"&gt;BadTokenizationError&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;error_message&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;this_exception&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;The rest of the changes that are reported?  Indentation.  Yes, adding an indentation of
+four to ensure that it compiled properly created the mess that shows up as differences
+in the commit log.&lt;/p&gt;
+&lt;h2 id="what-was-my-experience-so-far"&gt;What Was My Experience So Far?&lt;a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;While I am not a perfectionist in my coding, I do believe that I have a different sense
+of weights when trying to figure out what level of weight to associate with an aspect of
+a project.  For me, having 10 mostly working and tested scenarios is not as important as
+having 3 or 4 well tested and maintainable scenarios.  While that is my default weighting,
+I have also learned to be able to adjust that weighting depending on certain situations.
+In my professional life, I think what helps me be successful with those changing weightings
+is that I usually state each of the relevant options, their weightings, and how I
+calculated the weighting.&lt;/p&gt;
+&lt;p&gt;For this project, I am both the developer, the tester, and the manager, so it is a bit
+more nuanced.  During most of the duration of this project, my focus was to drive
+the project towards completion, so I use the set of weightings that allowed me to
+develop and test more efficiently.  But I always knew that those weightings would be
+temporary, and that I am now moving towards the proper set of weightings for this project.&lt;/p&gt;
+&lt;p&gt;So why that long description?  It is to back up my statement which is: meh.  I am still
+confident about this project, but refactorings of this type were always expected, and I
+realized that.  As such, it is just something to get done.  No hype, no fanfare, just
+grunt work.&lt;/p&gt;
+&lt;p&gt;Don’t get me wrong, I am happy that it moves me one more step towards the release, and
+I am happy that it went off without that many issues, but it is just a step.  To me,
+refactorings are just a fact of life when you are a software developer.  If you are doing
+them right, they will be simple, methodical, and uneventful. As they should be.&lt;/p&gt;
+&lt;p&gt;I was able to keep the refactorings uneventful by having some clear goals in mind.
+The first goal I have is to maintain a set of scenario tests that provide a high percentage
+of test coverage for the project.  If something changes, I want to know about it as
+quickly as possbile. The second goal I have it to always take small enough steps that I
+can use my scenario tests to continually ensure that any changes are going in the right
+direction.  Finally, my third goal is to have a solid plan going into each refactoring,
+ensuring that I don’t get distracted along the way.&lt;/p&gt;
+&lt;p&gt;I believe it was by following these goals that I was able to keep these refactorings
+simple, methodical, and uneventful!&lt;/p&gt;
+&lt;h2 id="what-is-next"&gt;What is Next?&lt;a class="headerlink" href="#what-is-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;While I do continue with some refactorings next week, my big focus was to apply some
+of my recent learnings regarding performance to the project.  Stay tuned!&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry><entry><title>Markdown Linter - Road To Initial Release - Learned and Useful Things</title><link href="https://jackdewinter.github.io/2021/02/08/markdown-linter-road-to-initial-release-learned-and-useful-things/" rel="alternate"></link><published>2021-02-08T00:00:00-08:00</published><updated>2021-02-08T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2021-02-08:/2021/02/08/markdown-linter-road-to-initial-release-learned-and-useful-things/</id><summary type="html">
 &lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;In my
 &lt;a href="https://jackdewinter.github.io/2021/02/01/markdown-linter-delving-into-the-issues-19/"&gt;last article&lt;/a&gt;, I documented how
@@ -8233,437 +8730,6 @@ question!&lt;/p&gt;
 &lt;/li&gt;
 &lt;li id="fn:processing"&gt;
 &lt;p&gt;That is, after removing any special characters and leaving the original text used to create those special characters. &lt;a class="footnote-backref" href="#fnref:processing" title="Jump back to footnote 2 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
-&lt;/li&gt;
-&lt;/ol&gt;
-&lt;/div&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry><entry><title>Markdown Linter - Starting to Add Line/Column Numbers For Inline Tokens</title><link href="https://jackdewinter.github.io/2020/09/07/markdown-linter-starting-to-add-linecolumn-numbers-for-inline-tokens/" rel="alternate"></link><published>2020-09-07T00:00:00-07:00</published><updated>2020-09-07T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-09-07:/2020/09/07/markdown-linter-starting-to-add-linecolumn-numbers-for-inline-tokens/</id><summary type="html">
-&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;In my
-&lt;a href="https://jackdewinter.github.io/2020/08/31/markdown-linter-adding-consistency-to-token-heights/"&gt;last article&lt;/a&gt;,
-I took care of completing the consistency checks by verifying the height of all block
-tokens.  In this article, with all the block tokens now properly covered, I
-start to add proper support for line and column numbers for the text inline tokens
-and the …&lt;/p&gt;</summary><content type="html">
-&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;In my
-&lt;a href="https://jackdewinter.github.io/2020/08/31/markdown-linter-adding-consistency-to-token-heights/"&gt;last article&lt;/a&gt;,
-I took care of completing the consistency checks by verifying the height of all block
-tokens.  In this article, with all the block tokens now properly covered, I
-start to add proper support for line and column numbers for the text inline tokens
-and the emphasis inline tokens.&lt;/p&gt;
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;As I mentioned in the last article:&lt;/p&gt;
-&lt;blockquote&gt;
-&lt;p&gt;To properly verify any of the inline tokens, the tokens around it needed to be verified to give that token a solid foundation. Without those other tokens as a foundation, any attempt at verifying inline tokens would be shaky at best.&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;p&gt;With that foundation now firmly in place, it was then time for me to start adding the
-line/column numbers to the inline tokens.&lt;/p&gt;
-&lt;p&gt;The scope of what I was about to start was not lost on me.  From the outset, I knew
-that adding the line/column numbers to the Text tokens was going to be expensive.
-Starting with the obvious, the Text tokens are the default “capture-all” for anything
-Markdown that does not firmly fall under another token’s purview.  That alone meant
-there were going to be a fair number of scenarios in which Text tokens were present.
-Add to
-that number the various forms of text that the token contains, and each form’s
-way of dealing with the Text tokens within their bounds.  Also, as I wanted
-to have a good gauge on how hard it was going to be to add the other inline tokens,
-I added support for Emphasis tokens to the worklist.&lt;/p&gt;
-&lt;p&gt;I was clear about the scope of this change with myself from the outset.  It was going to
-be a long trek to complete all this work in one week.  I did contemplate updating the
-consistency checks to accommodate the changes to the inline tokens, but discretion got
-the better part of me.  This work was going to be tough enough on its own, no need to
-add some extra tasks to the list.&lt;/p&gt;
-&lt;h2 id="what-is-the-audience-for-this-article"&gt;What Is the Audience for This Article?&lt;a class="headerlink" href="#what-is-the-audience-for-this-article" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;While detailed more eloquently in
-&lt;a href="https://jackdewinter.github.io/2020/04/05/what-is-the-audience-for-my-blog/#what-is-the-audience-for-my-blog"&gt;this article&lt;/a&gt;,
-my goal for this technical article is to focus on the reasoning behind my solutions,
-rather that the solutions themselves.  For a full record of the solutions presented in
-this article, please go to this project’s GitHub repository and consult the
-commit of
-&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/7eb893cf1b7c815666946661b790b956fa87278d"&gt;29 Aug 2020&lt;/a&gt;.&lt;/p&gt;
-&lt;h2 id="framing-a-big-problem-in-a-better-light"&gt;Framing a Big Problem in a Better Light&lt;a class="headerlink" href="#framing-a-big-problem-in-a-better-light" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Before starting with this monumental task, I wanted to take a step back and really
-understand the task and its intricacies.  When I
-started looking at the sheer depth of this task, I will admit I was a bit scared at
-first.
-The work this task requires is daunting.  Doing a simple search over the project’s
-scenario tests, I found 1577 instances of a Text token in a scenario test and 161
-instances of Emphasis Start tokens in a scenario test.  That meant between the Text
-tokens and both Emphasis Start and Emphasis End tokens, I was looking at 1899 instances
-that needed to be changed and manually verified.  That was indeed overwhelming.&lt;/p&gt;
-&lt;p&gt;This is where my experience with test automation came in handy.  I took a breath and
-started to look for
-&lt;a href="https://en.wikipedia.org/wiki/Equivalence_partitioning"&gt;equivalence partitions&lt;/a&gt;
-that I could use.  While the number of discrete instances of Text tokens and Emphasis
-tokens were facts that
-I could not change, I decided to apply equivalence partitioning and reduce the effective
-number of instances down to a more manageable number.&lt;/p&gt;
-&lt;h3 id="how-does-that-work"&gt;How Does That Work?&lt;a class="headerlink" href="#how-does-that-work" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;Let me take a small sample function that is in the &lt;code&gt;ParserHelper&lt;/code&gt; class,
-the &lt;code&gt;is_character_at_index&lt;/code&gt; function.  This function is as follows:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="nd"&gt;@staticmethod&lt;/span&gt;
-    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;is_character_at_index&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;source_string&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;index_in_string&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;valid_character&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
-        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
-            &lt;span class="mi"&gt;0&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;=&lt;/span&gt; &lt;span class="n"&gt;index_in_string&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;source_string&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-            &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="n"&gt;source_string&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;index_in_string&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="n"&gt;valid_character&lt;/span&gt;
-        &lt;span class="p"&gt;)&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;The function is simple in that given a large variation on the parameters, it will
-simply return a &lt;code&gt;True&lt;/code&gt; response or a &lt;code&gt;False&lt;/code&gt; response.&lt;sup id="fnref:mostlyTrue"&gt;&lt;a class="footnote-ref" href="#fn:mostlyTrue"&gt;1&lt;/a&gt;&lt;/sup&gt;  While the number of
-variations are largely finite&lt;sup id="fnref:largeFinite"&gt;&lt;a class="footnote-ref" href="#fn:largeFinite"&gt;2&lt;/a&gt;&lt;/sup&gt;, they do fall into a number of
-categories.  Starting with
-the &lt;code&gt;index_in_string&lt;/code&gt; argument, those groups are: less than 0, equal to 0,
-greater than 0
-and less then &lt;code&gt;len(source_string)&lt;/code&gt;, equal to &lt;code&gt;len(source_string)&lt;/code&gt;, and greater than
-&lt;code&gt;len(source_string)&lt;/code&gt;.  Of those groups, only if the &lt;code&gt;index_in_string&lt;/code&gt; argument is in
-the &lt;code&gt;equal to 0&lt;/code&gt; group or the &lt;code&gt;greater than 0 and less then len(source_string)&lt;/code&gt; group do
-I need to check to see if the character at the specified index is equivalent to the
-argument &lt;code&gt;valid_character&lt;/code&gt;.  As the value to compare against is a single character, the
-only two groups for that part of the comparison are that it matches that single
-character or it does not.&lt;/p&gt;
-&lt;p&gt;Based on this information, I can use those groups as equivalence partitions or
-equivalence groups or  to partition the data to test into 7 distinct test groups.  The
-first 3
-equivalence groups are the ones that cause the first comparison to fail: &lt;code&gt;less than 0&lt;/code&gt;,
-&lt;code&gt;equal to len(source_string)&lt;/code&gt;, and &lt;code&gt;greater than len(source_string)&lt;/code&gt;.  For this group,
-the negative group, a simple test with one value in each group is required.  For the
-other 2 tests, the positive group, in addition to the comparison to get it into one of
-the 5 groups, one test is required where the index specifies the
-a character matching the &lt;code&gt;valid_character&lt;/code&gt; argument, and one where it does not match.
-In all, 3 tests in the first group, and 2 sets of 2 tests in the second group, for a
-grand total of 7 tests.&lt;/p&gt;
-&lt;p&gt;This works well because it reduces the scope of the testing to a manageable number.
-Given the &lt;code&gt;less than 0&lt;/code&gt; group, it does not matter if the &lt;code&gt;index_in_string&lt;/code&gt; argument is
-&lt;code&gt;-1&lt;/code&gt;, &lt;code&gt;-2&lt;/code&gt;, or any other negative number.  They all fit into that group and they all
-evoke the same behavior: they cause the expression to be evaluated as &lt;code&gt;False&lt;/code&gt;.
-By applying this process to many testing problems, it can quickly break down the
-problem from an unmanageable number of possibilities down to a smaller number of more
-easily handled cases.&lt;/p&gt;
-&lt;h3 id="how-does-that-apply-to-this-work"&gt;How Does That Apply to This Work?&lt;a class="headerlink" href="#how-does-that-apply-to-this-work" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;No matter how it is viewed, having to change the serialization of 1577 instances of a
-Text token is a big job.  That part of the work I cannot change.  However, I can make
-the manual validation part of the changes more efficient by applying equivalence
-classes to those changes.  While I was not sure at the onset what those classes were
-going to be, I was confident that I could work out those groups would be one-by-one.&lt;/p&gt;
-&lt;p&gt;But it was still a big task, just not as big.  Looking back at my notes, I have a
-scribble that says:&lt;/p&gt;
-&lt;blockquote&gt;
-&lt;p&gt;~40 variations for text, ~10 for emphasis&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;p&gt;I believe that was a note to myself to boost my confidence by estimating how many
-equivalence classes that I believed I would get the tests down to.  As I wrote this
-article and looked at that scribble, for a second, I was back at the point in time when
-I wrote that down.  Like an echo, I vaguely remembered the feeling of optimism that
-washed over me when I wrote those numbers down.  While I am not 100% certain of what I
-was thinking at the time, I am confident that it was something like:&lt;/p&gt;
-&lt;blockquote&gt;
-&lt;p&gt;1600 validations is insane!  On the other hand, 40 is okay.  I can do 40.&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;p&gt;At that moment, it was not about whether those numbers were accurate, just that I had
-confidence that those numbers were in the general vicinity.  While having to validate
-each of
-approximately 1600 variations of Text tokens filled me with dread, having to validate
-approximately 40 variations of those same Text tokens and approximately 10 variations
-of Emphasis tokens was something I had confidence that I could easily handle.&lt;/p&gt;
-&lt;h2 id="updating-the-text-token"&gt;Updating the Text Token&lt;a class="headerlink" href="#updating-the-text-token" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Before I was ready to start with the Text tokens, I needed to get ready.
-Not a lot of work, but some solid foundational stuff to make the rest of the
-processing go easier.&lt;/p&gt;
-&lt;h3 id="getting-ready"&gt;Getting Ready&lt;a class="headerlink" href="#getting-ready" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;My main drive for updating the Text token to support line/column numbers was never
-about the small stuff.  It was that boring work, stuff was easy to do and quickly
-finished, that I wanted to get out of the way.  Adding the ability
-to pass in either a &lt;code&gt;position_marker&lt;/code&gt; argument or the &lt;code&gt;line_number&lt;/code&gt; and &lt;code&gt;column_number&lt;/code&gt;
-arguments?  Done.  Making sure they got copied along with the other information when
-the &lt;code&gt;create_copy&lt;/code&gt; function was called? Done.  Changing the &lt;code&gt;InlineRequest&lt;/code&gt; and
-&lt;code&gt;InlineResponse&lt;/code&gt; classes to handle line numbers and column numbers?  Done.  If my
-memory and notes are accurate, those changes were all completed in the first half-hour
-that I used to work on these changes.&lt;/p&gt;
-&lt;p&gt;Then,
-to ensure things were setup to verify the consistency of the changes in
-the future, I made some changes to the
-&lt;code&gt;verify_line_and_column_numbers.py&lt;/code&gt; module. While I knew I was going to write the actual
-validations in a separate task, I wanted to make sure that I had a good view of what
-inline tokens were going to be handed off to the future consistency validators.
-To accomplish this, I added two sets of print statements: one as part of the
-&lt;code&gt;__verify_token_height&lt;/code&gt; function and one at the end of the
-&lt;code&gt;verify_line_and_column_numbers&lt;/code&gt; function.  My plan here was to not only set myself
-up for the inline consistency checks to come, but to be able to see what the group
-of inline tokens to be processed was, to allow me to plan future sets of equivalence
-classes.&lt;/p&gt;
-&lt;p&gt;With that setup work done, it was on to the actual classes.&lt;/p&gt;
-&lt;h3 id="starting-with-the-paragraph-tests"&gt;Starting with the Paragraph Tests&lt;a class="headerlink" href="#starting-with-the-paragraph-tests" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;With that foundational work completed, I decided to start with the tests in the
-&lt;code&gt;test_markdown_paragraph_blocks.py&lt;/code&gt; module.  Since the Paragraph Block tokens are the
-default containers for Text tokens, I figured that this was the best bet to get started
-with some of the simple stuff.  That bet paid off with the first equivalence class,
-a Text token following a Paragraph token.&lt;/p&gt;
-&lt;p&gt;If I had to point out the simplest case of a Text element in a Markdown document, I
-would definitely point to an example similar to
-&lt;a href="https://github.github.com/gfm/#example-189"&gt;example 189&lt;/a&gt;.
-Despite its high index number, to me this is the simplest example of all Markdown
-documents:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;aaa&lt;/span&gt;
-
-&lt;span class="n"&gt;bbb&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Simply speaking, it is two paragraphs separated by a single newline.  While it is true
-that a single line of text would be simpler, to me, that is not a realistic example of
-a Markdown document.  To me, a document means multiple paragraphs of text that
-conveys some information.  From experience, it is very hard to convey anything except
-the most basic forms of
-information in a single paragraph.  Also, as a realistic example, example 189 shows how
-you can separate two paragraphs in a Markdown document.  As such, I consider this the
-root example.&lt;/p&gt;
-&lt;p&gt;As this was the root example to me, it also contained the first and root equivalence
-class: a Text token
-contained as the first token after a Paragraph token.  While there are numerous
-variations of this equivalence class, for me this is the base class itself.  And as I
-looked through the code on how to isolate this equivalence class, I came to an
-interesting observation. It should have been an obvious observation, but it took me a
-bit to work through from “huh?” to obvious.  I forgot that equivalence classes deal with
-input and output, but that source code rarely follows those same patterns.&lt;/p&gt;
-&lt;h3 id="this-is-a-good-thing"&gt;This Is A Good Thing&lt;a class="headerlink" href="#this-is-a-good-thing" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;When I started to look for the source code behind my first equivalence class, I found
-that it was hard to isolate the source code to just that equivalence class.  But as
-I looked at the source code more, that made sense.  One reason that it made sense was
-that if the cases were isolated based on equivalence class, it would mean that there
-was a lot of duplicated code in the project.  Another reason was that such separation
-would force distinct paths through the source code that would not be natural from any
-other viewpoint than that of equivalence classes.&lt;/p&gt;
-&lt;p&gt;The way the project was designed was to have an initial parsing phase to get all the raw
-information together, then a coalesce phase to combine any text tokens where possible,
-and finally an inline parse phase to handle the inline tokens.  Dragging any artificial
-grouping of output across those phases seemed very counter-productive to me.  But
-I still needed to figure things out.  It was time for a bit of a regroup.&lt;/p&gt;
-&lt;h3 id="rethinking-my-approach"&gt;Rethinking My Approach&lt;a class="headerlink" href="#rethinking-my-approach" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;After performing a global search for &lt;code&gt;TextMarkdownToken(&lt;/code&gt; on the project, I was rewarded
-with a small number of occurrences of a &lt;code&gt;TextMarkdownToken&lt;/code&gt; being created within the
-project.  This was good because it meant the number of actual changes that I would
-need to make was small, and hopefully each change would carry over multiple equivalence
-classes.&lt;/p&gt;
-&lt;p&gt;The &lt;code&gt;__handle_fenced_code_block&lt;/code&gt; function and the &lt;code&gt;__handle_html_block&lt;/code&gt; function
-(through the &lt;code&gt;check_normal_html_block_end&lt;/code&gt; function) were
-both responsible for handling the additional Text tokens as part of container
-processing, so they were the first to be changed.  In addition, the
-&lt;code&gt;parse_indented_code_block&lt;/code&gt; function, the &lt;code&gt;parse_atx_headings&lt;/code&gt; function, and the
-&lt;code&gt;parse_paragraph&lt;/code&gt; functions all included the creation of new instances of the
-&lt;code&gt;TextMarkdownToken&lt;/code&gt;.  Making those changes took care of all cases where the
-Parsing Processor created Text tokens.  From there, a quick check confirmed that the
-Coalescing Processor only modified existing Text tokens and did not create any new
-ones.&lt;/p&gt;
-&lt;p&gt;After a bit of double checking to make sure I did not miss anything, I acknowledged
-that the preparation work was done, and it was now onto inline processing.&lt;/p&gt;
-&lt;h3 id="how-the-inline-processing-works"&gt;How The Inline Processing Works&lt;a class="headerlink" href="#how-the-inline-processing-works" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;When the Inline Processor starts, it loops through all the tokens, explicitly looking
-for Text tokens, as they are the only tokens that can contain inline sequences.  Once
-such a Text token is found, a further check is done to make sure that the Text token
-is within a Paragraph element or a SetExt Heading element (the only two block elements
-in which inline tokens are allowed) before proceeding with
-the actual processing of the Text Token.&lt;/p&gt;
-&lt;p&gt;For any readers that have not been following along on the project’s journey, let me
-provide a bit of a recap on how that processing works.  Back in the article
-&lt;a href="https://jackdewinter.github.io/2020/02/24/markdown-linter-starting-inline-processing/"&gt;on starting inline processing&lt;/a&gt;,
-I go through the algorithm that I use in the inline processor:&lt;sup id="fnref:hidden"&gt;&lt;a class="footnote-ref" href="#fn:hidden"&gt;3&lt;/a&gt;&lt;/sup&gt;&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;set the &lt;em&gt;start point&lt;/em&gt; to the beginning of the string&lt;/li&gt;
-&lt;li&gt;look from the &lt;em&gt;start point&lt;/em&gt; for a new &lt;em&gt;interesting sequence&lt;/em&gt;&lt;ul&gt;
-&lt;li&gt;if none is found&lt;ul&gt;
-&lt;li&gt;emit the rest of the line from the &lt;em&gt;start point&lt;/em&gt; and exit&lt;/li&gt;
-&lt;/ul&gt;
-&lt;/li&gt;
-&lt;li&gt;if one is found&lt;ul&gt;
-&lt;li&gt;emit the text from the &lt;em&gt;start point&lt;/em&gt; to the start of the &lt;em&gt;interesting sequence&lt;/em&gt;&lt;/li&gt;
-&lt;li&gt;handle the current &lt;em&gt;interesting sequence&lt;/em&gt;&lt;/li&gt;
-&lt;li&gt;update the &lt;em&gt;start point&lt;/em&gt; to the end of the &lt;em&gt;interesting sequence&lt;/em&gt;&lt;/li&gt;
-&lt;li&gt;go back to the top&lt;/li&gt;
-&lt;/ul&gt;
-&lt;/li&gt;
-&lt;/ul&gt;
-&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;From the Text token perspective, the important parts of that algorithm are
-the &lt;code&gt;emit the rest of the line&lt;/code&gt; part and the &lt;code&gt;emit the text from...&lt;/code&gt; part.  When most
-of the other parts
-of the algorithm emit their own token&lt;sup id="fnref:twoExceptions"&gt;&lt;a class="footnote-ref" href="#fn:twoExceptions"&gt;4&lt;/a&gt;&lt;/sup&gt;, a check it made to see what
-text has been “emitted” before that point.  Then a new Text token is created with
-that emitted text, followed by the newly created token that represents the &lt;em&gt;interesting
-sequence&lt;/em&gt;, followed by the algorithm looks for the next &lt;em&gt;interesting sequence&lt;/em&gt; to deal
-with.&lt;/p&gt;
-&lt;p&gt;In the end, there were only 4 places where I had to change the creation of the
-Text tokens to provide the line/column number information.  In all, there were only
-9 places in the project where I had to change the creation of the Text token.
-Far from being lulled into thinking the hard work was done, I figured it would be
-in the updating of the scenario tests that things would get interesting.  And I was
-not disappointed!&lt;/p&gt;
-&lt;h3 id="scenarios"&gt;Scenarios&lt;a class="headerlink" href="#scenarios" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;With the code changes made to the Inline Processor, it was time to focus on the
-scenario tests and getting their data changed and manually validated.  Using the
-command line:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;pipenv run pytest -k test_paragraph_blocks
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;I executed each of the paragraph specific scenario tests, looking for the expected
-failures in each test that contains a Text token.  Except for three tests,
-each of these tests were simple cases of the base equivalence class, which meant that
-they were quickly updated and verified.  Of those three tests, two new equivalence
-classes emerged: the first Text token within an Indented Code Block token, and a Text
-token following a Hard Break token.&lt;/p&gt;
-&lt;p&gt;The scenario test for
-&lt;a href="https://github.github.com/gfm/#example-195"&gt;example 195&lt;/a&gt;
-is as follows:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="n"&gt;aaa&lt;/span&gt;
-&lt;span class="n"&gt;bbb&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;which was properly parsed into new equivalence class of an Indented Code Block token
-containing a single Text token and a normal Paragraph token containing a single Text
-token.  As code blocks
-do not contain any inline processing and no extra inline processing was specified, this
-was an easy validation of that new equivalence class.  Quick, easy, done.&lt;/p&gt;
-&lt;p&gt;The other failing scenario test, the test for
-&lt;a href="https://github.github.com/gfm/#example-196"&gt;example 196&lt;/a&gt;
-is as follows:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;aaa&lt;/span&gt;&lt;span class="err"&gt;{&lt;/span&gt;&lt;span class="k"&gt;space&lt;/span&gt;&lt;span class="err"&gt;}{&lt;/span&gt;&lt;span class="k"&gt;space&lt;/span&gt;&lt;span class="err"&gt;}{&lt;/span&gt;&lt;span class="k"&gt;space&lt;/span&gt;&lt;span class="err"&gt;}{&lt;/span&gt;&lt;span class="k"&gt;space&lt;/span&gt;&lt;span class="err"&gt;}{&lt;/span&gt;&lt;span class="k"&gt;space&lt;/span&gt;&lt;span class="err"&gt;}&lt;/span&gt;
-&lt;span class="n"&gt;bbb&lt;/span&gt;&lt;span class="err"&gt;{&lt;/span&gt;&lt;span class="k"&gt;space&lt;/span&gt;&lt;span class="err"&gt;}{&lt;/span&gt;&lt;span class="k"&gt;space&lt;/span&gt;&lt;span class="err"&gt;}{&lt;/span&gt;&lt;span class="k"&gt;space&lt;/span&gt;&lt;span class="err"&gt;}{&lt;/span&gt;&lt;span class="k"&gt;space&lt;/span&gt;&lt;span class="err"&gt;}{&lt;/span&gt;&lt;span class="k"&gt;space&lt;/span&gt;&lt;span class="err"&gt;}&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;where the sequence &lt;code&gt;{space}&lt;/code&gt; was replaced with actual space characters.  I replaced
-the tokens with what I thought was their proper line/column numbers and was surprised
-to find out that the tests were still failing.
-As I started
-to work through the research on why this was happening, I came to an interesting
-conclusion.  I was not going to get away from handling the other inline tokens after
-all.&lt;/p&gt;
-&lt;h3 id="the-truth-always-wins"&gt;The Truth Always Wins&lt;a class="headerlink" href="#the-truth-always-wins" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;Based on the above Markdown, the tokens that were generated for that scenario test were
-a Text Token, a Hard Line Break token, and another Text Token.  The first Text token
-was fine, I had that covered, and the Hard Line Break token was not what we were
-focusing on, so the fact that it did not have a line/column number associated with it
-was fine.  But that left the second Text token in a bit of a conundrum.  Based on the
-code at that time, the line/column number was &lt;code&gt;1,4&lt;/code&gt;, which based on the existing logic
-was correct.  But from a validation point of view it was incorrect: it should be &lt;code&gt;2,1&lt;/code&gt;.&lt;/p&gt;
-&lt;p&gt;It took me a bit to realize that if I was going to change each Text token, I would at
-least have to partially handle the other inline tokens.  In this case, unless
-I added some code that understood the Hard Line Break token, the source code would
-correctly state that the line/column number was &lt;code&gt;1,4&lt;/code&gt;.  To be clear, it is not that
-the line/column number of &lt;code&gt;1,4&lt;/code&gt; is actually correct, but according to the information
-that the algorithm has, that is the correct value to compute for that token. So,
-while I did not have to output the line/column number for the other inline tokens
-yet, I at least had to figure out what change that token was
-going to impart to the stream of inline tokens in that group.&lt;/p&gt;
-&lt;h3 id="and-it-happened-with-the-most-complicated-inline-token"&gt;And It Happened with The Most Complicated Inline Token&lt;a class="headerlink" href="#and-it-happened-with-the-most-complicated-inline-token" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;The Hard Line Break token just happened to be the token I needed to figure out.  And
-it would end up being the most
-difficult inline token to figure out the new line/column number for.  One reason was
-that, for whatever reason, I placed the newline for the Hard Line Break token with the
-following
-Text token, and not the Hard Line Break token itself.&lt;sup id="fnref:yesIDid"&gt;&lt;a class="footnote-ref" href="#fn:yesIDid"&gt;5&lt;/a&gt;&lt;/sup&gt;  This meant that
-to properly deal with that token, I needed to reduce the vertical height of the
-following Text token by 1, as the Hard Line Break token had already increased the
-line number. The other reason for it being complicated is that the proper setting of
-the column
-number relied on checking with the owning Paragraph token, grabbing any leading space
-for that next line from that token.&lt;/p&gt;
-&lt;p&gt;All in all, in took a bit of work, but not too much before all the tests in that
-scenario test group were passing.  While I knew there were 10s of hundreds more changes
-to make, I knew I could do this.  Yeah, it would be slow, but if I just kept my
-focus on the task at hand, I could do this.&lt;/p&gt;
-&lt;h3 id="lather-rinse-repeat"&gt;Lather-Rinse-Repeat&lt;a class="headerlink" href="#lather-rinse-repeat" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;While I could go through each of the other equivalence classes that I discovered and
-processed, I will leave that for a future article where I talk about the inline
-consistency checks.  It was enough of a brutal and time-consuming process that I will not make it more so by talking about it.  Each time, I literally picked a new section of
-scenario tests, replaced the &lt;code&gt;test_paragraph_blocks&lt;/code&gt; in the command line with the
-prefix for another group of
-tests and ran it again.  With the results of that test run, I picked off one of the
-failing tests, correcting the line/column number for the Text tokens, and running
-the tests again to repeat the process.  As I went, I manually validated each
-test’s changes, and I rechecked my results as I staged the changes into the project’s
-GitHub repository.&lt;/p&gt;
-&lt;p&gt;A good example of this process was the next group of tests that I tackled: the Hard
-Line Block group.  The
-first couple of tests were a rehash of what I had already done, so determining the
-proper line/column numbers for those tests were easy, and quickly verified.  That
-left tests that included Emphasis tokens and Text tokens within Atx Heading tokens.
-I just buckled down and followed at the same process as documented before, adjusting
-as I went.&lt;/p&gt;
-&lt;p&gt;Yes, it was slow, but it was also good.  While it dragged on, I was getting predictable
-results with the application of my process.  In my mind, I had confidence that it was
-no longer a matter of “um… around 1600 tokens? how am I going to…”.  I was making
-that transition to “how can I get these done more efficiently and reduce my time on
-each test without sacrificing quality?”&lt;/p&gt;
-&lt;h2 id="updating-the-emphasis-token"&gt;Updating the Emphasis Token&lt;a class="headerlink" href="#updating-the-emphasis-token" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Compared to the work required to change the Text token, updating the Emphasis token
-to include line/column numbers was trivial.  As the work had already been done to
-determine the width to apply to the start and end tokens, the main change was to pass
-the line/column number information to the constructor of the EmphasisMarkdownToken
-and the EndMarkdownToken.&lt;/p&gt;
-&lt;p&gt;With that change in place, I started running the scenario tests in the emphasis group
-and only had to make one small change.  In the cases where the end Emphasis token
-were completely consumed, everything was fine.  But in the cases where an end Emphasis
-token were partially consumed, the column number was off by one.  That took a bit
-of puzzling, but after some thinking, the answer leapt out at me.  I will not kid you
-though, without me scribbling down the various cases and working through the scenarios,
-it would have taken me a lot longer.&lt;/p&gt;
-&lt;p&gt;For the start and end Emphasis tokens, the Inline Processor creates a Special Text token
-that contains either the &lt;code&gt;*&lt;/code&gt; or &lt;code&gt;_&lt;/code&gt; character and the number of those characters found.
-Because emphasis is processed from the inside out&lt;sup id="fnref:empExample"&gt;&lt;a class="footnote-ref" href="#fn:empExample"&gt;6&lt;/a&gt;&lt;/sup&gt;, the emphasis characters
-taken from those Special Text tokens occur at the end of the Special Text token for the
-start Emphasis token and the beginning for the end Emphasis token.  As a result of that,
-the start Emphasis token’s column number needed to be adjusted by the number of
-characters consumed, to ensure it pointed at the right location.  Once that adjusted
-was added, the remaining scenario tests passed.&lt;/p&gt;
-&lt;p&gt;While I was not sure if the other inline tokens would be as easy as the Emphasis
-tokens, I was hopeful.  And in a long project, that is a good thing!&lt;/p&gt;
-&lt;h2 id="what-was-my-experience-so-far"&gt;What Was My Experience So Far?&lt;a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;When I start to write these sections in my articles, I always refer to my notes and try
-to put my mind back into the frame of mind I was in at that time.  While there are
-sparse notes here and there about this section of work, there is really only one of
-those notes that properly sums up the work:&lt;/p&gt;
-&lt;blockquote&gt;
-&lt;p&gt;Phew!&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;p&gt;While there were times during that slog that I did not think it would ever end, I was
-adamant that I was going to get through it and complete it.  In my mind, it was not
-a question of confidence, it was a question of endurance.  My change algorithm was
-simple enough, and I had confidence that the validation part of that algorithm was
-solid.  It was just a matter of working through what seemed to be a mind-numbing number
-of changes until they were all done.&lt;/p&gt;
-&lt;p&gt;But I persisted and got through it.  And while I believe it was the right decision
-to only focus on the Text token and the Emphasis tokens, in hindsight, it might have
-been okay to add the other inline tokens at the same time.  With all the work to
-make sure their space was properly accounted for, I believe that most of the work that I
-have left with those tokens is to plug in the calculated line/column numbers into the
-inline tokens themselves, changing the serialized text, and writing the consistency
-checks.  Be it as it may, unless I messed up a calculation, the hard part of making
-sure the calculations work has already been done.&lt;/p&gt;
-&lt;p&gt;On the technical debt point of view, I am a bit worried, but not too much.  The list
-of things to check in the issues list is a bit larger than I like it, but there are
-some future ideas and a lot of double-check reminders on there.  At the very least,
-I am sure I can start to make short work of a lot of those issues, or properly
-prioritize them for later, whichever is best for that issue.&lt;/p&gt;
-&lt;h2 id="what-is-next"&gt;What is Next?&lt;a class="headerlink" href="#what-is-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;With the Text tokens and the Emphasis tokens out of the way, I decided that it was
-better that I add the consistency checks for those tokens before progressing forward.
-After having to do a fair amount of work to support “bypassing” those tokens to properly
-calculate the line/column number of any following Text token, I had a feeling it would
-come in handy if I moved it up the priority list a bit.&lt;/p&gt;
-&lt;div class="footnote"&gt;
-&lt;hr/&gt;
-&lt;ol&gt;
-&lt;li id="fn:mostlyTrue"&gt;
-&lt;p&gt;This function makes simple assumptions that the &lt;code&gt;source_string&lt;/code&gt; argument is a string of any length, the &lt;code&gt;index_in_string&lt;/code&gt; argument is an integer, and the &lt;code&gt;valid_character&lt;/code&gt; argument is a string of length 1.  Because the argument names are explicit enough and their usage is within a predefined scope, I decided to not verify the type of value for each.  As such, the statement that the function will either return &lt;code&gt;True&lt;/code&gt; or &lt;code&gt;False&lt;/code&gt; assumes that those assumptions are followed. &lt;a class="footnote-backref" href="#fnref:mostlyTrue" title="Jump back to footnote 1 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
-&lt;/li&gt;
-&lt;li id="fn:largeFinite"&gt;
-&lt;p&gt;For more information, &lt;a href="https://en.wikipedia.org/wiki/History_of_large_numbers"&gt;see Wikipedia&lt;/a&gt;.  The short answer to this is that I would start with the first argument containing an empty string, for a count of 1.  Then I would move on to a string with 1 character, and have to populate that string with every viable Unicode character.  Moving on to strings with 2 characters, I would need to take every 1 character string, and repeat that same process with the second character.  Repeating this process, the number of variations on possible strings is not infinite, but mathematically it is called a large finite number, or largely finite. &lt;a class="footnote-backref" href="#fnref:largeFinite" title="Jump back to footnote 2 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
-&lt;/li&gt;
-&lt;li id="fn:hidden"&gt;
-&lt;p&gt;Looking back at it myself, it is a bit hidden, but it is in the section on &lt;a href="https://jackdewinter.github.io/2020/02/24/markdown-linter-starting-inline-processing/#code-spans"&gt;code spans&lt;/a&gt; in the fourth paragraph. &lt;a class="footnote-backref" href="#fnref:hidden" title="Jump back to footnote 3 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
-&lt;/li&gt;
-&lt;li id="fn:twoExceptions"&gt;
-&lt;p&gt;The two exceptions to this are the handling of the backslash sequence and the character entity sequence, both which add to the text that is being accumulated. &lt;a class="footnote-backref" href="#fnref:twoExceptions" title="Jump back to footnote 4 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
-&lt;/li&gt;
-&lt;li id="fn:yesIDid"&gt;
-&lt;p&gt;Yes, I did add an item to the issues list for this. &lt;a class="footnote-backref" href="#fnref:yesIDid" title="Jump back to footnote 5 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
-&lt;/li&gt;
-&lt;li id="fn:empExample"&gt;
-&lt;p&gt;For a good example of this, look at &lt;a href="https://github.github.com/gfm/#example-422"&gt;example 422&lt;/a&gt;. &lt;a class="footnote-backref" href="#fnref:empExample" title="Jump back to footnote 6 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
 &lt;/li&gt;
 &lt;/ol&gt;
 &lt;/div&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry></feed>
