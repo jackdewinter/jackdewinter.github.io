@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="author" content="Jack De Winter" />
+
+        <meta name="description" content="Summary¶ In my last article, I focused on refactoring that was performed to clean up the code base of the PyMarkdown project. In this article, I talk about how I started to learn about finding and implementing performance improvements in the PyMarkdown project using cPython and SnakeViz. Introduction¶ While I …
+" />
+        <meta property="og:type" content="article" />
+        <meta name="twitter:card" content="summary">
+
+<meta name="keywords" content="markdown linter, core linter, Software Quality, " />
+
+<meta property="og:title" content="Markdown Linter - Road To Initial Release - Starting Performance "/>
+<meta property="og:url" content="https://jackdewinter.github.io/2021/02/22/markdown-linter-road-to-initial-release-starting-performance/" />
+<meta property="og:description" content="Summary¶ In my last article, I focused on refactoring that was performed to clean up the code base of the PyMarkdown project. In this article, I talk about how I started to learn about finding and implementing performance improvements in the PyMarkdown project using cPython and SnakeViz. Introduction¶ While I …" />
+<meta property="og:site_name" content="Jack&#39;s Digital Workbench" />
+<meta property="og:article:author" content="Jack De Winter" />
+<meta property="og:article:published_time" content="2021-02-22T00:00:00-08:00" />
+<meta name="twitter:title" content="Markdown Linter - Road To Initial Release - Starting Performance ">
+<meta name="twitter:description" content="Summary¶ In my last article, I focused on refactoring that was performed to clean up the code base of the PyMarkdown project. In this article, I talk about how I started to learn about finding and implementing performance improvements in the PyMarkdown project using cPython and SnakeViz. Introduction¶ While I …">
+
+        <title>Markdown Linter - Road To Initial Release - Starting Performance  · Jack&#39;s Digital Workbench
+</title>
+        <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://jackdewinter.github.io/theme/css/style.min.css?bec7d543">
+
+        <link href="https://jackdewinter.github.io/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Jack&#39;s Digital Workbench - Full Atom Feed" />
+
+
+    </head>
+    <body>
+        <div id="content">
+            <div class="navbar navbar-static-top">
+                <div class="navbar-inner">
+                    <div class="container-fluid">
+                        <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                        </a>
+                        <a class="brand" href="https://jackdewinter.github.io/"><span class=site-name>Jack's Digital Workbench</span></a>
+                        <div class="nav-collapse collapse">
+                            <ul class="nav pull-right top-menu">
+                                <li >
+                                    <a href=
+                                       https://jackdewinter.github.io
+                                    >Home</a>
+                                </li>
+                                <li ><a href="https://jackdewinter.github.io/categories">Categories</a></li>
+                                <li ><a href="https://jackdewinter.github.io/tags">Tags</a></li>
+                                <li ><a href="https://jackdewinter.github.io/archives">Archives</a></li>
+                                <li><form class="navbar-search" action="https://jackdewinter.github.io/search.html" onsubmit="return validateForm(this.elements['q'].value);"> <input type="text" class="search-query" placeholder="Search" name="q" id="tipue_search_input"></form></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="container-fluid">
+                <div class="row-fluid">
+                    <div class="span1"></div>
+                    <div class="span10">
+<article itemscope>
+<div class="row-fluid">
+    <header class="page-header span10 offset2">
+        <h1>
+            <a href="https://jackdewinter.github.io/2021/02/22/markdown-linter-road-to-initial-release-starting-performance/">
+                Markdown Linter - Road To Initial Release - Starting Performance
+            </a>
+        </h1>
+    </header>
+</div>
+
+<div class="row-fluid">
+    <div class="span2 table-of-content">
+        <nav>
+        <h4>Contents</h4>
+        <div class="toc">
+<ul>
+<li><a href="#summary">Summary</a></li>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#what-is-the-audience-for-this-article">What Is the Audience for This Article?</a></li>
+<li><a href="#dipping-my-toes-into-the-water">Dipping My Toes Into the Water</a><ul>
+<li><a href="#getting-started">Getting Started</a></li>
+<li><a href="#looking-for-the-obvious-starting-point">Looking For The Obvious Starting Point</a></li>
+<li><a href="#another-try-with-a-fresh-mind">Another Try With A Fresh Mind</a></li>
+<li><a href="#the-benefits-of-experience">The Benefits Of Experience</a></li>
+<li><a href="#almost-there">Almost There</a></li>
+<li><a href="#the-big-changeover">The Big Changeover</a></li>
+<li><a href="#about-that-logger-name">About That Logger Name?</a></li>
+</ul>
+</li>
+<li><a href="#once-again-link-reference-definitions">Once Again, Link Reference Definitions</a></li>
+<li><a href="#link-tokens-and-image-tokens-the-gathering">Link Tokens and Image Tokens: The Gathering</a></li>
+<li><a href="#single-call-special-character-resolution">Single Call Special Character Resolution</a></li>
+<li><a href="#and-of-course-some-cleanup">And Of Course, Some Cleanup</a></li>
+<li><a href="#what-was-my-experience-so-far">What Was My Experience So Far?</a></li>
+<li><a href="#what-is-next">What is Next?</a></li>
+</ul>
+</div>
+        </nav>
+    </div>
+    <div class="span8 article-content">
+            
+            
+<h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">¶</a></h2>
+<p>In my
+<a href="https://jackdewinter.github.io/2021/02/15/markdown-linter-road-to-initial-release-refactoring/">last article</a>, I focused
+on refactoring that was performed to clean up the code base of the PyMarkdown
+project.  In this article, I talk about how I started to learn about finding and
+implementing performance improvements in the PyMarkdown project using cPython and
+SnakeViz.</p>
+<h2 id="introduction">Introduction<a class="headerlink" href="#introduction" title="Permanent link">¶</a></h2>
+<p>While I have mentioned before that I was starting to investigate performance measurements
+for the project, it was time to bring those measurements and my observations on those
+measurements into the light.  Based on
+initial measurements, I knew there was a big performance
+degredation going on with the logging library and my use of it.  If I wanted the
+PyMarkdown project to be even remotely performant, I knew I needed to deal with at
+least that performance refactoring.  At the same time, as I knew I would need to apply
+other performance improvements on the project down the road.  So, I just figured it was a
+good time to learn about the analyze-deduce-change cycle of performance metrics and how
+to perform it with a Python program.</p>
+<p>Basically, I needed to spend some time learning how to properly measure and improve
+the performance of the PyMarkdown project.  I was stoked!</p>
+<h2 id="what-is-the-audience-for-this-article">What Is the Audience for This Article?<a class="headerlink" href="#what-is-the-audience-for-this-article" title="Permanent link">¶</a></h2>
+<p>While detailed more eloquently in
+<a href="https://jackdewinter.github.io/2020/04/05/what-is-the-audience-for-my-blog/#what-is-the-audience-for-my-blog">this article</a>,
+my goal for this technical article is to focus on the reasoning behind my solutions,
+rather that the solutions themselves.  For a full record of the solutions presented in
+this article, please go to this project’s GitHub repository and consult the
+commits between
+<a href="https://github.com/jackdewinter/pymarkdown/commit/c13f2d6ff8213b65d22f4e1a8cb358b1a15ae3e5">03 Feb 2021</a>
+and
+<a href="https://github.com/jackdewinter/pymarkdown/commit/0337dbbf0af39efa5f31e5ebceb45fb3d9862e05">13 Feb 2021</a>.</p>
+<h2 id="dipping-my-toes-into-the-water">Dipping My Toes Into the Water<a class="headerlink" href="#dipping-my-toes-into-the-water" title="Permanent link">¶</a></h2>
+<p>Having upgraded the PyMarkdown project to
+<a href="https://jackdewinter.github.io/2021/01/25/markdown-linter-delving-into-the-issues-18/#upgrading-to-python-38">Python 3.8</a>,
+I was able to use two Python tools that I was eager to learn from:
+<a href="https://docs.python.org/3/library/profile.html#module-cProfile">cProfile</a>
+and
+<a href="https://jiffyclub.github.io/snakeviz/">SnakeViz</a>.
+The best way to think about these tools is that cProfile allows the Python interpreter
+to collect information on what happened during the execution of a program and
+SnakeBiz is a useful way to present that information.  While I have tried to use cProfile
+before to analyze this project, I found it too cumbersome to read effectively.  For my
+use, I needed a GUI display that I could more easily navigate through.  For me,
+SnakeViz provided just that interface.</p>
+<h3 id="getting-started">Getting Started<a class="headerlink" href="#getting-started" title="Permanent link">¶</a></h3>
+<p>Getting started using these tools was easy.  In the project’s home directory, I
+have a script, named <code>run_blog.cmd</code>, that I use to run the PyMarkdown project over all
+my articles for this site.  This script is very basic and very simple:</p>
+<div class="highlight"><pre><span></span>pipenv run python main.py --stack-trace -d MD018,MD020 ../blog-content/website/content/articles/SoftwareQuality
+</pre></div>
+<p>So, I copied that script to a file named <code>prof_blog.cmd</code> and changed the contents
+of the script file to:</p>
+<div class="highlight"><pre><span></span>pipenv run python -m cProfile -o p0.prof main.py --stack-trace -d MD018,MD020 ../blog-content/website/content/articles/SoftwareQuality
+</pre></div>
+<p>That was it!  Nothing else was needed.  Running that new script, a new <code>p0.prof</code> file
+was deposited in the project directory.  To save time, I created a new file (with yet
+another imaginative name) named <code>show_profile.cmd</code> and place the following text into
+that file:</p>
+<div class="highlight"><pre><span></span>pipenv run snakeviz p0.prof
+</pre></div>
+<p>Running that script, it was obvious that it started a webserver on the command line, and
+then proceeded to open up a new tab in my browser to show me the results on.</p>
+<h3 id="looking-for-the-obvious-starting-point">Looking For The Obvious Starting Point<a class="headerlink" href="#looking-for-the-obvious-starting-point" title="Permanent link">¶</a></h3>
+<p>I will not go into how to use SnakeViz, as I believe the
+<a href="https://jiffyclub.github.io/snakeviz/">SnakeViz homepage</a>
+does a real good job of walking users through the required steps.  It was presenting a lot
+of information, and I needed to find a way to focus and walk through the data.  While I
+did confirm that I need a GUI to help me walk through the data, it was not the graphs that
+were helping me out.  It was being able to click on various parts of the tables and dig
+down into the performance of the items that I clicked on.  That is what really helped
+me understand things!</p>
+<p>After getting more comfortable with the output, I cleaned everything up and reran the
+<code>prof_blog.cmd</code> script, followed by the <code>show_profile.cmd</code> script and was greeted
+with this information:</p>
+<p><img alt="Before Logging" src="https://jackdewinter.github.io/images/road-to-release-3/before-logging-refactor.png" title="Performance Before Logging Change"/></p>
+<p>As this learning was being done in the background as I was working on the project, I let
+that picture sink in for a bit while I thought about the implications in my spare time.
+But the results were obvious to me.  Based on what I
+was seeing, the first 5 items in the performance list were taking 54 seconds of execution
+time, with none of those items having anything to do with the processing.  That time was
+being spent processing all the debug information that I had in place to help me diagnose
+issues.  But as far as I knew, with the project at its default settings, the project was
+using the <code>WARN</code> debug level, and should not be outputting anything
+to the logs.  As it should not be outputting anything to the logs, it logically
+followed that it should not be creating debug strings that are used to place information
+in those logs.  I was stumped.</p>
+<h3 id="another-try-with-a-fresh-mind">Another Try With A Fresh Mind<a class="headerlink" href="#another-try-with-a-fresh-mind" title="Permanent link">¶</a></h3>
+<p>After fixing some issues in the project, I returned
+to this problem with a fresh mind.  This time, as I looked over the code, I noticed the
+issue almost right away.  While the information was not being output to the logs, it was
+being prepared and formatted assuming it was being added to the logs.  A good example of
+this is this snippet of code:</p>
+<div class="highlight"><pre><span></span>    <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+        <span class="s2">"coalesce_text_blocks&gt;&gt;&gt;&gt;</span><span class="si">%s</span><span class="s2">&lt;&lt;"</span><span class="p">,</span>
+        <span class="n">ParserHelper</span><span class="o">.</span><span class="n">make_value_visible</span><span class="p">(</span><span class="n">first_pass_results</span><span class="p">[</span><span class="n">coalesce_index</span><span class="p">]),</span>
+</pre></div>
+<p>Whether the information gets logged or not, the interpreter is going to go
+through the process of preparing the string passed as a parameter into the <code>debug</code>
+function.  In this case, it is going to dereference the <code>first_pass_results</code> list
+using the index <code>coalesce_index</code> and passing that into the
+<code>ParserHelper.make_value_visible</code> function.  Yup, that is the same <code>make_value_visible</code>
+function that is in the number 3 position on the above list.  To make matters worse,
+the <code>first_pass_results</code> list contains tokens that made it through the first pass of
+parsing.  This means that the <code>debug_string</code> function of the <code>MarkdownToken</code> class is
+being called for the token inside of the <code>make_value_visible</code>.  And yes, that is the
+same <code>debug_string</code> that is in the number 1 position of that same list.</p>
+<p>Basically, every time that line is hit, the interpreter prepares the data, whether it is
+needed or not.  For this line, that contributes to the <code>debug_string</code> function being in
+position 1 of that list and the <code>make_value_visible</code> function being in position 3 of that
+same list.  It was then that I knew that I needed to find a way to log the information
+but delay evaluation of any parameters passed to it until the logger knows that it will be
+logging that information.</p>
+<h3 id="the-benefits-of-experience">The Benefits Of Experience<a class="headerlink" href="#the-benefits-of-experience" title="Permanent link">¶</a></h3>
+<p>Having faced issues like this before, I had some ideas on how to proceed, I just did not
+know if Python supported any of them.  The best approach that I had in my developer’s
+toolkit was to use a
+<a href="https://en.wikipedia.org/wiki/Facade_pattern">Facade pattern</a>
+to create a class that would handle any transformations of the parameters that I required,
+but only apply those transformations if the information was actually going to be logged.</p>
+<p>Throwing something together quickly, I came up with the following:</p>
+<div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">ParserLogger</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">my_logger</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__my_logger</span> <span class="o">=</span> <span class="n">my_logger</span>
+
+    <span class="k">def</span> <span class="nf">debug</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">log_format</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__my_logger</span><span class="o">.</span><span class="n">isEnabledFor</span><span class="p">(</span><span class="n">DEBUG</span><span class="p">):</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__munge</span><span class="p">(</span><span class="bp">False</span><span class="p">,</span> <span class="n">log_format</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__my_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">__munge</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">log_format</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+        <span class="n">split_log_format</span> <span class="o">=</span> <span class="n">log_format</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"$"</span><span class="p">)</span>
+        <span class="n">recipient_array</span> <span class="o">=</span> <span class="p">[</span><span class="bp">None</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">split_log_format</span><span class="p">)</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">next_array_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">recipient_array</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">next_array_index</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">recipient_array</span><span class="p">[</span><span class="n">next_array_index</span><span class="p">]</span> <span class="o">=</span> \
+                    <span class="n">split_log_format</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">next_array_index</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">recipient_array</span><span class="p">[</span><span class="n">next_array_index</span><span class="p">]</span> <span class="o">=</span> \
+                    <span class="n">ParserHelper</span><span class="o">.</span><span class="n">make_value_visible</span><span class="p">(</span>
+                        <span class="n">args</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">next_array_index</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)])</span>
+        <span class="k">return</span> <span class="s2">""</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">recipient_array</span><span class="p">)</span>
+</pre></div>
+<p>Hopefully, the <code>__init__</code> function and the <code>debug</code> functions are self-explanatory as they
+were the simplest parts of the class to write.  The rest took a bit of work to get working
+right, but it was worth it.  Instead of passing in logger-formatted strings, I decided to
+use my own formatting.  Therefore, in place of using the <code>%s</code> sequence to key a
+substitution as with normal logging
+calls, I opted for the simpler <code>$</code> sequence.  For debugging uses, I do not want to worry
+about what type of object is being passed or making sure it is cast to a <code>string</code> type.
+That is why I created the <code>make_value_visible</code> function.  But to seamlessly incorporate
+those requirements together was going to take some work.</p>
+<p>The first thing that I needed to do was to create a list that would hold the information.
+This meant that I had to have enough space for each part of the <code>log_format</code> string
+between <code>$</code> characters and for each argument passed into the function.<sup id="fnref:yes"><a class="footnote-ref" href="#fn:yes">1</a></sup>  With that
+list created and initialized to <code>None</code> instances, I then needed to populate that
+list.  The function iterates from <code>0</code> to the index that is 1 less than the size of the
+list.  When the index is an even number (<code>if next_array_index % 2 == 0:</code>), the next item
+is populated with the information from the <code>log_format</code> string split on the <code>$</code>
+character.  When the index is odd (the <code>else</code> clause), the next item is populated with the
+results of the next argument being processed through the <code>make_value_visible</code> function.
+Essentially, between the module operator <code>%</code> and the divisor operator <code>/</code>, the loop
+takes elements from each list, alternating which list it is taking a value from.</p>
+<p>For me, the important part to concentrate on is that the formatting of the information,
+including the call to the <code>make_value_visible</code> function, is only done after the <code>debug</code>
+function has determined that debug logging is enabled.  If it is not enabled, the only
+overhead was calling the function with the specified parameters and the <code>if</code> statement at
+the start of the <code>debug</code> function. For me, that was ideal!</p>
+<p>And to be honest, in the first couple of iterations, I had to work on how the list was
+populated with the information from the other two lists.  In the end, the modulo approach
+was the most efficient and most tidy, so it won out.  I tried to be fancy with how I
+was populating the lists, but they did not pan out.  The clear winner was the above
+solution that used little code and basic high school math.</p>
+<h3 id="almost-there">Almost There<a class="headerlink" href="#almost-there" title="Permanent link">¶</a></h3>
+<p>It only took a couple of hours to come up with the <code>ParserLogger</code> prototype, which was
+encouraging.  Writing a couple of simple throwaway scenario tests, I was able to verify
+that it was working properly almost right away.  There was just one small problem.
+The source of the information.</p>
+<p>When any good logger logs information, it includes information that describes where
+the log information was submitted from.  For example, in its default configuration,
+the Python logging library output for our sample logging line is:</p>
+<div class="highlight"><pre><span></span><span class="nv">DEBUG</span>    <span class="nv">pymarkdown</span>.<span class="nv">coalesce_processor</span>:<span class="nv">coalesce_processor</span>.<span class="nv">py</span>:<span class="mi">26</span> <span class="nv">coalesce_text_blocks</span><span class="o">&gt;&gt;&gt;&gt;</span>[<span class="nv">text</span><span class="ss">(</span><span class="mi">4</span>,<span class="mi">1</span><span class="ss">)</span>:<span class="k">end</span>:]<span class="o">&lt;&lt;</span>
+</pre></div>
+<p>But with the current implementation of the <code>ParserLogger</code> class, the same logging location
+was being logged for each line of information: the line in the <code>ParserLogger</code> class where
+the lower-level logger was being called.  From my experience, I expected this, so I turned
+to the
+<a href="https://docs.python.org/3.8/library/logging.html#logging.Logger.debug">Python logging documentation</a>
+to look for something very specific.  On every platform where I have seen it supported,
+the thing I was looking for was a parameter to the <code>debug</code> function that, on logging
+packages where it is supported, always had “stack” in the title.  This information helped
+me to weed out parameters that were not helpful, landing on: <code>stacklevel</code>.  Directly from that documentation:</p>
+<blockquote>
+<p>The third optional keyword argument is stacklevel, which defaults to 1. If greater than 1, the corresponding number of stack frames are skipped when computing the line number and function name set in the LogRecord created for the logging event. This can be used in logging helpers so that the function name, filename and line number recorded are not the information for the helper function/method, but rather its caller. The name of this parameter mirrors the equivalent one in the warnings module.</p>
+</blockquote>
+<p>Loggers are not a new feature in programming languages, and logging helpers are almost
+as old as the logging features in those programming languages.  It stood to reason that
+Python would have support for this, but I was surprised to find out that it was only
+added in Python 3.8.  Lucky for me, as the
+<a href="https://stackoverflow.com/questions/49987228/alter-python-logger-stack-level">workarounds</a>
+are workarounds that I would prefer not to resort to.</p>
+<p>Armed with this information, I changed this line in the sample:</p>
+<div class="highlight"><pre><span></span>    <span class="bp">self</span><span class="o">.</span><span class="n">__my_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+</pre></div>
+<p>to this line:</p>
+<div class="highlight"><pre><span></span>    <span class="bp">self</span><span class="o">.</span><span class="n">__my_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+</pre></div>
+<p>and everything just worked.  After that, I did a bit of cleaning up to make the
+class more production ready before applying it on a grand scale.</p>
+<h3 id="the-big-changeover">The Big Changeover<a class="headerlink" href="#the-big-changeover" title="Permanent link">¶</a></h3>
+<p>While this would not be last big performance changeover in the history of the project,
+it was the first.  As changeovers go, it was easy to do but large in scope.
+I searched for the text:</p>
+<div class="highlight"><pre><span></span><span class="n">LOGGER</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+</pre></div>
+<p>at the top of each file and replaced it with the text:</p>
+<div class="highlight"><pre><span></span><span class="n">POGGER</span> <span class="o">=</span> <span class="n">ParserLogger</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">))</span>
+</pre></div>
+<p>From there, it was a simple manner to search through the files, looking for any instances
+of <code>LOGGER.debug</code> and changing them to <code>POGGER.debug</code>. As I changed the module the name
+of the variable from <code>LOGGER</code> to <code>POGGER</code>, I also looked for any instances of <code>%s</code> in the
+string and transferred them over to the new <code>$</code> syntax.  Finally, if there were any calls
+to <code>str</code> or <code>make_value_visible</code>, I removed them, leaving only the bare minimum required
+to log the requested information.</p>
+<p>A great example of this change is the sample logging line from above:</p>
+<div class="highlight"><pre><span></span>    <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+        <span class="s2">"coalesce_text_blocks&gt;&gt;&gt;&gt;</span><span class="si">%s</span><span class="s2">&lt;&lt;"</span><span class="p">,</span>
+        <span class="n">ParserHelper</span><span class="o">.</span><span class="n">make_value_visible</span><span class="p">(</span><span class="n">first_pass_results</span><span class="p">[</span><span class="n">coalesce_index</span><span class="p">]),</span>
+</pre></div>
+<p>which was changed to:</p>
+<div class="highlight"><pre><span></span>    <span class="n">POGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+        <span class="s2">"coalesce_text_blocks&gt;&gt;&gt;&gt;$&lt;&lt;"</span><span class="p">,</span> <span class="n">first_pass_results</span><span class="p">[</span><span class="n">coalesce_index</span><span class="p">],</span>
+    <span class="p">)</span>
+</pre></div>
+<p>Smaller, more compact, and no need to call the <code>make_value_visible</code> when passing in
+the value.  A win from many viewpoints!</p>
+<p>It was a long process, but I was able to check along the way to see if the scenario tests
+were still passing, correcting any errors as I went.  This helped me by breakig up that
+long, boring task into smaller sections.  Then, after a lot of search-and-replace work, I
+completed
+the last change and ran the performance metrics again, and I was greeted with this
+information.</p>
+<p><img alt="After Logging" src="https://jackdewinter.github.io/images/road-to-release-3/after-logging-refactor.png" title="Performance After Logging Change"/></p>
+<p>Phew! All that work paid off.  From experience, I knew I was very lucky to have something
+that was so obviously off balance as my first performance refactoring.  I went from having
+the first 5 items in the performance list taking 54 seconds to a slightly different set
+of 5 items taking 1.446 seconds to complete.  That was a win.</p>
+<p>I want to stress again for any readers: this was luck.  In my mind, there was a greater
+chance that I would be met with a different set of 5 items at the start of the list that
+were harder to improve.  This was a slam dunk of a change because it was so obvious.
+Keeping that in mind, it was time to move on to other tasks.</p>
+<h3 id="about-that-logger-name">About That Logger Name?<a class="headerlink" href="#about-that-logger-name" title="Permanent link">¶</a></h3>
+<p>Oh… <code>POGGER</code>?  Why <code>POGGER</code>?  I thought that <code>PERFORMANCE_LOGGER</code> was too long. I
+thought that <code>PLOGGER</code> was too short and I felt it might be confused with <code>LOGGER</code> on a
+quick
+read.  After a couple of simple experiments, with me as the guinea pig, I was clearly
+able to distinguish between <code>POGGER</code> and <code>LOGGER</code> in some test files.  Because of the
+different replacement sequence (<code>$</code>) and no need for calling <code>str</code> around non-string
+parameter, I felt that having that distinguished difference was important.</p>
+<h2 id="once-again-link-reference-definitions">Once Again, Link Reference Definitions<a class="headerlink" href="#once-again-link-reference-definitions" title="Permanent link">¶</a></h2>
+<p>I wish I could say that I could keep away from these tokens, but as they are the most
+troublesome token, I guess I do not get my wish.  During the refactoring that was
+documented
+in the last article, I suspected that things might not be good with Link Reference
+Definitions if they were inside of Fenced Code Blocks or HTML Code Blocks.  Based on a
+couple of quick tests, those suspicions were confirmed.  For some reason, the logic for
+preventing a Link Reference Definition from starting within one of those two blocks was
+either missing or not working properly.  Time to debug!</p>
+<p>Since this article is mostly about me learning about performance tuning in Python,
+I will not go into too
+many details.  Let’s just say that the code that I thought I had in place to prevent
+that happening was not there.  Even more than that, after working on it for a good
+solid four hours in the evening, I only got most of the scenario tests working, with
+nine scenario tests still left as disabled. As these scenarios are very much off the
+beaten path, I felt okay in marking them as disabled and handling them in the future.</p>
+<h2 id="link-tokens-and-image-tokens-the-gathering">Link Tokens and Image Tokens: The Gathering<a class="headerlink" href="#link-tokens-and-image-tokens-the-gathering" title="Permanent link">¶</a></h2>
+<p>While it probably sounded better in my head than when I typed it in, it did feel like a
+cheesy name for an old 1980s series that was thankfully not produced.  This task
+was a simple one: as much as possible, merge the code to handle link tokens and image
+tokens.  The interesting thing was that this was already partially done.  In a fair
+number of areas, such as the <code>__calculate_link_and_image_deltas</code> function, there was
+already code that handled both tokens:</p>
+<div class="highlight"><pre><span></span>        <span class="k">if</span> <span class="n">current_token</span><span class="o">.</span><span class="n">is_inline_image</span><span class="p">:</span>
+            <span class="n">active_link_uri</span> <span class="o">=</span> <span class="n">current_token</span><span class="o">.</span><span class="n">image_uri</span>
+            <span class="k">if</span> <span class="n">current_token</span><span class="o">.</span><span class="n">pre_image_uri</span><span class="p">:</span>
+                <span class="n">active_link_uri</span> <span class="o">=</span> <span class="n">current_token</span><span class="o">.</span><span class="n">pre_image_uri</span>
+            <span class="o">...</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">active_link_uri</span> <span class="o">=</span> <span class="n">current_token</span><span class="o">.</span><span class="n">link_uri</span>
+            <span class="k">if</span> <span class="n">current_token</span><span class="o">.</span><span class="n">pre_link_uri</span><span class="p">:</span>
+                <span class="n">active_link_uri</span> <span class="o">=</span> <span class="n">current_token</span><span class="o">.</span><span class="n">pre_link_uri</span>
+            <span class="o">...</span>
+</pre></div>
+<p>It just made sense to make it official and merge them instead of having this artifical
+divide between the two tokens.</p>
+<p>The first part was relatively easy.  Starting with a new base class for both tokens, I
+carefully moved any member field that had the exact same name in both classes to the base
+class.  At that point, there were only two fields that needed special attention and one
+field that was distinct to the Image token: the <code>image_alt_text</code> field.  The two fields,
+<code>image_uri</code> and <code>image_title</code> were renamed to meet the Link token counterparts, <code>link_uri</code>
+and <code>link_title</code>, with a global search and replace taking care of any occurrences of the
+old name.</p>
+<p>But I was not done yet!  I had also wanted to simplify calls to those pairs of fields for
+quite some time.  There are a couple of specific cases where the individual field is
+needed and the <code>link_title</code> field is used.  In some cases, the original form of the data
+is needed and the <code>pre_link_title</code> field is used.  To save space in the token, if both
+fields have the same value, the <code>pre_link_title</code> field is set to <code>None</code>.  So, to make it
+easier to deal with that, I added the <code>active_link_title</code> property and the
+<code>active_link_url</code> property to fetch the value that I want.</p>
+<p>After all that work, the code above was replaced with this one line:</p>
+<div class="highlight"><pre><span></span>        <span class="n">active_link_uri</span> <span class="o">=</span> <span class="n">current_token</span><span class="o">.</span><span class="n">active_link_uri</span>
+</pre></div>
+<h2 id="single-call-special-character-resolution">Single Call Special Character Resolution<a class="headerlink" href="#single-call-special-character-resolution" title="Permanent link">¶</a></h2>
+<p>This is another task that I have wanted to do for a while, and I am pleased
+with how well it proceeded.  Along the way, I have needed to define special character
+sequences to deal with the dual representation of data in the token: actualized for the
+HTML rendering and source for the Markdown rendering.  To accommodate this representation,
+to present the required aspect of that data, I have developed a series of functions in
+the <code>remove_*</code> and <code>resolve_*</code> namespace of the <code>ParserHelper</code> class.</p>
+<p>But as I have been looking at the code in the last couple of weeks, one thought occurred
+to me about the various invocations of the various functions to remove those characters.
+Did I really need specific functions called all the time, or could I just call a “remove
+everything” function most of the time and be safe?</p>
+<p>To answer that question, I created the <code>resolve_all_from_text</code> function and the
+<code>remove_all_from_text</code> function.  For each function, I located what I thought was the
+most consistent ordering of the main set of functions and placed them in those two
+functions.  I then went through the source code, replacing one of more instances of the
+main set of functions with these “shorthand” functions.  In the 41 instances where these
+functions were called, either singly or in groups, there were only 3 instances where
+calling the “everything” function was detrimental to the operation of the parser.
+In the other 38 instances, multiple trips were avoided while cleaning up the code at
+the same time.</p>
+<h2 id="and-of-course-some-cleanup">And Of Course, Some Cleanup<a class="headerlink" href="#and-of-course-some-cleanup" title="Permanent link">¶</a></h2>
+<p>And what would a set of tasks be for me without some cleanup tasks?  There really was not
+anything too spectacular that I changed in these tasks, just some little things here
+and there.  I used my first list comprehension in the
+<code>__calculate_for_container_blocks</code> function and I believe I have determined that I cannot
+use any more due to the nature of the PyMarkdown project.  It was not as hard as I thought
+to create, but I still need to figure it out some more to really understand it.  In the
+<code>HtmlHelper</code> class, there were three functions that were using relatively big conditionals
+to determine whether a character was valid for the given HTML construct.  After some
+research to confirm that I messed up the <code>_</code> character and the <code>-</code> character in one of
+the conditionals, I replaced all three with a simpler <code>in</code> clause.</p>
+<p>As always, nothing too stellar, but a number of small items that made me feel better
+about the state of the project.</p>
+<h2 id="what-was-my-experience-so-far">What Was My Experience So Far?<a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link">¶</a></h2>
+<p>When I said in the Introduction section that I was stoked about this, I was not kidding.
+Two constants in my development career that have always kept me young and looking forward
+is that I love challenges and I love to learn.  But instead of learning finely tuned
+concepts, I try and learn those concepts and the “meta” ideas behind them.</p>
+<p>Take performance tuning on a program.  To be honest, with few exceptions, the language
+that the tuning is being applied to and the program that the tuning is being applied to
+are not as important as the approach to tuning.  And that is where performance tuning
+scares developer with faint hearts because of one glaring truth about performance
+tuning.  There is a honeymoon period of tuning, where there are some low hanging
+“performance” fruit that are easy to solve.  After that, the tuning is more miss than
+hit.  From my experience, and the experience of others, once you are in that second
+phase, you must be prepared to fail way more often than succeed.</p>
+<p>And that scares some people.  I know it sometimes scares me.  I like to be able to make
+a change and see that change.  But performance tuning can be a lot of “nah, the readability
+suffers too much for such a small improvement” or “nah, that difference in performance is
+not significant”.  And even for good performance trained developers, the percentage of
+“good” experiments often does not exceed 10% once past the honeymoon period.</p>
+<p>That is where my experience comes in.  I knew I was lucky to have such an obvious gift
+presented to me in terms of where the performance hit for the project was.  I was also
+appreciative that previous rounds of performance improvements on prior projects allowed
+me to know an approximate name of the parameter that I wanted to look for.  And I am
+also aware that the honeymoon period for finding the easy solutions was not going to
+last much longer.</p>
+<p>But, due to my experience, I was okay with that.  I knew I was off to a good start, and
+I now had good solid experience in the performance measuring cycle with Python. So, as
+I said in the Introduction section:</p>
+<blockquote>
+<p>I was stoked!</p>
+</blockquote>
+<h2 id="what-is-next">What is Next?<a class="headerlink" href="#what-is-next" title="Permanent link">¶</a></h2>
+<p>With one foot into performance improvements, it seems like a good time to go all in
+and to try and improve the performance of the PyMarkdown project some more.  Stay Tuned!</p>
+<div class="footnote">
+<hr/>
+<ol>
+<li id="fn:yes">
+<p>Yes, I am not doing any safety checking on this.  I was doing a simple test to see if this would work.  That kind of safety checking was added before I checked in the actual version of this class that made it into the repository. <a class="footnote-backref" href="#fnref:yes" title="Jump back to footnote 1 in the text">↩</a></p>
+</li>
+</ol>
+</div>
+
+
+             
+ 
+                <p id="post-share-links">
+    Like this post? Share on:
+    <a href="https://twitter.com/intent/tweet?text=Markdown%20Linter%20-%20Road%20To%20Initial%20Release%20-%20Starting%20Performance&url=https%3A//jackdewinter.github.io/2021/02/22/markdown-linter-road-to-initial-release-starting-performance/&hashtags=markdown-linter,core-linter" target="_blank" rel="nofollow noopener noreferrer" title="Share on Twitter">Twitter</a>
+    ❄
+    <a href="https://www.facebook.com/sharer/sharer.php?u=https%3A//jackdewinter.github.io/2021/02/22/markdown-linter-road-to-initial-release-starting-performance/" target="_blank" rel="nofollow noopener noreferrer" title="Share on Facebook">Facebook</a>
+    ❄
+    <a href="mailto:?subject=Markdown%20Linter%20-%20Road%20To%20Initial%20Release%20-%20Starting%20Performance&amp;body=https%3A//jackdewinter.github.io/2021/02/22/markdown-linter-road-to-initial-release-starting-performance/" target="_blank" rel="nofollow noopener noreferrer" title="Share via Email">Email</a>
+    </p>
+
+            
+            
+
+
+
+
+
+
+<section>
+    <h6 style="display:none;">Comments</h6>
+    <p id="comment-message">So what do you think? Did I miss something? Is any part unclear? Leave your comments below. </p>
+
+    <div class="accordion" id="accordion2">
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                <a class="accordion-toggle disqus-comment-count comment-count"
+                   data-toggle="collapse"
+                   data-parent="#accordion2"
+                   href="https://jackdewinter.github.io/2021/02/22/markdown-linter-road-to-initial-release-starting-performance/#comment_thread"
+                   id="comment-accordion-toggle">
+                    Comments
+                </a>
+            </div>
+            <div id="comment_thread" class="accordion-body collapse">
+                <div class="accordion-inner">
+                    <div class="comments">
+
+                        <script src="https://utteranc.es/client.js"
+        data-repo="jackdewinter/jackdewinter.github.io"
+        data-issue-term="markdown-linter-road-to-release-c"
+        data-label="Comments"
+        data-theme="github-light"
+        crossorigin="anonymous"
+        async>
+</script>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+            <hr/>
+            <aside>
+            <nav>
+            <ul class="articles-timeline">
+                <li class="previous-article">« <a href="https://jackdewinter.github.io/2021/02/15/markdown-linter-road-to-initial-release-refactoring/" title="Previous: Markdown Linter - Road To Initial Release - Refactoring">Markdown Linter - Road To Initial Release - Refactoring</a></li>
+            </ul>
+            </nav>
+            </aside>
+        </div>
+        <section id="article-sidebar" class="span2">
+    <h4>Reading Time</h4>
+    <p>~16 min read</p>
+            <h4>Published</h4>
+            <time itemprop="dateCreated" datetime="2021-02-22T00:00:00-08:00">Feb 22, 2021</time>
+        <h4>Markdown Linter Road To Initial Release</h4>
+    <ul class="multi-parts-list">
+            <li >
+            <a href="https://jackdewinter.github.io/2021/02/08/markdown-linter-road-to-initial-release-learned-and-useful-things/" title="Markdown Linter - Road To Initial Release - Learned and Useful Things">Part 1: Markdown Linter - Road To Initial Release - Learned and Useful Things</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2021/02/15/markdown-linter-road-to-initial-release-refactoring/" title="Markdown Linter - Road To Initial Release - Refactoring">Part 2: Markdown Linter - Road To Initial Release - Refactoring</a>
+            </li>
+            <li  class="active-part">
+            Part 3: Markdown Linter - Road To Initial Release - Starting Performance
+            </li>
+    </ul>
+            <h4>Category</h4>
+            <a class="category-link" href="https://jackdewinter.github.io/categories#software-quality-ref">Software Quality</a>
+            <h4>Tags</h4>
+            <ul class="list-of-tags tags-in-article">
+                <li><a href="https://jackdewinter.github.io/tags#core-linter-ref">core linter
+                    <span>43</span>
+</a></li>
+                <li><a href="https://jackdewinter.github.io/tags#markdown-linter-ref">markdown linter
+                    <span>61</span>
+</a></li>
+            </ul>
+<h4>Stay in Touch</h4>
+<div id="sidebar-social-link">
+    <a href="https://github.com/jackdewinter" title="github-alt" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="GitHub" role="img" viewBox="0 0 512 512"><rect width="512" height="512" rx="15%" fill="#1B1817"/><path fill="#fff" d="M335 499c14 0 12 17 12 17H165s-2-17 12-17c13 0 16-6 16-12l-1-50c-71 16-86-28-86-28-12-30-28-37-28-37-24-16 1-16 1-16 26 2 40 26 40 26 22 39 59 28 74 22 2-17 9-28 16-35-57-6-116-28-116-126 0-28 10-51 26-69-3-6-11-32 3-67 0 0 21-7 70 26 42-12 86-12 128 0 49-33 70-26 70-26 14 35 6 61 3 67 16 18 26 41 26 69 0 98-60 120-117 126 10 8 18 24 18 48l-1 70c0 6 3 12 16 12z"/></svg>
+    </a>
+    <a href="https://www.linkedin.com/in/jackdewinter/" title="linkedin" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="LinkedIn" role="img" viewBox="0 0 512 512" fill="#fff"><rect width="512" height="512" rx="15%" fill="#0077b5"/><circle cx="142" cy="138" r="37"/><path stroke="#fff" stroke-width="66" d="M244 194v198M142 194v198"/><path d="M276 282c0-20 13-40 36-40 24 0 33 18 33 45v105h66V279c0-61-32-89-76-89-34 0-51 19-59 32"/></svg>
+    </a>
+    <a href="https://jackdewinter.github.io/feeds/all.atom.xml" title="" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="RSS" role="img" viewBox="0 0 512 512"><rect width="512" height="512" rx="15%" fill="#f80"/><circle cx="145" cy="367" r="35" fill="#fff"/><path fill="none" stroke="#fff" stroke-width="60" d="M109 241c89 0 162 73 162 162M109 127c152 0 276 124 276 276"/></svg>
+    </a>
+</div>
+            
+
+
+
+
+
+            
+
+
+
+
+
+        </section>
+</div>
+</article>
+                    </div>
+                    <div class="span1"></div>
+                </div>
+            </div>
+        </div>
+<footer>
+    <div>
+        
+&copy; Copyright 2020 by Jack De Winter and licensed under a <a rel="license"
+  href="http://creativecommons.org/licenses/by/4.0/">
+  <img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/80x15.png" />
+  Creative Commons Attribution 4.0 International License</a>.
+
+    </div>
+
+
+
+
+    <div id="fpowered">
+        Powered by: <a href="http://getpelican.com/" title="Pelican Home Page" target="_blank" rel="nofollow noopener noreferrer">Pelican</a>
+        Theme: <a href="https://elegant.oncrashreboot.com/" title="Theme Elegant Home Page" target="_blank" rel="nofollow noopener noreferrer">Elegant</a>
+    </div>
+</footer>            <script src="//code.jquery.com/jquery.min.js"></script>
+        <script src="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>
+        <script>
+            function validateForm(query)
+            {
+                return (query.length > 0);
+            }
+        </script>
+
+    <script>
+    (function () {
+        if (window.location.hash.match(/^#comment-\d+$/)) {
+            $('#comment_thread').collapse('show');
+        }
+    })();
+    window.onhashchange=function(){
+        if (window.location.hash.match(/^#comment-\d+$/))
+            window.location.reload(true);
+    }
+    $('#comment_thread').on('shown', function () {
+        var link = document.getElementById('comment-accordion-toggle');
+        var old_innerHTML = link.innerHTML;
+        $(link).fadeOut(200, function() {
+            $(this).text('Click here to hide comments').fadeIn(200);
+        });
+        $('#comment_thread').on('hidden', function () {
+            $(link).fadeOut(200, function() {
+                $(this).text(old_innerHTML).fadeIn(200);
+            });
+        })
+    })
+</script>
+
+    </body>
+    <!-- Theme: Elegant built for Pelican
+        License : MIT -->
+</html>
