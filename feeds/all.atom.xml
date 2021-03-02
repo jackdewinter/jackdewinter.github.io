@@ -1,5 +1,561 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/all.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2021-02-28T00:00:00-08:00</updated><entry><title>Autism And Dementia</title><link href="https://jackdewinter.github.io/2021/02/28/autism-and-dementia/" rel="alternate"></link><published>2021-02-28T00:00:00-08:00</published><updated>2021-02-28T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2021-02-28:/2021/02/28/autism-and-dementia/</id><summary type="html">&lt;p&gt;When I started writing these articles, I intended to write one article every month to
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/all.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2021-03-01T00:00:00-08:00</updated><entry><title>Markdown Linter - Road To Initial Release - Measured Performance Increases</title><link href="https://jackdewinter.github.io/2021/03/01/markdown-linter-road-to-initial-release-measured-performance-increases/" rel="alternate"></link><published>2021-03-01T00:00:00-08:00</published><updated>2021-03-01T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2021-03-01:/2021/03/01/markdown-linter-road-to-initial-release-measured-performance-increases/</id><summary type="html">
+&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In my
+&lt;a href="https://jackdewinter.github.io/2021/02/15/markdown-linter-road-to-initial-release-refactoring/"&gt;last article&lt;/a&gt;, I focused on
+starting to gain experience with finding and improving performance on the PyMarkdown
+project using cPython and SnakeViz. In this article, I talk about applying that
+knowledge and doing more performance tuning on the project.&lt;/p&gt;
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In the last article, I earned first-hand …&lt;/p&gt;</summary><content type="html">
+&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In my
+&lt;a href="https://jackdewinter.github.io/2021/02/15/markdown-linter-road-to-initial-release-refactoring/"&gt;last article&lt;/a&gt;, I focused on
+starting to gain experience with finding and improving performance on the PyMarkdown
+project using cPython and SnakeViz. In this article, I talk about applying that
+knowledge and doing more performance tuning on the project.&lt;/p&gt;
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In the last article, I earned first-hand experience in profiling the PyMarkdown
+project.  While getting that learning accomplished, I also managed to get a big
+performance boost from writing a simple facade in
+front of the Python logging libraries.  That is probably the only simple and big
+performance boost that I am going to get, so I know I am going to have to start
+digging to find the more difficult items to optimize.  And I am ready for that
+work!&lt;/p&gt;
+&lt;p&gt;From experience, I am also aware that not everything I am going to try will work.
+I was lucky with the logging facade… that was just one big performance issue that
+was extremely obvious.  This effort is still new, so I am hoping that I am still in
+the honeymoon period.  While it is not the same as a
+&lt;a href="https://politicaldictionary.com/words/honeymoon/"&gt;political honeymoon period&lt;/a&gt;,
+it does share some characteristics with it.  Namely, it is during this period that
+a lot of the performance improvements are obvious or easy to arrive at.  They might
+entail some work, but there will be a very low failure rate.&lt;/p&gt;
+&lt;p&gt;Here is hoping that the honeymoon lasts for a while longer!&lt;/p&gt;
+&lt;h2 id="what-is-the-audience-for-this-article"&gt;What Is the Audience for This Article?&lt;a class="headerlink" href="#what-is-the-audience-for-this-article" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;While detailed more eloquently in
+&lt;a href="https://jackdewinter.github.io/2020/04/05/what-is-the-audience-for-my-blog/#what-is-the-audience-for-my-blog"&gt;this article&lt;/a&gt;,
+my goal for this technical article is to focus on the reasoning behind my solutions,
+rather that the solutions themselves.  For a full record of the solutions presented in
+this article, please go to this project’s GitHub repository and consult the
+commits between
+&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/88ad9002b296edc2763e498cb9fc2c99e9e74c60"&gt;13 Feb 2021&lt;/a&gt;
+and
+&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/902fbfbdffb4fb9684e00a8d973e53814d393368"&gt;20 Feb 2021&lt;/a&gt;.&lt;/p&gt;
+&lt;h2 id="dipping-my-toes-into-the-waters-of-performance"&gt;Dipping My Toes Into the Waters of Performance&lt;a class="headerlink" href="#dipping-my-toes-into-the-waters-of-performance" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;It was with a lot of nervousness that I started to work on performance improvements to
+the project.  I know from experience that I can easily get lost in improving the
+execution of an application, and this project is no different.  I need to make sure
+that I focus on keeping this effort timeboxes so that I can get back to getting ready
+for the initial release without too much of a delay.&lt;/p&gt;
+&lt;p&gt;In documenting this work, I have tried to keep the explanations to a minimum, but I
+am also trying to balance that with solid explanations of why I chose that
+improvement and the thought processes around that decision.  Please bear with me as
+I try and find that balance point between those two competing goals!&lt;/p&gt;
+&lt;h3 id="starting-at-the-beginning"&gt;Starting At The Beginning&lt;a class="headerlink" href="#starting-at-the-beginning" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Using
+&lt;a href="https://docs.python.org/3/library/profile.html#module-cProfile"&gt;cProfile&lt;/a&gt;
+and
+&lt;a href="https://jiffyclub.github.io/snakeviz/"&gt;SnakeViz&lt;/a&gt;,
+I captured information about running the PyMarkdown project over the Markdown pages that
+comprise this website.  This is what I initially saw:&lt;/p&gt;
+&lt;p&gt;&lt;img alt="Before Changes" src="https://jackdewinter.github.io/images/road-to-release-4/13-Feb-part-1.png" title="Performance Before Changes"/&gt;&lt;/p&gt;
+&lt;p&gt;Looking at that information, the two lines that jumped out at me were the first
+line, &lt;code&gt;debug&lt;/code&gt;, and the fourth line, &lt;code&gt;isEnabledFor&lt;/code&gt;.  These two functions were both part
+of the recent work I did to improve the speed of debugging.  As logging was still showing
+up high on the list, it was obvious to me that I needed to take another look and see
+if I could fine tune it anymore.&lt;/p&gt;
+&lt;p&gt;After looking at the code, the one line that seemed to me to be the most expensive was:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__my_logger&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;isEnabledFor&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;DEBUG&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;The way I thought about it, every time that the &lt;code&gt;debug&lt;/code&gt; logging method was called, this
+function was being called in the base of the Python &lt;code&gt;logging&lt;/code&gt; library.  While it was okay
+to have that happen, I decided that it was too expensive to happen every time that
+function was called, and it needed to be rewritten.&lt;/p&gt;
+&lt;p&gt;To reduce the cost of calling that library function, it was necessary to change the
+logging requirements of the project to achieve a bit of “wiggle room” to allow for the
+change to
+occur.  In this situation, the requirement that I changed was the ability to dynamically
+change the logging level at any time.  Because of the way that the PyMarkdown project
+is setup, it is highly unlikely that anyone will want to change the logging level in
+the middle of a Markdown file scan.  As such, it seemed like it was a good thing to
+trade off on.&lt;/p&gt;
+&lt;p&gt;To replace that one line, I started by adding some extra code to the &lt;code&gt;ParserLogger&lt;/code&gt;
+class as follows:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="n"&gt;__global_count&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;
+
+    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="fm"&gt;__init__&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;my_logger&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__my_logger&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;my_logger&lt;/span&gt;
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__is_info_enabled&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__my_logger&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;isEnabledFor&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;INFO&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__is_debug_enabled&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__my_logger&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;isEnabledFor&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;DEBUG&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__local_count&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;ParserLogger&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__global_count&lt;/span&gt;
+
+    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;__reset_if_needed&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;ParserLogger&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__global_count&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__local_count&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__local_count&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;ParserLogger&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__global_count&lt;/span&gt;
+            &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__is_info_enabled&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__my_logger&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;isEnabledFor&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;INFO&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+            &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__is_debug_enabled&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__my_logger&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;isEnabledFor&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;DEBUG&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+    &lt;span class="nd"&gt;@staticmethod&lt;/span&gt;
+    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;sync_on_next_call&lt;/span&gt;&lt;span class="p"&gt;():&lt;/span&gt;
+        &lt;span class="sd"&gt;"""&lt;/span&gt;
+&lt;span class="sd"&gt;        Sync the local instance of the logger on the next call.&lt;/span&gt;
+&lt;span class="sd"&gt;        """&lt;/span&gt;
+        &lt;span class="n"&gt;ParserLogger&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__global_count&lt;/span&gt; &lt;span class="o"&gt;+=&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Instead of calling the &lt;code&gt;isEnabledFor&lt;/code&gt; function each time, I added some code to
+cache the results of calling that function in &lt;code&gt;DEBUG&lt;/code&gt; mode.
+To keep the ability to change the logging level alive, I added the &lt;code&gt;sync_on_next_call&lt;/code&gt;
+function to set a class level member variable.  Then, instead of calling the
+&lt;code&gt;isEnabledFor&lt;/code&gt; function, I replaced that line with these lines:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__reset_if_needed&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__is_debug_enabled&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;My hope was that by replacing the library call with the cached values, it would
+improve performance.  But, as with any performance change, the only way to check is
+to run tests after the change to show any changes.  Running those tests again, this
+is the information that SnakeViz showed:&lt;/p&gt;
+&lt;p&gt;&lt;img alt="After Changes" src="https://jackdewinter.github.io/images/road-to-release-4/13-Feb-part-2.png" title="Performance After Changes"/&gt;&lt;/p&gt;
+&lt;p&gt;The results?  The total time for &lt;code&gt;debug&lt;/code&gt; went from 1.3 seconds in first place to 0.5
+seconds in fifth place.  The entry for &lt;code&gt;isEnabledFor&lt;/code&gt; went from 0.7 seconds in fourth
+place to so far down on the list that I did not bother looking for it.  It was just the
+first improvement, but that was a good one!  It took me only minutes to finish up
+that change by implementing the same functionality for the &lt;code&gt;INFO&lt;/code&gt; related functions, before
+moving on to the next change.&lt;/p&gt;
+&lt;h2 id="plugin-performance"&gt;Plugin Performance&lt;a class="headerlink" href="#plugin-performance" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Before talking about this change, I want to address something important with measuring
+performance: the measurements are volatile.  Especially with very fine differences
+between measurements, it is very to measure the performance of whatever is
+being changed without any changes, apply those changes, and then measure the performance
+again with the changes.  In my case, I get things ready to go, use Git’s &lt;code&gt;stash&lt;/code&gt; command
+to save the changes, restoring the stash before I take the second set of measurements.
+If I had not done that, I would have been very surprised that the time taken for the
+&lt;code&gt;debug&lt;/code&gt; statement to execute had crept up about 0.15 seconds.  I’ll speak about that
+more at the end of this section.  &lt;/p&gt;
+&lt;p&gt;&lt;img alt="Before Changes" src="https://jackdewinter.github.io/images/road-to-release-4/13-Feb-part-3.png" title="Performance Before Changes"/&gt;&lt;/p&gt;
+&lt;p&gt;Examining the performance samples, the two lines that struck me as odd were the third line
+containing &lt;code&gt;next_line&lt;/code&gt; and the fourth line contained &lt;code&gt;next_token&lt;/code&gt;.  Both these functions
+exist as part of the plugin support and I could not think of any existing plugin that
+required an examination of both lines and tokens.  At the same time, within a given
+range, those two duration measurements were equal.&lt;sup id="fnref:whatIsEqual"&gt;&lt;a class="footnote-ref" href="#fn:whatIsEqual"&gt;1&lt;/a&gt;&lt;/sup&gt;&lt;/p&gt;
+&lt;p&gt;Given the requirement that PyMarkdown plugins only need to be called when they implement
+a given function, I did some digging and tested this assignment out:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__is_next_token_implemented_in_plugin&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
+            &lt;span class="s2"&gt;"next_token"&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="vm"&gt;__class__&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="vm"&gt;__dict__&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;keys&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+        &lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Based on some digging I did, this assignment sets the value of the member variable
+&lt;code&gt;__is_next_token_implemented_in_plugin&lt;/code&gt; to indicate whether a given plugin
+implements a given function, in this case the &lt;code&gt;next_token&lt;/code&gt; function.  After tests
+confirmed that it was working, I added some extra code to the &lt;code&gt;apply_configuration&lt;/code&gt;
+function:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;next_plugin&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;plugin_instance&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_next_token_implemented_in_plugin&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__enabled_plugins_for_next_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;append&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;next_plugin&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Finally, in the &lt;code&gt;next_token&lt;/code&gt; function of the &lt;code&gt;PluginManager&lt;/code&gt; class, I changed the
+plugin notification code from:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;next_plugin&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__enabled_plugins&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;to:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;next_plugin&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__enabled_plugins_for_next_token&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;The result was that the plugin function &lt;code&gt;next_token&lt;/code&gt; was only called when it was
+defined in the plugin itself, not in the base class.  After repeating this process for
+the &lt;code&gt;next_line&lt;/code&gt; function, I ran the performance tests again:&lt;/p&gt;
+&lt;p&gt;&lt;img alt="After Changes" src="https://jackdewinter.github.io/images/road-to-release-4/13-Feb-part-4.png" title="Performance After Changes"/&gt;&lt;/p&gt;
+&lt;p&gt;Instead of those values both being called, it now looked like the roughly 5.6 seconds
+was being split between the two of them.  Another good start!&lt;/p&gt;
+&lt;p&gt;As for the increase in the &lt;code&gt;debug&lt;/code&gt; function execution time?  I am not sure what
+did it, but the total time duration was roughly equal between the before and after
+samples, as were the next 2 to 3 items in the sample.  That means the process is working!
+But if I was only comparing the sample to the previous sample taken under different
+circumstances, I may have come to some other conclusion.  The key to getting these
+good measurements was to ensure I was taking the before and after measurements within
+minutes of each other.&lt;/p&gt;
+&lt;h3 id="excessive-use-of-the-len-function"&gt;Excessive Use of the Len function&lt;a class="headerlink" href="#excessive-use-of-the-len-function" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Following my now established process, I ran the performance tests again to look for the
+next item that caught my eye:&lt;/p&gt;
+&lt;p&gt;&lt;img alt="Before Changes" src="https://jackdewinter.github.io/images/road-to-release-4/13-Feb-part-5.png" title="Performance Before Changes"/&gt;&lt;/p&gt;
+&lt;p&gt;This time, it was the line that includes &lt;code&gt;built-in method builtins.len&lt;/code&gt;.  Parsing any
+kind of language is string intensive, so I did expect this measurement to be high, but
+I did not expect it to be that high.  Digging into the code, I found a few things
+that I thought I could change to make the code perform better.&lt;/p&gt;
+&lt;p&gt;The first thing that I found were debug statements that included calls to &lt;code&gt;len&lt;/code&gt; that
+did not provide any additional information.  Statements like:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="n"&gt;POGGER&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;debug&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"parsed leaf&amp;gt;&amp;gt;$"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;leaf_tokens&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;POGGER&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;debug&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"parsed leaf&amp;gt;&amp;gt;$"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;leaf_tokens&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;where the first statement is already implicitly providing the length of the array by
+simply counting the number of elements displayed in the array’s debug output.  By
+removing the second statement, I was able to make it more performant without changing
+any information, just the way the information would be obtained in the future. Similarly,
+there were cases where I was just logging information in the form of the second statement,
+where the information from the first statement would suffice.  Both those changes were
+easy to look for and make across the code base.&lt;/p&gt;
+&lt;p&gt;Another change that I did was to cache the results of the &lt;code&gt;len&lt;/code&gt; function for a given
+string within a single function.  There were quite a few cases where I was calling
+the &lt;code&gt;len&lt;/code&gt; function 2 to 4 times within a function, or more if I called it from within
+a loop.  In those cases, I found the first place in that function where it was used, say:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;string_index&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;string_to_parse&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;and replace it with the following code:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="n"&gt;string_to_parse_length&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;string_to_parse&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
+        &lt;span class="n"&gt;string_index&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt; &lt;span class="n"&gt;string_to_parse_length&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;With that code tested, I then proceeded to replace every other instance of
+&lt;code&gt;len(string_to_parse)&lt;/code&gt; inside of that function with &lt;code&gt;string_to_parse_length&lt;/code&gt;
+before testing again.&lt;/p&gt;
+&lt;p&gt;That set of changes resulted in many modifications over most of the files in the project,
+but it was accomplished quickly.  Once completed, the performance tests showed the
+results:&lt;/p&gt;
+&lt;p&gt;&lt;img alt="After Changes" src="https://jackdewinter.github.io/images/road-to-release-4/13-Feb-part-6.png" title="Performance After Changes"/&gt;&lt;/p&gt;
+&lt;p&gt;The line that includes &lt;code&gt;built-in method builtins.len&lt;/code&gt; went from 6th place at
+0.42 seconds to 17th place at 0.11 seconds.  At a solid 0.3 second difference, it
+was a good optimization!&lt;/p&gt;
+&lt;h3 id="going-back-to-logging"&gt;Going Back To Logging&lt;a class="headerlink" href="#going-back-to-logging" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Performance is not something you can measure once and be done with it.  It must be
+continuously examined again and again to see how the program peforms under different
+circumstances.  When I looked at this set of performance tests:&lt;/p&gt;
+&lt;p&gt;&lt;img alt="Before Changes" src="https://jackdewinter.github.io/images/road-to-release-4/13-Feb-part-7.png" title="Performance Before Changes"/&gt;&lt;/p&gt;
+&lt;p&gt;I wondered if I had stopped optimizing the logging code too early.  As that code is the
+most often called code in the project, I decided to spend some extra time looking at it.
+When I did, I realized that if I traded my Don’t-Repeat-Yourself code for performance on
+a limited scope, I could rewrite:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__reset_if_needed&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;as:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;ParserLogger&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__global_count&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__local_count&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__reset_cache&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;By doing this, I was avoiding a function call by performing the same action
+directly in the function, often referred to as inling.  Only in
+those cases where the counts had changed, did the code need to reset the cache.
+Given that I was pretty sure that changing logging levels was going to be an
+extremely rare occurrence, I felt that this was an acceptable trade-off.&lt;/p&gt;
+&lt;p&gt;This was a very localized change, so it was easy to make and test:&lt;/p&gt;
+&lt;p&gt;&lt;img alt="After Changes" src="https://jackdewinter.github.io/images/road-to-release-4/13-Feb-part-8.png" title="Performance After Changes"/&gt;&lt;/p&gt;
+&lt;p&gt;With that small change, I reduced 1.8 seconds of duration between the first two lines
+with 0.7 seconds of the new first line.  That was worth it!&lt;/p&gt;
+&lt;h3 id="bending-the-rules-is-part-of-the-game"&gt;Bending The Rules Is Part Of The Game&lt;a class="headerlink" href="#bending-the-rules-is-part-of-the-game" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Looking at the next set of outputs from the performance tests:&lt;/p&gt;
+&lt;p&gt;&lt;img alt="Before Changes" src="https://jackdewinter.github.io/images/road-to-release-4/13-Feb-part-9.png" title="Performance Before Changes"/&gt;&lt;/p&gt;
+&lt;p&gt;one thing was obvious. I was not going to be able to avoid looking at the
+&lt;code&gt;parse_line_for_container_blocks&lt;/code&gt; function any longer.   But this one function was a tough
+one.  This is the main function through which all the container processing and leaft
+processing gets handled.  Without
+it, the container block processing wouldn’t be done, and it wouldn’t be handing off the
+leaf block processing as designed.  This was a pivotal function, but I was not seeing any
+obvious places where I could make a good impact on the code’s performance.&lt;/p&gt;
+&lt;p&gt;Thinking a bit about how I made the requirements trade-offs for the previous items,
+I started thinking about how I could make a similar trade in requirements here.
+Unfortunately, nothing was coming to mind at all.  That is, until I looked through
+the function and realized that there was one thing I hadn’t considered: removing the
+logging.&lt;/p&gt;
+&lt;p&gt;Now, removing the logging itself would be harmful, as that logging had
+helped me debug issues quite often, so the cost of outright removing the logging was
+prohibitively high.  It would be like trying to tie your shoes in a knot while wearing a
+cast on one hand and slinging a yoyo with the other hand.  However, I realized that if
+I commented out the log statements, it would have the same effect as removing the log
+statements.  Also, by commenting out those lines, I kept them in the project so that I
+could add them back in when I needed them but leave them out during normal operation.&lt;/p&gt;
+&lt;p&gt;The trade-off here?  Time to debug would increase if I needed to uncomment the debug
+statements.
+Thinking about it for a bit, I decided that for this function it was a good trade-off
+and commented out every log statement inside of the function.  That resulted in the
+following results from the performance tests:&lt;/p&gt;
+&lt;p&gt;&lt;img alt="After Changes" src="https://jackdewinter.github.io/images/road-to-release-4/13-Feb-part-10.png" title="Performance After Changes"/&gt;&lt;/p&gt;
+&lt;p&gt;From 3rd place with 0.55 seconds down to 6th pace with 0.29 seconds.  At roughly half
+the previous execution time, it was a good trade-off to make.  Granted, it is bending
+the rules, but in a good way.&lt;/p&gt;
+&lt;h3 id="there-is-a-limit-to-bending-the-rules"&gt;There Is A Limit to Bending The Rules&lt;a class="headerlink" href="#there-is-a-limit-to-bending-the-rules" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;After looking at the current performance test results:&lt;/p&gt;
+&lt;p&gt;&lt;img alt="Before Changes" src="https://jackdewinter.github.io/images/road-to-release-4/13-Feb-part-11.png" title="Performance Before Changes"/&gt;&lt;/p&gt;
+&lt;p&gt;it seemed like it was a good process to try again with the &lt;code&gt;__process_inline_text_block&lt;/code&gt;
+function.  In my mind, I was worried that I was using this manner of performance
+improvement too often, and I needed a hard limit.  In looking at this method,
+through which all inline processing is done, I figured I was still within the limits
+that I found acceptable.  I was close to what I considered the limit to be, but I
+was confident that this change was within that bounds of that limit.&lt;/p&gt;
+&lt;p&gt;With that, I repeated the commenting process that I used in the last section on this
+function, with the following results:&lt;/p&gt;
+&lt;p&gt;&lt;img alt="After Changes" src="https://jackdewinter.github.io/images/road-to-release-4/13-Feb-part-12.png" title="Performance After Changes"/&gt;&lt;/p&gt;
+&lt;p&gt;While not as dramatic as before, I dropped the &lt;code&gt;__process_inline_text_block&lt;/code&gt; item from
+3rd place and 0.37 seconds down to 13th and 0.12 seconds.&lt;/p&gt;
+&lt;h3 id="having-some-fun"&gt;Having Some Fun&lt;a class="headerlink" href="#having-some-fun" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;One of the fun things I love about doing performance testing and improving is that you get
+to experiment with different approaches to see how they fare.  Looking at the latest
+results:&lt;/p&gt;
+&lt;p&gt;&lt;img alt="Before Changes" src="https://jackdewinter.github.io/images/road-to-release-4/13-Feb-part-13.png" title="Performance Before Changes"/&gt;&lt;/p&gt;
+&lt;p&gt;I knew that I was going to have to get creative with the &lt;code&gt;index_any_of&lt;/code&gt; function.  It is
+a simple function but one that is heavily used in the &lt;code&gt;InlineProcessor&lt;/code&gt; class.  During
+the parsing of an inline block, the processor looks ahead to find the character which is
+any one of a set of characters that denotes the possible start of an inline sequence.
+Hence, the &lt;code&gt;index_any_of&lt;/code&gt; is used to find the first instance of any of those characters.
+The original version of this function was as follows:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="n"&gt;source_text_size&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;source_text&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="k"&gt;while&lt;/span&gt; &lt;span class="n"&gt;start_index&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt; &lt;span class="n"&gt;source_text_size&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;source_text&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;start_index&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;find_any&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;start_index&lt;/span&gt;
+        &lt;span class="n"&gt;start_index&lt;/span&gt; &lt;span class="o"&gt;+=&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
+    &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Knowing that this enhancement would soon make my to-do list, I had been experimenting on
+different algorithms on the side, trying to find one that was better than what I had.
+While I tested four variations that failed, I found one that performed better if
+the number of characters to find was under 15 characters.&lt;/p&gt;
+&lt;p&gt;During my reading on performance, one thing that was mentioned frequently was that many
+of the Python builtins were more performant than Python code because it was precompiled
+and optimized.  Taking a hint from that, my wining solution rewrote the above function
+to leverage the builtin &lt;code&gt;index&lt;/code&gt; as much as possible:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="n"&gt;first_index&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;
+    &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;next_character&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;find_any&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="n"&gt;found_index&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;source_text&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;find&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;next_character&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;start_index&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;found_index&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="n"&gt;first_index&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
+                &lt;span class="n"&gt;found_index&lt;/span&gt; &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;first_index&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt; &lt;span class="k"&gt;else&lt;/span&gt; &lt;span class="nb"&gt;min&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;first_index&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;found_index&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+            &lt;span class="p"&gt;)&lt;/span&gt;
+            &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;first_index&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+                &lt;span class="k"&gt;break&lt;/span&gt;
+    &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;first_index&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;In my simple tests, if I kept the length of the &lt;code&gt;find_any&lt;/code&gt; variable to 15
+characters or less, it won over the other algorithms.  But those “test” results
+did not mean anything if the same impact was not present when tested against the
+project’s code.  So, it was time to test it out on the ‘real’ code:&lt;/p&gt;
+&lt;p&gt;&lt;img alt="After Changes" src="https://jackdewinter.github.io/images/road-to-release-4/13-Feb-part-14.png" title="Performance After Changes"/&gt;&lt;/p&gt;
+&lt;p&gt;Moving from 3rd place with 3.8 seconds down to 9th place with 1.7 seconds of duration
+was impressive! With my experience in performance tuning, I wasn’t sure if this was
+one of those cases where it looked good in simple tests but failed when inserted
+into the host project.  I was glad that it worked well in both situations!&lt;/p&gt;
+&lt;h3 id="bending-or-breaking"&gt;Bending Or Breaking?&lt;a class="headerlink" href="#bending-or-breaking" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Remember back a couple of sections where I said there were times to bend the rules and
+there were limits to how much you could bend them?  It was after looking at these
+test results:&lt;/p&gt;
+&lt;p&gt;&lt;img alt="Before Changes" src="https://jackdewinter.github.io/images/road-to-release-4/13-Feb-part-15.png" title="Performance Before Changes"/&gt;&lt;/p&gt;
+&lt;p&gt;that I looked at the &lt;code&gt;__get_list_start_index&lt;/code&gt;. I knew I had to be honest with myself about
+which side of that limit line this function was on.  The first function that I had
+applied that process to was easy to decide on as it was the most heavily trafficked part of
+the actual parsing code.  It was a no-brainer to reduce the logging in that function.  The
+second function was not as easy of a decision to make, but as the second most heavily
+trafficked function, it made sense.&lt;/p&gt;
+&lt;p&gt;That left me with trying to figure out where the &lt;code&gt;__get_list_start_index&lt;/code&gt; function stood
+in that spectrum.  It was while I was looking at the code that I realized that I needed
+to bump this function’s importance up the chain 1 level.  This function was not called
+once but twice every time it was needed: once for unordered list block and the second
+time for ordered list blocks.&lt;/p&gt;
+&lt;p&gt;As soon as I realized that fact, the decision was already made in my mind to go forward
+with commenting out the debug statements.  Applying the process, I ran the performance
+tests and held my breath:&lt;/p&gt;
+&lt;p&gt;&lt;img alt="After Changes" src="https://jackdewinter.github.io/images/road-to-release-4/13-Feb-part-16.png" title="Performance After Changes"/&gt;&lt;/p&gt;
+&lt;p&gt;Looking for the &lt;code&gt;__get_list_start_index&lt;/code&gt; in the top 15, I did not see it at all.  When
+I found it, it was down at the 96th position in the table.  From the 5th place in the
+table with 0.29 second down to 96th place with 0.08 seconds.  That was cool.&lt;/p&gt;
+&lt;p&gt;&lt;img alt="After Changes" src="https://jackdewinter.github.io/images/road-to-release-4/13-Feb-part-16a.png" title="Performance After Changes"/&gt;&lt;/p&gt;
+&lt;h3 id="is-the-honeymoon-over"&gt;Is The Honeymoon Over?&lt;a class="headerlink" href="#is-the-honeymoon-over" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;With the returns diminishing, as I write this article I am wondering if the honeymoon
+period for finding “easy” performance fixes is over.  I do not know if it is or not,
+but I do know that I have optimized a lot of the top 10 functions in the list.
+This means that I am going to have to work harder for less return from here on out.
+I do have a couple of ideas on how to improve things further, but that is for another
+article!&lt;/p&gt;
+&lt;p&gt;What is really evident to me though is that my current snapshot and seconds approach
+to finding new items to try and optimize is almost hitting its limit.  It is becoming
+harder to figure out what to try and optimize, and whether any changes help the
+performance.  That is something that I am going to have to do some thinking on!&lt;/p&gt;
+&lt;h2 id="cleaning-up"&gt;Cleaning Up&lt;a class="headerlink" href="#cleaning-up" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;While I was poking around the code, there were a handful of things that I wanted to
+clean up, as usual.  When measuring the performance of these changes, most of these
+changes resulted in a performance improvement on the order of 0.1 or 0.3 seconds over 10
+million iterations.  But more than that, they just seemed like it made sense to clean
+these things up for code maintenance reasons.&lt;/p&gt;
+&lt;h3 id="return-statements"&gt;Return Statements&lt;a class="headerlink" href="#return-statements" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Honest confession time.  I am not perfect.  When I am writing code, I get lost in the
+moment, and write the code that I need to write, knowing I will come back and clean it
+up later.  Sometimes, that is obvious.  Take this piece of code:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;ParserHelper&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_length_less_than_or_equal_to&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+            &lt;span class="n"&gt;adj_ws&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;3&lt;/span&gt;
+        &lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="n"&gt;ParserHelper&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_character_at_index&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+            &lt;span class="n"&gt;line_to_parse&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;start_index&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;BlockQuoteProcessor&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__block_quote_character&lt;/span&gt;
+        &lt;span class="p"&gt;):&lt;/span&gt;
+            &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="bp"&gt;True&lt;/span&gt;
+        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="bp"&gt;False&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Yup, I wrote that.&lt;sup id="fnref:facePalmOn"&gt;&lt;a class="footnote-ref" href="#fn:facePalmOn"&gt;2&lt;/a&gt;&lt;/sup&gt;  It took me less than 10 seconds to rewrite
+it, but it was me that originally wrote that.  Not:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;ParserHelper&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_length_less_than_or_equal_to&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt; &lt;span class="n"&gt;adj_ws&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;3&lt;/span&gt; &lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="ow"&gt;and&lt;/span&gt; \
+            &lt;span class="n"&gt;ParserHelper&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_character_at_index&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;line_to_parse&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;start_index&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+                &lt;span class="n"&gt;BlockQuoteProcessor&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__block_quote_character&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Which would have made much more sense.&lt;sup id="fnref:facePalmOff"&gt;&lt;a class="footnote-ref" href="#fn:facePalmOff"&gt;3&lt;/a&gt;&lt;/sup&gt;  But then, we all do things
+when we are writing code that we look back on, knowing we can do better.  Part of
+my journey in writing this project is understanding that quality in a project is
+very iterative.  For example, I found a couple more instance of that pattern in the
+project’s code, but thankfully, not anymore.  I am learning to be okay with things like
+that. I know I sometimes look at the code and go “What was I on when I wrote that?”, but
+I also accept that it is an artifact of how I work.  Focus on the algorithm and clean up
+the code later.  It just happens.&lt;/p&gt;
+&lt;p&gt;A more frequent find was to find blocks of statements like:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="n"&gt;processed_line&lt;/span&gt; &lt;span class="o"&gt;+=&lt;/span&gt; &lt;span class="n"&gt;source_text&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;start_index&lt;/span&gt;&lt;span class="p"&gt;:]&lt;/span&gt;
+    &lt;span class="n"&gt;POGGER&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;debug&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"processed_line&amp;gt;&amp;gt;$&amp;lt;&amp;lt;"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;processed_line&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;processed_line&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;In cases like this, I made sure that the debug statement was not needed and removed it.
+At that point, I have one statement that adds another string to its value, and another
+statement that returns it.  It was more legible and performant to do this:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;processed_line&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;source_text&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;start_index&lt;/span&gt;&lt;span class="p"&gt;:]&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;h3 id="removing-needless-default-variable-settings"&gt;Removing Needless Default Variable Settings&lt;a class="headerlink" href="#removing-needless-default-variable-settings" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Another frequent find was a block of statements like:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;        &lt;span class="n"&gt;did_add_definition&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;False&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;link_name&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;LinkHelper&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__link_definitions&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="n"&gt;something&lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;
+        &lt;span class="k"&gt;else&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="n"&gt;something&lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;
+            &lt;span class="n"&gt;did_add_definition&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;True&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Looking at those statements now, I realize that I probably added the &lt;code&gt;if&lt;/code&gt; block or the
+&lt;code&gt;else&lt;/code&gt; block after the initial code was written.  While that was acceptable during the
+building phase of the project, now that I was getting ready to release, I wanted to
+clean scenarios like this up.&lt;/p&gt;
+&lt;p&gt;That is why I refactored the code to be:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;link_name&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;LinkHelper&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__link_definitions&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="n"&gt;something&lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;
+            &lt;span class="n"&gt;did_add_definition&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;False&lt;/span&gt;
+        &lt;span class="k"&gt;else&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="n"&gt;something&lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;
+            &lt;span class="n"&gt;did_add_definition&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;True&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Basically, there is no need to do an assignment to False, only to have the &lt;code&gt;False&lt;/code&gt; case
+of the &lt;code&gt;if&lt;/code&gt; statement set it to &lt;code&gt;True&lt;/code&gt;.  To me, that is just a useless assignment that
+can easily be avoided.  Also, from a readability viewpoint, that double assignment is
+confusing to read.  For me, the &lt;code&gt;= False&lt;/code&gt; case stuck in my head in the first example.
+In the second example, both &lt;code&gt;= False&lt;/code&gt; and &lt;code&gt;= True&lt;/code&gt; stuck in my head at the same level.
+To me, that just makes sense.&lt;/p&gt;
+&lt;p&gt;And looking over the code now, I realize I could have just set the variable
+&lt;code&gt;did_add_definition&lt;/code&gt; to &lt;code&gt;link_name not in LinkHelper.__link_definitions&lt;/code&gt;.  The learning
+continues.&lt;/p&gt;
+&lt;h3 id="ternary-statements"&gt;Ternary Statements&lt;a class="headerlink" href="#ternary-statements" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;I am not sure if everyone loves ternary statements, but I do.  For me, these statements
+are very useful in cleanly encapsulating the setting of a single value depending on a
+given condition.  From my point of view, why type in:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="n"&gt;this_bq_count&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;init_bq&lt;/span&gt; &lt;span class="ow"&gt;is&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="n"&gt;this_bq_count&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;init_bq&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;when the much shorter:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="n"&gt;this_bq_count&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt; &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;init_bq&lt;/span&gt; &lt;span class="ow"&gt;is&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt; &lt;span class="k"&gt;else&lt;/span&gt; &lt;span class="n"&gt;init_bq&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;is syntactically the same and more concise?&lt;/p&gt;
+&lt;p&gt;In all fairness, when I am work on writing the code, I will almost always write
+it in a long form.  The best answer that I can give as to why I do that is that I believe
+that
+ternary statements are great for final states, but not so for intermediate states.  By
+leaving the statements in their original long form, I feel more ready to change the
+conditions and values if needed.  However, once those are nailed down, its ternary
+statements as much as possible!&lt;/p&gt;
+&lt;h3 id="single-characters-startswith-and-endswith"&gt;Single Characters StartsWith and EndsWith&lt;a class="headerlink" href="#single-characters-startswith-and-endswith" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;This cleanup was more of a pet peeve than any kind of performance improvement.  If
+possible, I prefer to keep character references and string references separate. Seeing
+as Python does not have a concept of a single character that is distinct from a string,
+that is difficult.  For me, I feel that being more “honest” about the input allows me
+to better design algorithms that use those inputs to achieve their goals.&lt;/p&gt;
+&lt;p&gt;That is why I sent through the code and replaced occurrences of the &lt;code&gt;endswith&lt;/code&gt; and
+&lt;code&gt;startswith&lt;/code&gt; function with their character-based equivalents.  That is why I
+changed:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="n"&gt;remaining_line&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;endswith&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;InlineHelper&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;backslash_character&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;to:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="n"&gt;remaining_line&lt;/span&gt; &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="n"&gt;remaining_line&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt;&lt;span class="n"&gt;InlineHelper&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;backslash_character&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;While I realize that it might not seem like a big change, to me, it is a more readable
+and more honest form of the condition.&lt;/p&gt;
+&lt;h3 id="when-in-rome"&gt;When In Rome…&lt;a class="headerlink" href="#when-in-rome" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Looking around for hints on how to improve performance in Python, I came across a handful
+of documents that gave good hints on how to be more Pythonic.  The best way that I can
+describe the feeling of these documents is that I need to follow the doctrine: When in
+Rome, do as the Romans do.  Basically, if I want to leverage the power of the Python
+language, I need to use the features it provides in ways that add clarity and readability
+to the code.&lt;/p&gt;
+&lt;p&gt;Because of the nature of this project, there is only one place in the entire project where
+I found that a common Pythonic concept, list comprehensions, is useful.
+&lt;a href="https://book.pythontips.com/en/latest/comprehensions.html"&gt;List comprehensions&lt;/a&gt;
+are very Pythonic, involving the simplification of lists in a very performant manner.
+I just have not found more than one use for them in the project.  Another very Pythonic
+concept is the
+&lt;a href="https://book.pythontips.com/en/latest/global_&amp;amp;_return..html#multiple-return-values"&gt;returning of multiple values&lt;/a&gt;
+from a function.  While trickery can be used in other languages to get some level of the
+same effect, Python’s first-class support for tuples makes this concept very useful and
+very easy to use.&lt;/p&gt;
+&lt;p&gt;A good example of this is when I changed this code:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="n"&gt;adjusted_text_to_parse&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;position_marker&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;text_to_parse&lt;/span&gt;
+    &lt;span class="n"&gt;adjusted_index_number&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;position_marker&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;index_number&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;to this code:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="n"&gt;adjusted_text_to_parse&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;adjusted_index_number&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
+        &lt;span class="n"&gt;position_marker&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;text_to_parse&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="n"&gt;position_marker&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;index_number&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;While these statements may look almost the same, I see a large difference in readability.
+When I read the first example, the first questions that I usually have are around the
+grouping of those two statements.  Are there blank lines before and after to separate them
+into a group?  Are they related to each other?  These are some of the questions that I
+think about when reading code.&lt;/p&gt;
+&lt;p&gt;The second example takes most of those questions and tosses them out the window.  By using
+that specific grouping, I feel that I invert the questions I ask, reducing them to one
+question: Is there any reason that any one statement should not be in that group?  For me,
+that is usually a far easier question to answer.  In that above case, it is a logical
+grouping for me as both variables deal with text and the current index into that text.
+Used at the start of a function, they communicate that those variables are all being
+set to their initial states.&lt;/p&gt;
+&lt;p&gt;Of course, there is also a simpler answer: I just think it looks more readable.&lt;/p&gt;
+&lt;h2 id="what-was-my-experience-so-far"&gt;What Was My Experience So Far?&lt;a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;The first thing that comes to mind is to answer the question of whether the
+project is still in the honeymoon period as far as performance tuning goes.
+As I am still seeing reductions in durations
+of about 50% and very few experiment failures, I am convinced that I still have at least
+a little way to go before it ends.  I am not sure how far, but there still is some time.
+But with my desire to get an initial release out and circulating, I know the right
+decision currently is to focus on items in the issues list that are blocking the
+release.  And that means focusing on those items and not on performance.  And I am okay
+with that.&lt;/p&gt;
+&lt;p&gt;In terms of finding a balance and getting the project out there, I am feeling good
+about that too.  Yes, I got sidetracked on performance. But honestly, I knew
+that was going to happen.  I want to make the project better, and I know that focusing
+on performance will increase the usability of the project.  I must remember
+that people can easily focus on performance with no end in sight.  Unless I want to
+succumb to that, I need to make sure I have good solid limits on performance tuning
+and what is acceptable.  And I think I found that.&lt;/p&gt;
+&lt;p&gt;Through the performance enhancements, I realized something with this round of
+enhancements that really had not dawned on me before. Performance, like other parts of
+a project, is a requirement that is just as malleable as any other.  Some of the
+improvements that I made may appear to be tightening screws here and there, but they
+were also flexing and bending requirements.  Caching logging levels?  That was reducing
+the requirement to change log levels during program execution.  Caching calls to the
+&lt;code&gt;len&lt;/code&gt; function?  That could be seen as reducing the readability of code by centralizing
+that call in a location that might not be “correct” for some people.  Commenting out
+debug statements?  That was a clear reduction of the immediate debuggability of those
+functions to gain some performance.  In each case, it was finding a good balance
+between those.  I may have “known” it before, but it was cool to understand it enough
+at this point to be able to put it into words.&lt;/p&gt;
+&lt;h2 id="what-is-next"&gt;What is Next?&lt;a class="headerlink" href="#what-is-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;There is one more performance improvement that I will talk about next time, and it
+is a doozy of one.  Other than that, I am focusing on getting all the items in
+the priority 1 section resolved.&lt;/p&gt;
+&lt;div class="footnote"&gt;
+&lt;hr/&gt;
+&lt;ol&gt;
+&lt;li id="fn:whatIsEqual"&gt;
+&lt;p&gt;If you have ever looked at any polling, they will usually say that a poll is accurate to +/-3%, or something like that.  This same principle is usually applied to performance measurements, with similar levels of accuracy. &lt;a class="footnote-backref" href="#fnref:whatIsEqual" title="Jump back to footnote 1 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li id="fn:facePalmOn"&gt;
+&lt;p&gt;Imagine me doing a face palm when I read that piece of code. &lt;a class="footnote-backref" href="#fnref:facePalmOn" title="Jump back to footnote 2 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li id="fn:facePalmOff"&gt;
+&lt;p&gt;Going to try and move on now.  Damage done. &lt;a class="footnote-backref" href="#fnref:facePalmOff" title="Jump back to footnote 3 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/div&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry><entry><title>Autism And Dementia</title><link href="https://jackdewinter.github.io/2021/02/28/autism-and-dementia/" rel="alternate"></link><published>2021-02-28T00:00:00-08:00</published><updated>2021-02-28T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2021-02-28:/2021/02/28/autism-and-dementia/</id><summary type="html">&lt;p&gt;When I started writing these articles, I intended to write one article every month to
 help people with and without Autism understand what goes on in my mind.  By exposing how
 my Autism affects me, my hope is that each reader will be able to apply some small portion
 of …&lt;/p&gt;</summary><content type="html">&lt;p&gt;When I started writing these articles, I intended to write one article every month to
@@ -8100,329 +8656,4 @@ I have confidence that I will be able to solve those issues.  Some of them may t
 an hour to solve, some may take a couple of days to solve, but I will solve them!&lt;/p&gt;
 &lt;h2 id="what-is-next"&gt;What is Next?&lt;a class="headerlink" href="#what-is-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;Not to sound like I am repeating myself, but this part of the project is all about
-keeping the momentum going and solving another handful of issues.&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry><entry><title>Markdown Linter - Delving Into the Issues - 1</title><link href="https://jackdewinter.github.io/2020/09/28/markdown-linter-delving-into-the-issues-1/" rel="alternate"></link><published>2020-09-28T00:00:00-07:00</published><updated>2020-09-28T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-09-28:/2020/09/28/markdown-linter-delving-into-the-issues-1/</id><summary type="html">
-&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;In my
-&lt;a href="https://jackdewinter.github.io/2020/09/21/markdown-linter-adding-remaining-inline-tokens/"&gt;last article&lt;/a&gt;,
-I completed the last bit of work needed to complete the consistency checks.  However,
-as I accumulated some items in my issues list, I decided to take some time and make a
-sizable dent in that list.  This article details those issues that I investigated …&lt;/p&gt;</summary><content type="html">
-&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;In my
-&lt;a href="https://jackdewinter.github.io/2020/09/21/markdown-linter-adding-remaining-inline-tokens/"&gt;last article&lt;/a&gt;,
-I completed the last bit of work needed to complete the consistency checks.  However,
-as I accumulated some items in my issues list, I decided to take some time and make a
-sizable dent in that list.  This article details those issues that I investigated and
-their results.&lt;/p&gt;
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;When I am teaching archery at the camps in my local area, I must
-constantly keep a level head and strive to find ways keep the kids motivated.  Faced
-with children possessing various levels of archery skill, not only do I have to tailor
-any assistance to each individual child, but I also try to figure out how to get that
-child to retain some part of that assistance. Luckily, I have a couple of tricks up my
-sleeve that helps me in this area.&lt;/p&gt;
-&lt;p&gt;The most useful trick involves the difference between moving a mountain and moving
-a mountain’s worth of pebbles.  When I ask the camper how easy it is to move a mountain,
-they usually look at me like I am the most stupid parent on the planet and then proceed
-to express how impossible it is in various colorful forms.   As a follow up, when I then
-ask them if they can move that mountain one pebble as a time, they state that it would
-take a long time, but eventually they would be able
-to move that mountain.  Granted, the description of how long that effort would take
-differs from camper to camper, some more colorful than others, but they all convey that
-it is ultimately doable.&lt;/p&gt;
-&lt;p&gt;At that point, I calmly talk to the camper and explain that we are going to start working
-on each pebble of their archery skills, one pebble at a time.  At open range events, I
-let each group of kids know that me and the other coaches will be there
-all day, and will be as helpful at the end of the day as we are at the beginning.
-Admittedly, a bit crazier near the end, but we try our best to remain helpful in
-the middle of that craziness.&lt;/p&gt;
-&lt;p&gt;The reason I mention this story is that when it comes to the items on the project’s
-issues list, the list definitely
-looks more like a mountain than a pebble to me.  But by taking the same approach with
-the items that I do when teaching archery, I can approach that list calmly and not be hit
-with a large wall of anxiety.  Instead of seeing the list as a large mountain, I can
-choose to see it as a large group of pebbles, moving them one at a time.  My goal at
-this point is not to get rid of all those items at once, but to make steady progress
-in reducing the size of the issues list, once pebble at a time.&lt;/p&gt;
-&lt;h2 id="what-is-the-audience-for-this-article"&gt;What Is the Audience for This Article?&lt;a class="headerlink" href="#what-is-the-audience-for-this-article" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;While detailed more eloquently in
-&lt;a href="https://jackdewinter.github.io/2020/04/05/what-is-the-audience-for-my-blog/#what-is-the-audience-for-my-blog"&gt;this article&lt;/a&gt;,
-my goal for this technical article is to focus on the reasoning behind my solutions,
-rather that the solutions themselves.  For a full record of the solutions presented in
-this article, please go to this project’s GitHub repository and consult the
-commits between
-&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/d56857b8839b2651724935d7b2145b62fb0d20cf"&gt;09 Sep 2020&lt;/a&gt;
-and
-&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/573cdf32570611cbc61273cef9c6808fe44137ba"&gt;12 Sep 2020&lt;/a&gt;.&lt;/p&gt;
-&lt;h2 id="starting-with-an-easy-one"&gt;Starting with An Easy One&lt;a class="headerlink" href="#starting-with-an-easy-one" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Now that I have the consistency checks in place, when I am faced with a problem with a
-line number being off or a column number being off, it is a question of whether the
-parser’s calculation is wrong or the check’s calculation is wrong.  While I hope that it
-is not an error with the consistency checks, I feel that it is a valid question to ask
-myself with each issue.&lt;/p&gt;
-&lt;p&gt;That is the mindset that I had when I started looking at this issue.  Leftover from my
-previous work on
-consistency checks, this was an issue where 15-20 minutes of digging into it with
-little success caused me to sideline it for later.  The Markdown sample in question was
-a modified
-&lt;a href="https://github.github.com/gfm/#example-143"&gt;example 143&lt;/a&gt;:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="n"&gt;div&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt;
-&lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;foo&lt;/span&gt;
-&lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;bar&lt;/span&gt;
-
-&lt;span class="n"&gt;bar&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;At issue was the tokenization of the Blank Line element at the end of the Block Quote
-element.  According to the parser, that Blank Line element was tokenized to
-&lt;code&gt;[BLANK(4,1):]&lt;/code&gt;.  However, the consistency checks were stating that the proper
-tokenization should be &lt;code&gt;[BLANK(4,3):]&lt;/code&gt;.  Which one was correct?  What was the
-miscalculation that was causing one of the two to be off?&lt;/p&gt;
-&lt;h3 id="digging-in"&gt;Digging In&lt;a class="headerlink" href="#digging-in" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;Performing a quick visual check of the tokenization, things seemed to be valid on
-the parser side. The Blank Line element was enough to terminate the HTML element,
-but not to also terminate the Block Quote element before the Blank Line element itself.
-That part of the test looked good. In addition, the Markdown text does not contain any
-other text on that Blank Line, so the position of &lt;code&gt;(4,1)&lt;/code&gt; looked to be an accurate
-position for the token.  This meant shifting my focus to the consistency checks.&lt;/p&gt;
-&lt;p&gt;Looking at the debug information for the consistency checks, something immediately leapt
-out at me.  The debug output read:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&amp;gt;&amp;gt;blank_line&amp;gt;&amp;gt;split&amp;gt;['&amp;gt; ', '&amp;gt; ', '&amp;gt; ', '', '']
-&amp;gt;&amp;gt;blank_line&amp;gt;&amp;gt;index&amp;gt;1
-&amp;gt;&amp;gt;current_position.index_number&amp;gt;&amp;gt;1
-&amp;gt;&amp;gt;current_position.index_indent&amp;gt;&amp;gt;0
-&amp;gt;&amp;gt;1 + init_ws(2)&amp;gt;&amp;gt;3
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Matching that up against the code that produced the debug, it stated that the
-&lt;code&gt;index_number&lt;/code&gt; variable was set to &lt;code&gt;1&lt;/code&gt; while the consistency check calculated the number
-&lt;code&gt;3&lt;/code&gt; for that same value.  That matched up with the previous information, so looking at
-that last line, I saw that the calculation was determining that there was an initial
-whitespace of 2 applied to get to the value of &lt;code&gt;3&lt;/code&gt;.  That did not seem right.&lt;/p&gt;
-&lt;p&gt;Adding some temporary debug statements, I was able to quickly determine that the reason
-that the
-check was adding that indent of 2 characters was due to a bad index on the Block Quote
-token.  With every newline that occurs within a given Block Quote, the
-&lt;code&gt;leading_text_index&lt;/code&gt; field must be updated to point to the current line.  In this case,
-the HTML Block had a number of newline characters within its data but had not updated
-the index.  As a result, instead of the index being set to 3, it was set to 0.  This
-meant that it was picking up the 0th element of the array&lt;sup id="fnref:zeroBased"&gt;&lt;a class="footnote-ref" href="#fn:zeroBased"&gt;1&lt;/a&gt;&lt;/sup&gt;, &lt;code&gt;&amp;gt;{space}&lt;/code&gt;,
-with its length of 2 instead of the 3rd element in the array, an empty string with its
-length of 0.&lt;/p&gt;
-&lt;h3 id="fixing-the-problem"&gt;Fixing the Problem&lt;a class="headerlink" href="#fixing-the-problem" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;Having learned a decent amount of information from my research, fixing the issue was
-relatively
-simple.  To increase the index by the right amount, I had to count the number of
-newlines in the text and apply that number to the &lt;code&gt;leading_text_index&lt;/code&gt; field.&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="n"&gt;newlines_in_text_token&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;__count_newlines_in_text&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;current_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_text&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-    &lt;span class="k"&gt;print&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"&amp;gt;&amp;gt;newlines_in_text_token&amp;gt;"&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="nb"&gt;str&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;newlines_in_text_token&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
-    &lt;span class="n"&gt;container_block_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;leading_text_index&lt;/span&gt; &lt;span class="o"&gt;+=&lt;/span&gt; &lt;span class="n"&gt;newlines_in_text_token&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;To err on the side of caution, I also decided to add a couple of extra scenario tests
-with further variations on the example.  Just to make sure that the right thing would
-happen with an extra line of text, I added an extra line of text and created test
-&lt;code&gt;test_html_blocks_143b&lt;/code&gt;.  This addressed my concern that there may be something special
-with 2 lines of text, and a third line of text would either highlight or eliminate that
-concern.  Then, to make sure that Block Quote lines and their indents were working
-properly, I added test &lt;code&gt;test_html_blocks_143c&lt;/code&gt;.  This test alternated the indents for the
-Block Quote element between 0 spaces and 1 space, stressing that part of the fix.&lt;/p&gt;
-&lt;h2 id="the-start-of-a-series"&gt;The Start of A Series&lt;a class="headerlink" href="#the-start-of-a-series" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;This next issue was the start of what I would later refer to as the 518 series of tests.
-The process started when I looked at
-&lt;a href="https://github.github.com/gfm/#example-518"&gt;example 518&lt;/a&gt;
-and I wrote down a note check if all the combinations were covered.  To give more
-context, I scribbled down “518, are we sure?” which I interpreted as “Am I sure that I
-have all the combinations covered?”.  While it may sound like a weird logically jump
-to make from a couple of scribbles, in my own way, I wrote down what was needed to make
-sure that I followed it up.&lt;/p&gt;
-&lt;p&gt;My thinking was simple.  A standard link, such as the following Markdown from example
-518:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;link&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="w"&gt;   &lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;uri&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
-&lt;span class="w"&gt;  &lt;/span&gt;&lt;span class="ss"&gt;"title"&lt;/span&gt;&lt;span class="w"&gt;  &lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;has 6 parts: the link label, the whitespace before the URI, the URI, the whitespace
-before the title, the title, and the whitespace after the title.  All other parts of
-that link are single characters in nature and required elements.  So, what I did with
-this series of tests
-is to start changing where the newline(s) were, seeing if I could break anything.  To
-add some extra flavor to the tests, I also added a couple of tests that included
-backslash characters.&lt;/p&gt;
-&lt;h3 id="what-did-i-find-out"&gt;What Did I Find Out?&lt;a class="headerlink" href="#what-did-i-find-out" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;The primary thing that I found out was that the parser itself was not handling the
-newline characters within links properly.  Specifically, the line numbers and column
-numbers were not reflective of the Markdown document that was parsed.  To address
-this, the &lt;code&gt;__handle_inline_special&lt;/code&gt; function was modified to handle an alternate
-calculation of the line/column number if a Link end token was found.  While the
-initial calculation of &lt;code&gt;new_index - next_index&lt;/code&gt; works for any Link tokens that do not
-contain a newline character, the calculation for those that included a newline
-character was going to be a bit more complicated.&lt;/p&gt;
-&lt;p&gt;After trying out a couple of solutions in my head, the only one that gained the
-most traction with me
-was a staggered approach.  In this approach, I preset an array with the lengths of
-various parts of the link, as outlined above.  The function then goes through each of
-the parts of the link in their order, checking for newlines for each part as it goes.
-If at least one newline character is found, the line variables are updated and the
-&lt;code&gt;link_part_index&lt;/code&gt; is set to that part’s index number.  At the end, all values before
-that index are reset to 0 and the column number is adjusted by the sum of each value
-in the array.&lt;/p&gt;
-&lt;p&gt;While there are small fixes along the way to make the algorithm work properly, this
-algorithm works well as it keeps things simple.  As each part is checked in turn for
-newline characters, the change to the line number variable is accurate.  By setting
-and resetting the &lt;code&gt;link_part_index&lt;/code&gt; variable to the last element that had a newline,
-only the elements after that index get added to the total, accurately reflecting
-the number of characters after the last newline character.&lt;/p&gt;
-&lt;p&gt;After that was done, the only extra adjustment that needed to be added was accounting
-for whitespace at the start of lines within Paragraph elements, making sure that it
-gets applied properly.  That entailed tracking whether or not the parser was currently
-processing a paragraph token and using the &lt;code&gt;rehydrate_index&lt;/code&gt; field of the Paragraph
-token.  With that in place, manual verification of the newly added case confirmed
-that the algorithm was calculating things properly.&lt;/p&gt;
-&lt;h3 id="but-what-about"&gt;But What About…?&lt;a class="headerlink" href="#but-what-about" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;Finishing up the work, there were two things that I knew I needed to work on:
-consistency checks and other types of links.  Strangely, the only changes I needed to
-the checks were to change Link Reference Definition checks to ensure that it accounted
-for the newlines in various components.  Other than that, the everything seemed to
-line up.&lt;/p&gt;
-&lt;p&gt;As for other types of links, that answer was clear.  Based on the parser code
-and the consistency check code, the only type of link that was being tested for newlines
-inside of the link were plain inline links.  To combat this, I added extra items to the
-issues list, as well as made a mental note to revisit this later.&lt;/p&gt;
-&lt;h2 id="fenced-code-blocks-and-blank-lines"&gt;Fenced Code Blocks and Blank Lines&lt;a class="headerlink" href="#fenced-code-blocks-and-blank-lines" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;While this did not take a long time to solve, it was a good issue to get out of the
-way.  At issue was the Markdown for
-&lt;a href="https://github.github.com/gfm/#example-99"&gt;example 99&lt;/a&gt;:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;```&lt;/span&gt;
-
-&lt;span class="err"&gt;{&lt;/span&gt;&lt;span class="k"&gt;space&lt;/span&gt;&lt;span class="err"&gt;}{&lt;/span&gt;&lt;span class="k"&gt;space&lt;/span&gt;&lt;span class="err"&gt;}&lt;/span&gt;
-&lt;span class="o"&gt;```&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;where &lt;code&gt;{space}&lt;/code&gt; stands for an actual space character.  While the actual item reads
-&lt;code&gt;fenced, 99 with more blanks&lt;/code&gt;, I knew that I was concerned about not having more
-examples with different types of blanks inside of the fenced code block.  To fully
-test this, I created many variations on this one test, differing the
-number of blank lines and the amount of whitespace on each blank line.&lt;/p&gt;
-&lt;p&gt;I was happy to find out that the work on the parser stood up to this extended testing,
-and the consistency checks only required a small change.  To be precise, the only
-change that it needed was to reset the column number to &lt;code&gt;0&lt;/code&gt; if the
-first inline token inside of a Fenced Code block was a Blank Line token.&lt;/p&gt;
-&lt;p&gt;I did discover something somewhat puzzling though.  In a Fenced Code block, if the
-first token is a Text token, the rest of the body of the block is coalesced. If the
-first token is a Blank Line token, then the tokens are not coalesced at all.  Rather
-than focus on that at the time, I just noted it down in the issues list, and hoped
-to find time soon to figure out if that is the correct solution.&lt;/p&gt;
-&lt;h2 id="the-first-inline-token-after-an-atx-heading-token"&gt;The First Inline Token After an Atx Heading Token&lt;a class="headerlink" href="#the-first-inline-token-after-an-atx-heading-token" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Having noticed this one a while ago, it was always something that I wondered about:
-why does the parser sometimes insert a whitespace character right after an Atx Heading
-token?  I knew I must have a good reason for it, but I could not recall why.  I did find
-a couple of scribbles in old notes about Atx Headings, but that was it.  I needed
-something more to go on for me to understand this and wrap it up.&lt;/p&gt;
-&lt;h3 id="doing-the-research"&gt;Doing the Research&lt;a class="headerlink" href="#doing-the-research" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;Going way back in the project’s commit log, I noticed two things:  The first thing was
-that this project has been going on for a long while, and the second was that in that
-long while, very few of the commits refer to Atx Headings in their commit messages.  To
-me, this means that Atx Headings are very stable, something that I felt proud of.
-That stability helps me to understand why I did not make any notes around what I was
-doing: quite probably they just were not needed.&lt;/p&gt;
-&lt;p&gt;There are only 4 times where Atx Headings have
-been mentioned in the commit logs:&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/f66221957d761c930728bb8c462576ac951e3552#diff-99f7c38bdec0a4060beb648f08162098"&gt;Adding atx and setext headings.&lt;/a&gt;&lt;ul&gt;
-&lt;li&gt;initial addition for Atx Heading support&lt;/li&gt;
-&lt;/ul&gt;
-&lt;/li&gt;
-&lt;li&gt;&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/fa7ff7223fd614758b95bf8cde76052671680c7d#diff-99f7c38bdec0a4060beb648f08162098"&gt;Fixing Atx headers to allow better inline processing.&lt;/a&gt;&lt;ul&gt;
-&lt;li&gt;moved most text out of the token to allow normal inline processing to take place&lt;/li&gt;
-&lt;/ul&gt;
-&lt;/li&gt;
-&lt;li&gt;&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/0565ed9db906873b88d224c829c2acbf9bdb6370#diff-99f7c38bdec0a4060beb648f08162098"&gt;Adding line/column support for tax headings.&lt;/a&gt;&lt;ul&gt;
-&lt;li&gt;adding line numbers and column numbers to the tokens&lt;/li&gt;
-&lt;/ul&gt;
-&lt;/li&gt;
-&lt;li&gt;&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/573cdf32570611cbc61273cef9c6808fe44137ba#diff-99f7c38bdec0a4060beb648f08162098"&gt;Added testing of every inline at the start of a Atx heading…&lt;/a&gt;&lt;/li&gt;
-&lt;li&gt;this issue&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;This summary made it really easy for me to come to the observation that when the change
-was made to
-allow better inline parsing, the initial whitespace between the Atx Heading and its
-enclosed text was placed in the whitespace section of the text token.
-By looking at the consistency checks, I also observed that there are zero instances
-where an Atx Heading is not immediately followed by a Text token.  After looking at
-those two observations and commit history, I do not feel it is a leap to say that
-this was a design decision that I made but never recorded.  Further, I feel that the
-worst case is that it is a pattern that has a lot going for it and could easily be
-adopted as a new design decision.  Either way, it seems to be a winning design.&lt;/p&gt;
-&lt;h3 id="backing-up-the-design-decision"&gt;Backing Up the Design Decision&lt;a class="headerlink" href="#backing-up-the-design-decision" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;Another thing that I learned from my research was that there was only one case of a
-non-Text element following the Atx Heading characters in any of the Markdown examples.
-The Markdown for
-&lt;a href="https://github.github.com/gfm/#example-183"&gt;example 183&lt;/a&gt; is:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="ss"&gt;""&lt;/span&gt;&lt;span class="err"&gt;"#&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;Foo&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
-&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;foo&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;url&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
-&lt;span class="o"&gt;&amp;gt;&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;bar&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;which produces an Atx Heading element with a Link element right after it.  Based on
-the previous research, I expected the tokenization to include that whitespace character,
-and it did not disappoint:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="n"&gt;expected_tokens&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;
-        &lt;span class="s2"&gt;"[atx(1,1):1:0:]"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-        &lt;span class="s2"&gt;"[text(1,3)::&lt;/span&gt;&lt;span class="se"&gt;\a&lt;/span&gt;&lt;span class="s2"&gt; &lt;/span&gt;&lt;span class="se"&gt;\a\x03\a&lt;/span&gt;&lt;span class="s2"&gt;]"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-        &lt;span class="s2"&gt;"[link(1,3):shortcut:/url:::::Foo:::::]"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-        &lt;span class="s2"&gt;"[text(1,4):Foo:]"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-        &lt;span class="s2"&gt;"[end-link:::False]"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-        &lt;span class="s2"&gt;"[end-atx:::False]"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;For readers that have not been following along, the &lt;code&gt;\a&lt;/code&gt; character in an inline text
-string represents a replacement of one character for another character.  In this case,
-the &lt;code&gt;{space}&lt;/code&gt; character between the first two &lt;code&gt;\a&lt;/code&gt; characters is being replaced by
-the character &lt;code&gt;\x03&lt;/code&gt; used as a NOOP character.  To me, this means that when the parser
-tokenized that part of the line, it purposefully replaced a space character with an empty
-string.  Based on the research, this was the right thing to do.&lt;/p&gt;
-&lt;p&gt;The rest of addressing this issue was just replicating various forms of this example for
-each inline sequence.  Starting with function &lt;code&gt;test_atx_headings_extra_2&lt;/code&gt; and ending with
-function &lt;code&gt;test_atx_headings_extra_12&lt;/code&gt;, I just cycled through each of the newline
-sequences, include Hard Line breaks.  And with two exceptions, each of the new test
-functions passed.&lt;/p&gt;
-&lt;p&gt;The first case where I needed to fix something came even before I added the extra
-functions: example 183.  To make sure this was working properly, I needed to add an extra
-line to the &lt;code&gt;__process_inline_text_block&lt;/code&gt; function of the &lt;code&gt;InlineProcessor&lt;/code&gt; class.  In
-the specific case where I was adding that special replacement, I determined that I was
-not clearing the &lt;code&gt;starting_whitespace&lt;/code&gt; variable, and that caused the extra text to occur
-within the link instead of before the link.  That caused the rehydration to fail as the
-space character was in the wrong position.&lt;/p&gt;
-&lt;p&gt;The second case was in the &lt;code&gt;__verify_first_inline_atx&lt;/code&gt; function of the consistency
-checks.  The function was first cleaned up removing all the extra &lt;code&gt;assert False&lt;/code&gt;
-statements and replacing them with an assert that the first token processed within
-the Atx Heading was a Text token.  Once that was done, I just reordered the remaining
-lines in the function to keep functionality together, and it was done.&lt;/p&gt;
-&lt;h2 id="what-was-my-experience-so-far"&gt;What Was My Experience So Far?&lt;a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;I went into this work knowing that at best, I would be able to knock a handful of issues
-of the list in one week.  Meeting that goal, it also started to sink in
-that the research for each issue was going to take the lion’s share of resolving
-each issue.&lt;/p&gt;
-&lt;p&gt;If I was lucky, I figured I would stumble upon what I needed to do early in the
-research.  But I prepared myself for the probability that, most often, I would need to
-add debug statement, add some extra scenario tests, execute all relevant scenario tests,
-examine the results of those tests, and iterate.  Sometimes it would only take 1 or 2
-iterations, but I figured that most often it would take upwards of 5 to 10 iterations.
-Based on my experience with this week’s work, that set of expectations was a healthy
-set to start with.&lt;/p&gt;
-&lt;p&gt;At this point, I was feeling decently okay.  Not to sound too vague, but what I went
-through was right down the middle of what I expected to happen.  As such, I was not
-feeling over positive or overly negative, just… well… okay.  If anything, I was
-hoping that this “down the middle” result would apply most of the time.  Having too
-many quick issues would get my hopes up for the remaining issues and having too many
-long running issues would stop any momentum I was gaining.&lt;/p&gt;
-&lt;p&gt;But more importantly, I just wanted to keep on working through the issues list.  I was
-okay with moving issues to the “nice to have” section that I had created.  But I was
-only okay with that if I honestly though it was not required.  If I kept myself
-honest, it was a good way to move forward without jeopardizing the project.&lt;/p&gt;
-&lt;p&gt;And with that, I ended the work for the week, on a mostly positive note.&lt;/p&gt;
-&lt;h2 id="what-is-next"&gt;What is Next?&lt;a class="headerlink" href="#what-is-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Having completed resolving a small number of issues, I was hoping to keep up some
-momentum by continuing to solve more issues in the next week.  Simple as that!&lt;/p&gt;
-&lt;div class="footnote"&gt;
-&lt;hr/&gt;
-&lt;ol&gt;
-&lt;li id="fn:zeroBased"&gt;
-&lt;p&gt;A simple reminder that when most people talk about arrays, they refer to an index into that array.  As such, the first element of the array in the zeroth (0th) element of the array. &lt;a class="footnote-backref" href="#fnref:zeroBased" title="Jump back to footnote 1 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
-&lt;/li&gt;
-&lt;/ol&gt;
-&lt;/div&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry></feed>
+keeping the momentum going and solving another handful of issues.&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry></feed>
