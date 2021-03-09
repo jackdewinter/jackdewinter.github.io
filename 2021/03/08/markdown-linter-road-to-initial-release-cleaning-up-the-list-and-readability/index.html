@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="author" content="Jack De Winter" />
+
+        <meta name="description" content="Summary¶ In my last article, I talked about applying my newfound knowledge on performance measuring in Python to the PyMarkdown project. In this article, I start to focus more on resolving the higher priority issues from the project’s issues list. Introduction¶ When working on a project like the PyMarkdown …
+" />
+        <meta property="og:type" content="article" />
+        <meta name="twitter:card" content="summary">
+
+<meta name="keywords" content="markdown linter, core linter, Software Quality, " />
+
+<meta property="og:title" content="Markdown Linter - Road To Initial Release - Cleaning Up The List and Readability "/>
+<meta property="og:url" content="https://jackdewinter.github.io/2021/03/08/markdown-linter-road-to-initial-release-cleaning-up-the-list-and-readability/" />
+<meta property="og:description" content="Summary¶ In my last article, I talked about applying my newfound knowledge on performance measuring in Python to the PyMarkdown project. In this article, I start to focus more on resolving the higher priority issues from the project’s issues list. Introduction¶ When working on a project like the PyMarkdown …" />
+<meta property="og:site_name" content="Jack&#39;s Digital Workbench" />
+<meta property="og:article:author" content="Jack De Winter" />
+<meta property="og:article:published_time" content="2021-03-08T00:00:00-08:00" />
+<meta name="twitter:title" content="Markdown Linter - Road To Initial Release - Cleaning Up The List and Readability ">
+<meta name="twitter:description" content="Summary¶ In my last article, I talked about applying my newfound knowledge on performance measuring in Python to the PyMarkdown project. In this article, I start to focus more on resolving the higher priority issues from the project’s issues list. Introduction¶ When working on a project like the PyMarkdown …">
+
+        <title>Markdown Linter - Road To Initial Release - Cleaning Up The List and Readability  · Jack&#39;s Digital Workbench
+</title>
+        <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://jackdewinter.github.io/theme/css/style.min.css?bec7d543">
+
+        <link href="https://jackdewinter.github.io/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Jack&#39;s Digital Workbench - Full Atom Feed" />
+
+
+    </head>
+    <body>
+        <div id="content">
+            <div class="navbar navbar-static-top">
+                <div class="navbar-inner">
+                    <div class="container-fluid">
+                        <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                        </a>
+                        <a class="brand" href="https://jackdewinter.github.io/"><span class=site-name>Jack's Digital Workbench</span></a>
+                        <div class="nav-collapse collapse">
+                            <ul class="nav pull-right top-menu">
+                                <li >
+                                    <a href=
+                                       https://jackdewinter.github.io
+                                    >Home</a>
+                                </li>
+                                <li ><a href="https://jackdewinter.github.io/categories">Categories</a></li>
+                                <li ><a href="https://jackdewinter.github.io/tags">Tags</a></li>
+                                <li ><a href="https://jackdewinter.github.io/archives">Archives</a></li>
+                                <li><form class="navbar-search" action="https://jackdewinter.github.io/search.html" onsubmit="return validateForm(this.elements['q'].value);"> <input type="text" class="search-query" placeholder="Search" name="q" id="tipue_search_input"></form></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="container-fluid">
+                <div class="row-fluid">
+                    <div class="span1"></div>
+                    <div class="span10">
+<article itemscope>
+<div class="row-fluid">
+    <header class="page-header span10 offset2">
+        <h1>
+            <a href="https://jackdewinter.github.io/2021/03/08/markdown-linter-road-to-initial-release-cleaning-up-the-list-and-readability/">
+                Markdown Linter - Road To Initial Release - Cleaning Up The List and Readability
+            </a>
+        </h1>
+    </header>
+</div>
+
+<div class="row-fluid">
+    <div class="span2 table-of-content">
+        <nav>
+        <h4>Contents</h4>
+        <div class="toc">
+<ul>
+<li><a href="#summary">Summary</a></li>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#what-is-the-audience-for-this-article">What Is the Audience for This Article?</a></li>
+<li><a href="#performance-or-readability">Performance or Readability?</a><ul>
+<li><a href="#how-do-you-define-readability">How Do You Define Readability?</a></li>
+<li><a href="#f-strings">F-Strings</a></li>
+<li><a href="#lists">Lists</a></li>
+<li><a href="#after-four-days">After Four Days</a></li>
+</ul>
+</li>
+<li><a href="#whittling-down-the-issues-list">Whittling Down The Issues List</a><ul>
+<li><a href="#hard-breaks-and-inline-types">Hard Breaks And Inline Types</a></li>
+</ul>
+</li>
+<li><a href="#hard-line-break-grab-bag">Hard Line Break Grab Bag</a><ul>
+<li><a href="#tabs">Tabs</a></li>
+<li><a href="#false-alarms-but-good-alarms">False Alarms But Good Alarms</a></li>
+<li><a href="#some-final-cleanup">Some Final Cleanup</a></li>
+</ul>
+</li>
+<li><a href="#getting-back-to-performance">Getting Back To Performance</a><ul>
+<li><a href="#calling-plugin-functions-only-when-necessary">Calling Plugin Functions Only When Necessary</a></li>
+<li><a href="#rethinking-performance-measurements">Rethinking Performance Measurements</a></li>
+<li><a href="#using-the-new-process">Using The New Process</a></li>
+<li><a href="#setting-context">Setting Context</a></li>
+</ul>
+</li>
+<li><a href="#what-was-my-experience-so-far">What Was My Experience So Far?</a></li>
+<li><a href="#what-is-next">What is Next?</a></li>
+</ul>
+</div>
+        </nav>
+    </div>
+    <div class="span8 article-content">
+            
+            
+<h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">¶</a></h2>
+<p>In my
+<a href="https://jackdewinter.github.io/2021/03/01/markdown-linter-road-to-initial-release-measured-performance-increases/">last article</a>, I talked about
+applying my newfound knowledge on performance measuring in Python to the PyMarkdown
+project.  In this article, I start to focus more on resolving the higher priority issues
+from the project’s issues list.</p>
+<h2 id="introduction">Introduction<a class="headerlink" href="#introduction" title="Permanent link">¶</a></h2>
+<p>When working on a project like the PyMarkdown project for as long as I have, there are
+things that you like doing, things that you do not mind doing, and things that you know
+you have to do.  For the most part, most of the things that I do related to the project
+are in the first two categories.   But strangely enough, the closer I get to a potential
+release, the more that I am feeling that things are moving into that third category.</p>
+<p>Maybe it is just that after working on this project for over a year, I do not want it
+to go the next level.  Once I release the project, I need to promote the project more
+than on my own blog, and that will take time.  I must admit, I have a bit of
+a concern that people are going to look at my code and go “why did you do that?”.</p>
+<p>Regardless, I am going to try and clear out the Priority 1 section as much as possible
+and get ready for a beta release as soon as I can.  At least, that is what my plan is.
+Here is hoping I can stick to it!</p>
+<h2 id="what-is-the-audience-for-this-article">What Is the Audience for This Article?<a class="headerlink" href="#what-is-the-audience-for-this-article" title="Permanent link">¶</a></h2>
+<p>While detailed more eloquently in
+<a href="https://jackdewinter.github.io/2020/04/05/what-is-the-audience-for-my-blog/#what-is-the-audience-for-my-blog">this article</a>,
+my goal for this technical article is to focus on the reasoning behind my solutions,
+rather that the solutions themselves.  For a full record of the solutions presented in
+this article, please go to this project’s GitHub repository and consult the
+commits between
+<a href="https://github.com/jackdewinter/pymarkdown/commit/88ad9002b296edc2763e498cb9fc2c99e9e74c60">25 Feb 2021</a>
+and
+<a href="https://github.com/jackdewinter/pymarkdown/commit/902fbfbdffb4fb9684e00a8d973e53814d393368">28 Feb 2021</a>.</p>
+<h2 id="performance-or-readability">Performance or Readability?<a class="headerlink" href="#performance-or-readability" title="Permanent link">¶</a></h2>
+<p>After spending the last week working on performance improvements, I was left with one
+potential improvement that I did not get around to looking at: string concatenation. As I
+have explained in part articles, when I am solving an issue, I work the issue and fit
+things together as I go. The rigor that I have built into my development process allows me
+the freedom to do that, knowing that I will revisit the code at least once before I commit
+it to the repository.  At that time, I know with certainty that I will give the code a
+more thorough looking over, guided by the knowledge that the algorithm that the code is
+implementing has been tested properly.  That process is just built into how I develop
+projects.  And it was because of that rigor that I felt that it was time to give string
+concatenation another look.</p>
+<p>When it comes to string concatenation, I figured that if it ever became an issue, I would
+just give that code another look.  A such, I just added strings the normal way using the
+<code>+</code> operator.  However, I started to suspect that concatenating strings in this way was an
+issue, so I surveyed the project code.  In the process, I found that there are many places
+where strings are concatenated using the <code>+</code> operator and almost none being concatenated
+using any of the other methods. Performing some quick “off-the-cuff” performance tests, I
+was able to find only miniscule improvement between the various methods of concatenating
+strings.  As such, I was faced with a question of whether I wanted to refactor the code for
+readability rather than performance.</p>
+<h3 id="how-do-you-define-readability">How Do You Define Readability?<a class="headerlink" href="#how-do-you-define-readability" title="Permanent link">¶</a></h3>
+<p>Readability is an interesting concept in software development because often it is thought of
+as how easy it is for other people on the team to read it.  This is increasingly confusing
+on a project like PyMarkdown where I am the only one on the team.  Technically speaking,
+if I can read my own code with decent ease, the code is readable.  I would further argue
+that the above definition does not really define what readability is, just what it is
+within a limited scope.</p>
+<p>From my point of view, readability is more than that.  Having developed software
+professionally in over 6 different languages, I believe that readability is more fluid
+that that.  Unless there is a business reason to define it otherwise, my general
+definition of readability is:</p>
+<blockquote>
+<p>Readability is defined as the confidence that the development team has in the ability of someone, who is outside of the team and is familiar with the given language, to look at the code and to be able to clearly read and understand the code.</p>
+</blockquote>
+<p>Now, obviously there are some caveats, but there it is.  In the case of the PyMarkdown
+project, my goal for readability is that I follow standard Python programming practices and
+write performant Python code according to those practices.  Following my definition of
+readability, as stated above, I expect that a competent Python developer should be able to
+look at the source code for the PyMarkdown project and read it without too many issues.
+For me, string concatenation using the <code>+</code> operator is one of those issues that I believe
+impedes the readability of the code.  From my viewpoint, there are two other methods of
+concatenation that are more readable because they are more concise.</p>
+<p>So, purely from
+a position of wanting to increase the readability of the project, I decided to refactor
+all string concatenations to those two other forms.  This meant I would need to switch
+every string concatenation over to one of the two more readable forms: f-strings and
+lists with join statements.</p>
+<h3 id="f-strings">F-Strings<a class="headerlink" href="#f-strings" title="Permanent link">¶</a></h3>
+<p>Added in Python 3.6, f-strings are a special type of string that combines the previous
+ways of formatting strings together in a way that just makes sense.  Take this example
+from the <code>container_block_processor</code> module:</p>
+<div class="highlight"><pre><span></span>    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="s2">"{ContainerIndices:ulist_index:"</span>
+            <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ulist_index</span><span class="p">)</span>
+            <span class="o">+</span> <span class="s2">";olist_index:"</span>
+            <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">olist_index</span><span class="p">)</span>
+            <span class="o">+</span> <span class="s2">";block_index:"</span>
+            <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">block_index</span><span class="p">)</span>
+            <span class="o">+</span> <span class="s2">"}"</span>
+    <span class="p">)</span>
+</pre></div>
+<p>For debug purposes, this string is being composed of variables and constants weaved
+together to create the resultant string.  While it creates a string with the desired
+information, I often have a hard time reading strings formatted in that manner.
+It is a long sequence of operands over multiple lines, and just seems broken up. Each of
+those breaks causes me a bit of confusing when I try and figure out what piece goes
+with that other piece.  Therefore, when I try and scan those lines with my eyes, I find
+that I need to slow down and parse through the line mentally a couple of times before
+getting a good understanding of that function.</p>
+<p>In comparison, here is that same code refactored to use a f-string:</p>
+<div class="highlight"><pre><span></span>    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">f</span><span class="s2">"{{ContainerIndices:ulist_index:{self.ulist_index};olist_index:{self.olist_index};block_index:{self.block_index}}}"</span>
+</pre></div>
+<p>For me, this is easier to read.  While the string itself is longer and I may have to
+scroll to read it, it is one string that describes everything in order.  The “curly-brace”
+characters <code>{</code> and <code>}</code> encompasses code that computes a value to be added to the
+string.  The sequences <code>{{</code> and <code>}}</code> are used to add a single one of those characters to
+the string.  The f-string itself is denoted by simply adding a <code>f</code> character to the start
+of an otherwise normal string.  It manages to keep the simple things simple.</p>
+<p>While it initially took me a bit to warm up to f-strings, I now find them to be more
+readable by far. I can easily scan from left to right in the string and almost instantly
+know how the code is going to
+compose that string.  But what about strings with a variable number of arguments?  Or
+strings that have a separator that would be burdensome to use repeatedly?
+That is where lists come in.</p>
+<h3 id="lists">Lists<a class="headerlink" href="#lists" title="Permanent link">¶</a></h3>
+<p>While f-strings are very readable, they do not work with an optional number of
+arguments.  For those cases, <code>list</code> objects and their <code>join</code> function are recommended.
+Consider the following code for the <code>debug_string</code> function of the <code>MarkdownToken</code> class:</p>
+<div class="highlight"><pre><span></span>    <span class="k">def</span> <span class="nf">debug_string</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">add_extra</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">":"</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">extra_data</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">extra_data</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_paragraph</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_blank_line</span>
+            <span class="k">else</span> <span class="s2">""</span>
+        <span class="p">)</span>
+        <span class="n">column_row_info</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">"(</span><span class="si">%d</span><span class="s2">,</span><span class="si">%d</span><span class="s2">)"</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">line_number</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">column_number</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">include_column_row_info</span> <span class="ow">and</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">line_number</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">column_number</span><span class="p">)</span>
+            <span class="k">else</span> <span class="s2">""</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="s2">"[</span><span class="si">%s%s%s</span><span class="s2">]"</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">token_name</span><span class="p">,</span> <span class="n">column_row_info</span><span class="p">,</span> <span class="n">add_extra</span><span class="p">)</span>
+</pre></div>
+<p>After various refactors of this function, I had replaced the variable parts of the
+string with ternary statements and used a <code>%</code> style format to stitch those values
+together.  But it still looked disjointed to me.  Even after changing the <code>%</code> style
+format strings into f-strings, I was not happy with how it read.  The part that was
+bothering me was that the optional parts of the string were not clearly being represented
+as optional when I read them.  Basically, if I just looked at the last line of that
+function, I felt that each one of those strings would contribute all the time, not
+optionally.  I just felt that was not a good thing.</p>
+<p>Therefore I switched the optional parts of that concatenation to a <code>list</code>:</p>
+<div class="highlight"><pre><span></span>    <span class="k">def</span> <span class="nf">debug_string</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">debug_parts</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"["</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">token_name</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">include_column_row_info</span> <span class="ow">and</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">line_number</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">column_number</span><span class="p">):</span>
+            <span class="n">debug_parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">f</span><span class="s2">"({self.line_number},{self.column_number})"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">extra_data</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_paragraph</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_blank_line</span><span class="p">:</span>
+            <span class="n">debug_parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">f</span><span class="s2">":{self.extra_data}"</span><span class="p">)</span>
+        <span class="n">debug_parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"]"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="s2">""</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">debug_parts</span><span class="p">)</span>
+</pre></div>
+<p>For me, this reads cleaner than the previous iteration of this function.  The start of the
+string and the end of the string are clearly stated.  The optional parts format their data
+only if needed, and only then do they calculate and add those formatted results.  For me,
+this is more readable because it clearly delineates between the optional parts of the
+string and the mandatory parts of the string.</p>
+<p>But there are also other areas where I find using lists to concatenate strings useful.
+Take this code from one of the <code>__init__</code> functions for a token:</p>
+<div class="highlight"><pre><span></span>    <span class="nb">str</span><span class="p">(</span><span class="n">indent_level</span><span class="p">)</span>
+    <span class="o">+</span> <span class="n">MarkdownToken</span><span class="o">.</span><span class="n">extra_data_separator</span>
+    <span class="o">+</span> <span class="n">extracted_whitespace</span>
+    <span class="o">+</span> <span class="n">MarkdownToken</span><span class="o">.</span><span class="n">extra_data_separator</span>
+    <span class="o">+</span> <span class="n">list_start_content</span>
+</pre></div>
+<p>Like my statements above, I do not find this code easy to read.  When I try and
+read this code, the <code>MarkdownToken.extra_data_separator</code> takes up most of my attention
+as I try and make sure each one is in the right place.  Instead of focusing on what
+is between those strings, I find myself focusing on those strings.  As such, I rewrote
+it using lists as:</p>
+<div class="highlight"><pre><span></span>    <span class="n">MarkdownToken</span><span class="o">.</span><span class="n">extra_data_separator</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+        <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">indent_level</span><span class="p">),</span> <span class="n">extracted_whitespace</span><span class="p">,</span> <span class="n">list_start_content</span><span class="p">]</span>
+    <span class="p">)</span>
+</pre></div>
+<p>I find this format a lot easier to read.  I can see that I have a list
+of items and that they will be joined using the <code>MarkdownToken.extra_data_separator</code>
+string.  That fact is mentioned exactly once, and then I do not have to concern myself
+with it again.  After I have read that, I can then clearly see the list of items that are
+going to be joined together, allowing me to focus on the contents of that list instead of
+the separator. For me, that is a win!</p>
+<h3 id="after-four-days">After Four Days<a class="headerlink" href="#after-four-days" title="Permanent link">¶</a></h3>
+<p>It took me roughly four days of evenings to go through the PyMarkdown code base and move
+every string concatenation over to one of the above methods.  There were times during that
+effort that I felt like I should give up, but I persevered.  And once I got to the end
+of that huge effort, I almost immediately saw the payoff.  Looking over code that I
+had changed during those four days, the code looked a lot more readable to me.  In
+addition, finding string concatenations was a lot easier now.  Instead of searching for
+the <code>+</code> operator, which is also used in numeric calculations, I could search for the
+sequence <code>f"</code> to look for the search strings.  By searching for <code>.join(</code>, I was able to
+find both string concatenations and token list concatenations, but my naming practices
+make differentiating those two groups of concatenations easy.</p>
+<p>It was a slog, but I believe my choice to improve readability with respect to string
+concatenations was the correct one.  Not only could I find any concatenations easier
+than before, but when I read the concatenations, they just were easier to read.
+I just hope others think the code is more Pythonic and more readable as well.</p>
+<h2 id="whittling-down-the-issues-list">Whittling Down The Issues List<a class="headerlink" href="#whittling-down-the-issues-list" title="Permanent link">¶</a></h2>
+<p>Having been on the issues list for a long time, I decided that I needed to make a good
+dent in the issues list, specifically the items dealing with Hard Line Breaks.  I had
+fixed some issues with Hard Line Break tokens in the last month or so, and I figured it
+would be a good time to continue that effort.</p>
+<p>The first issue that I picked up on this theme was:</p>
+<div class="highlight"><pre><span></span><span class="o">-</span> <span class="nv">hard</span> <span class="k">break</span> <span class="nv">at</span> <span class="nv">start</span> <span class="nv">of</span> <span class="nv">text</span>?
+</pre></div>
+<p>Looking through all the examples and scenarios that I have already implemented, I was
+astounded that I did not have any scenarios where there was a Hard Line Break element
+at the start of the line.  After adding four very simple tests, I executed those tests,
+and the only issue was the firing of an <code>assert</code> statement in the
+<code>__verify_first_inline_paragraph</code> of the consistency checks.  That was issue was remedied
+within 10 minutes, and I then moved on to the next issue.</p>
+<h3 id="hard-breaks-and-inline-types">Hard Breaks And Inline Types<a class="headerlink" href="#hard-breaks-and-inline-types" title="Permanent link">¶</a></h3>
+<p>The next item that I picked up regarding Hard Line Breaks was:</p>
+<div class="highlight"><pre><span></span><span class="o">-</span> <span class="nv">hard</span> <span class="k">break</span> <span class="nv">followed</span> <span class="nv">by</span> <span class="nv">each</span> <span class="nv">inline</span> <span class="nv">type</span>
+</pre></div>
+<p>For this item, I looked through the code base and found most of the examples that I
+was looking for, but I felt that they were scattered all over the place.  With an eye to
+resolve this item in the shortest time possible, with time for refactoring later, I simply
+went through the list of available inline tokens and created functions
+<code>test_hard_line_breaks_extra_03x</code> to <code>test_hard_line_breaks_extra_03i</code> for the
+one Hard Line Break sequence <code>\</code> and functions <code>test_hard_line_breaks_extra_04x</code> to
+<code>test_hard_line_breaks_extra_04i</code> for the other Hard Line Break sequence <code>{space}{space}</code>.</p>
+<p>Due to a lot of hard work in previous weeks, I was lucky in that I only had to make a
+small change to how the <code>__complete_inline_block_processing</code> function changed the
+<code>end_string</code> variable.  Double checking my work and running the scenario tests again,
+just to make sure, I resolve this item and moved on.</p>
+<h2 id="hard-line-break-grab-bag">Hard Line Break Grab Bag<a class="headerlink" href="#hard-line-break-grab-bag" title="Permanent link">¶</a></h2>
+<p>Apart from the “big” item itself, what was left was a bit of a grab bag of issues:</p>
+<div class="highlight"><pre><span></span><span class="o">-</span> <span class="nv">hard</span> <span class="k">break</span> <span class="nv">followed</span> <span class="nv">by</span> <span class="mi">3</span> <span class="nv">spaces</span>, <span class="k">then</span> <span class="nv">emphasis</span>
+  <span class="o">-</span> <span class="nv">variations</span> <span class="nv">of</span> <span class="mi">52</span><span class="nv">e</span> <span class="nv">with</span> <span class="nv">extra</span> <span class="nv">spaces</span> <span class="nv">after</span>, <span class="nv">etc</span>.
+    <span class="o">-</span> <span class="nv">variation</span> <span class="nv">with</span> <span class="nv">start</span> <span class="nv">of</span> <span class="mi">52</span><span class="nv">e</span>, <span class="k">then</span> <span class="nv">hard</span> <span class="k">break</span>, <span class="k">then</span> <span class="nv">something</span> <span class="nv">like</span> <span class="nv">start</span> <span class="nv">of</span> <span class="mi">52</span><span class="nv">e</span> <span class="nv">again</span> <span class="nv">i</span>.<span class="nv">e</span>. <span class="nv">make</span> <span class="o">/</span><span class="nv">x02</span> <span class="nv">splitter</span> <span class="nv">come</span> <span class="nv">into</span> <span class="nv">affect</span>
+</pre></div>
+<p>While I hopefully knew what I intended when I wrote those down, I was left a bit in the
+dark as I now read them.  I knew that the lines that contain the sequence <code>/x02</code> deal with
+SetExt Heading tokens, as that is the only place that I used that sequence as a splitter.
+So, between what I knew and what I could guess, I came up with five new scenario tests
+that tried to capture the spirit of what I thought those statements meant.<sup id="fnref:andYes"><a class="footnote-ref" href="#fn:andYes">1</a></sup></p>
+<p>There was one issue that I needed to deal with after executing the new scenario tests.
+In the <code>InlineProcessor</code> class, the tokens were not being generated correctly
+when dealing with leading spaces on a line that was preceded by a Hard Line Break
+within the confine of a SetExt Heading element.  After I bit of debugging, I was
+able to figure out the right setting for the three variables in question, and that
+was fixed.  To balance that out, I needed to add code with the inverse functionality
+to the <code>__verify_next_inline_hard_break</code> function of the consistency checks to
+correctly compensate for that first change.</p>
+<p>Another execution of the scenario tests, another double check that things were good,
+and I was on to another issue.</p>
+<h3 id="tabs">Tabs<a class="headerlink" href="#tabs" title="Permanent link">¶</a></h3>
+<p>When I grabbed the following item:</p>
+<div class="highlight"><pre><span></span><span class="o">-</span> <span class="nv">stop</span> <span class="nv">gap</span> <span class="nv">solution</span> <span class="k">for</span> <span class="nv">handling</span> <span class="nv">Tabs</span> <span class="k">until</span> <span class="nv">tab</span> <span class="nv">work</span> <span class="nv">can</span> <span class="nv">be</span> <span class="nv">done</span>
+</pre></div>
+<p>it was with the intent to document what needed to be done to properly handle tab
+characters in various situations.  It was with delight that I looked at and experimented
+with the source code to find out that I was almost there. With one small change to the
+<code>parse_inline</code> function, I was able to get all the GFM specification examples with
+tabs characters to work.</p>
+<p>So, the short story for this item is that there was nothing else that currently needed
+fixing with respect to tab characters.  The long story for this item is that I have over
+2000 tests for various parts of the linter and less than 20 tests for tab characters.  As
+such, I added a new item to the issues list to deal with this later.  I am not sure how
+many users have tab characters in their documents, so right now, the priority of that
+item’s priority is just a guess, based on my usage.</p>
+<h3 id="false-alarms-but-good-alarms">False Alarms But Good Alarms<a class="headerlink" href="#false-alarms-but-good-alarms" title="Permanent link">¶</a></h3>
+<p>Having poked around the code while performing the refactor that I talked about
+in the above section on
+<a href="https://jackdewinter.github.io/2021/03/08/markdown-linter-road-to-initial-release-cleaning-up-the-list-and-readability/#performance-or-readability">Performance or Readability</a>,
+I noticed that two of the
+functions that I expected to have code in their body were mysteriously blank. As
+such, I added the following items to the issues list:</p>
+<div class="highlight"><pre><span></span><span class="o">-</span> <span class="n">__calculate_shortcut_collapsed_deltas</span> <span class="o">-</span> <span class="k">not</span> <span class="n">being</span> <span class="n">used</span> <span class="k">at</span> <span class="k">all</span>
+  <span class="o">-</span> <span class="n">figure</span> <span class="k">out</span> <span class="n">why</span><span class="o">?</span>
+<span class="o">-</span> <span class="n">shotrcut</span> <span class="n">link</span> <span class="n">over</span> <span class="n">multiple</span> <span class="n">line</span>
+  <span class="o">-</span> <span class="n">does</span> <span class="n">n</span><span class="err">'</span><span class="n">t</span> <span class="n">seem</span> <span class="k">to</span> <span class="n">have</span> <span class="k">any</span> <span class="n">code</span> <span class="k">to</span> <span class="n">handle</span><span class="o">?</span>
+</pre></div>
+<p>Looking into this, I did my research and added two extra scenario tests to be sure of
+my results.  In both cases, everything was fine.  Digging deeper into the code, I found
+the answer to why these functions were okay with an empty body.  As both of those two
+scenarios rely heavily on the link label, which is common to all link types, any
+calculations for the size of the link label are already factored into the code.
+However, to prevent myself from looking at this again, I added some extra comments to
+indicate what I had found, and why these functions being empty was okay.</p>
+<h3 id="some-final-cleanup">Some Final Cleanup<a class="headerlink" href="#some-final-cleanup" title="Permanent link">¶</a></h3>
+<p>When I picked this item from the list:</p>
+<div class="highlight"><pre><span></span><span class="o">-</span> <span class="n">test_paragraph_series_m_ul_t_nl_ulb_nl_tb</span> <span class="o">-</span> <span class="k">with</span> <span class="n">abc</span><span class="o">/</span><span class="n">def</span><span class="cm">/*</span>
+</pre></div>
+<p>I hoped it was going to be simple to resolve.  When I created the M-series of paragraph
+scenario tests, I noted that I did not have any more complicated tests and suggested
+a variation of a test with multiple lines.  Creating a few variations on the initial
+scenario test with more complex data, I added three tests with variations on:</p>
+<div class="highlight"><pre><span></span><span class="o">-</span> <span class="n">abc</span>
+<span class="o">-</span> <span class="n">def</span>
+  <span class="o">*</span>
+<span class="c1">---</span>
+</pre></div>
+<p>While I tested more than three scenario tests, I did not find anything wrong with any
+of the tests that I tried.  Instead of adding a whole bunch of scenario tests with only
+a guess that there might be a future problem, I whittled those tests down to the three
+tests that I did add.</p>
+<h2 id="getting-back-to-performance">Getting Back To Performance<a class="headerlink" href="#getting-back-to-performance" title="Permanent link">¶</a></h2>
+<p>With a decent handful of issues resolved from the issues list, there was a tiny bit of
+extra cleanup I wanted to do with respect to the plugins.  Having looked at their code
+during breaks, I knew there were a couple of small changes I wanted to make before release.
+My feeling was that if I waited until after release, those changes would become breaking
+changes, and I wanted to avoid that if possible.</p>
+<h3 id="calling-plugin-functions-only-when-necessary">Calling Plugin Functions Only When Necessary<a class="headerlink" href="#calling-plugin-functions-only-when-necessary" title="Permanent link">¶</a></h3>
+<p>Having already reaped benfits from calling two of the plugin functions
+<a href="https://jackdewinter.github.io/2021/03/01/markdown-linter-road-to-initial-release-measured-performance-increases/#plugin-performance">only when necessary</a>,
+I decided that those changes were a good practice that I wanted to spread to each of the
+functions that comprise the plugin’s interface.  I quickly made similar changes to the
+<code>completed_file</code> and <code>starting_new_file</code> functions, went to measure their change, and…
+well… I was not sure.</p>
+<h3 id="rethinking-performance-measurements">Rethinking Performance Measurements<a class="headerlink" href="#rethinking-performance-measurements" title="Permanent link">¶</a></h3>
+<p>In previous sections on performance, I was thinking about performance as actual clock
+time.  Spending some time thinking about this while walking our dog, I realized that
+the main issue was that there was always going to be some difference in timing, even
+if I took two measurements minutes apart from each other.  If something external to
+the PyMarkdown project hit my hard drive when I was taking measurements, it could cause
+the measured time to be off.  So, was clock time the best measurement to use?</p>
+<p>It was then that I decided to move from measuring clock time to measuring clock time
+percentages.  While I was pretty sure that if I took three samples that I would get
+different timings in each sample, I had a high degree of confidence that the percentage
+of the time spent in each function would remain relatively the same.  Running some sample
+tests, this theory bore out in practice.  While there were some
+differences in the percentages of the top 25, they were mostly negligible.  When
+there were differences, it was most often from the <code>print</code> function or one of the
+functions in the <code>io.builtin</code> module.  Since those two function groups are used for
+input and output, it made sense that there would be variations.</p>
+<p>Throwing together a simple Excel spreadsheet, I now had what I believe to be a better
+way to measure performance.</p>
+<h3 id="using-the-new-process">Using The New Process<a class="headerlink" href="#using-the-new-process" title="Permanent link">¶</a></h3>
+<p>Using that new process, I was able to compose a new spreadsheet to track any changes
+and I found only negligible improvements.  I was sure that I was going to get a performance
+boost out of those changes, so I checked the code base again and I found the issue:
+the templated plugins.  When I was adding the original set of plugins to be implemented, I
+added all the plugins that I had planned to implement with templated functions.  Those
+templated function were placeholders in the plugin that did not have any body to the
+function other than a <code>pass</code> statement.  My thinking was that when I was ready to write
+the code for the plugin, I could start right away without having to add templated stuff.</p>
+<p>While that worked as planned, it was now proving to be a performance issue.  Roughly one
+third of all plugins have been coded, but all the plugins were being called regardless of
+whether they had
+any code other than a <code>pass</code> statement in their function body.  So, I quickly went
+through the plugins and removed any plugin function that did not have any meaningful
+statements.
+Once I completed that task, I measured the performance again, and entered the results into
+<a href="https://github.com/jackdewinter/pymarkdown/raw/b15a9d1da2d4938f97ef8956c3002a19f0916fe3/perf/2020Feb27%20-%20After%20initial%20refactor%20on%20plugins.xlsx">this spreadsheet</a>.</p>
+<p>It took me a minute to understand what I was looking at, but it then made sense to me. The
+<code>next_line</code> functions were a large part of the templated plugin functions that were
+removed, so the measurements for that function dropped off the list.  This effectively
+created n “vacuum” at the top of the measurements, causing other measurements to increase
+slightly to compensate for it.   Specifically, the <code>debug</code> function went from 10.49% of the
+execution time to 11.51% of the execution time not because of any changes, but because
+the item before it in the list was no longer there.  With that item no longer occupying
+that “space”, the <code>debug</code> function occupied a pro-rated portion of what that time that
+item used to occupy.</p>
+<p>Running two extra sets of performance tests, I was able to replicate this behavior of
+these performance test both times.  Looking at the clock time for each function alone,
+I am not sure if I would have made the same observation as I did with the percentages,
+so I was glad that I switched to it!</p>
+<h3 id="setting-context">Setting Context<a class="headerlink" href="#setting-context" title="Permanent link">¶</a></h3>
+<p>While it was more evident before the previous performance changes, there was also an issue
+with the <code>set_context</code> function.  Each time any of the plugin functions were called, a
+separate call to the <code>set_context</code> function was being made to establish the context
+for any reporting that was done.  I am not sure why I thought that was a good idea,
+but it looked like it was causing performance issues before the last change. Now that
+I looked at the performance numbers, it was low down on the list, almost inconsequential.</p>
+<p>Sitting back and thinking about it, the reduction of the impact of the <code>set_context</code>
+function on the performance made sense to me.  With fewer plugins having eligible functions
+to call, the number of times that the <code>set_context</code> function was called was reduced at
+the same rate.  Just as the <code>next_line</code> function dropped off the top 25 list, the
+<code>set_context</code> function also dropped off that same list.</p>
+<p>But looking forward, I knew that those functions would soon be resurfacing on the
+top 25 list.  I had removed those templated methods in the last section, as they were not
+being used.  Somewhere between now and the intial release of the project, I know I have
+plans to implement those missing plugins, thereby increasing their impact on the
+performance once again.  So, while I could easily say I would do it later, it just made
+more sense to me to do it now while I was in the code.  Also, by getting the refactoring
+out of the way now, it would give me more time.</p>
+<p>It was a rather quick set of changes to make, and it was done within a couple of hours
+including running the scenario tests and gathering the performance measurements.
+Looking at the
+<a href="https://github.com/jackdewinter/pymarkdown/raw/a8b6f4edc84ab1644c54f3e36b19196fff66b952/perf/2020Feb28%20-%20After%20refactor%20on%20plugins%20to%20remove%20set_context.xlsx">measurements</a>,
+I had to look far down the list to find the plugin entries, but I found them and
+added them to the spreadsheet below the normal area.  Before I removed the templated
+functions, there were a combined 62,000 calls to the <code>next_line</code> and <code>next_token</code>
+functions.  For those calls, there were 1.2 million calls to <code>set_context</code> which took
+0.16 seconds or 3.49% of the execution time.</p>
+<p>Based on those numbers alone, I felt like refactoring that now was still a good thing
+to do from a performance point of view.  Maybe the effects of the change would not
+show up right away, but I knew that it was quelling a future performance issue that
+would have definitely occurred otherwise.</p>
+<h2 id="what-was-my-experience-so-far">What Was My Experience So Far?<a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link">¶</a></h2>
+<p>While I am not sure I speak for everyone, I have an inkling that most software
+developers exist on a spectrum of “so what” to “what if they say…” with respect to
+others seeing their code.  If that were not the case, linters for various languages
+and numerous articles on how to contribute successfully to a code review would not be
+needed.  I know I am using PyLint and Flake8 as linters, and Black as a style formatter,
+so I hope I am covered in those areas.  It is the other areas that I am concerned about.</p>
+<p>But, in my normal guest to continually learn, I know that if I do not put the code out
+there, I will not get that feedback that I need to learn.  I do know that the parser behind
+the linter passes every example in the GFM specification, along with every other case
+that I have come up with and run against CommonMark 0.92.  I do know that I have a good
+handle on what the initial group of rules should be, based on the rules as defined by
+MarkdownLint.  I must put my faith in the work that I have done to architect
+and design the project to meet my goals.</p>
+<p>With that bit of deep thinking out of the way, I am looking at the issues list with
+a new eye to try and figure out what the minimum set of features that I need to have
+really is.  What are the things that I will regret not having done before I release?
+The answer to that question, however, is something for another article!</p>
+<h2 id="what-is-next">What is Next?<a class="headerlink" href="#what-is-next" title="Permanent link">¶</a></h2>
+<p>Having resolved a number of other items on the issues list, there is once glaring one
+that I need to resolve before I can use this project myself: a YAML/simple front loader.
+Without it, using this linter on my own blog posts is a no-go.  As such, I tackle that!</p>
+<div class="footnote">
+<hr/>
+<ol>
+<li id="fn:andYes">
+<p>And yes, if that statement sounds wishy-washy, it is because it is. <a class="footnote-backref" href="#fnref:andYes" title="Jump back to footnote 1 in the text">↩</a></p>
+</li>
+</ol>
+</div>
+
+
+             
+ 
+                <p id="post-share-links">
+    Like this post? Share on:
+    <a href="https://twitter.com/intent/tweet?text=Markdown%20Linter%20-%20Road%20To%20Initial%20Release%20-%20Cleaning%20Up%20The%20List%20and%20Readability&url=https%3A//jackdewinter.github.io/2021/03/08/markdown-linter-road-to-initial-release-cleaning-up-the-list-and-readability/&hashtags=markdown-linter,core-linter" target="_blank" rel="nofollow noopener noreferrer" title="Share on Twitter">Twitter</a>
+    ❄
+    <a href="https://www.facebook.com/sharer/sharer.php?u=https%3A//jackdewinter.github.io/2021/03/08/markdown-linter-road-to-initial-release-cleaning-up-the-list-and-readability/" target="_blank" rel="nofollow noopener noreferrer" title="Share on Facebook">Facebook</a>
+    ❄
+    <a href="mailto:?subject=Markdown%20Linter%20-%20Road%20To%20Initial%20Release%20-%20Cleaning%20Up%20The%20List%20and%20Readability&amp;body=https%3A//jackdewinter.github.io/2021/03/08/markdown-linter-road-to-initial-release-cleaning-up-the-list-and-readability/" target="_blank" rel="nofollow noopener noreferrer" title="Share via Email">Email</a>
+    </p>
+
+            
+            
+
+
+
+
+
+
+<section>
+    <h6 style="display:none;">Comments</h6>
+    <p id="comment-message">So what do you think? Did I miss something? Is any part unclear? Leave your comments below. </p>
+
+    <div class="accordion" id="accordion2">
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                <a class="accordion-toggle disqus-comment-count comment-count"
+                   data-toggle="collapse"
+                   data-parent="#accordion2"
+                   href="https://jackdewinter.github.io/2021/03/08/markdown-linter-road-to-initial-release-cleaning-up-the-list-and-readability/#comment_thread"
+                   id="comment-accordion-toggle">
+                    Comments
+                </a>
+            </div>
+            <div id="comment_thread" class="accordion-body collapse">
+                <div class="accordion-inner">
+                    <div class="comments">
+
+                        <script src="https://utteranc.es/client.js"
+        data-repo="jackdewinter/jackdewinter.github.io"
+        data-issue-term="markdown-linter-road-to-release-e"
+        data-label="Comments"
+        data-theme="github-light"
+        crossorigin="anonymous"
+        async>
+</script>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+            <hr/>
+            <aside>
+            <nav>
+            <ul class="articles-timeline">
+                <li class="previous-article">« <a href="https://jackdewinter.github.io/2021/03/01/markdown-linter-road-to-initial-release-measured-performance-increases/" title="Previous: Markdown Linter - Road To Initial Release - Measured Performance Increases">Markdown Linter - Road To Initial Release - Measured Performance Increases</a></li>
+            </ul>
+            </nav>
+            </aside>
+        </div>
+        <section id="article-sidebar" class="span2">
+    <h4>Reading Time</h4>
+    <p>~19 min read</p>
+            <h4>Published</h4>
+            <time itemprop="dateCreated" datetime="2021-03-08T00:00:00-08:00">Mar 8, 2021</time>
+        <h4>Markdown Linter Road To Initial Release</h4>
+    <ul class="multi-parts-list">
+            <li >
+            <a href="https://jackdewinter.github.io/2021/02/08/markdown-linter-road-to-initial-release-learned-and-useful-things/" title="Markdown Linter - Road To Initial Release - Learned and Useful Things">Part 1: Markdown Linter - Road To Initial Release - Learned and Useful Things</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2021/02/15/markdown-linter-road-to-initial-release-refactoring/" title="Markdown Linter - Road To Initial Release - Refactoring">Part 2: Markdown Linter - Road To Initial Release - Refactoring</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2021/02/22/markdown-linter-road-to-initial-release-starting-performance/" title="Markdown Linter - Road To Initial Release - Starting Performance">Part 3: Markdown Linter - Road To Initial Release - Starting Performance</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2021/03/01/markdown-linter-road-to-initial-release-measured-performance-increases/" title="Markdown Linter - Road To Initial Release - Measured Performance Increases">Part 4: Markdown Linter - Road To Initial Release - Measured Performance Increases</a>
+            </li>
+            <li  class="active-part">
+            Part 5: Markdown Linter - Road To Initial Release - Cleaning Up The List and Readability
+            </li>
+    </ul>
+            <h4>Category</h4>
+            <a class="category-link" href="https://jackdewinter.github.io/categories#software-quality-ref">Software Quality</a>
+            <h4>Tags</h4>
+            <ul class="list-of-tags tags-in-article">
+                <li><a href="https://jackdewinter.github.io/tags#core-linter-ref">core linter
+                    <span>45</span>
+</a></li>
+                <li><a href="https://jackdewinter.github.io/tags#markdown-linter-ref">markdown linter
+                    <span>63</span>
+</a></li>
+            </ul>
+<h4>Stay in Touch</h4>
+<div id="sidebar-social-link">
+    <a href="https://github.com/jackdewinter" title="github-alt" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="GitHub" role="img" viewBox="0 0 512 512"><rect width="512" height="512" rx="15%" fill="#1B1817"/><path fill="#fff" d="M335 499c14 0 12 17 12 17H165s-2-17 12-17c13 0 16-6 16-12l-1-50c-71 16-86-28-86-28-12-30-28-37-28-37-24-16 1-16 1-16 26 2 40 26 40 26 22 39 59 28 74 22 2-17 9-28 16-35-57-6-116-28-116-126 0-28 10-51 26-69-3-6-11-32 3-67 0 0 21-7 70 26 42-12 86-12 128 0 49-33 70-26 70-26 14 35 6 61 3 67 16 18 26 41 26 69 0 98-60 120-117 126 10 8 18 24 18 48l-1 70c0 6 3 12 16 12z"/></svg>
+    </a>
+    <a href="https://www.linkedin.com/in/jackdewinter/" title="linkedin" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="LinkedIn" role="img" viewBox="0 0 512 512" fill="#fff"><rect width="512" height="512" rx="15%" fill="#0077b5"/><circle cx="142" cy="138" r="37"/><path stroke="#fff" stroke-width="66" d="M244 194v198M142 194v198"/><path d="M276 282c0-20 13-40 36-40 24 0 33 18 33 45v105h66V279c0-61-32-89-76-89-34 0-51 19-59 32"/></svg>
+    </a>
+    <a href="https://jackdewinter.github.io/feeds/all.atom.xml" title="" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="RSS" role="img" viewBox="0 0 512 512"><rect width="512" height="512" rx="15%" fill="#f80"/><circle cx="145" cy="367" r="35" fill="#fff"/><path fill="none" stroke="#fff" stroke-width="60" d="M109 241c89 0 162 73 162 162M109 127c152 0 276 124 276 276"/></svg>
+    </a>
+</div>
+            
+
+
+
+
+
+            
+
+
+
+
+
+        </section>
+</div>
+</article>
+                    </div>
+                    <div class="span1"></div>
+                </div>
+            </div>
+        </div>
+<footer>
+    <div>
+        
+&copy; Copyright 2020 by Jack De Winter and licensed under a <a rel="license"
+  href="http://creativecommons.org/licenses/by/4.0/">
+  <img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/80x15.png" />
+  Creative Commons Attribution 4.0 International License</a>.
+
+    </div>
+
+
+
+
+    <div id="fpowered">
+        Powered by: <a href="http://getpelican.com/" title="Pelican Home Page" target="_blank" rel="nofollow noopener noreferrer">Pelican</a>
+        Theme: <a href="https://elegant.oncrashreboot.com/" title="Theme Elegant Home Page" target="_blank" rel="nofollow noopener noreferrer">Elegant</a>
+    </div>
+</footer>            <script src="//code.jquery.com/jquery.min.js"></script>
+        <script src="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>
+        <script>
+            function validateForm(query)
+            {
+                return (query.length > 0);
+            }
+        </script>
+
+    <script>
+    (function () {
+        if (window.location.hash.match(/^#comment-\d+$/)) {
+            $('#comment_thread').collapse('show');
+        }
+    })();
+    window.onhashchange=function(){
+        if (window.location.hash.match(/^#comment-\d+$/))
+            window.location.reload(true);
+    }
+    $('#comment_thread').on('shown', function () {
+        var link = document.getElementById('comment-accordion-toggle');
+        var old_innerHTML = link.innerHTML;
+        $(link).fadeOut(200, function() {
+            $(this).text('Click here to hide comments').fadeIn(200);
+        });
+        $('#comment_thread').on('hidden', function () {
+            $(link).fadeOut(200, function() {
+                $(this).text(old_innerHTML).fadeIn(200);
+            });
+        })
+    })
+</script>
+
+    </body>
+    <!-- Theme: Elegant built for Pelican
+        License : MIT -->
+</html>
