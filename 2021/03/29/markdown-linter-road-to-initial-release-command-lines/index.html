@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="author" content="Jack De Winter" />
+
+        <meta name="description" content="Summary¶ In my last article, I talked about some of my requirements for configuration and how I applied those requirements to the PyMarkdown project. In this article, I talk about how I integrated that configuration object more readily into the PyMarkdown project, revamping the command line interface to match that …
+" />
+        <meta property="og:type" content="article" />
+        <meta name="twitter:card" content="summary">
+
+<meta name="keywords" content="markdown linter, core linter, Software Quality, " />
+
+<meta property="og:title" content="Markdown Linter - Road To Initial Release - Command Lines "/>
+<meta property="og:url" content="https://jackdewinter.github.io/2021/03/29/markdown-linter-road-to-initial-release-command-lines/" />
+<meta property="og:description" content="Summary¶ In my last article, I talked about some of my requirements for configuration and how I applied those requirements to the PyMarkdown project. In this article, I talk about how I integrated that configuration object more readily into the PyMarkdown project, revamping the command line interface to match that …" />
+<meta property="og:site_name" content="Jack&#39;s Digital Workbench" />
+<meta property="og:article:author" content="Jack De Winter" />
+<meta property="og:article:published_time" content="2021-03-29T00:00:00-07:00" />
+<meta name="twitter:title" content="Markdown Linter - Road To Initial Release - Command Lines ">
+<meta name="twitter:description" content="Summary¶ In my last article, I talked about some of my requirements for configuration and how I applied those requirements to the PyMarkdown project. In this article, I talk about how I integrated that configuration object more readily into the PyMarkdown project, revamping the command line interface to match that …">
+
+        <title>Markdown Linter - Road To Initial Release - Command Lines  · Jack&#39;s Digital Workbench
+</title>
+        <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://jackdewinter.github.io/theme/css/style.min.css?bec7d543">
+
+        <link href="https://jackdewinter.github.io/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Jack&#39;s Digital Workbench - Full Atom Feed" />
+
+
+    </head>
+    <body>
+        <div id="content">
+            <div class="navbar navbar-static-top">
+                <div class="navbar-inner">
+                    <div class="container-fluid">
+                        <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                        </a>
+                        <a class="brand" href="https://jackdewinter.github.io/"><span class=site-name>Jack's Digital Workbench</span></a>
+                        <div class="nav-collapse collapse">
+                            <ul class="nav pull-right top-menu">
+                                <li >
+                                    <a href=
+                                       https://jackdewinter.github.io
+                                    >Home</a>
+                                </li>
+                                <li ><a href="https://jackdewinter.github.io/categories">Categories</a></li>
+                                <li ><a href="https://jackdewinter.github.io/tags">Tags</a></li>
+                                <li ><a href="https://jackdewinter.github.io/archives">Archives</a></li>
+                                <li><form class="navbar-search" action="https://jackdewinter.github.io/search.html" onsubmit="return validateForm(this.elements['q'].value);"> <input type="text" class="search-query" placeholder="Search" name="q" id="tipue_search_input"></form></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="container-fluid">
+                <div class="row-fluid">
+                    <div class="span1"></div>
+                    <div class="span10">
+<article itemscope>
+<div class="row-fluid">
+    <header class="page-header span10 offset2">
+        <h1>
+            <a href="https://jackdewinter.github.io/2021/03/29/markdown-linter-road-to-initial-release-command-lines/">
+                Markdown Linter - Road To Initial Release - Command Lines
+            </a>
+        </h1>
+    </header>
+</div>
+
+<div class="row-fluid">
+    <div class="span2 table-of-content">
+        <nav>
+        <h4>Contents</h4>
+        <div class="toc">
+<ul>
+<li><a href="#summary">Summary</a></li>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#what-is-the-audience-for-this-article">What Is the Audience for This Article?</a></li>
+<li><a href="#wiring-up-the-new-properties-class-to-the-project">Wiring Up The New Properties Class To The Project</a><ul>
+<li><a href="#logging">Logging</a></li>
+<li><a href="#plugin-manager">Plugin Manager</a></li>
+<li><a href="#changing-the-plugins">Changing The Plugins</a></li>
+<li><a href="#the-fallout-from-those-changes">The Fallout From Those Changes</a></li>
+<li><a href="#testing">Testing</a></li>
+</ul>
+</li>
+<li><a href="#what-about-the-command-line">What About The Command Line?</a><ul>
+<li><a href="#which-way-to-go">Which Way To Go?</a></li>
+<li><a href="#wiring-up-subcommands">Wiring Up Subcommands</a></li>
+<li><a href="#revisiting-logging">Revisiting Logging</a></li>
+<li><a href="#fixing-an-old-issue">Fixing An Old Issue</a></li>
+<li><a href="#boring-support-for-plugins">Boring Support For Plugins</a></li>
+<li><a href="#almost-boring">Almost Boring</a></li>
+<li><a href="#altered-tests">Altered Tests</a></li>
+<li><a href="#lather-rinse-repeat">Lather, Rinse, Repeat</a></li>
+</ul>
+</li>
+<li><a href="#adding-version-information-for-plugins">Adding Version Information For Plugins</a></li>
+<li><a href="#what-was-my-experience-so-far">What Was My Experience So Far?</a></li>
+<li><a href="#what-is-next">What is Next?</a></li>
+</ul>
+</div>
+        </nav>
+    </div>
+    <div class="span8 article-content">
+            
+            
+<h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">¶</a></h2>
+<p>In my
+<a href="https://jackdewinter.github.io/2021/03/22/markdown-linter-road-to-initial-release-configuration/">last article</a>, I talked about
+some of my requirements for configuration and how I applied those requirements to the
+PyMarkdown project.  In this article, I talk about how I integrated that configuration
+object more readily into the PyMarkdown project, revamping the command line interface to
+match that newly upgraded configuration object.</p>
+<h2 id="introduction">Introduction<a class="headerlink" href="#introduction" title="Permanent link">¶</a></h2>
+<p>It might seem to others that I left the command line to last because I forget about it.
+Nothing could be further from the truth.  For any kind of non-graphical
+utility, the command line is the central hub from which the application gets executed in
+various ways and forms.  Therefore, if the utility does not have the right command line
+interface, it can seriously impact the usability of that application.  It is for that
+exact reason that I usually add a “placeholder” command line interface during my
+development phase, only adding the real interface when I have a solid idea of which
+features have made it into the final version of the project.</p>
+<p>While that placeholder provides the access to the features that the project needs, it
+often does them in a haphazard way.  Now, with everything else dropping into place, it was
+time for
+me to finalize how configuration was being applied to the project and to start thinking
+seriously about what command line interface I wanted the project to have.  After all,
+I am getting really close to having met my own requirements for an initial beta release!</p>
+<h2 id="what-is-the-audience-for-this-article">What Is the Audience for This Article?<a class="headerlink" href="#what-is-the-audience-for-this-article" title="Permanent link">¶</a></h2>
+<p>While detailed more eloquently in
+<a href="https://jackdewinter.github.io/2020/04/05/what-is-the-audience-for-my-blog/#what-is-the-audience-for-my-blog">this article</a>,
+my goal for this technical article is to focus on the reasoning behind my solutions,
+rather that the solutions themselves.  For a full record of the solutions presented in
+this article, please go to this project’s GitHub repository and consult the
+commits between
+<a href="https://github.com/jackdewinter/pymarkdown/commit/486c1cc77f828b710b2d15bb469e37a5dc032d6f">11 Mar 2021</a>
+and
+<a href="https://github.com/jackdewinter/pymarkdown/commit/782433db8cd89f8be8b47825786a8a7552a768ff">25 Mar 2021</a>.</p>
+<h2 id="wiring-up-the-new-properties-class-to-the-project">Wiring Up The New Properties Class To The Project<a class="headerlink" href="#wiring-up-the-new-properties-class-to-the-project" title="Permanent link">¶</a></h2>
+<p>After the work detailed in my last article, the project now has a file-based configuration
+via the <code>ApplicationProperties</code> class that can handle the more complex needs
+of the project.  While I did refer to the process of applying ordering to the different
+sources of configuration in the section on
+<a href="https://jackdewinter.github.io/2021/03/22/markdown-linter-road-to-initial-release-configuration/#ordering">Ordering</a>,
+I had not wired it up at that point.  I had added the code mentioned in that section as
+a simple test of whether the process worked, but I had not yet added fully functional code
+that followed that process to the project.  It was time to do that.</p>
+<h3 id="logging">Logging<a class="headerlink" href="#logging" title="Permanent link">¶</a></h3>
+<p>The obvious first choice for configuration to add to the project was logging.  It was also
+the trickiest in a certain sense.  From the point at which the configuration was properly
+initialized and the determination of the log file and log level is achieved,
+everything works as everyone expects.
+However, there is a slight amount of time between the start of the application and that
+point where things are in a grey zone.  During that time, the loading of the configuration
+file itself or determining the logging properties can log information themselves that may
+be of use when debugging a scenario.  With those systems dependent on configuration that
+was not yet initialized when I needed to debug those systems, I was left to hardwire
+logging workarounds directly into the code. I wanted a better way to handle those debug
+scenarios.</p>
+<p>Looking at what I had available to use, I decided to imply extra context for the command
+line’s <code>--stack-trace</code> flag.  Normally, my utilities use this flag to enable a mode
+where an exception that stops the application displays the full stack trace of the
+exception.  As
+this flag defaults to disabled, the user just gets a simple message indicating
+what the error is.  Most of the time, users do not care about where in the application
+something broke down, they just want it to work.  If it is not working, they want to know
+why and if they can fix it themselves.
+However, when I look for root causes and I need to debug those issues, having a full
+stack trace of how that error was generated is always helpful.  Following that logic, I
+determined that the only time a user might need to debug the loading of the configuration
+file is if they were debugging one of those scenarios that the <code>--stack-trace</code> flag was
+meant for.</p>
+<p>As such, I added some code at the front of the <code>main</code> function to handle the setup for the
+logging system, using the <code>--stack-trace</code> flag in a useful manner:</p>
+<div class="highlight"><pre><span></span>    <span class="n">base_logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">()</span>
+    <span class="n">base_logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__show_stack_trace</span> <span class="k">else</span> <span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span>
+    <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">configuration_file</span><span class="p">:</span>
+        <span class="n">ApplicationPropertiesJsonLoader</span><span class="o">.</span><span class="n">load_and_set</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__properties</span><span class="p">,</span> <span class="n">args</span><span class="o">.</span><span class="n">configuration_file</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">__handle_error</span>
+        <span class="p">)</span>
+
+    <span class="n">effective_log_level</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">args</span><span class="o">.</span><span class="n">log_level</span> <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">log_level</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_log_level</span>
+    <span class="p">)</span>
+    <span class="n">log_level_to_enact</span> <span class="o">=</span> <span class="n">PyMarkdownLint</span><span class="o">.</span><span class="n">available_log_maps</span><span class="p">[</span><span class="n">effective_log_level</span><span class="p">]</span>
+</pre></div>
+<p>To enable debug logging before the log level and log file are setup properly, the log
+level is set to <code>DEBUG</code> if the <code>--stack-trace</code> is present and <code>WARNING</code> otherwise.  Then,
+the configuration file is loaded and the log level to use is calculated with the
+appropriate final log level.  However, the important part of this is that I now have a
+simple switch that allows me to debug the configuration initialization without resorting
+to rewriting code.  That is a bonus I like!</p>
+<p>With that code in place, I removed the <code>__load_configuration_and_apply_to_plugins</code> function
+and the <code>load_json_configuration</code> function. I replaced those functions with the new
+<code>__apply_configuration_to_plugins</code> function that performed most of the same functions.
+The big change here was that instead of being passed a simple dictionary object, the
+<code>apply_configuration</code> function of the <code>PluginManager</code> class was now being passed an
+instance of the <code>ApplicationProperties</code> class.  It was time to wire that up as well.</p>
+<h3 id="plugin-manager">Plugin Manager<a class="headerlink" href="#plugin-manager" title="Permanent link">¶</a></h3>
+<p>Starting with the <code>FoundPlugin</code> class, I decided to make all those properties read-only by
+making the fields private and exposing those fields using properties.  At the same time,
+I renamed arguments for the constructor from <code>enable_rules</code> and <code>disable_rules</code> to
+<code>enable_rules_from_command_line</code> and <code>disable_rules_from_command_line</code>.  While the old
+names were okay, I wanted to make sure the source of their values were clearer.  I also
+cleaned up the registration of the plugins to ensure that things were consistent. I
+added the following regular expressions:</p>
+<div class="highlight"><pre><span></span>    <span class="n">__id_regex</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s2">"^[a-z]{2,3}[0-9]{3,3}$"</span><span class="p">)</span>
+    <span class="n">__name_regex</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="s2">"^[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]$"</span><span class="p">)</span>
+</pre></div>
+<p>to make the id field two or three lower case letters followed by three numbers and
+limit the characters for the name field.  I figured that since I was there, I might as
+well leave the code better than when I got there.</p>
+<h3 id="changing-the-plugins">Changing The Plugins<a class="headerlink" href="#changing-the-plugins" title="Permanent link">¶</a></h3>
+<p>After that cleanup, I proceeded to make the necessary changes to accompany
+the changes made in the <code>main</code> function.  As the <code>PluginManager</code> instance is just a
+container used to provide access to the various registered plugins, the instance itself
+has no need for configuration.  This kept things simple:</p>
+<div class="highlight"><pre><span></span>    <span class="n">plugin_specific_facade</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="k">for</span> <span class="n">next_key_name</span> <span class="ow">in</span> <span class="n">next_plugin</span><span class="o">.</span><span class="n">plugin_identifiers</span><span class="p">:</span>
+        <span class="n">plugin_section_title</span> <span class="o">=</span> <span class="n">f</span><span class="s2">"{PluginManager.__plugin_prefix}{properties.separator}{next_key_name}{properties.separator}"</span>
+        <span class="n">section_facade_candidate</span> <span class="o">=</span> <span class="n">ApplicationPropertiesFacade</span><span class="p">(</span>
+            <span class="n">properties</span><span class="p">,</span> <span class="n">plugin_section_title</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">section_facade_candidate</span><span class="p">:</span>
+            <span class="n">plugin_specific_facade</span> <span class="o">=</span> <span class="n">section_facade_candidate</span>
+            <span class="k">break</span>
+</pre></div>
+<p>Going through the list of identifiers for the plugin, the <code>PluginManager</code> instance creates
+a test instance of an <code>ApplicationPropertiesFacade</code> object, initializing it with the
+property string leading up to that point.  For the <code>md002</code> plugin, if the id field is
+used, the section title is <code>plugins.md002.</code>, with similar titles for each of the
+comma-separated values in the name field, <code>plugins.first-heading-h1.</code> and
+<code>plugins.first-header-h1.</code>. Once created, if that test facade instance
+reports that it has any properties, it is considered to be the best candidate, and any
+other configuration for that plugin by its other names is ignored.<sup id="fnref:yesIKnow"><a class="footnote-ref" href="#fn:yesIKnow">1</a></sup>  That best
+candidate is then passed in to the plugin’s <code>set_configuration_map</code> function, where it is
+used by the <code>initialize_from_config</code> function to set the actual configuration for that
+plugin.</p>
+<h3 id="the-fallout-from-those-changes">The Fallout From Those Changes<a class="headerlink" href="#the-fallout-from-those-changes" title="Permanent link">¶</a></h3>
+<p>With a new type of object being passed for configuration, the plugins themselves required
+other changes to work properly.
+The first change that this required was changing every plugin to utilize the
+<code>ApplicationPropertiesFacade</code> instance that was now being passed in as an argument instead
+of the old dictionary instance.  Using the changes for rule <code>md002</code> as an example, the code
+in the <code>initialize_from_config</code> function changed from:</p>
+<div class="highlight"><pre><span></span>    <span class="bp">self</span><span class="o">.</span><span class="n">__start_level</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_configuration_value</span><span class="p">(</span><span class="s2">"level"</span><span class="p">,</span> <span class="n">default_value</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+<p>to:</p>
+<div class="highlight"><pre><span></span>    <span class="bp">self</span><span class="o">.</span><span class="n">__start_level</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">plugin_configuration</span><span class="o">.</span><span class="n">get_integer_property</span><span class="p">(</span>
+        <span class="s2">"level"</span><span class="p">,</span> <span class="n">default_value</span><span class="o">=</span><span class="mi">1</span>
+    <span class="p">)</span>
+</pre></div>
+<p>The second change that happened was an appropriate change in test data.  Prior to this
+change, the test configuration for the <code>md002</code> plugin was usually<sup id="fnref:usually"><a class="footnote-ref" href="#fn:usually">2</a></sup> presented
+in the form:</p>
+<div class="highlight"><pre><span></span><span class="p">{</span><span class="nt">"MD002"</span><span class="p">:</span> <span class="p">{</span><span class="nt">"level"</span><span class="p">:</span> <span class="mi">2</span><span class="p">}}</span>
+</pre></div>
+<p>To accommodate the addition of the <code>plugins</code> namespace, each test configuration provided in
+the <code>supplied_configuration</code> variable needed to be changed to add that namespace, as
+follows:</p>
+<div class="highlight"><pre><span></span><span class="p">{</span><span class="nt">"plugins"</span><span class="p">:</span> <span class="p">{</span><span class="nt">"md002"</span><span class="p">:</span> <span class="p">{</span><span class="nt">"level"</span><span class="p">:</span> <span class="mi">2</span><span class="p">}}}</span>
+</pre></div>
+<p>With both changes in place, the only thing left was to hook up was the enabling
+and disabling of plugins from the command line.  This change replaced the contents of
+the <code>__determine_if_plugin_enabled</code> function with the slightly more complicated:</p>
+<div class="highlight"><pre><span></span>    <span class="n">new_value</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="k">for</span> <span class="n">next_identifier</span> <span class="ow">in</span> <span class="n">plugin_object</span><span class="o">.</span><span class="n">plugin_identifiers</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">next_identifier</span> <span class="ow">in</span> <span class="n">command_line_disabled_rules</span><span class="p">:</span>
+            <span class="n">new_value</span> <span class="o">=</span> <span class="bp">False</span>
+            <span class="k">break</span>
+    <span class="k">if</span> <span class="n">new_value</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">next_identifier</span> <span class="ow">in</span> <span class="n">plugin_object</span><span class="o">.</span><span class="n">plugin_identifiers</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">next_identifier</span> <span class="ow">in</span> <span class="n">command_line_enabled_rules</span><span class="p">:</span>
+                <span class="n">new_value</span> <span class="o">=</span> <span class="bp">True</span>
+                <span class="k">break</span>
+    <span class="k">if</span> <span class="n">new_value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">plugin_enabled</span> <span class="o">=</span> <span class="n">new_value</span>
+</pre></div>
+<p>On the entrance into the <code>__determine_if_plugin_enabled</code> function, the <code>plugin_enabled</code>
+argument is already
+set to its default value.  As such, this function only needs to determine if there is an
+override to use and to apply that override.  This function was changed to treat both the
+id field
+and each comma-separated value of the name field as equal in terms of being identifiers.
+While this initially only
+applied to the name of the configuration section in the JSON file, it made sense to use it
+here as well.  In this case, if any of those identifiers are found in the
+<code>command_line_disabled_rules</code> set, the plugin is disabled.  If no matches are found in
+the disabled set, the same process is repeated for the <code>command_line_enabled_rules</code> set.
+Only if a matching value is found in one of those sets is the <code>plugin_enabled</code> variable
+overridden with the new value.</p>
+<p>To me, this just made sense.  If a user prefers to disable a rule using its id, they can
+do that.  If a user prefers to enable a rule using one of its names, they can also do that.
+That flexibility appealed to me, and I hope it appeals to users.</p>
+<h3 id="testing">Testing<a class="headerlink" href="#testing" title="Permanent link">¶</a></h3>
+<p>Hopefully, any readers of my website should know that I use test driven as my main process
+of writing quality code.  Given that process, I added the new tests as I went and before
+adding the functionality required to complete those tests.
+While it was a bit more difficult to do with all these changes going on, it was pivotal
+to the way in which I work.  And it was because of that process that I remembered an
+imbalance that I had put off until somewhere near this point in the project.  I had done a
+lot of work on configuration files, but almost none on command line configuration.</p>
+<h2 id="what-about-the-command-line">What About The Command Line?<a class="headerlink" href="#what-about-the-command-line" title="Permanent link">¶</a></h2>
+<p>With the <code>ApplicationProperties</code> mechanism wired into the project, it was time to tackle
+the other part of that mechanism: the command line.  Up to this point, I had a command
+line interface to the project, but it was a command line that was put in place by default.
+I never sat down and thought about what style of command line interface I wanted
+for the project, and really thought through it.  It was time to do that.</p>
+<h3 id="which-way-to-go">Which Way To Go?<a class="headerlink" href="#which-way-to-go" title="Permanent link">¶</a></h3>
+<p>Using various utilities on my system, I found a handful of different styles of interacting
+with the user on the command line.  But the one that really stuck with me is what I refer
+to as the “Git” style of command line organization.  Similar to my discussion in my last
+article on
+<a href="https://jackdewinter.github.io/2021/03/22/markdown-linter-road-to-initial-release-configuration/#ordering">complex configuration</a>,
+this style of command line organization is complex.  This style is built of building
+blocks of commands and options, allowing more complex command lines to be constructed.</p>
+<p>For example, take this command:</p>
+<div class="highlight"><pre><span></span><span class="n">git</span> <span class="o">-</span><span class="k">c</span> <span class="n">ab</span><span class="o">=</span><span class="n">cd</span> <span class="n">status</span> <span class="c1">--long setup.py</span>
+</pre></div>
+<p>The main part of the command is the <code>git</code> at the start of the line.  The <code>-c ab=cd</code> part
+of that line is a modifier to that <code>git</code> command.  Following that, the <code>status</code> part of
+that line specifies the status subcommand, which in turn has its own modifier <code>--long</code>
+to alter how that status subcommand is presented.  Finally, the text <code>setup.py</code> is
+another modifier to the subcommand, asking that only information for the file <code>setup.py</code>
+be provided.</p>
+<p>To me, this makes very good sense for the PyMarkdown project and the command line interface
+that I want for it.  While the main “scanning” workflow will be the most used workflow,
+there are other workflows that I want to expose to allow users to find out information
+about the results of the scan.  The one that came immediately to mind was being able to
+show the user more information about the installed plugins.  As such, a simple version of
+the command line interface would not work.  I needed a command line interface that
+supported the “scanning” workflow as well as the “show information about plugins” workflow.</p>
+<p>To be clear, this type of a command line interface is not required for every project
+that I do, but it was required for this one.  This interface was complex enough to have
+to support multiple workflows, which in turn made this command line processing complex,
+just like the configuration.</p>
+<h3 id="wiring-up-subcommands">Wiring Up Subcommands<a class="headerlink" href="#wiring-up-subcommands" title="Permanent link">¶</a></h3>
+<p>Once I had that figured out, it was time to go to work.  When I took my initial look
+at the <code>__parse_arguments</code> function, I was afraid that I was going to have to rewrite
+the entire function. However, on a closer look, I discovered that it was going to be
+more of a reorganization than a rewrite.  Except for the <code>--version</code> option
+and the <code>--list-files</code> options, the options were all still valid for the application
+itself.  It was once those options were added to the <code>argparse</code> object that things
+changed.</p>
+<p>To handle this kind of scenario, the <code>argparse</code> object handles subcommands by using
+subparsers.  So, to add a subcommand to handle the <code>scan</code> workflow, I used the
+following code:</p>
+<div class="highlight"><pre><span></span>    <span class="n">subparsers</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">add_subparsers</span><span class="p">(</span><span class="n">dest</span><span class="o">=</span><span class="s2">"primary_subparser"</span><span class="p">)</span>
+    <span class="n">new_sub_parser</span> <span class="o">=</span> <span class="n">subparsers</span><span class="o">.</span><span class="n">add_parser</span><span class="p">(</span>
+        <span class="s2">"scan"</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">"scan the Markdown files in the specified paths"</span>
+    <span class="p">)</span>
+</pre></div>
+<p>Once I had that subparser created, I added the rest of the arguments that were specific to
+that subcommand:</p>
+<div class="highlight"><pre><span></span>    <span class="n">new_sub_parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">"-l"</span><span class="p">,</span>
+        <span class="s2">"--list-files"</span><span class="p">,</span>
+        <span class="n">dest</span><span class="o">=</span><span class="s2">"list_files"</span><span class="p">,</span>
+        <span class="n">action</span><span class="o">=</span><span class="s2">"store_true"</span><span class="p">,</span>
+        <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">"list the markdown files found and exit"</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">new_sub_parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">"paths"</span><span class="p">,</span>
+        <span class="n">metavar</span><span class="o">=</span><span class="s2">"path"</span><span class="p">,</span>
+        <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
+        <span class="n">nargs</span><span class="o">=</span><span class="s2">"+"</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">"One or more paths to scan for eligible files"</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">"one or more paths to scan for eligible Markdown files"</span><span class="p">,</span>
+    <span class="p">)</span>
+</pre></div>
+<p>For this subcommand, the <code>--list-files</code> option that was removed from the base <code>argparse</code>
+parser was placed under the <code>scan</code> subparser along with the <code>paths</code> variable to hold
+the paths of Markdown files to scan.  The <code>plugins</code> subcommand was added in the
+same manner:</p>
+<div class="highlight"><pre><span></span>    <span class="n">new_sub_parser</span> <span class="o">=</span> <span class="n">subparsers</span><span class="o">.</span><span class="n">add_parser</span><span class="p">(</span><span class="s2">"plugins"</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">"plugin commands"</span><span class="p">)</span>
+    <span class="n">new_sub_parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">"-p"</span><span class="p">,</span>
+        <span class="s2">"--list-plugins"</span><span class="p">,</span>
+        <span class="n">dest</span><span class="o">=</span><span class="s2">"list_plugins"</span><span class="p">,</span>
+        <span class="n">action</span><span class="o">=</span><span class="s2">"store_true"</span><span class="p">,</span>
+        <span class="n">default</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">"list the available plugins and exit"</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">new_sub_parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">"paths"</span><span class="p">,</span>
+        <span class="n">metavar</span><span class="o">=</span><span class="s2">"path"</span><span class="p">,</span>
+        <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
+        <span class="n">nargs</span><span class="o">=</span><span class="s2">"+"</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">"one or more paths to scan for eligible Markdown files"</span><span class="p">,</span>
+    <span class="p">)</span>
+</pre></div>
+<p>Finally, to implement the <code>--version</code> option (which was really a subcommand disguised
+as an option in the previous version of the command line interface), a subcommand was
+added for it as well:</p>
+<div class="highlight"><pre><span></span>    <span class="n">subparsers</span><span class="o">.</span><span class="n">add_parser</span><span class="p">(</span><span class="s2">"version"</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">"version of the application"</span><span class="p">)</span>
+</pre></div>
+<p>With all those options in place, I executed the application from the command line and
+noticed that I needed to do a bit more work myself now that I was using subcommands.
+I needed to handle the case where no subcommands were present as well
+as handling the <code>version</code> subcommand.  After a bit of experimentation, I came up with the
+following code:</p>
+<div class="highlight"><pre><span></span>    <span class="k">if</span> <span class="ow">not</span> <span class="n">parse_arguments</span><span class="o">.</span><span class="n">primary_subparser</span><span class="p">:</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">print_help</span><span class="p">()</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">parse_arguments</span><span class="o">.</span><span class="n">frodo</span> <span class="o">==</span> <span class="s2">"version"</span><span class="p">:</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s2">"{self.__version_number}"</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">parse_arguments</span>
+</pre></div>
+<p>Back in the <code>main</code> function, implementing the <code>scan</code> and <code>plugins</code> subcommands were easy.
+As all other subcommands were taken care of, so adding the following code:</p>
+<div class="highlight"><pre><span></span>    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">primary_subparser</span> <span class="o">==</span> <span class="s1">'plugins'</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__initialize_plugins</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+        <span class="n">return_code</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__plugins</span><span class="o">.</span><span class="n">handle_argparse_subparser</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="n">return_code</span><span class="p">)</span>
+</pre></div>
+<p>allowed me to redirect the <code>plugins</code> workflow to the <code>PluginManager</code> class.  If the
+program’s flow was not redirected at that point, the <code>scan</code> workflow would execute by
+default.</p>
+<p>With the command line now organized in a more orderly fashion, it was time to clean up
+the use of those workflows.</p>
+<h3 id="revisiting-logging">Revisiting Logging<a class="headerlink" href="#revisiting-logging" title="Permanent link">¶</a></h3>
+<p>In the
+<a href="https://jackdewinter.github.io/2021/03/22/markdown-linter-road-to-initial-release-configuration/#ordering">Ordering section</a>
+of my last article, I provided an example of how ordering was important when considering
+how to apply configuration to a project.  Specifically, that code snippet was from the
+following function:</p>
+<div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">__initialize_logging</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+
+    <span class="n">new_handler</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">effective_log_file</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">log_file</span>
+    <span class="k">if</span> <span class="n">effective_log_file</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">effective_log_file</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__properties</span><span class="o">.</span><span class="n">get_string_property</span><span class="p">(</span><span class="s2">"log.file"</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">effective_log_file</span><span class="p">:</span>
+        <span class="n">new_handler</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">FileHandler</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">log_file</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">()</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">new_handler</span><span class="p">)</span>
+
+    <span class="n">effective_log_level</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">log_level</span> <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">log_level</span> <span class="k">else</span> <span class="bp">None</span>
+    <span class="k">if</span> <span class="n">effective_log_level</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">effective_log_level</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__properties</span><span class="o">.</span><span class="n">get_string_property</span><span class="p">(</span>
+            <span class="s2">"log.level"</span><span class="p">,</span> <span class="n">valid_value_fn</span><span class="o">=</span><span class="n">PyMarkdownLint</span><span class="o">.</span><span class="n">log_level_type</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">effective_log_level</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">effective_log_level</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_log_level</span>
+</pre></div>
+<p>To keep things neat, I moved any of the logging related initialization code into one of
+two functions, <code>__set_initial_state</code> and <code>__initialize_logging</code>.  The <code>__set_initial_state</code>
+function simply took the initial logger settings and loading of the configuration file
+data and placed it under a much simpler function to read.  The <code>__initialize_logging</code>
+function was where all the interesting log initialization really happened, working out
+what the actual values to be used were.</p>
+<p>This new function followed the process that I had outlined in my last article.  For both
+the log level and the log file settings, there are command line and configuration file
+settings for both settings.  In both cases, the command line is processed first, followed
+by the configuration property, followed by any system default.</p>
+<p>Looking at these values and their sources after I completed them, they just looked right.
+More than that, they looked usable.  If no configuration was provided, there were
+defaults.  If a configuration was provided, any supplied values would be taken from
+there, if they were present.</p>
+<h3 id="fixing-an-old-issue">Fixing An Old Issue<a class="headerlink" href="#fixing-an-old-issue" title="Permanent link">¶</a></h3>
+<p>Back in the section titled
+<a href="https://jackdewinter.github.io/2021/03/29/markdown-linter-road-to-initial-release-command-lines/#changing-the-plugins">Changing The Plugins</a>,
+I presented something that was just a little off.  I presented it that way because at the
+time that I wrote that code, it looked right and was passing every existing test.  It was
+only at this point, when I was more thoroughly testing the <code>PluginManager</code> configuration
+that I noticed that the first <code>ApplicationPropertiesFacade</code> tried was always being
+selected.</p>
+<p>Yeah, I needed to fix that.  The first thing I did was to thin out that for loop and
+move most of that code into a new <code>__find_configuration_for_plugin</code> function.  That
+changed the relevant code to:</p>
+<div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">next_plugin</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">__enabled_plugins</span><span class="p">:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">plugin_specific_facade</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__find_configuration_for_plugin</span><span class="p">(</span>
+            <span class="n">next_plugin</span><span class="p">,</span> <span class="n">properties</span><span class="p">,</span> <span class="n">always_return_facade</span><span class="o">=</span><span class="bp">True</span>
+        <span class="p">)</span>
+
+<span class="o">...</span>
+
+<span class="k">def</span> <span class="nf">__find_configuration_for_plugin</span><span class="p">(</span>
+    <span class="bp">cls</span><span class="p">,</span> <span class="n">next_plugin</span><span class="p">,</span> <span class="n">properties</span><span class="p">,</span> <span class="n">always_return_facade</span><span class="o">=</span><span class="bp">False</span>
+<span class="p">):</span>
+    <span class="n">plugin_specific_facade</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">first_facade</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="k">for</span> <span class="n">next_key_name</span> <span class="ow">in</span> <span class="n">next_plugin</span><span class="o">.</span><span class="n">plugin_identifiers</span><span class="p">:</span>
+        <span class="n">plugin_section_title</span> <span class="o">=</span> <span class="n">f</span><span class="s2">"{PluginManager.__plugin_prefix}{properties.separator}{next_key_name}{properties.separator}"</span>
+        <span class="n">section_facade_candidate</span> <span class="o">=</span> <span class="n">ApplicationPropertiesFacade</span><span class="p">(</span>
+            <span class="n">properties</span><span class="p">,</span> <span class="n">plugin_section_title</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">first_facade</span><span class="p">:</span>
+            <span class="n">first_facade</span> <span class="o">=</span> <span class="n">section_facade_candidate</span>
+        <span class="k">if</span> <span class="n">section_facade_candidate</span><span class="o">.</span><span class="n">property_names</span><span class="p">:</span>
+            <span class="n">plugin_specific_facade</span> <span class="o">=</span> <span class="n">section_facade_candidate</span>
+            <span class="k">break</span>
+
+    <span class="k">if</span> <span class="n">always_return_facade</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">plugin_specific_facade</span><span class="p">:</span>
+        <span class="n">plugin_specific_facade</span> <span class="o">=</span> <span class="n">first_facade</span>
+    <span class="k">return</span> <span class="n">plugin_specific_facade</span>
+</pre></div>
+<p>From there, two small changes were required to fix this function.  The first change was
+to fix the problem of the first facade always being selected.  This was accomplished
+by adding the <code>property_names</code> function to the facade and checking to see if at least
+one property was found.  If one property was found, then the initial intention of the
+search was satisfied, and a configuration entry was found.  This is what I had intended
+to do with the initial implementation, so it felt good to correct this issue.</p>
+<p>But that caused another issue to manifest, one that was never an issue before the first
+issue was fixed: what if no configuration values were ever found? As there are cases
+where the application needs to know nothing was found and cases where it just wants
+some default behavior, I added the <code>always_return_facade</code> argument.  With this argument
+set to <code>True</code>, the first facade is returned instead of a <code>None</code> object.</p>
+<p>With that part of the configuration fixed, it was now time to add the <code>plugin</code> workflow.</p>
+<h3 id="boring-support-for-plugins">Boring Support For Plugins<a class="headerlink" href="#boring-support-for-plugins" title="Permanent link">¶</a></h3>
+<p>One of the main reasons that I added a complex command line interface was to support
+multiple workflows.  As I felt that the <code>scan</code> workflow was now developed enough to
+test, it was time to implement the <code>plugins</code> workflow.  In my design for this workflow,
+I wanted to support a listing of all plugins and summary information, as well as more
+focused information for a specific plugin.  Much like how I added the <code>scan</code> and
+<code>plugins</code> subparsers to the main <code>argparse</code> instance, I added the <code>list</code> and <code>info</code>
+subparsers to the <code>plugins</code> subparser.</p>
+<p>From there, it was just a matter of handing off control at the right spot to each
+of those processors, as such:</p>
+<div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">handle_argparse_subparser</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Handle the parsing for this subparser.</span>
+<span class="sd">    """</span>
+    <span class="n">subparser_value</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">PluginManager</span><span class="o">.</span><span class="n">__root_subparser_name</span><span class="p">)</span>
+    <span class="n">return_code</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">if</span> <span class="n">subparser_value</span> <span class="o">==</span> <span class="s2">"list"</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__handle_argparse_subparser_list</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">subparser_value</span> <span class="o">==</span> <span class="s2">"info"</span><span class="p">:</span>
+        <span class="n">return_code</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__handle_argparse_subparser_info</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">PluginManager</span><span class="o">.</span><span class="n">__argparse_subparser</span><span class="o">.</span><span class="n">print_help</span><span class="p">()</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">return_code</span>
+</pre></div>
+<p>So why did I start the title for this section with the word “Boring”?  It is because
+once I added subparsers on the main <code>argparse</code> instance, this was just copying that
+pattern and pasting it to the <code>plugins</code> subparser.  The <code>list</code> subcommand was a simple loop
+through
+all available plugins and adding values to a string to display.  The <code>info</code> command
+was just locating a given plugin and displaying the information for it.  After the
+rest of things that have been added to this project, that was quite boring.  Necessary,
+but boring.</p>
+<h3 id="almost-boring">Almost Boring<a class="headerlink" href="#almost-boring" title="Permanent link">¶</a></h3>
+<p>Two exceptions did stand out though.  The first one was the use of the <code>Columnar</code>
+library for output.  This library is very effective in determining how much screen
+real estate the application has, and sizing columns to fit that screen size. That
+was very useful, instead of having to create that functionality myself.</p>
+<p>The second exception was to mimic the results of the <code>glob</code> library to work on
+in-memory strings.  Given a command line of <code>pymarkdown plugins list plugin-id</code>, it
+should be obvious that only the plugin with the id or name <code>plugin-id</code> should be
+listed.  But what about the command line <code>pymarkdown plugins list md??9</code>?  If the
+strings were filenames, then the plugins that started with <code>md</code>, contained two
+more arbitrary characters, and finally the digit <code>9</code> would match.  Why could I not
+do that with plugins and their identifiers?</p>
+<p>Thankfully, due to my earlier work to reduce the allowable text for plugin ids and plugin
+names to a smaller subset of values, this effort was made easier.  As I did not
+have to worry about the <code>*</code> or <code>?</code> characters appearing natively in the strings that
+I was looking at, the regular expression to satisfy my required glob functionality was:</p>
+<div class="highlight"><pre><span></span>    <span class="n">list_re</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+        <span class="s2">"^"</span> <span class="o">+</span> <span class="n">args</span><span class="o">.</span><span class="n">list_filter</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"*"</span><span class="p">,</span> <span class="s2">".*"</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"?"</span><span class="p">,</span> <span class="s2">"."</span><span class="p">)</span> <span class="o">+</span> <span class="s2">"$"</span>
+    <span class="p">)</span>
+</pre></div>
+<p>For those readers not familiar with regular expressions, the <code>^</code> at the start of the
+expression and the <code>$</code> at the end of the expression are anchors.  Together these specify
+that the expression inside of those characters must match the entire string, not just
+being found somewhere inside of the string.  For the rest of the expression, I used the
+<code>.</code> character in two forms.  As the <code>.</code> character represents any single character in
+the expression, it was a perfect match for the <code>?</code> glob character.  As an extension of
+that, the <code>*</code> glob character represents any number of arbitrary characters.  To match
+that in the expression, the sequence <code>.*</code> matches zero or more instances of any character.</p>
+<p>After satisfying all the scenario tests I had written, and adjusting output to match
+the columnar output, the <code>plugins</code> subcommand tests were all passing.  Things were good
+with those scenario tests.  I now had to expand my scope to all the scenario tests in
+the project.</p>
+<h3 id="altered-tests">Altered Tests<a class="headerlink" href="#altered-tests" title="Permanent link">¶</a></h3>
+<p>When the change was made to the command line, I expected most of the existing scenario
+tests that deal with the command line to fail, and I was not disappointed.  For most of
+the existing tests, I just needed to add the <code>scan</code> keyword to the right position in the
+arguments list, as that was the workflow that already had tests before this point.  I
+stopped counting those changes after I passed the count of 20.</p>
+<p>But it was a very useful task.  As I progressed through the tests, I was able to see
+how specifying the workflow or subcommand was enhancing the tests. It just gave each
+test a bit more context that I felt was missing before.  I was able to find a couple
+of small issues that I would have otherwise missed because of the organization.</p>
+<p>To be blunt, between the command line changes and tests to cover them, it just felt
+like the project was that much more complete.</p>
+<h3 id="lather-rinse-repeat">Lather, Rinse, Repeat<a class="headerlink" href="#lather-rinse-repeat" title="Permanent link">¶</a></h3>
+<p>After all that work, there were little things there that I needed to work on.  I
+disliked how some of the code was organized, so I went back and tried to organize the code
+more thoughtfully along usage lines.  I poured through the coverage report and looked
+for missing coverage, adding scenario tests to provide any coverage for missed areas.
+Just general cleanup stuff.</p>
+<h2 id="adding-version-information-for-plugins">Adding Version Information For Plugins<a class="headerlink" href="#adding-version-information-for-plugins" title="Permanent link">¶</a></h2>
+<p>With that work in place, it was time to see if I was able to add something useful to the
+project’s configuration without many issues.  The something I had in mind was better
+version information for the plugins.  From a plugin point of view, I figured it would be
+useful to know what specific version was being attributed to that specific plugin.  From
+a plugin manager point of view, it would also be useful to be able to version the actual
+interface itself.  Both would be useful going forward, and useful to relate to
+the user of the application.</p>
+<p>Changing the <code>FoundPlugin</code> class to accept these two new version fields was easy, adding
+private
+fields and property functions to access them.  From there, I added those two parameters
+to each of the existing plugins, setting active plugins to <code>0.5.0</code> and <code>1</code> and setting
+inactive or “templated” plugins to <code>0.0.0</code> and <code>1</code>.  After adding some support in the
+<code>__register_individual_plugin</code> function to ensure that both versions were in acceptable
+formats, I was ready to make the big change to expose that information.</p>
+<p>Okay, maybe big change is a bit misleading.  In the <code>__handle_argparse_subparser_list</code>
+function, I changed the setting of the <code>display_row</code> variable to:</p>
+<div class="highlight"><pre><span></span><span class="n">display_row</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">next_plugin_id</span><span class="p">,</span>
+    <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">next_plugin</span><span class="o">.</span><span class="n">plugin_names</span><span class="p">),</span>
+    <span class="nb">str</span><span class="p">(</span><span class="n">next_plugin</span><span class="o">.</span><span class="n">plugin_enabled_by_default</span><span class="p">),</span>
+    <span class="nb">str</span><span class="p">(</span><span class="n">is_enabled_now</span><span class="p">),</span>
+    <span class="n">next_plugin</span><span class="o">.</span><span class="n">plugin_version</span><span class="p">,</span>
+<span class="p">]</span>
+</pre></div>
+<p>and the setting of the <code>headers</code> variable was changed to:</p>
+<div class="highlight"><pre><span></span><span class="n">headers</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"id"</span><span class="p">,</span> <span class="s2">"names"</span><span class="p">,</span> <span class="s2">"enabled (default)"</span><span class="p">,</span> <span class="s2">"enabled (current)"</span><span class="p">,</span> <span class="s2">"version"</span><span class="p">]</span>
+</pre></div>
+<p>These were not big changes, but that was the point.  This was a relatively small change
+and if things were organized properly, it should have required a relatively small number
+of changes.  If that were not the case, I would have been worried.</p>
+<p>And I was happy, as I had a good workflow to get output on the plugins like the following:</p>
+<div class="highlight"><pre><span></span>  ID     NAMES                                ENABLED (DEFAULT)  ENABLED (CURRENT)  VERSION
+
+  md001  heading-increment, header-increment  True               True               0.5.0
+  md002  first-heading-h1, first-header-h1    False              False              0.5.0
+  md003  heading-style, header-style          True               True               0.5.0
+</pre></div>
+<h2 id="what-was-my-experience-so-far">What Was My Experience So Far?<a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link">¶</a></h2>
+<p>While my efforts to have a completed configuration system with command line support is not
+fully implemented, this works moves the command line system a lot further along to being
+the beacon of the PyMarkdown project.  I realize that I still need a generic way of
+specifying override values for those values specified in the configuration file, but
+this is still a big step forward.  Now that I have the configuration and command line
+systems in place, I can spend a bit of reflective time looking for pieces of those
+systems that I missed while working on other issues.</p>
+<p>I really am feeling that the project is coming together.  While it has never felt like
+a hodgepodge of functionality, I always had a feeling that it was just not quite ready to
+show to the public.  With each of these little subsystems that I am focusing on, that
+feeling is going away and is being replaced with a feeling of confidence that it is
+ready.  In my books, that is a really good feeling to have.</p>
+<h2 id="what-is-next">What is Next?<a class="headerlink" href="#what-is-next" title="Permanent link">¶</a></h2>
+<p>After nicely wrapping up configuration and the command line, there was only
+one thing left to do before I seriously thought about a beta release.  That was to
+resolve the remaining items in the Priority 1 section of the issues list.</p>
+<div class="footnote">
+<hr/>
+<ol>
+<li id="fn:yesIKnow">
+<p>Yes, I know that is not what this code snippet actually does.  I found that out by adding tests later in on in the process.  I fixed this issue later, in the section named <a href="https://jackdewinter.github.io/2021/03/29/markdown-linter-road-to-initial-release-command-lines/#fixing-an-old-issue">Fixing An Old Issue</a>. <a class="footnote-backref" href="#fnref:yesIKnow" title="Jump back to footnote 1 in the text">↩</a></p>
+</li>
+<li id="fn:usually">
+<p>Unless I was purposefully creating bad data to test failure cases, that is the form that I passed into the plugins for configuration. <a class="footnote-backref" href="#fnref:usually" title="Jump back to footnote 2 in the text">↩</a></p>
+</li>
+</ol>
+</div>
+
+
+             
+ 
+                <p id="post-share-links">
+    Like this post? Share on:
+    <a href="https://twitter.com/intent/tweet?text=Markdown%20Linter%20-%20Road%20To%20Initial%20Release%20-%20Command%20Lines&url=https%3A//jackdewinter.github.io/2021/03/29/markdown-linter-road-to-initial-release-command-lines/&hashtags=markdown-linter,core-linter" target="_blank" rel="nofollow noopener noreferrer" title="Share on Twitter">Twitter</a>
+    ❄
+    <a href="https://www.facebook.com/sharer/sharer.php?u=https%3A//jackdewinter.github.io/2021/03/29/markdown-linter-road-to-initial-release-command-lines/" target="_blank" rel="nofollow noopener noreferrer" title="Share on Facebook">Facebook</a>
+    ❄
+    <a href="mailto:?subject=Markdown%20Linter%20-%20Road%20To%20Initial%20Release%20-%20Command%20Lines&amp;body=https%3A//jackdewinter.github.io/2021/03/29/markdown-linter-road-to-initial-release-command-lines/" target="_blank" rel="nofollow noopener noreferrer" title="Share via Email">Email</a>
+    </p>
+
+            
+            
+
+
+
+
+
+
+<section>
+    <h6 style="display:none;">Comments</h6>
+    <p id="comment-message">So what do you think? Did I miss something? Is any part unclear? Leave your comments below. </p>
+
+    <div class="accordion" id="accordion2">
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                <a class="accordion-toggle disqus-comment-count comment-count"
+                   data-toggle="collapse"
+                   data-parent="#accordion2"
+                   href="https://jackdewinter.github.io/2021/03/29/markdown-linter-road-to-initial-release-command-lines/#comment_thread"
+                   id="comment-accordion-toggle">
+                    Comments
+                </a>
+            </div>
+            <div id="comment_thread" class="accordion-body collapse">
+                <div class="accordion-inner">
+                    <div class="comments">
+
+                        <script src="https://utteranc.es/client.js"
+        data-repo="jackdewinter/jackdewinter.github.io"
+        data-issue-term="markdown-linter-road-to-release-h"
+        data-label="Comments"
+        data-theme="github-light"
+        crossorigin="anonymous"
+        async>
+</script>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+            <hr/>
+            <aside>
+            <nav>
+            <ul class="articles-timeline">
+                <li class="previous-article">« <a href="https://jackdewinter.github.io/2021/03/22/markdown-linter-road-to-initial-release-configuration/" title="Previous: Markdown Linter - Road To Initial Release - Configuration">Markdown Linter - Road To Initial Release - Configuration</a></li>
+            </ul>
+            </nav>
+            </aside>
+        </div>
+        <section id="article-sidebar" class="span2">
+    <h4>Reading Time</h4>
+    <p>~19 min read</p>
+            <h4>Published</h4>
+            <time itemprop="dateCreated" datetime="2021-03-29T00:00:00-07:00">Mar 29, 2021</time>
+        <h4>Markdown Linter Road To Initial Release</h4>
+    <ul class="multi-parts-list">
+            <li >
+            <a href="https://jackdewinter.github.io/2021/02/08/markdown-linter-road-to-initial-release-learned-and-useful-things/" title="Markdown Linter - Road To Initial Release - Learned and Useful Things">Part 1: Markdown Linter - Road To Initial Release - Learned and Useful Things</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2021/02/15/markdown-linter-road-to-initial-release-refactoring/" title="Markdown Linter - Road To Initial Release - Refactoring">Part 2: Markdown Linter - Road To Initial Release - Refactoring</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2021/02/22/markdown-linter-road-to-initial-release-starting-performance/" title="Markdown Linter - Road To Initial Release - Starting Performance">Part 3: Markdown Linter - Road To Initial Release - Starting Performance</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2021/03/01/markdown-linter-road-to-initial-release-measured-performance-increases/" title="Markdown Linter - Road To Initial Release - Measured Performance Increases">Part 4: Markdown Linter - Road To Initial Release - Measured Performance Increases</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2021/03/08/markdown-linter-road-to-initial-release-cleaning-up-the-list-and-readability/" title="Markdown Linter - Road To Initial Release - Cleaning Up The List and Readability">Part 5: Markdown Linter - Road To Initial Release - Cleaning Up The List and Readability</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2021/03/15/markdown-linter-road-to-initial-release-front-matter/" title="Markdown Linter - Road To Initial Release - Front-Matter">Part 6: Markdown Linter - Road To Initial Release - Front-Matter</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2021/03/22/markdown-linter-road-to-initial-release-configuration/" title="Markdown Linter - Road To Initial Release - Configuration">Part 7: Markdown Linter - Road To Initial Release - Configuration</a>
+            </li>
+            <li  class="active-part">
+            Part 8: Markdown Linter - Road To Initial Release - Command Lines
+            </li>
+    </ul>
+            <h4>Category</h4>
+            <a class="category-link" href="https://jackdewinter.github.io/categories#software-quality-ref">Software Quality</a>
+            <h4>Tags</h4>
+            <ul class="list-of-tags tags-in-article">
+                <li><a href="https://jackdewinter.github.io/tags#core-linter-ref">core linter
+                    <span>48</span>
+</a></li>
+                <li><a href="https://jackdewinter.github.io/tags#markdown-linter-ref">markdown linter
+                    <span>66</span>
+</a></li>
+            </ul>
+<h4>Stay in Touch</h4>
+<div id="sidebar-social-link">
+    <a href="https://github.com/jackdewinter" title="github-alt" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="GitHub" role="img" viewBox="0 0 512 512"><rect width="512" height="512" rx="15%" fill="#1B1817"/><path fill="#fff" d="M335 499c14 0 12 17 12 17H165s-2-17 12-17c13 0 16-6 16-12l-1-50c-71 16-86-28-86-28-12-30-28-37-28-37-24-16 1-16 1-16 26 2 40 26 40 26 22 39 59 28 74 22 2-17 9-28 16-35-57-6-116-28-116-126 0-28 10-51 26-69-3-6-11-32 3-67 0 0 21-7 70 26 42-12 86-12 128 0 49-33 70-26 70-26 14 35 6 61 3 67 16 18 26 41 26 69 0 98-60 120-117 126 10 8 18 24 18 48l-1 70c0 6 3 12 16 12z"/></svg>
+    </a>
+    <a href="https://www.linkedin.com/in/jackdewinter/" title="linkedin" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="LinkedIn" role="img" viewBox="0 0 512 512" fill="#fff"><rect width="512" height="512" rx="15%" fill="#0077b5"/><circle cx="142" cy="138" r="37"/><path stroke="#fff" stroke-width="66" d="M244 194v198M142 194v198"/><path d="M276 282c0-20 13-40 36-40 24 0 33 18 33 45v105h66V279c0-61-32-89-76-89-34 0-51 19-59 32"/></svg>
+    </a>
+    <a href="https://jackdewinter.github.io/feeds/all.atom.xml" title="" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="RSS" role="img" viewBox="0 0 512 512"><rect width="512" height="512" rx="15%" fill="#f80"/><circle cx="145" cy="367" r="35" fill="#fff"/><path fill="none" stroke="#fff" stroke-width="60" d="M109 241c89 0 162 73 162 162M109 127c152 0 276 124 276 276"/></svg>
+    </a>
+</div>
+            
+
+
+
+
+
+            
+
+
+
+
+
+        </section>
+</div>
+</article>
+                    </div>
+                    <div class="span1"></div>
+                </div>
+            </div>
+        </div>
+<footer>
+    <div>
+        
+&copy; Copyright 2020 by Jack De Winter and licensed under a <a rel="license"
+  href="http://creativecommons.org/licenses/by/4.0/">
+  <img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/80x15.png" />
+  Creative Commons Attribution 4.0 International License</a>.
+
+    </div>
+
+
+
+
+    <div id="fpowered">
+        Powered by: <a href="http://getpelican.com/" title="Pelican Home Page" target="_blank" rel="nofollow noopener noreferrer">Pelican</a>
+        Theme: <a href="https://elegant.oncrashreboot.com/" title="Theme Elegant Home Page" target="_blank" rel="nofollow noopener noreferrer">Elegant</a>
+    </div>
+</footer>            <script src="//code.jquery.com/jquery.min.js"></script>
+        <script src="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>
+        <script>
+            function validateForm(query)
+            {
+                return (query.length > 0);
+            }
+        </script>
+
+    <script>
+    (function () {
+        if (window.location.hash.match(/^#comment-\d+$/)) {
+            $('#comment_thread').collapse('show');
+        }
+    })();
+    window.onhashchange=function(){
+        if (window.location.hash.match(/^#comment-\d+$/))
+            window.location.reload(true);
+    }
+    $('#comment_thread').on('shown', function () {
+        var link = document.getElementById('comment-accordion-toggle');
+        var old_innerHTML = link.innerHTML;
+        $(link).fadeOut(200, function() {
+            $(this).text('Click here to hide comments').fadeIn(200);
+        });
+        $('#comment_thread').on('hidden', function () {
+            $(link).fadeOut(200, function() {
+                $(this).text(old_innerHTML).fadeIn(200);
+            });
+        })
+    })
+</script>
+
+    </body>
+    <!-- Theme: Elegant built for Pelican
+        License : MIT -->
+</html>

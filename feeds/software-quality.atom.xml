@@ -1,5 +1,570 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench - Software Quality</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/software-quality.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2021-03-22T00:00:00-07:00</updated><entry><title>Markdown Linter - Road To Initial Release - Configuration</title><link href="https://jackdewinter.github.io/2021/03/22/markdown-linter-road-to-initial-release-configuration/" rel="alternate"></link><published>2021-03-22T00:00:00-07:00</published><updated>2021-03-22T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2021-03-22:/2021/03/22/markdown-linter-road-to-initial-release-configuration/</id><summary type="html">
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench - Software Quality</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/software-quality.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2021-03-29T00:00:00-07:00</updated><entry><title>Markdown Linter - Road To Initial Release - Command Lines</title><link href="https://jackdewinter.github.io/2021/03/29/markdown-linter-road-to-initial-release-command-lines/" rel="alternate"></link><published>2021-03-29T00:00:00-07:00</published><updated>2021-03-29T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2021-03-29:/2021/03/29/markdown-linter-road-to-initial-release-command-lines/</id><summary type="html">
+&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In my
+&lt;a href="https://jackdewinter.github.io/2021/03/22/markdown-linter-road-to-initial-release-configuration/"&gt;last article&lt;/a&gt;, I talked about
+some of my requirements for configuration and how I applied those requirements to the
+PyMarkdown project.  In this article, I talk about how I integrated that configuration
+object more readily into the PyMarkdown project, revamping the command line interface to
+match that …&lt;/p&gt;</summary><content type="html">
+&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In my
+&lt;a href="https://jackdewinter.github.io/2021/03/22/markdown-linter-road-to-initial-release-configuration/"&gt;last article&lt;/a&gt;, I talked about
+some of my requirements for configuration and how I applied those requirements to the
+PyMarkdown project.  In this article, I talk about how I integrated that configuration
+object more readily into the PyMarkdown project, revamping the command line interface to
+match that newly upgraded configuration object.&lt;/p&gt;
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;It might seem to others that I left the command line to last because I forget about it.
+Nothing could be further from the truth.  For any kind of non-graphical
+utility, the command line is the central hub from which the application gets executed in
+various ways and forms.  Therefore, if the utility does not have the right command line
+interface, it can seriously impact the usability of that application.  It is for that
+exact reason that I usually add a “placeholder” command line interface during my
+development phase, only adding the real interface when I have a solid idea of which
+features have made it into the final version of the project.&lt;/p&gt;
+&lt;p&gt;While that placeholder provides the access to the features that the project needs, it
+often does them in a haphazard way.  Now, with everything else dropping into place, it was
+time for
+me to finalize how configuration was being applied to the project and to start thinking
+seriously about what command line interface I wanted the project to have.  After all,
+I am getting really close to having met my own requirements for an initial beta release!&lt;/p&gt;
+&lt;h2 id="what-is-the-audience-for-this-article"&gt;What Is the Audience for This Article?&lt;a class="headerlink" href="#what-is-the-audience-for-this-article" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;While detailed more eloquently in
+&lt;a href="https://jackdewinter.github.io/2020/04/05/what-is-the-audience-for-my-blog/#what-is-the-audience-for-my-blog"&gt;this article&lt;/a&gt;,
+my goal for this technical article is to focus on the reasoning behind my solutions,
+rather that the solutions themselves.  For a full record of the solutions presented in
+this article, please go to this project’s GitHub repository and consult the
+commits between
+&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/486c1cc77f828b710b2d15bb469e37a5dc032d6f"&gt;11 Mar 2021&lt;/a&gt;
+and
+&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/782433db8cd89f8be8b47825786a8a7552a768ff"&gt;25 Mar 2021&lt;/a&gt;.&lt;/p&gt;
+&lt;h2 id="wiring-up-the-new-properties-class-to-the-project"&gt;Wiring Up The New Properties Class To The Project&lt;a class="headerlink" href="#wiring-up-the-new-properties-class-to-the-project" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;After the work detailed in my last article, the project now has a file-based configuration
+via the &lt;code&gt;ApplicationProperties&lt;/code&gt; class that can handle the more complex needs
+of the project.  While I did refer to the process of applying ordering to the different
+sources of configuration in the section on
+&lt;a href="https://jackdewinter.github.io/2021/03/22/markdown-linter-road-to-initial-release-configuration/#ordering"&gt;Ordering&lt;/a&gt;,
+I had not wired it up at that point.  I had added the code mentioned in that section as
+a simple test of whether the process worked, but I had not yet added fully functional code
+that followed that process to the project.  It was time to do that.&lt;/p&gt;
+&lt;h3 id="logging"&gt;Logging&lt;a class="headerlink" href="#logging" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;The obvious first choice for configuration to add to the project was logging.  It was also
+the trickiest in a certain sense.  From the point at which the configuration was properly
+initialized and the determination of the log file and log level is achieved,
+everything works as everyone expects.
+However, there is a slight amount of time between the start of the application and that
+point where things are in a grey zone.  During that time, the loading of the configuration
+file itself or determining the logging properties can log information themselves that may
+be of use when debugging a scenario.  With those systems dependent on configuration that
+was not yet initialized when I needed to debug those systems, I was left to hardwire
+logging workarounds directly into the code. I wanted a better way to handle those debug
+scenarios.&lt;/p&gt;
+&lt;p&gt;Looking at what I had available to use, I decided to imply extra context for the command
+line’s &lt;code&gt;--stack-trace&lt;/code&gt; flag.  Normally, my utilities use this flag to enable a mode
+where an exception that stops the application displays the full stack trace of the
+exception.  As
+this flag defaults to disabled, the user just gets a simple message indicating
+what the error is.  Most of the time, users do not care about where in the application
+something broke down, they just want it to work.  If it is not working, they want to know
+why and if they can fix it themselves.
+However, when I look for root causes and I need to debug those issues, having a full
+stack trace of how that error was generated is always helpful.  Following that logic, I
+determined that the only time a user might need to debug the loading of the configuration
+file is if they were debugging one of those scenarios that the &lt;code&gt;--stack-trace&lt;/code&gt; flag was
+meant for.&lt;/p&gt;
+&lt;p&gt;As such, I added some code at the front of the &lt;code&gt;main&lt;/code&gt; function to handle the setup for the
+logging system, using the &lt;code&gt;--stack-trace&lt;/code&gt; flag in a useful manner:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="n"&gt;base_logger&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;logging&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;getLogger&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+    &lt;span class="n"&gt;base_logger&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;setLevel&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+        &lt;span class="n"&gt;logging&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;DEBUG&lt;/span&gt; &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__show_stack_trace&lt;/span&gt; &lt;span class="k"&gt;else&lt;/span&gt; &lt;span class="n"&gt;logging&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;WARNING&lt;/span&gt;
+    &lt;span class="p"&gt;)&lt;/span&gt;
+
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;args&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;configuration_file&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="n"&gt;ApplicationPropertiesJsonLoader&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;load_and_set&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+            &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__properties&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;args&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;configuration_file&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__handle_error&lt;/span&gt;
+        &lt;span class="p"&gt;)&lt;/span&gt;
+
+    &lt;span class="n"&gt;effective_log_level&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
+        &lt;span class="n"&gt;args&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;log_level&lt;/span&gt; &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;args&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;log_level&lt;/span&gt; &lt;span class="k"&gt;else&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;default_log_level&lt;/span&gt;
+    &lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;log_level_to_enact&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;PyMarkdownLint&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;available_log_maps&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;effective_log_level&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;To enable debug logging before the log level and log file are setup properly, the log
+level is set to &lt;code&gt;DEBUG&lt;/code&gt; if the &lt;code&gt;--stack-trace&lt;/code&gt; is present and &lt;code&gt;WARNING&lt;/code&gt; otherwise.  Then,
+the configuration file is loaded and the log level to use is calculated with the
+appropriate final log level.  However, the important part of this is that I now have a
+simple switch that allows me to debug the configuration initialization without resorting
+to rewriting code.  That is a bonus I like!&lt;/p&gt;
+&lt;p&gt;With that code in place, I removed the &lt;code&gt;__load_configuration_and_apply_to_plugins&lt;/code&gt; function
+and the &lt;code&gt;load_json_configuration&lt;/code&gt; function. I replaced those functions with the new
+&lt;code&gt;__apply_configuration_to_plugins&lt;/code&gt; function that performed most of the same functions.
+The big change here was that instead of being passed a simple dictionary object, the
+&lt;code&gt;apply_configuration&lt;/code&gt; function of the &lt;code&gt;PluginManager&lt;/code&gt; class was now being passed an
+instance of the &lt;code&gt;ApplicationProperties&lt;/code&gt; class.  It was time to wire that up as well.&lt;/p&gt;
+&lt;h3 id="plugin-manager"&gt;Plugin Manager&lt;a class="headerlink" href="#plugin-manager" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Starting with the &lt;code&gt;FoundPlugin&lt;/code&gt; class, I decided to make all those properties read-only by
+making the fields private and exposing those fields using properties.  At the same time,
+I renamed arguments for the constructor from &lt;code&gt;enable_rules&lt;/code&gt; and &lt;code&gt;disable_rules&lt;/code&gt; to
+&lt;code&gt;enable_rules_from_command_line&lt;/code&gt; and &lt;code&gt;disable_rules_from_command_line&lt;/code&gt;.  While the old
+names were okay, I wanted to make sure the source of their values were clearer.  I also
+cleaned up the registration of the plugins to ensure that things were consistent. I
+added the following regular expressions:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="n"&gt;__id_regex&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;re&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;compile&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"^[a-z]{2,3}[0-9]{3,3}$"&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;__name_regex&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;re&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;compile&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"^[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]$"&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;to make the id field two or three lower case letters followed by three numbers and
+limit the characters for the name field.  I figured that since I was there, I might as
+well leave the code better than when I got there.&lt;/p&gt;
+&lt;h3 id="changing-the-plugins"&gt;Changing The Plugins&lt;a class="headerlink" href="#changing-the-plugins" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;After that cleanup, I proceeded to make the necessary changes to accompany
+the changes made in the &lt;code&gt;main&lt;/code&gt; function.  As the &lt;code&gt;PluginManager&lt;/code&gt; instance is just a
+container used to provide access to the various registered plugins, the instance itself
+has no need for configuration.  This kept things simple:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="n"&gt;plugin_specific_facade&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;
+    &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;next_key_name&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;next_plugin&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;plugin_identifiers&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="n"&gt;plugin_section_title&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;f&lt;/span&gt;&lt;span class="s2"&gt;"{PluginManager.__plugin_prefix}{properties.separator}{next_key_name}{properties.separator}"&lt;/span&gt;
+        &lt;span class="n"&gt;section_facade_candidate&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;ApplicationPropertiesFacade&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+            &lt;span class="n"&gt;properties&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;plugin_section_title&lt;/span&gt;
+        &lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;section_facade_candidate&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="n"&gt;plugin_specific_facade&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;section_facade_candidate&lt;/span&gt;
+            &lt;span class="k"&gt;break&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Going through the list of identifiers for the plugin, the &lt;code&gt;PluginManager&lt;/code&gt; instance creates
+a test instance of an &lt;code&gt;ApplicationPropertiesFacade&lt;/code&gt; object, initializing it with the
+property string leading up to that point.  For the &lt;code&gt;md002&lt;/code&gt; plugin, if the id field is
+used, the section title is &lt;code&gt;plugins.md002.&lt;/code&gt;, with similar titles for each of the
+comma-separated values in the name field, &lt;code&gt;plugins.first-heading-h1.&lt;/code&gt; and
+&lt;code&gt;plugins.first-header-h1.&lt;/code&gt;. Once created, if that test facade instance
+reports that it has any properties, it is considered to be the best candidate, and any
+other configuration for that plugin by its other names is ignored.&lt;sup id="fnref:yesIKnow"&gt;&lt;a class="footnote-ref" href="#fn:yesIKnow"&gt;1&lt;/a&gt;&lt;/sup&gt;  That best
+candidate is then passed in to the plugin’s &lt;code&gt;set_configuration_map&lt;/code&gt; function, where it is
+used by the &lt;code&gt;initialize_from_config&lt;/code&gt; function to set the actual configuration for that
+plugin.&lt;/p&gt;
+&lt;h3 id="the-fallout-from-those-changes"&gt;The Fallout From Those Changes&lt;a class="headerlink" href="#the-fallout-from-those-changes" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;With a new type of object being passed for configuration, the plugins themselves required
+other changes to work properly.
+The first change that this required was changing every plugin to utilize the
+&lt;code&gt;ApplicationPropertiesFacade&lt;/code&gt; instance that was now being passed in as an argument instead
+of the old dictionary instance.  Using the changes for rule &lt;code&gt;md002&lt;/code&gt; as an example, the code
+in the &lt;code&gt;initialize_from_config&lt;/code&gt; function changed from:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__start_level&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;get_configuration_value&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"level"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;default_value&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;to:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__start_level&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;plugin_configuration&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;get_integer_property&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+        &lt;span class="s2"&gt;"level"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;default_value&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;
+    &lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;The second change that happened was an appropriate change in test data.  Prior to this
+change, the test configuration for the &lt;code&gt;md002&lt;/code&gt; plugin was usually&lt;sup id="fnref:usually"&gt;&lt;a class="footnote-ref" href="#fn:usually"&gt;2&lt;/a&gt;&lt;/sup&gt; presented
+in the form:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="nt"&gt;"MD002"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="nt"&gt;"level"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="p"&gt;}}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;To accommodate the addition of the &lt;code&gt;plugins&lt;/code&gt; namespace, each test configuration provided in
+the &lt;code&gt;supplied_configuration&lt;/code&gt; variable needed to be changed to add that namespace, as
+follows:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="nt"&gt;"plugins"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="nt"&gt;"md002"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="nt"&gt;"level"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="p"&gt;}}}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;With both changes in place, the only thing left was to hook up was the enabling
+and disabling of plugins from the command line.  This change replaced the contents of
+the &lt;code&gt;__determine_if_plugin_enabled&lt;/code&gt; function with the slightly more complicated:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="n"&gt;new_value&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;
+    &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;next_identifier&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;plugin_object&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;plugin_identifiers&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;next_identifier&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;command_line_disabled_rules&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="n"&gt;new_value&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;False&lt;/span&gt;
+            &lt;span class="k"&gt;break&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;new_value&lt;/span&gt; &lt;span class="ow"&gt;is&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;next_identifier&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;plugin_object&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;plugin_identifiers&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;next_identifier&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;command_line_enabled_rules&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+                &lt;span class="n"&gt;new_value&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;True&lt;/span&gt;
+                &lt;span class="k"&gt;break&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;new_value&lt;/span&gt; &lt;span class="ow"&gt;is&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="n"&gt;plugin_enabled&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;new_value&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;On the entrance into the &lt;code&gt;__determine_if_plugin_enabled&lt;/code&gt; function, the &lt;code&gt;plugin_enabled&lt;/code&gt;
+argument is already
+set to its default value.  As such, this function only needs to determine if there is an
+override to use and to apply that override.  This function was changed to treat both the
+id field
+and each comma-separated value of the name field as equal in terms of being identifiers.
+While this initially only
+applied to the name of the configuration section in the JSON file, it made sense to use it
+here as well.  In this case, if any of those identifiers are found in the
+&lt;code&gt;command_line_disabled_rules&lt;/code&gt; set, the plugin is disabled.  If no matches are found in
+the disabled set, the same process is repeated for the &lt;code&gt;command_line_enabled_rules&lt;/code&gt; set.
+Only if a matching value is found in one of those sets is the &lt;code&gt;plugin_enabled&lt;/code&gt; variable
+overridden with the new value.&lt;/p&gt;
+&lt;p&gt;To me, this just made sense.  If a user prefers to disable a rule using its id, they can
+do that.  If a user prefers to enable a rule using one of its names, they can also do that.
+That flexibility appealed to me, and I hope it appeals to users.&lt;/p&gt;
+&lt;h3 id="testing"&gt;Testing&lt;a class="headerlink" href="#testing" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Hopefully, any readers of my website should know that I use test driven as my main process
+of writing quality code.  Given that process, I added the new tests as I went and before
+adding the functionality required to complete those tests.
+While it was a bit more difficult to do with all these changes going on, it was pivotal
+to the way in which I work.  And it was because of that process that I remembered an
+imbalance that I had put off until somewhere near this point in the project.  I had done a
+lot of work on configuration files, but almost none on command line configuration.&lt;/p&gt;
+&lt;h2 id="what-about-the-command-line"&gt;What About The Command Line?&lt;a class="headerlink" href="#what-about-the-command-line" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;With the &lt;code&gt;ApplicationProperties&lt;/code&gt; mechanism wired into the project, it was time to tackle
+the other part of that mechanism: the command line.  Up to this point, I had a command
+line interface to the project, but it was a command line that was put in place by default.
+I never sat down and thought about what style of command line interface I wanted
+for the project, and really thought through it.  It was time to do that.&lt;/p&gt;
+&lt;h3 id="which-way-to-go"&gt;Which Way To Go?&lt;a class="headerlink" href="#which-way-to-go" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Using various utilities on my system, I found a handful of different styles of interacting
+with the user on the command line.  But the one that really stuck with me is what I refer
+to as the “Git” style of command line organization.  Similar to my discussion in my last
+article on
+&lt;a href="https://jackdewinter.github.io/2021/03/22/markdown-linter-road-to-initial-release-configuration/#ordering"&gt;complex configuration&lt;/a&gt;,
+this style of command line organization is complex.  This style is built of building
+blocks of commands and options, allowing more complex command lines to be constructed.&lt;/p&gt;
+&lt;p&gt;For example, take this command:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;git&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="k"&gt;c&lt;/span&gt; &lt;span class="n"&gt;ab&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;cd&lt;/span&gt; &lt;span class="n"&gt;status&lt;/span&gt; &lt;span class="c1"&gt;--long setup.py&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;The main part of the command is the &lt;code&gt;git&lt;/code&gt; at the start of the line.  The &lt;code&gt;-c ab=cd&lt;/code&gt; part
+of that line is a modifier to that &lt;code&gt;git&lt;/code&gt; command.  Following that, the &lt;code&gt;status&lt;/code&gt; part of
+that line specifies the status subcommand, which in turn has its own modifier &lt;code&gt;--long&lt;/code&gt;
+to alter how that status subcommand is presented.  Finally, the text &lt;code&gt;setup.py&lt;/code&gt; is
+another modifier to the subcommand, asking that only information for the file &lt;code&gt;setup.py&lt;/code&gt;
+be provided.&lt;/p&gt;
+&lt;p&gt;To me, this makes very good sense for the PyMarkdown project and the command line interface
+that I want for it.  While the main “scanning” workflow will be the most used workflow,
+there are other workflows that I want to expose to allow users to find out information
+about the results of the scan.  The one that came immediately to mind was being able to
+show the user more information about the installed plugins.  As such, a simple version of
+the command line interface would not work.  I needed a command line interface that
+supported the “scanning” workflow as well as the “show information about plugins” workflow.&lt;/p&gt;
+&lt;p&gt;To be clear, this type of a command line interface is not required for every project
+that I do, but it was required for this one.  This interface was complex enough to have
+to support multiple workflows, which in turn made this command line processing complex,
+just like the configuration.&lt;/p&gt;
+&lt;h3 id="wiring-up-subcommands"&gt;Wiring Up Subcommands&lt;a class="headerlink" href="#wiring-up-subcommands" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Once I had that figured out, it was time to go to work.  When I took my initial look
+at the &lt;code&gt;__parse_arguments&lt;/code&gt; function, I was afraid that I was going to have to rewrite
+the entire function. However, on a closer look, I discovered that it was going to be
+more of a reorganization than a rewrite.  Except for the &lt;code&gt;--version&lt;/code&gt; option
+and the &lt;code&gt;--list-files&lt;/code&gt; options, the options were all still valid for the application
+itself.  It was once those options were added to the &lt;code&gt;argparse&lt;/code&gt; object that things
+changed.&lt;/p&gt;
+&lt;p&gt;To handle this kind of scenario, the &lt;code&gt;argparse&lt;/code&gt; object handles subcommands by using
+subparsers.  So, to add a subcommand to handle the &lt;code&gt;scan&lt;/code&gt; workflow, I used the
+following code:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="n"&gt;subparsers&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;parser&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;add_subparsers&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;dest&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;"primary_subparser"&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;new_sub_parser&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;subparsers&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;add_parser&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+        &lt;span class="s2"&gt;"scan"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;help&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;"scan the Markdown files in the specified paths"&lt;/span&gt;
+    &lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Once I had that subparser created, I added the rest of the arguments that were specific to
+that subcommand:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="n"&gt;new_sub_parser&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;add_argument&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+        &lt;span class="s2"&gt;"-l"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="s2"&gt;"--list-files"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="n"&gt;dest&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;"list_files"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="n"&gt;action&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;"store_true"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="n"&gt;default&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="bp"&gt;False&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="n"&gt;help&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;"list the markdown files found and exit"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;new_sub_parser&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;add_argument&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+        &lt;span class="s2"&gt;"paths"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="n"&gt;metavar&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;"path"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="nb"&gt;type&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="nb"&gt;str&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="n"&gt;nargs&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;"+"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="n"&gt;help&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;"One or more paths to scan for eligible files"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="n"&gt;help&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;"one or more paths to scan for eligible Markdown files"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;For this subcommand, the &lt;code&gt;--list-files&lt;/code&gt; option that was removed from the base &lt;code&gt;argparse&lt;/code&gt;
+parser was placed under the &lt;code&gt;scan&lt;/code&gt; subparser along with the &lt;code&gt;paths&lt;/code&gt; variable to hold
+the paths of Markdown files to scan.  The &lt;code&gt;plugins&lt;/code&gt; subcommand was added in the
+same manner:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="n"&gt;new_sub_parser&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;subparsers&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;add_parser&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"plugins"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;help&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;"plugin commands"&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;new_sub_parser&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;add_argument&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+        &lt;span class="s2"&gt;"-p"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="s2"&gt;"--list-plugins"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="n"&gt;dest&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;"list_plugins"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="n"&gt;action&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;"store_true"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="n"&gt;default&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="bp"&gt;False&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="n"&gt;help&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;"list the available plugins and exit"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;new_sub_parser&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;add_argument&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+        &lt;span class="s2"&gt;"paths"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="n"&gt;metavar&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;"path"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="nb"&gt;type&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="nb"&gt;str&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="n"&gt;nargs&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;"+"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="n"&gt;help&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;"one or more paths to scan for eligible Markdown files"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Finally, to implement the &lt;code&gt;--version&lt;/code&gt; option (which was really a subcommand disguised
+as an option in the previous version of the command line interface), a subcommand was
+added for it as well:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="n"&gt;subparsers&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;add_parser&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"version"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;help&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;"version of the application"&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;With all those options in place, I executed the application from the command line and
+noticed that I needed to do a bit more work myself now that I was using subcommands.
+I needed to handle the case where no subcommands were present as well
+as handling the &lt;code&gt;version&lt;/code&gt; subcommand.  After a bit of experimentation, I came up with the
+following code:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="n"&gt;parse_arguments&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;primary_subparser&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="n"&gt;parser&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;print_help&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+        &lt;span class="n"&gt;sys&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;exit&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="k"&gt;elif&lt;/span&gt; &lt;span class="n"&gt;parse_arguments&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;frodo&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="s2"&gt;"version"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="k"&gt;print&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;f&lt;/span&gt;&lt;span class="s2"&gt;"{self.__version_number}"&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="n"&gt;sys&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;exit&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;parse_arguments&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Back in the &lt;code&gt;main&lt;/code&gt; function, implementing the &lt;code&gt;scan&lt;/code&gt; and &lt;code&gt;plugins&lt;/code&gt; subcommands were easy.
+As all other subcommands were taken care of, so adding the following code:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;args&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;primary_subparser&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="s1"&gt;'plugins'&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__initialize_plugins&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;args&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="n"&gt;return_code&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__plugins&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;handle_argparse_subparser&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;args&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="n"&gt;sys&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;exit&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;return_code&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;allowed me to redirect the &lt;code&gt;plugins&lt;/code&gt; workflow to the &lt;code&gt;PluginManager&lt;/code&gt; class.  If the
+program’s flow was not redirected at that point, the &lt;code&gt;scan&lt;/code&gt; workflow would execute by
+default.&lt;/p&gt;
+&lt;p&gt;With the command line now organized in a more orderly fashion, it was time to clean up
+the use of those workflows.&lt;/p&gt;
+&lt;h3 id="revisiting-logging"&gt;Revisiting Logging&lt;a class="headerlink" href="#revisiting-logging" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;In the
+&lt;a href="https://jackdewinter.github.io/2021/03/22/markdown-linter-road-to-initial-release-configuration/#ordering"&gt;Ordering section&lt;/a&gt;
+of my last article, I provided an example of how ordering was important when considering
+how to apply configuration to a project.  Specifically, that code snippet was from the
+following function:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;__initialize_logging&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;args&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+
+    &lt;span class="n"&gt;new_handler&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;
+    &lt;span class="n"&gt;effective_log_file&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;args&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;log_file&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;effective_log_file&lt;/span&gt; &lt;span class="ow"&gt;is&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="n"&gt;effective_log_file&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__properties&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;get_string_property&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"log.file"&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;effective_log_file&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="n"&gt;new_handler&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;logging&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;FileHandler&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;args&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;log_file&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="n"&gt;logging&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;getLogger&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;addHandler&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;new_handler&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+    &lt;span class="n"&gt;effective_log_level&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;args&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;log_level&lt;/span&gt; &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;args&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;log_level&lt;/span&gt; &lt;span class="k"&gt;else&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;effective_log_level&lt;/span&gt; &lt;span class="ow"&gt;is&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="n"&gt;effective_log_level&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__properties&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;get_string_property&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+            &lt;span class="s2"&gt;"log.level"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;valid_value_fn&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;PyMarkdownLint&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;log_level_type&lt;/span&gt;
+        &lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;effective_log_level&lt;/span&gt; &lt;span class="ow"&gt;is&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="n"&gt;effective_log_level&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;default_log_level&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;To keep things neat, I moved any of the logging related initialization code into one of
+two functions, &lt;code&gt;__set_initial_state&lt;/code&gt; and &lt;code&gt;__initialize_logging&lt;/code&gt;.  The &lt;code&gt;__set_initial_state&lt;/code&gt;
+function simply took the initial logger settings and loading of the configuration file
+data and placed it under a much simpler function to read.  The &lt;code&gt;__initialize_logging&lt;/code&gt;
+function was where all the interesting log initialization really happened, working out
+what the actual values to be used were.&lt;/p&gt;
+&lt;p&gt;This new function followed the process that I had outlined in my last article.  For both
+the log level and the log file settings, there are command line and configuration file
+settings for both settings.  In both cases, the command line is processed first, followed
+by the configuration property, followed by any system default.&lt;/p&gt;
+&lt;p&gt;Looking at these values and their sources after I completed them, they just looked right.
+More than that, they looked usable.  If no configuration was provided, there were
+defaults.  If a configuration was provided, any supplied values would be taken from
+there, if they were present.&lt;/p&gt;
+&lt;h3 id="fixing-an-old-issue"&gt;Fixing An Old Issue&lt;a class="headerlink" href="#fixing-an-old-issue" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Back in the section titled
+&lt;a href="https://jackdewinter.github.io/2021/03/29/markdown-linter-road-to-initial-release-command-lines/#changing-the-plugins"&gt;Changing The Plugins&lt;/a&gt;,
+I presented something that was just a little off.  I presented it that way because at the
+time that I wrote that code, it looked right and was passing every existing test.  It was
+only at this point, when I was more thoroughly testing the &lt;code&gt;PluginManager&lt;/code&gt; configuration
+that I noticed that the first &lt;code&gt;ApplicationPropertiesFacade&lt;/code&gt; tried was always being
+selected.&lt;/p&gt;
+&lt;p&gt;Yeah, I needed to fix that.  The first thing I did was to thin out that for loop and
+move most of that code into a new &lt;code&gt;__find_configuration_for_plugin&lt;/code&gt; function.  That
+changed the relevant code to:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;next_plugin&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__enabled_plugins&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+    &lt;span class="k"&gt;try&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="n"&gt;plugin_specific_facade&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__find_configuration_for_plugin&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+            &lt;span class="n"&gt;next_plugin&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;properties&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;always_return_facade&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="bp"&gt;True&lt;/span&gt;
+        &lt;span class="p"&gt;)&lt;/span&gt;
+
+&lt;span class="o"&gt;...&lt;/span&gt;
+
+&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;__find_configuration_for_plugin&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+    &lt;span class="bp"&gt;cls&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;next_plugin&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;properties&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;always_return_facade&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="bp"&gt;False&lt;/span&gt;
+&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="n"&gt;plugin_specific_facade&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;
+    &lt;span class="n"&gt;first_facade&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;
+    &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;next_key_name&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;next_plugin&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;plugin_identifiers&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="n"&gt;plugin_section_title&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;f&lt;/span&gt;&lt;span class="s2"&gt;"{PluginManager.__plugin_prefix}{properties.separator}{next_key_name}{properties.separator}"&lt;/span&gt;
+        &lt;span class="n"&gt;section_facade_candidate&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;ApplicationPropertiesFacade&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+            &lt;span class="n"&gt;properties&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;plugin_section_title&lt;/span&gt;
+        &lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="n"&gt;first_facade&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="n"&gt;first_facade&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;section_facade_candidate&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;section_facade_candidate&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;property_names&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="n"&gt;plugin_specific_facade&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;section_facade_candidate&lt;/span&gt;
+            &lt;span class="k"&gt;break&lt;/span&gt;
+
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;always_return_facade&lt;/span&gt; &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="n"&gt;plugin_specific_facade&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="n"&gt;plugin_specific_facade&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;first_facade&lt;/span&gt;
+    &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;plugin_specific_facade&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;From there, two small changes were required to fix this function.  The first change was
+to fix the problem of the first facade always being selected.  This was accomplished
+by adding the &lt;code&gt;property_names&lt;/code&gt; function to the facade and checking to see if at least
+one property was found.  If one property was found, then the initial intention of the
+search was satisfied, and a configuration entry was found.  This is what I had intended
+to do with the initial implementation, so it felt good to correct this issue.&lt;/p&gt;
+&lt;p&gt;But that caused another issue to manifest, one that was never an issue before the first
+issue was fixed: what if no configuration values were ever found? As there are cases
+where the application needs to know nothing was found and cases where it just wants
+some default behavior, I added the &lt;code&gt;always_return_facade&lt;/code&gt; argument.  With this argument
+set to &lt;code&gt;True&lt;/code&gt;, the first facade is returned instead of a &lt;code&gt;None&lt;/code&gt; object.&lt;/p&gt;
+&lt;p&gt;With that part of the configuration fixed, it was now time to add the &lt;code&gt;plugin&lt;/code&gt; workflow.&lt;/p&gt;
+&lt;h3 id="boring-support-for-plugins"&gt;Boring Support For Plugins&lt;a class="headerlink" href="#boring-support-for-plugins" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;One of the main reasons that I added a complex command line interface was to support
+multiple workflows.  As I felt that the &lt;code&gt;scan&lt;/code&gt; workflow was now developed enough to
+test, it was time to implement the &lt;code&gt;plugins&lt;/code&gt; workflow.  In my design for this workflow,
+I wanted to support a listing of all plugins and summary information, as well as more
+focused information for a specific plugin.  Much like how I added the &lt;code&gt;scan&lt;/code&gt; and
+&lt;code&gt;plugins&lt;/code&gt; subparsers to the main &lt;code&gt;argparse&lt;/code&gt; instance, I added the &lt;code&gt;list&lt;/code&gt; and &lt;code&gt;info&lt;/code&gt;
+subparsers to the &lt;code&gt;plugins&lt;/code&gt; subparser.&lt;/p&gt;
+&lt;p&gt;From there, it was just a matter of handing off control at the right spot to each
+of those processors, as such:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;handle_argparse_subparser&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;args&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="sd"&gt;"""&lt;/span&gt;
+&lt;span class="sd"&gt;    Handle the parsing for this subparser.&lt;/span&gt;
+&lt;span class="sd"&gt;    """&lt;/span&gt;
+    &lt;span class="n"&gt;subparser_value&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nb"&gt;getattr&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;args&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;PluginManager&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__root_subparser_name&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;return_code&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;subparser_value&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="s2"&gt;"list"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__handle_argparse_subparser_list&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;args&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="k"&gt;elif&lt;/span&gt; &lt;span class="n"&gt;subparser_value&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="s2"&gt;"info"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="n"&gt;return_code&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__handle_argparse_subparser_info&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;args&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="k"&gt;else&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="n"&gt;PluginManager&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__argparse_subparser&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;print_help&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+        &lt;span class="n"&gt;sys&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;exit&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;return_code&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;So why did I start the title for this section with the word “Boring”?  It is because
+once I added subparsers on the main &lt;code&gt;argparse&lt;/code&gt; instance, this was just copying that
+pattern and pasting it to the &lt;code&gt;plugins&lt;/code&gt; subparser.  The &lt;code&gt;list&lt;/code&gt; subcommand was a simple loop
+through
+all available plugins and adding values to a string to display.  The &lt;code&gt;info&lt;/code&gt; command
+was just locating a given plugin and displaying the information for it.  After the
+rest of things that have been added to this project, that was quite boring.  Necessary,
+but boring.&lt;/p&gt;
+&lt;h3 id="almost-boring"&gt;Almost Boring&lt;a class="headerlink" href="#almost-boring" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Two exceptions did stand out though.  The first one was the use of the &lt;code&gt;Columnar&lt;/code&gt;
+library for output.  This library is very effective in determining how much screen
+real estate the application has, and sizing columns to fit that screen size. That
+was very useful, instead of having to create that functionality myself.&lt;/p&gt;
+&lt;p&gt;The second exception was to mimic the results of the &lt;code&gt;glob&lt;/code&gt; library to work on
+in-memory strings.  Given a command line of &lt;code&gt;pymarkdown plugins list plugin-id&lt;/code&gt;, it
+should be obvious that only the plugin with the id or name &lt;code&gt;plugin-id&lt;/code&gt; should be
+listed.  But what about the command line &lt;code&gt;pymarkdown plugins list md??9&lt;/code&gt;?  If the
+strings were filenames, then the plugins that started with &lt;code&gt;md&lt;/code&gt;, contained two
+more arbitrary characters, and finally the digit &lt;code&gt;9&lt;/code&gt; would match.  Why could I not
+do that with plugins and their identifiers?&lt;/p&gt;
+&lt;p&gt;Thankfully, due to my earlier work to reduce the allowable text for plugin ids and plugin
+names to a smaller subset of values, this effort was made easier.  As I did not
+have to worry about the &lt;code&gt;*&lt;/code&gt; or &lt;code&gt;?&lt;/code&gt; characters appearing natively in the strings that
+I was looking at, the regular expression to satisfy my required glob functionality was:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="n"&gt;list_re&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;re&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;compile&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+        &lt;span class="s2"&gt;"^"&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;args&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;list_filter&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;replace&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"*"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;".*"&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;replace&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"?"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;"."&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s2"&gt;"$"&lt;/span&gt;
+    &lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;For those readers not familiar with regular expressions, the &lt;code&gt;^&lt;/code&gt; at the start of the
+expression and the &lt;code&gt;$&lt;/code&gt; at the end of the expression are anchors.  Together these specify
+that the expression inside of those characters must match the entire string, not just
+being found somewhere inside of the string.  For the rest of the expression, I used the
+&lt;code&gt;.&lt;/code&gt; character in two forms.  As the &lt;code&gt;.&lt;/code&gt; character represents any single character in
+the expression, it was a perfect match for the &lt;code&gt;?&lt;/code&gt; glob character.  As an extension of
+that, the &lt;code&gt;*&lt;/code&gt; glob character represents any number of arbitrary characters.  To match
+that in the expression, the sequence &lt;code&gt;.*&lt;/code&gt; matches zero or more instances of any character.&lt;/p&gt;
+&lt;p&gt;After satisfying all the scenario tests I had written, and adjusting output to match
+the columnar output, the &lt;code&gt;plugins&lt;/code&gt; subcommand tests were all passing.  Things were good
+with those scenario tests.  I now had to expand my scope to all the scenario tests in
+the project.&lt;/p&gt;
+&lt;h3 id="altered-tests"&gt;Altered Tests&lt;a class="headerlink" href="#altered-tests" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;When the change was made to the command line, I expected most of the existing scenario
+tests that deal with the command line to fail, and I was not disappointed.  For most of
+the existing tests, I just needed to add the &lt;code&gt;scan&lt;/code&gt; keyword to the right position in the
+arguments list, as that was the workflow that already had tests before this point.  I
+stopped counting those changes after I passed the count of 20.&lt;/p&gt;
+&lt;p&gt;But it was a very useful task.  As I progressed through the tests, I was able to see
+how specifying the workflow or subcommand was enhancing the tests. It just gave each
+test a bit more context that I felt was missing before.  I was able to find a couple
+of small issues that I would have otherwise missed because of the organization.&lt;/p&gt;
+&lt;p&gt;To be blunt, between the command line changes and tests to cover them, it just felt
+like the project was that much more complete.&lt;/p&gt;
+&lt;h3 id="lather-rinse-repeat"&gt;Lather, Rinse, Repeat&lt;a class="headerlink" href="#lather-rinse-repeat" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;After all that work, there were little things there that I needed to work on.  I
+disliked how some of the code was organized, so I went back and tried to organize the code
+more thoughtfully along usage lines.  I poured through the coverage report and looked
+for missing coverage, adding scenario tests to provide any coverage for missed areas.
+Just general cleanup stuff.&lt;/p&gt;
+&lt;h2 id="adding-version-information-for-plugins"&gt;Adding Version Information For Plugins&lt;a class="headerlink" href="#adding-version-information-for-plugins" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;With that work in place, it was time to see if I was able to add something useful to the
+project’s configuration without many issues.  The something I had in mind was better
+version information for the plugins.  From a plugin point of view, I figured it would be
+useful to know what specific version was being attributed to that specific plugin.  From
+a plugin manager point of view, it would also be useful to be able to version the actual
+interface itself.  Both would be useful going forward, and useful to relate to
+the user of the application.&lt;/p&gt;
+&lt;p&gt;Changing the &lt;code&gt;FoundPlugin&lt;/code&gt; class to accept these two new version fields was easy, adding
+private
+fields and property functions to access them.  From there, I added those two parameters
+to each of the existing plugins, setting active plugins to &lt;code&gt;0.5.0&lt;/code&gt; and &lt;code&gt;1&lt;/code&gt; and setting
+inactive or “templated” plugins to &lt;code&gt;0.0.0&lt;/code&gt; and &lt;code&gt;1&lt;/code&gt;.  After adding some support in the
+&lt;code&gt;__register_individual_plugin&lt;/code&gt; function to ensure that both versions were in acceptable
+formats, I was ready to make the big change to expose that information.&lt;/p&gt;
+&lt;p&gt;Okay, maybe big change is a bit misleading.  In the &lt;code&gt;__handle_argparse_subparser_list&lt;/code&gt;
+function, I changed the setting of the &lt;code&gt;display_row&lt;/code&gt; variable to:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;display_row&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;
+    &lt;span class="n"&gt;next_plugin_id&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="s2"&gt;", "&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;join&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;next_plugin&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;plugin_names&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt;
+    &lt;span class="nb"&gt;str&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;next_plugin&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;plugin_enabled_by_default&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt;
+    &lt;span class="nb"&gt;str&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;is_enabled_now&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt;
+    &lt;span class="n"&gt;next_plugin&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;plugin_version&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;span class="p"&gt;]&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;and the setting of the &lt;code&gt;headers&lt;/code&gt; variable was changed to:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;headers&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s2"&gt;"id"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;"names"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;"enabled (default)"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;"enabled (current)"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;"version"&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;These were not big changes, but that was the point.  This was a relatively small change
+and if things were organized properly, it should have required a relatively small number
+of changes.  If that were not the case, I would have been worried.&lt;/p&gt;
+&lt;p&gt;And I was happy, as I had a good workflow to get output on the plugins like the following:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;  ID     NAMES                                ENABLED (DEFAULT)  ENABLED (CURRENT)  VERSION
+
+  md001  heading-increment, header-increment  True               True               0.5.0
+  md002  first-heading-h1, first-header-h1    False              False              0.5.0
+  md003  heading-style, header-style          True               True               0.5.0
+&lt;/pre&gt;&lt;/div&gt;
+&lt;h2 id="what-was-my-experience-so-far"&gt;What Was My Experience So Far?&lt;a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;While my efforts to have a completed configuration system with command line support is not
+fully implemented, this works moves the command line system a lot further along to being
+the beacon of the PyMarkdown project.  I realize that I still need a generic way of
+specifying override values for those values specified in the configuration file, but
+this is still a big step forward.  Now that I have the configuration and command line
+systems in place, I can spend a bit of reflective time looking for pieces of those
+systems that I missed while working on other issues.&lt;/p&gt;
+&lt;p&gt;I really am feeling that the project is coming together.  While it has never felt like
+a hodgepodge of functionality, I always had a feeling that it was just not quite ready to
+show to the public.  With each of these little subsystems that I am focusing on, that
+feeling is going away and is being replaced with a feeling of confidence that it is
+ready.  In my books, that is a really good feeling to have.&lt;/p&gt;
+&lt;h2 id="what-is-next"&gt;What is Next?&lt;a class="headerlink" href="#what-is-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;After nicely wrapping up configuration and the command line, there was only
+one thing left to do before I seriously thought about a beta release.  That was to
+resolve the remaining items in the Priority 1 section of the issues list.&lt;/p&gt;
+&lt;div class="footnote"&gt;
+&lt;hr/&gt;
+&lt;ol&gt;
+&lt;li id="fn:yesIKnow"&gt;
+&lt;p&gt;Yes, I know that is not what this code snippet actually does.  I found that out by adding tests later in on in the process.  I fixed this issue later, in the section named &lt;a href="https://jackdewinter.github.io/2021/03/29/markdown-linter-road-to-initial-release-command-lines/#fixing-an-old-issue"&gt;Fixing An Old Issue&lt;/a&gt;. &lt;a class="footnote-backref" href="#fnref:yesIKnow" title="Jump back to footnote 1 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;li id="fn:usually"&gt;
+&lt;p&gt;Unless I was purposefully creating bad data to test failure cases, that is the form that I passed into the plugins for configuration. &lt;a class="footnote-backref" href="#fnref:usually" title="Jump back to footnote 2 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/div&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry><entry><title>Markdown Linter - Road To Initial Release - Configuration</title><link href="https://jackdewinter.github.io/2021/03/22/markdown-linter-road-to-initial-release-configuration/" rel="alternate"></link><published>2021-03-22T00:00:00-07:00</published><updated>2021-03-22T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2021-03-22:/2021/03/22/markdown-linter-road-to-initial-release-configuration/</id><summary type="html">
 &lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;In my
 &lt;a href="https://jackdewinter.github.io/2021/03/15/markdown-linter-road-to-initial-release-front-matter/"&gt;last article&lt;/a&gt;, I talked about
@@ -38,8 +603,10 @@ properly store it.&lt;/p&gt;
 my goal for this technical article is to focus on the reasoning behind my solutions,
 rather that the solutions themselves.  For a full record of the solutions presented in
 this article, please go to this project’s GitHub repository and consult the
-commit for
-&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/f4c785d6d15734208d995067b1de486d30bd6cea"&gt;04 Mar 2021&lt;/a&gt;.&lt;/p&gt;
+commit between
+&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/8a30dee0c0105898258e6074d5058556c08410ca"&gt;06 Mar 2021&lt;/a&gt;
+and
+&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/486c1cc77f828b710b2d15bb469e37a5dc032d6f"&gt;11 Mar 2021&lt;/a&gt;.&lt;/p&gt;
 &lt;h2 id="what-is-configuration"&gt;What Is Configuration?&lt;a class="headerlink" href="#what-is-configuration" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;At face value, configuration is anything that provides information that guides the
 execution of the project.  While input information is one class of configuration,
@@ -9281,393 +9848,4 @@ firmly believe that this work, and the work that follows in the next couple of w
 builds that testing foundation.&lt;/p&gt;
 &lt;h2 id="what-is-next"&gt;What is Next?&lt;a class="headerlink" href="#what-is-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;No surprise here, more issues to address, and still focusing on newline and links.
-Stay tuned!&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry><entry><title>Markdown Linter - Delving Into the Issues - 2</title><link href="https://jackdewinter.github.io/2020/10/05/markdown-linter-delving-into-the-issues-2/" rel="alternate"></link><published>2020-10-05T00:00:00-07:00</published><updated>2020-10-05T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-10-05:/2020/10/05/markdown-linter-delving-into-the-issues-2/</id><summary type="html">
-&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;In my
-&lt;a href="https://jackdewinter.github.io/2020/09/28/markdown-linter-delving-into-the-issues-1/"&gt;last article&lt;/a&gt;,
-I started to tackle a few of the items on the project’s issues list.  As the imaginative
-title for this article suggests, this article details more of the effort to reduce the
-items on the issues list.&lt;/p&gt;
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;As I mentioned in the last …&lt;/p&gt;</summary><content type="html">
-&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;In my
-&lt;a href="https://jackdewinter.github.io/2020/09/28/markdown-linter-delving-into-the-issues-1/"&gt;last article&lt;/a&gt;,
-I started to tackle a few of the items on the project’s issues list.  As the imaginative
-title for this article suggests, this article details more of the effort to reduce the
-items on the issues list.&lt;/p&gt;
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;As I mentioned in the last article, this part of the project is not about anything
-stellar, just going through the issues list and removing one item at a time.  Far from
-moving a mountain by itself, it is all about moving that mountain one pebble at a time.
-The work for this week was no different.  It was just about dealing with 6 items from
-the issues list and either proving they are not an issue or fixing the item if it
-really is an issue.&lt;/p&gt;
-&lt;h2 id="what-is-the-audience-for-this-article"&gt;What Is the Audience for This Article?&lt;a class="headerlink" href="#what-is-the-audience-for-this-article" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;While detailed more eloquently in
-&lt;a href="https://jackdewinter.github.io/2020/04/05/what-is-the-audience-for-my-blog/#what-is-the-audience-for-my-blog"&gt;this article&lt;/a&gt;,
-my goal for this technical article is to focus on the reasoning behind my solutions,
-rather that the solutions themselves.  For a full record of the solutions presented in
-this article, please go to this project’s GitHub repository and consult the
-commits between
-&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/57d7add2a3b51b0cfb9df9446f9c13b61f100ea4"&gt;15 Sep 2020&lt;/a&gt;
-and
-&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/663191ae12e13fe058507b8c0f85dfc69ae38af5"&gt;20 Sep 2020&lt;/a&gt;.&lt;/p&gt;
-&lt;h2 id="rounding-out-coverage"&gt;Rounding Out Coverage&lt;a class="headerlink" href="#rounding-out-coverage" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;While the entry for this issue:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="k"&gt;each&lt;/span&gt; &lt;span class="n"&gt;inline&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt; &lt;span class="n"&gt;surrounded&lt;/span&gt; &lt;span class="k"&gt;by&lt;/span&gt; &lt;span class="nb"&gt;text&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;was short, I knew that this issue was all about completing the code coverage on
-recently changed code.  I was already aware that more than half of the cases in the
-consistency check
-&lt;code&gt;__verify_first_inline_setext&lt;/code&gt; function had the default &lt;code&gt;assert False&lt;/code&gt; code put there as
-a placeholder.  In addition, as soon as I looked the rest of the code, it was obvious
-that I had not tested a lot of the inline sequences within an Atx Heading element or a
-SetExt Heading element.  That entry was a reminder for me to circle back around 
-and fix it!&lt;/p&gt;
-&lt;p&gt;To accomplish that, I started by working with each inline element and its relevant
-position in a line of the Markdown document.  Tests 1 to 11 dealt with each inline
-element at the
-start of the line with text after it, tests 12 to 20 dealt with each element with text
-on either side of it, and tests 21 to 31 dealt with each element at the end of the line
-with text before it.  For good measure, I added tests 32 to 42 which were each inline
-element by itself on a line.  Once that was accomplished for the simple case, the
-Paragraph element, I cloned those tests into 2 other sets of tests, one for Atx Heading
-elements and one for SetExt Heading elements. Once cloned, I introduce a small change
-for both elements, the Atx Heading tests starting
-with the sequence &lt;code&gt;#{space}&lt;/code&gt; at the start of each line and the SetExt Heading tests
-having the sequence &lt;code&gt;---&lt;/code&gt; follow the test text on the next line.&lt;/p&gt;
-&lt;h3 id="what-did-i-find"&gt;What Did I Find?&lt;a class="headerlink" href="#what-did-i-find" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;Running the tests after completing those changes, I found two expected results and one
-unexpected result.  The first expected result was that the new tests rounded out
-the &lt;code&gt;__verify_first_inline_setext&lt;/code&gt; function by providing good examples for each of
-the inline elements, except for the Hard Line Break element.  The Hard Line Break element
-has some special rules, so in most cases the setup caused the text to not be interpreted
-into a Hard Line Break token, and just placed in a normal Text token.&lt;/p&gt;
-&lt;p&gt;The second expected result was that several of the &lt;code&gt;__handle_last_token_&lt;/code&gt; functions
-needed adjustment when evaluated within the bounds of a SetExt Heading element. During
-the creation of those functions, as evidenced by the work required in the
-&lt;code&gt;__verify_first_inline_setext&lt;/code&gt; function, testing within a SetExt Heading element was
-almost entirely missed.  While it was not difficult to address, the testing clearly
-showed that I needed to add the following code to each &lt;code&gt;__handle_last_token_&lt;/code&gt; function
-to compensate:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;last_block_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_name&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="n"&gt;MarkdownToken&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_setext_heading&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-        &lt;span class="n"&gt;inline_height&lt;/span&gt; &lt;span class="o"&gt;+=&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Finally, the unexpected result was that the normal Paragraph processing and the Atx
-Heading processing were fine, requiring no fine tuning.  While I had hoped for that
-outcome, it was nice for it to happen.  I had expected at least one or two small issues
-to show up, but none appeared.&lt;/p&gt;
-&lt;h2 id="fixing-a-simple-yet-wincing-issue"&gt;Fixing A Simple, Yet Wincing Issue&lt;a class="headerlink" href="#fixing-a-simple-yet-wincing-issue" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Yes, I said a “wincing” issue.  While there are more colorful names for these issues,
-I prefer the name “wincing” as I believe it is clear, descriptive, and obvious.  Quite
-simply, these are a class of issues that are so simple that when I see them, I cannot
-help but wince that the error made it through any of my commit processes without being
-detected.  In this case, it was a typo where I typed &lt;code&gt;estiated_column_number&lt;/code&gt; instead of
-&lt;code&gt;estimated_column_number&lt;/code&gt;, before I copied it into many places.  Yeah, I winced.&lt;/p&gt;
-&lt;p&gt;While I was at it, I also decided to also tackle the issue:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="mi"&gt;52&lt;/span&gt;&lt;span class="nv"&gt;e&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="nv"&gt;make&lt;/span&gt; &lt;span class="nv"&gt;new&lt;/span&gt; &lt;span class="nv"&gt;case&lt;/span&gt; &lt;span class="nv"&gt;with&lt;/span&gt; &lt;span class="nv"&gt;different&lt;/span&gt; &lt;span class="nv"&gt;indent&lt;/span&gt; &lt;span class="nv"&gt;levels&lt;/span&gt; &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="nv"&gt;each&lt;/span&gt;`
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Like my reasons for doing the work in the previous section on
-&lt;code&gt;Rounding Out Coverage&lt;/code&gt;, I just had doubts about whether I had missed anything
-with the scenario test 52e.  With previous issues, I had seen a handful of false
-positives occur from a test having a constant number of indent spaces. I believe my
-feeling was that to truly test this scenario, I needed to add a test where the number of
-ident spaces varied from line to line.  As such, I cloned scenario test 52e into 52f,
-altering the indents on the second and third line to 3 spaces and 1 space, respectively.&lt;/p&gt;
-&lt;h3 id="what-did-i-find_1"&gt;What Did I Find?&lt;a class="headerlink" href="#what-did-i-find_1" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;One of the amusing things that I found out is that I get really embarrassed by simple
-typos. Other than that, while I was right to question the indents from scenario test 52e,
-the newly added scenario test 52f confirmed that the code was handling the indents
-properly.&lt;/p&gt;
-&lt;h2 id="verifying-the-rehydration-index"&gt;Verifying the Rehydration Index&lt;a class="headerlink" href="#verifying-the-rehydration-index" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;In looking at this issue, I could easily tell beforehand that it was going to be
-a research issue:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="nv"&gt;why&lt;/span&gt;?  &lt;span class="nv"&gt;shouldn&lt;/span&gt;&lt;span class="s1"&gt;'&lt;/span&gt;&lt;span class="s"&gt;t each one be of the proper length?&lt;/span&gt;
-```
-  &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="nv"&gt;split_extracted_whitespace&lt;/span&gt; &lt;span class="nv"&gt;and&lt;/span&gt; &lt;span class="nv"&gt;last_token&lt;/span&gt;.&lt;span class="nv"&gt;rehydrate_index&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt; &lt;span class="nv"&gt;len&lt;/span&gt;&lt;span class="ss"&gt;(&lt;/span&gt;
-            &lt;span class="nv"&gt;split_extracted_whitespace&lt;/span&gt;
-        &lt;span class="ss"&gt;)&lt;/span&gt;:
-```
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Introduced when I was working on the Markdown transformer, the &lt;code&gt;rehydrate_index&lt;/code&gt; field
-of the Paragraph token is not serialized with the other fields in the token.  It is used
-exclusively for tracking the index into the Paragraph token’s &lt;code&gt;extracted_whitespace&lt;/code&gt;
-field.  When I reviewed this code for another issue, I believe that I saw something
-about this statement that made me question why it was needed or what it was used for.&lt;/p&gt;
-&lt;h3 id="what-did-i-find_2"&gt;What Did I Find?&lt;a class="headerlink" href="#what-did-i-find_2" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;After adding extra debug statements and running through the tests, I started
-to understand why I might have had issues with this code.  Normally, when software
-developers talk about an index, they are referring to a number that is 0 based instead
-of a position which is 1 based.  Basically, the difference is whether the counting
-starts with 0, as with an index, or the counting starts with 1, as with a position.
-From a purist point of view, this field
-is named properly: if the field has a value of 0, it is referring to the set of
-characters before the first newline character in the &lt;code&gt;extracted_whitespace&lt;/code&gt; field.
-Another way to look at this is that when the line is split on the newline character into
-an array, as I often do for processing, the 0th element is the first element.&lt;/p&gt;
-&lt;p&gt;However, when this field is used, it has the appearance of being a position.  The
-&lt;code&gt;extracted_whitespace&lt;/code&gt; field holds any leading whitespace for a Paragraph token.
-Accordingly, any whitespace
-before the first newline in that field is applied as leading whitespace to that text
-string as soon as that string’s processing starts.  As such, if there are multiple lines
-in the paragraph, the &lt;code&gt;rehydrate_index&lt;/code&gt; field is set to 1 almost from the very
-beginning of processing.  So, while
-it is properly called an index, it can appear to look like a position based on its usage.&lt;/p&gt;
-&lt;p&gt;Following that information back to the code sample above, my question now made sense.
-However, while the naming could perhaps be better, it is indeed an index that somewhat
-behaves like a position, with that duality causing the confusion.  In the end, after a
-decent amount of review, I resolved this issue without any changes except for an extra
-assert statement and some debug.  I felt that the name of the variable and the
-variable’s use were both exactly what they should be.&lt;/p&gt;
-&lt;h2 id="fenced-code-blocks-and-blank-lines"&gt;Fenced Code Blocks and Blank Lines&lt;a class="headerlink" href="#fenced-code-blocks-and-blank-lines" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;This issue was an interesting one:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="nv"&gt;verify&lt;/span&gt; &lt;span class="nv"&gt;that&lt;/span&gt; &lt;span class="mi"&gt;2&lt;/span&gt; &lt;span class="nv"&gt;blank&lt;/span&gt; &lt;span class="nv"&gt;lines&lt;/span&gt; &lt;span class="nv"&gt;solution&lt;/span&gt;
-`&lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="nv"&gt;previous_inline_token&lt;/span&gt;.&lt;span class="nv"&gt;token_name&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="nv"&gt;MarkdownToken&lt;/span&gt;.&lt;span class="nv"&gt;token_blank_line&lt;/span&gt;`
-&lt;span class="nv"&gt;does&lt;/span&gt; &lt;span class="nv"&gt;not&lt;/span&gt; &lt;span class="nv"&gt;affect&lt;/span&gt; &lt;span class="nv"&gt;single&lt;/span&gt; &lt;span class="nv"&gt;line&lt;/span&gt; &lt;span class="nv"&gt;and&lt;/span&gt; &lt;span class="mi"&gt;3&lt;/span&gt;&lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="nv"&gt;line&lt;/span&gt; &lt;span class="nv"&gt;solutions&lt;/span&gt;
-  &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="nv"&gt;why&lt;/span&gt; &lt;span class="nv"&gt;needed&lt;/span&gt;?
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;From the start of the work on this issue, I knew it was going to either be
-very simple or very complex.  The easy part of working on this issue was adding 4 new
-scenario tests, 99f to 99i, to check for any abnormalities.  Based on the information
-contained in the issue’s text, those new tests included multiple blank lines as well as
-mixing blank lines and text lines within the Fenced Code Block element.&lt;/p&gt;
-&lt;h3 id="what-did-i-find_3"&gt;What Did I Find?&lt;a class="headerlink" href="#what-did-i-find_3" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;The first thing I did after running the tests was to adjust the produced tokens to the
-new values, after manually verifying each one individually.  Considering how the
-coalescing processor merged the Text tokens together, the text and the line/column
-numbers for each token seemed fine.  What
-was immediately different was the HTML that was produced.  Instead of being a direct
-interpretation of the Markdown, the resultant HTML had a few newlines missing.&lt;/p&gt;
-&lt;p&gt;Far from being easy to find, this issue took me 2 days of research to find and diagnose,
-revealing problems with both the HTML transformer and the Markdown transformer. This
-issue just proved to be very difficult to isolate and identify.&lt;/p&gt;
-&lt;h3 id="addressing-the-issue"&gt;Addressing the Issue&lt;a class="headerlink" href="#addressing-the-issue" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;For
-the HTML transformer, additional logic needed to be added to track past characters.
-For whatever reason, when there are 2 blank lines in a Fenced Code Block element,
-one of the newline characters is not emitted.  &lt;/p&gt;
-&lt;p&gt;To properly address this issue, newlines needed to be added in 3 areas.  The first
-area was in the handling of the text token, where a Text token preceded by 2 Blank
-Line tokens, requiring a newline to be added.  The second area was in the handling
-of a Blank Line token to make sure that the newline was only added in the right cases.
-Finally, at the end of a Fenced Code Block element, another check needed to be added
-for the multiple Blank Line tokens, adding a newline if they were found.&lt;/p&gt;
-&lt;p&gt;After completing that grueling episode of debugging, my focus turned to the Markdown
-transformer and consistency checks.  While I was dreading another 2 days of research
-into the issue and how it affected the Markdown transformer, the results there was
-very easy to see and diagnose.  When a switch is made from rehydrating a Text token
-to rehydrating a Blank Line token, a newline is omitted in the process.  As such, it
-was easy to identify this case and add an extra newline before focusing on the
-rehydration of the Blank Line token.&lt;/p&gt;
-&lt;p&gt;Having fixed that issue, I reran the scenario tests and got a series of weird
-errors complaining about &lt;code&gt;current_token&lt;/code&gt; and &lt;code&gt;None&lt;/code&gt;.  That was quickly tracked down
-to working code for handling the last token in a consistency check, and checking
-to see if the &lt;code&gt;inline_height&lt;/code&gt; variable needed to be increased by 1 to take care of
-the end Fenced Code Block token.  After adding a quick check to make sure that it was
-not &lt;code&gt;None&lt;/code&gt;, all the tests ran without issue.&lt;/p&gt;
-&lt;p&gt;I had mixed emotions about this issue as I worked through it.  On one hand, it was
-not
-a simple issue, so it was good to get it out of the way.  Whether it was pride or
-confidence, I was pretty sure that most of the simple issues had been cleaned
-up, and this easily was not a simple issue.  On the other hand, to find an issue
-like this near the end of the first phase of the project was a bit disheartening.&lt;/p&gt;
-&lt;p&gt;In the end, I felt that the positives of finding and fixing this issue outweighed
-the negatives.  It took a while to clean up, but that scenario was now running
-properly.&lt;/p&gt;
-&lt;h2 id="testing-backslashes"&gt;Testing Backslashes&lt;a class="headerlink" href="#testing-backslashes" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;The item for this one was simple, yet descriptive:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="n"&gt;backslashes&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="mi"&gt;600&lt;/span&gt;
-  &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="n"&gt;verify&lt;/span&gt; &lt;span class="k"&gt;with&lt;/span&gt; &lt;span class="k"&gt;before&lt;/span&gt; &lt;span class="k"&gt;and&lt;/span&gt; &lt;span class="k"&gt;after&lt;/span&gt; &lt;span class="k"&gt;with&lt;/span&gt; &lt;span class="k"&gt;all&lt;/span&gt; &lt;span class="k"&gt;valid&lt;/span&gt; &lt;span class="n"&gt;inline&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;During the various passes I have made through the code, one thing that I worried about
-was whether each of the inline sequences properly handled the backslash character.
-While I was confident that the start sequences of inline elements were decently
-tested, I still retained a shred of doubt that I had missed something.  As for the
-end of the inline elements, the confidence level was somewhere between a shred of doubt
-and a hunch that I missed something.  Regardless, it was a good thing to check out
-and then check off the list.&lt;/p&gt;
-&lt;p&gt;To complete this task, the first part was simple:  I needed to come up with a series
-of scenario tests to cover all the cases for backslashes and inline character
-sequences.  So, starting with the Code Span element, I started working my way through
-the inline elements.  In each case, the main test was to make sure that a backslash
-character before the start inline sequence prevented the inline element from starting.
-Then, if there was an end inline sequence, I added an additional test to make sure that
-a backslash used right before the end of the sequence had the intended result.&lt;/p&gt;
-&lt;p&gt;Finally, to make sure all inline sequences were covered properly, I replicated each of
-the tests for all three inline blocks: Paragraph elements, Atx Heading elements, and
-SetExt Heading elements.  Tests 1 to 13 were for Paragraph elements, tests 14 to 26 were
-for SetExtHeading elements, and tests 27 to 39 were for the Atx Heading elements.&lt;/p&gt;
-&lt;h3 id="what-did-i-find_4"&gt;What Did I Find?&lt;a class="headerlink" href="#what-did-i-find_4" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;For this issue, I lucked out.  Each of the tests passed, without any issues.  But
-far from being a disappointment, researching this issue and adding the additional
-tests helped me put to rest any doubts that I had about backslash handling.&lt;/p&gt;
-&lt;h2 id="properly-escaping-special-characters"&gt;Properly Escaping Special Characters&lt;a class="headerlink" href="#properly-escaping-special-characters" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Unlike a lot of the other issues in this block of work, this item was clearly a task:&lt;/p&gt;
-&lt;blockquote&gt;
-&lt;p&gt;verify that any special characters used can be recognized and specially escaped&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;p&gt;To get to this point in the development of the project, I had to &lt;em&gt;enable&lt;/em&gt; certain
-characters to have additional meanings.  From the backspace character (\b) meaning
-“do not consider the previous character” to the replacement character (\a) allowing
-for a substitution to be documented, there were in all 5 characters that fit into
-this group.&lt;/p&gt;
-&lt;p&gt;According to the Github Flavored Markdown (GFM) specification,
-&lt;a href="https://github.github.com/gfm/#character"&gt;a character is&lt;/a&gt;:&lt;/p&gt;
-&lt;blockquote&gt;
-&lt;p&gt;a Unicode code point. Although some code points (for example, combining accents) do not correspond to characters in an intuitive sense, all code points count as characters for purposes of this spec.&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;p&gt;Following this logically, any character that is a classic ASCII control character, that
-is a character between 0 and 31, is considered part of the Unicode control characters
-group.  As all the special characters are classic control characters, they also exist
-as valid Unicode code points.  Therefore, if I wanted to use them as special characters,
-I had to make sure to escape them if they appeared in input.&lt;/p&gt;
-&lt;p&gt;So now, to complete this task, I just needed to figure out how to do that.&lt;/p&gt;
-&lt;h3 id="walking-on-the-shoulders-of-giants"&gt;Walking on The Shoulders of Giants&lt;a class="headerlink" href="#walking-on-the-shoulders-of-giants" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;Many languages face the same problem that I was then facing: how do we represent a
-control character in various formats while keeping the string readable?  In
-the case of strings in languages such as Python, the backslash character is the go-to
-choice.&lt;/p&gt;
-&lt;p&gt;A good example of this is the definition of the various special characters themselves.&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="n"&gt;__backspace_character&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="se"&gt;\b&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;
-    &lt;span class="n"&gt;__alert_character&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="se"&gt;\a&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;
-    &lt;span class="n"&gt;whitespace_split_character&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="se"&gt;\x02&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;
-    &lt;span class="n"&gt;replace_noop_character&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="se"&gt;\x03&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;
-    &lt;span class="n"&gt;blech_character&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="se"&gt;\x04&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;In the first two cases, the backslash precedes a character which is a stand-in for the
-control character.  In the two first cases, the &lt;code&gt;\b&lt;/code&gt; character is standing in for the
-backspace character (ASCII 08) and the &lt;code&gt;\a&lt;/code&gt; character is standing in for the bell or
-alert character (ASCII 07).  In the remaining cases, the &lt;code&gt;\x&lt;/code&gt; informs the Python
-interpreter that a 2-digit hexadecimal number will follow that is the actual character to
-insert into the string.  In all cases, there is a clear understanding of what the
-character is, due to the backslash character escaping the readable form of the character
-to insert.&lt;/p&gt;
-&lt;p&gt;For the processing of Markdown documents, the backslash was not a good character to use.
-The biggest advocate against its use was that it was already being used as an escape
-character
-for Markdown’s special characters.  To efficiently escape the desired character
-sequences, the
-chosen sequence would have to be one that rarely showed up in the normal Markdown
-document.  Unimaginatively, I ended up choosing the character &lt;code&gt;\x05&lt;/code&gt;.&lt;/p&gt;
-&lt;p&gt;I could try and explain why it was the best choice, giving lots of made up reasons, but
-in this case, the reason was simple: 5 follows after 4.  It made a lot of sense to
-pick another control character for the escaping character, as the other characters were
-all in that group.  At that point, after eliminating any control characters that were
-commonly used, there were roughly 25 characters left.  Any character would have been
-just as good as the others, so I just picked the next one in the sequence.  Sometimes
-you need to solidly think something through, and sometimes you just need to pick
-something that just works.  This was definitely a “just works” moment.&lt;/p&gt;
-&lt;h3 id="making-the-change"&gt;Making The Change&lt;a class="headerlink" href="#making-the-change" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;From the outset, I knew that if I did this change properly, the bulk of the work would
-be contained within the &lt;code&gt;ParserHelper&lt;/code&gt; class and the &lt;code&gt;InlineProcessor&lt;/code&gt; class.  The
-changes to the &lt;code&gt;InlineProcessor&lt;/code&gt; class were easy to define. When parsing inline blocks
-of text, I would need to specifically look for any of the special characters, escaping
-them before moving forward with the rest of the string.  For any processing after that
-change had been made, I knew that is where the &lt;code&gt;ParserHelper&lt;/code&gt; class came in.&lt;/p&gt;
-&lt;p&gt;Adding the following declaration to the top of the class:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;escape_character&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="se"&gt;\x05&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;the next function was easy.  To avoid a cycle in the module dependencies,
-the &lt;code&gt;valid_characters_to_escape&lt;/code&gt; function was added to allow the &lt;code&gt;InlineProcessor&lt;/code&gt; class
-query the &lt;code&gt;ParserHelper&lt;/code&gt; class for the characters to escape.  After that, to make sure
-that I had coded things properly, I added a series of 24 scenario tests prefixed with
-&lt;code&gt;test_textual_content_extra_&lt;/code&gt; to perform special character tests.  Starting with a
-simple test with an example that contained each special character, those tests quickly
-moved to testing various combinations of each character and normal text.  Each section
-picked a specific type of escaped character, including it in a simple string and
-interspersed with examples that produced the unescaped versions of those same characters.&lt;/p&gt;
-&lt;p&gt;A good example of this is the function &lt;code&gt;test_textual_content_extra_4&lt;/code&gt;.  Used to test
-the replacement character &lt;code&gt;\a&lt;/code&gt;, the Markdown document is as follows:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="err"&gt;\&lt;/span&gt;&lt;span class="n"&gt;a&lt;/span&gt;&lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="err"&gt;\&lt;/span&gt;&lt;span class="n"&gt;a&lt;/span&gt;&lt;span class="o"&gt;&amp;amp;&lt;/span&gt;&lt;span class="err"&gt;\&lt;/span&gt;&lt;span class="n"&gt;a&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;To prove that the code is working properly, an escaped replacement character must appear
-on either side of an actual replacement sequence, also using the &lt;code&gt;\a&lt;/code&gt; character.  This
-results in a Text token containing the text &lt;code&gt;\x05\a\a&amp;amp;\a&amp;amp;amp;\a\x05\a\a&amp;amp;\a&amp;amp;amp;\a\x05\a&lt;/code&gt;,
-as predicted.  It starts with the sequence &lt;code&gt;\x05\a&lt;/code&gt; to provide for an actual &lt;code&gt;\a&lt;/code&gt;
-character to be output.  The following sequence, &lt;code&gt;\a&amp;amp;\a&amp;amp;amp;\a&lt;/code&gt; then documents that the
-&lt;code&gt;&amp;amp;&lt;/code&gt; character was replaced with the text &lt;code&gt;&amp;amp;amp;&lt;/code&gt;.  From there, it just repeats enough
-times to make sure it works well.&lt;/p&gt;
-&lt;p&gt;Once that simple sequence and others like it with the &lt;code&gt;\a&lt;/code&gt; character were verified,
-this pattern was then repeated with the other inline containers: Atx Heading elements
-and SetExt Heading elements.&lt;/p&gt;
-&lt;h3 id="cleaning-up"&gt;Cleaning Up&lt;a class="headerlink" href="#cleaning-up" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;While these changes sound good in theory, in practice there were some issues that needed
-to be addressed.  The major change was the inclusion of the function
-&lt;code&gt;remove_escapes_from_text&lt;/code&gt;.  To ensure that those character were properly represented,
-I needed to be able to present a text string and have any instances of the escape
-character removed from them.  Basically, if I supplied a Markdown document of &lt;code&gt;\aa&lt;/code&gt;,
-that &lt;code&gt;\a&lt;/code&gt; character is then escaped, producing a token with the text &lt;code&gt;\x05\aa&lt;/code&gt;  When
-I go to use that text, I need to remove the “protection” of the escape character before
-rendering that text.&lt;/p&gt;
-&lt;p&gt;That was easy to do, and as I started adding calls to the &lt;code&gt;remove_escapes_from_text&lt;/code&gt;
-function, there were some previously working tests that started failing.  After doing a
-bit of research, the cases that were failing were a portion of the tests that relied
-on the &lt;code&gt;remove_x_from_text&lt;/code&gt; and &lt;code&gt;resolve_x_from_text&lt;/code&gt; functions.  In each of those
-functions, something like the following was being done:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;remove_backspaces_from_text&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;token_text&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
-        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;token_text&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;replace&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;ParserHelper&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__backspace_character&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;""&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;While that was acceptable before this change, there was one glaring error with it after
-this change: it was removing all backspace characters, including escaped ones.  Thought
-it took a bit more code, that one function was transformed into the following:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;remove_backspaces_from_text&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;token_text&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
-        &lt;span class="n"&gt;start_index&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;
-        &lt;span class="n"&gt;adjusted_text_token&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;token_text&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;:]&lt;/span&gt;
-        &lt;span class="n"&gt;next_backspace_index&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;ParserHelper&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__find_with_escape&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
-            &lt;span class="n"&gt;adjusted_text_token&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;ParserHelper&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__backspace_character&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;start_index&lt;/span&gt;
-        &lt;span class="p"&gt;)&lt;/span&gt;
-        &lt;span class="k"&gt;while&lt;/span&gt; &lt;span class="n"&gt;next_backspace_index&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-            &lt;span class="n"&gt;adjusted_text_token&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
-                &lt;span class="n"&gt;adjusted_text_token&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="n"&gt;next_backspace_index&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
-                &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;adjusted_text_token&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;next_backspace_index&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt; &lt;span class="p"&gt;:]&lt;/span&gt;
-            &lt;span class="p"&gt;)&lt;/span&gt;
-            &lt;span class="n"&gt;start_index&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;next_backspace_index&lt;/span&gt;
-            &lt;span class="n"&gt;next_backspace_index&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;ParserHelper&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__find_with_escape&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
-                &lt;span class="n"&gt;adjusted_text_token&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;ParserHelper&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__backspace_character&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;start_index&lt;/span&gt;
-            &lt;span class="p"&gt;)&lt;/span&gt;
-        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;adjusted_text_token&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;While it was not as simple, it was correct.  Create a copy of the string, and then look
-for the first occurrence of the backspace character that is not escaped.  When that
-is done, adjust that copy to remove that backspace, and then continue searching from
-there until there are no more backspaces to remove.&lt;/p&gt;
-&lt;p&gt;Finally, after all that work, there was only one set of cases left, special characters
-within a code span.  This was a special case because the characters needed to be
-preserved exactly, with no substitutions.  In the case of the code span, once the code
-span start character sequence is found, a scan is made to locate a matching end character
-sequence.  If it is found, the handler simply grabs and characters between the end of
-the start sequence and the start of the end sequence.  To properly escape these
-characters, the &lt;code&gt;escape_special_characters&lt;/code&gt; function was added.&lt;/p&gt;
-&lt;p&gt;After a lot of work, and a fair number of changes, the parser was cleanly handling the
-escaped characters.  From my point of view, that was a good, solid issue to end the work
-for the week on!&lt;/p&gt;
-&lt;h2 id="what-was-my-experience-so-far"&gt;What Was My Experience So Far?&lt;a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;While there were many little things to learn, the big thing that I am learning with
-this phase of the project is that the bulk of this work is in the research.  If I
-am having a good day, the research will take anywhere from 5 minutes to an hour,
-followed by at least an hour of retesting, or adding a slew of new tests and then
-retesting.  When that happens, I am grateful that it goes by so quickly.&lt;/p&gt;
-&lt;p&gt;And those positive experiences prepared me for experiences like the one that I had with
-Fenced Code Blocks this week.  They are frustrating and can make me want to pull my
-hair out.  I actually prefer the complex issues over these types of issues.  With those
-issues, I can more clearly see the issue by breaking down that complex systems into
-simpler systems that can then be analyzed individually.  For the Fenced Code Block
-issue, it was just a small nitpicky issue that I had to calmly analyze, looking within a
-small and complex set of variables to figure out.&lt;/p&gt;
-&lt;p&gt;It is at moments like that, when I am faced with tough issues, that I take the time
-to step back and try and get a better perspective.  While there are some issues that
-are more difficult like the Fenced Code Block issue, the bulk of the issues are
-relatively easy to diagnose given the right debug statements.  And fortunately, the
-bulk of the project’s design has held up nicely, so only a couple of small redesigns
-needed to be done.  All in all, it is not a bad place to be in.  Stepping back and
-really appreciating those parts of the project is what I believe keeps me sane.
-In the end, the severity of the issues and features evens out, even reducing in scope
-the further I get to the end of the project’s first phase.&lt;/p&gt;
-&lt;p&gt;Looking ahead, I know that I have a good handful of tough issues to deal with.
-Knowing that I was still able to keep a good perspective and keep my wits around me,
-I have confidence that I will be able to solve those issues.  Some of them may take
-an hour to solve, some may take a couple of days to solve, but I will solve them!&lt;/p&gt;
-&lt;h2 id="what-is-next"&gt;What is Next?&lt;a class="headerlink" href="#what-is-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Not to sound like I am repeating myself, but this part of the project is all about
-keeping the momentum going and solving another handful of issues.&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry></feed>
+Stay tuned!&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry></feed>
