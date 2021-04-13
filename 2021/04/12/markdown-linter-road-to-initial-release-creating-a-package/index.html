@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="author" content="Jack De Winter" />
+
+        <meta name="description" content="Summary¶ In my last article, I talked about resolved the remaining Priority 1 items from the issues list. In this article, I talk about how I worked through the issue in creating an installable package for the project. Introduction¶ Having invested a lot of time getting the PyMarkdown project to …
+" />
+        <meta property="og:type" content="article" />
+        <meta name="twitter:card" content="summary">
+
+<meta name="keywords" content="markdown linter, core linter, Software Quality, " />
+
+<meta property="og:title" content="Markdown Linter - Road To Initial Release - Creating A Package "/>
+<meta property="og:url" content="https://jackdewinter.github.io/2021/04/12/markdown-linter-road-to-initial-release-creating-a-package/" />
+<meta property="og:description" content="Summary¶ In my last article, I talked about resolved the remaining Priority 1 items from the issues list. In this article, I talk about how I worked through the issue in creating an installable package for the project. Introduction¶ Having invested a lot of time getting the PyMarkdown project to …" />
+<meta property="og:site_name" content="Jack&#39;s Digital Workbench" />
+<meta property="og:article:author" content="Jack De Winter" />
+<meta property="og:article:published_time" content="2021-04-12T00:00:00-07:00" />
+<meta name="twitter:title" content="Markdown Linter - Road To Initial Release - Creating A Package ">
+<meta name="twitter:description" content="Summary¶ In my last article, I talked about resolved the remaining Priority 1 items from the issues list. In this article, I talk about how I worked through the issue in creating an installable package for the project. Introduction¶ Having invested a lot of time getting the PyMarkdown project to …">
+
+        <title>Markdown Linter - Road To Initial Release - Creating A Package  · Jack&#39;s Digital Workbench
+</title>
+        <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://jackdewinter.github.io/theme/css/style.min.css?bec7d543">
+
+        <link href="https://jackdewinter.github.io/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Jack&#39;s Digital Workbench - Full Atom Feed" />
+
+
+    </head>
+    <body>
+        <div id="content">
+            <div class="navbar navbar-static-top">
+                <div class="navbar-inner">
+                    <div class="container-fluid">
+                        <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                        </a>
+                        <a class="brand" href="https://jackdewinter.github.io/"><span class=site-name>Jack's Digital Workbench</span></a>
+                        <div class="nav-collapse collapse">
+                            <ul class="nav pull-right top-menu">
+                                <li >
+                                    <a href=
+                                       https://jackdewinter.github.io
+                                    >Home</a>
+                                </li>
+                                <li ><a href="https://jackdewinter.github.io/categories">Categories</a></li>
+                                <li ><a href="https://jackdewinter.github.io/tags">Tags</a></li>
+                                <li ><a href="https://jackdewinter.github.io/archives">Archives</a></li>
+                                <li><form class="navbar-search" action="https://jackdewinter.github.io/search.html" onsubmit="return validateForm(this.elements['q'].value);"> <input type="text" class="search-query" placeholder="Search" name="q" id="tipue_search_input"></form></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="container-fluid">
+                <div class="row-fluid">
+                    <div class="span1"></div>
+                    <div class="span10">
+<article itemscope>
+<div class="row-fluid">
+    <header class="page-header span10 offset2">
+        <h1>
+            <a href="https://jackdewinter.github.io/2021/04/12/markdown-linter-road-to-initial-release-creating-a-package/">
+                Markdown Linter - Road To Initial Release - Creating A Package
+            </a>
+        </h1>
+    </header>
+</div>
+
+<div class="row-fluid">
+    <div class="span2 table-of-content">
+        <nav>
+        <h4>Contents</h4>
+        <div class="toc">
+<ul>
+<li><a href="#summary">Summary</a></li>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#what-is-the-audience-for-this-article">What Is the Audience for This Article?</a></li>
+<li><a href="#where-to-start">Where To Start?</a></li>
+<li><a href="#creating-a-new-setuppy">Creating a New Setup.py</a><ul>
+<li><a href="#the-most-important-parts-of-setup">The Most Important Parts of Setup</a><ul>
+<li><a href="#moving-version-information-into-a-single-module">Moving Version Information Into A Single Module</a></li>
+</ul>
+</li>
+<li><a href="#adding-documentation">Adding Documentation</a></li>
+<li><a href="#rounding-out-the-setup-properties">Rounding Out The Setup Properties</a></li>
+<li><a href="#almost-finished">Almost Finished</a></li>
+</ul>
+</li>
+<li><a href="#the-fun-begins-getting-packaging-to-work">The Fun Begins: Getting Packaging To Work</a><ul>
+<li><a href="#pass-1-getting-the-version-right">Pass 1: Getting The Version Right</a></li>
+<li><a href="#pass-2-file-name-casing-matters">Pass 2: File Name Casing Matters</a></li>
+<li><a href="#pass-3-making-sure-the-right-files-are-included">Pass 3: Making Sure The Right Files Are Included</a></li>
+<li><a href="#pass-4-lather-rinse-repeat">Pass 4: Lather, Rinse, Repeat</a></li>
+<li><a href="#and-it-was-done">And It Was Done</a></li>
+</ul>
+</li>
+<li><a href="#and-now-verifying-the-usage">And Now, Verifying The Usage</a><ul>
+<li><a href="#pass-1-proper-script-files">Pass 1: Proper Script Files</a></li>
+<li><a href="#pass-2-init-files">Pass 2:  Init Files</a></li>
+</ul>
+</li>
+<li><a href="#pass-3-including-data-files">Pass 3:  Including Data Files</a><ul>
+<li><a href="#pass-31-cleanup">Pass 3.1: Cleanup</a></li>
+</ul>
+</li>
+<li><a href="#what-was-my-experience-so-far">What Was My Experience So Far?</a></li>
+<li><a href="#what-is-next">What is Next?</a></li>
+</ul>
+</div>
+        </nav>
+    </div>
+    <div class="span8 article-content">
+            
+            
+<h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">¶</a></h2>
+<p>In my
+<a href="https://jackdewinter.github.io/2021/04/05/markdown-linter-road-to-initial-release-cleaning-up/">last article</a>, I talked about
+resolved the remaining Priority 1 items from the issues list.  In this article, I talk
+about how I worked through the issue in creating an installable package for the project.</p>
+<h2 id="introduction">Introduction<a class="headerlink" href="#introduction" title="Permanent link">¶</a></h2>
+<p>Having invested a lot of time getting the PyMarkdown project to a place where I feel
+confident in creating an initial release of the project, it was now time for me to create
+that release.  To be honest, I was not sure what to expect out of the Python setup
+process.  Creating releases for other languages is usually done as an add-on to the
+language, not part of the core language as Python does.  As such, I was genuinely
+interested in how the process would differ between Python and the other languages I have
+written installers for.</p>
+<p>Like everything else in this project, this was going to be a learning experience, and
+I was eager to get underway!</p>
+<h2 id="what-is-the-audience-for-this-article">What Is the Audience for This Article?<a class="headerlink" href="#what-is-the-audience-for-this-article" title="Permanent link">¶</a></h2>
+<p>While detailed more eloquently in
+<a href="https://jackdewinter.github.io/2020/04/05/what-is-the-audience-for-my-blog/#what-is-the-audience-for-my-blog">this article</a>,
+my goal for this technical article is to focus on the reasoning behind my solutions,
+rather that the solutions themselves.  For a full record of the solutions presented in
+this article, please go to this project’s GitHub repository and consult the
+commits between
+<a href="https://github.com/jackdewinter/pymarkdown/commit/a335ca8974d4260d47b5cd592f8c20e90dda6048">01 Apr 2021</a>
+and
+<a href="https://github.com/jackdewinter/pymarkdown/commit/937a1839e2a4695fbbd2b6e2f38c68994faf5c65">03 Apr 2021</a>.</p>
+<h2 id="where-to-start">Where To Start?<a class="headerlink" href="#where-to-start" title="Permanent link">¶</a></h2>
+<p>While the changes that I needed to perform on the project to get it from its then
+state to a packaged state were small, the path to get there was anything but short.
+Having done my usual research, I ended up finding three sources that I thought would
+be helpful to my effort:</p>
+<ul>
+<li><a href="https://github.com/nrempel/python-package-boilerplate">Nicolas Rempel</a></li>
+<li><a href="https://www.freecodecamp.org/news/build-your-first-python-package/">FreeCodeCamp</a></li>
+<li><a href="https://docs.python.org/3.8/distutils/setupscript.html">Python’s Own Setup Script documentation</a></li>
+</ul>
+<p>I liked Nicolas’ article on creating Python packages because it was the first article that
+I found in my searches that seemed to lay everything out on the table.  It felt that it
+provided me with a lot
+of useful information in a concrete, easy to digest form.  While I did have a couple of
+issues with his examples, I do believe that they were because I was trying to adapt his
+example as I went and messed things up.  The FreeCodeCamp article was useful in filling
+in the gaps that I found in Nicolas’ article, especially when it came to what to do after
+you had a package.  Finally, having the Python 3.8 library documentation helped me fill
+in the last bit of the knowledge that I needed to complete the setup process.  Together,
+with just a dash of experimentation thrown in for good measure, I was confident that I
+could create a Python package.  Even if that effort took a while.</p>
+<h2 id="creating-a-new-setuppy">Creating a New Setup.py<a class="headerlink" href="#creating-a-new-setuppy" title="Permanent link">¶</a></h2>
+<p>While I have had a local <code>setup.py</code> file on my machine for months, it was always something
+that I was toying around with, nothing concrete.  As such, I found that it was more
+efficient to start from scratch and
+create a new <code>setup.py</code> file based mostly on Nicolas’s article.  I do not have any
+issues with his use of mainline function calls, such as the ones that he uses to read the
+<a href="https://github.com/nrempel/python-package-boilerplate/blob/master/setup.py">readme.md</a>
+file from the directory, but I prefer things in functions.  From my perspective, it just
+helps me to keep things readable.  I did like the
+way he was organizing some of the values at the start of the module and decided to
+follow that approach.  Furthermore, I decided that it was more readable to have every
+value in variables, instead of being somewhat hidden in the call to the <code>setup</code> function,
+so I also made that change.</p>
+<h3 id="the-most-important-parts-of-setup">The Most Important Parts of Setup<a class="headerlink" href="#the-most-important-parts-of-setup" title="Permanent link">¶</a></h3>
+<p>For me, the four most important parts of any setup are: name of the package, version of
+the package, minimum required platform, and a declaration of any dependencies. Others can
+disagree with me on whether these things are the most important parts of any setup script,
+but I believe I have a strong argument in my favor.  It is a simple argument: without
+these four parts, the rest of the setup script is useless.  Any documentation without
+something to document is pointless.  Similarly, any declaration of what needs to be
+included in the package and how to access it are useless without that base declaration.
+At least in my mind, those four properties are always the foundation of any installation
+script.</p>
+<p>Using the <code>setup.py</code> module from the article Nicolas wrote as a good set of
+<a href="https://idioms.thefreedictionary.com/crib+note">crib notes</a>,
+I created a very basic module:</p>
+<div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">runpy</span>
+<span class="kn">from</span> <span class="nn">setuptools</span> <span class="kn">import</span> <span class="n">setup</span>
+
+<span class="n">PACKAGE_NAME</span> <span class="o">=</span> <span class="s2">"PyMarkdown"</span>
+<span class="n">SEMANTIC_VERSION</span> <span class="o">=</span> <span class="n">get_semantic_version</span><span class="p">()</span>
+<span class="n">MINIMUM_PYTHON_VERSION</span> <span class="o">=</span> <span class="s2">"3.8.0"</span>
+
+<span class="k">def</span> <span class="nf">parse_requirements</span><span class="p">():</span>
+    <span class="n">lineiter</span> <span class="o">=</span> <span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">open</span><span class="p">(</span><span class="s2">"install-requirements.txt"</span><span class="p">,</span> <span class="s2">"r"</span><span class="p">))</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">line</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">lineiter</span> <span class="k">if</span> <span class="n">line</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"#"</span><span class="p">)]</span>
+
+<span class="k">def</span> <span class="nf">get_semantic_version</span><span class="p">():</span>
+    <span class="n">version_meta</span> <span class="o">=</span> <span class="n">runpy</span><span class="o">.</span><span class="n">run_path</span><span class="p">(</span><span class="s2">"./version.py"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">version_meta</span><span class="p">[</span><span class="s2">"__version__"</span><span class="p">]</span>
+
+<span class="n">setup</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="n">PACKAGE_NAME</span><span class="p">,</span>
+    <span class="n">version</span><span class="o">=</span><span class="n">SEMANTIC_VERSION</span><span class="p">,</span>
+    <span class="n">python_requires</span><span class="o">=</span><span class="s2">"&gt;="</span> <span class="o">+</span> <span class="n">MINIMUM_PYTHON_VERSION</span><span class="p">,</span>
+    <span class="n">install_requires</span><span class="o">=</span><span class="n">parse_requirements</span><span class="p">(),</span>
+<span class="p">)</span>
+</pre></div>
+<p>It was not much, but it was a good start.  Both the package name and the minimum Python
+version required are hardwired in as they are almost never going to change.  The function
+<code>get_semantic_version</code> was written to encompass the code from the article to fetch the
+version number, and the <code>parse_requirements</code> function was written to encompass the
+requirements for the project.</p>
+<p>Since I decided to specify the installation requirements for the project in the file
+<code>install-requirements.txt</code>, I added a very simple version of this file with a single
+line present:</p>
+<div class="highlight"><pre><span></span>Columnar
+</pre></div>
+<h4 id="moving-version-information-into-a-single-module">Moving Version Information Into A Single Module<a class="headerlink" href="#moving-version-information-into-a-single-module" title="Permanent link">¶</a></h4>
+<p>It took me a bit to warm up to this, but after reading
+<a href="https://www.python.org/dev/peps/pep-0396/">PEP 396</a>,
+it just made sense.  If there is any reason to know the exact version of a Python library,
+the <code>__version__</code> field applied to the library name should contain the definitive version
+for that library.  Following this PEP just made sense but required some rearrangement of
+code in the project.</p>
+<p>Previously, the only place where the version information was kept was in the
+<code>__version_number</code> field of the <code>PyMarkdownLint</code> class.  While I debated an approach that
+would leverage that existing code, the simplicity of simply having a single <code>version.py</code>
+file just made more sense to me.  With the <code>get_semantic_version</code> function already present
+in the <code>setup.py</code> module, as detailed in the last section, I added the following code to
+the <code>PyMarkdownLint</code> class to reference that same file:</p>
+<div class="highlight"><pre><span></span>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">__get_semantic_version</span><span class="p">():</span>
+        <span class="n">file_path</span> <span class="o">=</span> <span class="vm">__file__</span>
+        <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isabs</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+        <span class="n">file_path</span> <span class="o">=</span> <span class="n">file_path</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">sep</span><span class="p">,</span> <span class="s2">"/"</span><span class="p">)</span>
+        <span class="n">last_index</span> <span class="o">=</span> <span class="n">file_path</span><span class="o">.</span><span class="n">rindex</span><span class="p">(</span><span class="s2">"/"</span><span class="p">)</span>
+        <span class="n">second_last_index</span> <span class="o">=</span> <span class="n">file_path</span><span class="o">.</span><span class="n">rindex</span><span class="p">(</span><span class="s2">"/"</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">last_index</span><span class="p">)</span>
+        <span class="n">file_path</span> <span class="o">=</span> <span class="n">file_path</span><span class="p">[</span><span class="mi">0</span> <span class="p">:</span> <span class="n">second_last_index</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="s2">"version.py"</span>
+        <span class="n">version_meta</span> <span class="o">=</span> <span class="n">runpy</span><span class="o">.</span><span class="n">run_path</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">version_meta</span><span class="p">[</span><span class="s2">"__version__"</span><span class="p">]</span>
+</pre></div>
+<p>This code is effectively the same code as in the <code>get_semantic_version</code> function of
+the <code>setup.py</code> module.  The only changes present were to deduce the executable path
+from the <code>__file__</code> variable
+and to determine the relative location of the <code>version.py</code> file from where that
+executable is located.</p>
+<p>After all this work, the only thing that was needed was a new <code>version.py</code> module:</p>
+<div class="highlight"><pre><span></span><span class="sd">"""</span>
+<span class="sd">Library version information.</span>
+<span class="sd">"""</span>
+
+<span class="n">__version__</span> <span class="o">=</span> <span class="s2">"0.5.0"</span>
+</pre></div>
+<p>and a small change to the <code>test_markdown_with_dash_dash_version</code> test function to fetch
+the version from the <code>version.py</code> module.</p>
+<h3 id="adding-documentation">Adding Documentation<a class="headerlink" href="#adding-documentation" title="Permanent link">¶</a></h3>
+<p>With those basics out of the way, it was time to add the documentation basics to
+the <code>setup.py</code> module:</p>
+<div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">load_readme_file</span><span class="p">():</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">"README.md"</span><span class="p">,</span> <span class="s2">"r"</span><span class="p">)</span> <span class="k">as</span> <span class="n">readme_file</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">readme_file</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+
+<span class="n">AUTHOR</span> <span class="o">=</span> <span class="s2">"Jack De Winter"</span>
+<span class="n">AUTHOR_EMAIL</span> <span class="o">=</span> <span class="s2">"jack.de.winter@outlook.com"</span>
+
+<span class="n">ONE_LINE_DESCRIPTION</span> <span class="o">=</span> <span class="s2">"A GitHub Flavored Markdown compliant Markdown linter."</span>
+<span class="n">LONG_DESCRIPTION</span> <span class="o">=</span> <span class="n">load_readme_file</span><span class="p">()</span>
+<span class="n">LONG_DESCRIPTION_CONTENT_TYPE</span> <span class="o">=</span> <span class="s2">"text/markdown"</span>
+<span class="n">KEYWORDS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"markdown"</span><span class="p">,</span> <span class="s2">"linter"</span><span class="p">,</span> <span class="s2">"markdown linter"</span><span class="p">]</span>
+
+<span class="n">PROJECT_CLASSIFIERS</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">"Development Status :: 4 - Beta"</span><span class="p">,</span>
+    <span class="s2">"Programming Language :: Python :: 3.7"</span><span class="p">,</span>
+    <span class="s2">"License :: OSI Approved :: MIT License"</span><span class="p">,</span>
+    <span class="s2">"Operating System :: OS Independent"</span><span class="p">,</span>
+<span class="p">]</span>
+
+<span class="n">setup</span><span class="p">(</span>
+    <span class="o">...</span>
+    <span class="n">author</span><span class="o">=</span><span class="n">AUTHOR</span><span class="p">,</span>
+    <span class="n">author_email</span><span class="o">=</span><span class="n">AUTHOR_EMAIL</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="n">ONE_LINE_DESCRIPTION</span><span class="p">,</span>
+    <span class="n">long_description</span><span class="o">=</span><span class="n">LONG_DESCRIPTION</span><span class="p">,</span>
+    <span class="n">long_description_content_type</span><span class="o">=</span><span class="n">LONG_DESCRIPTION_CONTENT_TYPE</span><span class="p">,</span>
+    <span class="n">keywords</span><span class="o">=</span><span class="n">KEYWORDS</span><span class="p">,</span>
+    <span class="n">classifiers</span><span class="o">=</span><span class="n">PROJECT_CLASSIFIERS</span><span class="p">,</span>
+<span class="o">...</span>
+</pre></div>
+<p>Most of these fields are self-explanatory and are simple string objects or lists of
+string objects.   The
+three fields that stand apart from that are the <code>LONG_DESCRIPTION</code> field,
+the <code>LONG_DESCRIPTION_CONTENT_TYPE</code> field, and the <code>PROJECT_CLASSIFIERS</code> field.</p>
+<p>The <code>LONG_DESCRIPTION_CONTENT_TYPE</code> field is the easiest of the three as it assumes that
+the <code>README</code> file for the project will always be <code>README.md</code>.  As such, the MIME content
+type for the long description will always be <code>text/markdown</code>.  For my projects, I feel
+that it is a good assumption to make, so that was an easy one to get out of the way. Then,
+to ensure that the <code>LONG_DESCRIPTION</code> field is always up to
+date, the <code>load_readme_file</code> function reads the contents of the <code>README.md</code> file and places
+them into the <code>LONG_DESCRIPTION</code> field. For me,
+these fields just make sense as I can contain a package description of the project and
+the GitHub description of the project in one place.</p>
+<p>Finding the right values for the <code>PROJECT_CLASSIFIERS</code> field was the tasks that I had the
+hardest time with out of the three fields.  With a seemingly
+<a href="https://pypi.org/classifiers/">endless page</a>
+of available classifiers, it was hard to narrow down the classifiers to a small set.
+While I am not comfortable that I have the right set of classifiers for the project,
+I believe I have a good set to start with.</p>
+<p>Looking at that work, the one thing that I needed to do to wrap it up was to
+make sure that the <code>README.md</code> file only contained information I wanted someone to
+see when they were having their initial look at the project.  While I do not want
+to hide the project’s issues list, I did not want it to be the first thing people
+saw.  As such, I moved it over into the new <code>issues.md</code> file.</p>
+<h3 id="rounding-out-the-setup-properties">Rounding Out The Setup Properties<a class="headerlink" href="#rounding-out-the-setup-properties" title="Permanent link">¶</a></h3>
+<p>According to my research, the only two other fields that I needed to add were the <code>scripts</code>
+field and the <code>packages</code> field.  The <code>packages</code> field was the easy one to define out of
+those two: I simply needed to list all the packages for the project.<sup id="fnref:duh"><a class="footnote-ref" href="#fn:duh">1</a></sup>  While both
+examples use the <code>setuptools</code> module and its <code>find_packages</code> function, I wanted to
+maintain fine-grained control over the packages.  As such, I specified each package name
+separately.</p>
+<div class="highlight"><pre><span></span><span class="n">setup</span><span class="p">(</span>
+    <span class="o">...</span>
+    <span class="n">scripts</span><span class="o">=</span><span class="n">ensure_scripts</span><span class="p">([</span><span class="s2">"scripts/pymarkdown"</span><span class="p">]),</span>
+    <span class="n">packages</span><span class="o">=</span><span class="p">[</span>
+        <span class="s2">"pymarkdown"</span><span class="p">,</span>
+        <span class="s2">"pymarkdown.extensions"</span><span class="p">,</span>
+        <span class="s2">"pymarkdown.plugins"</span><span class="p">,</span>
+        <span class="s2">"pymarkdown.resources"</span><span class="p">,</span>
+    <span class="p">],</span>
+<span class="p">)</span>
+</pre></div>
+<p>For the specification on how to start the PyMarkdown application, it took me a while to
+decide on an action to use for that.  During my research phase, I had three possibilities
+for how to interact with the project itself: <code>py_modules</code>, <code>scripts</code>, and <code>entry_points</code>.
+There was barely any information on <code>entry_points</code> and how to use them, so I decided to
+not use those unless I found enough information to warrant changing to them.  Looking to
+my third reference source, the Python libraries documentation, I found this article
+on
+<a href="https://docs.python.org/3/distutils/setupscript.html#installing-scripts">setup scripts</a>.
+As that is what the standard libraries used, I decided that was the best way for this
+project.</p>
+<p>Looking at the example that Nicolas provided in his article, I quickly created my
+own script:</p>
+<div class="highlight"><pre><span></span><span class="ch">#!/usr/bin/env python</span>
+
+from pymarkdown import PyMarkdownLint
+PyMarkdownLint.main<span class="o">()</span>
+</pre></div>
+<p>but came across one glaring problem right away.  That script would work well on Linux
+systems, but my development environment is a Windows machine.  As I use the <code>PyLint</code>
+scanner on all my Python projects, I decided to look at how they solved this problem,
+and used their <code>ensure_scripts</code> function verbatim<sup id="fnref:since"><a class="footnote-ref" href="#fn:since">2</a></sup>:</p>
+<div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">ensure_scripts</span><span class="p">(</span><span class="n">linux_scripts</span><span class="p">):</span>
+    <span class="sd">"""</span>
+<span class="sd">    Creates the proper script names required for each platform (taken from PyLint)</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">util</span><span class="o">.</span><span class="n">get_platform</span><span class="p">()[:</span><span class="mi">3</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"win"</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">linux_scripts</span> <span class="o">+</span> <span class="p">[</span><span class="n">script</span> <span class="o">+</span> <span class="s2">".bat"</span> <span class="k">for</span> <span class="n">script</span> <span class="ow">in</span> <span class="n">linux_scripts</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">linux_scripts</span>
+</pre></div>
+<p>It is wonderful in its simplicity!  If the first three characters of the platform
+are <code>win</code>, then the function assumes that the list of scripts must refer to scripts
+that will work on a Windows machine.  It accomplishes this by adding another
+list of scripts to the list, this new list being comprised of every element of the
+original list, but with a <code>.bat</code> appended to the end.  With that, the last thing
+was to copy the <code>.bat</code> batch file format over from <code>PyLint</code>:</p>
+<div class="highlight"><pre><span></span><span class="p">@</span><span class="k">echo</span> off
+<span class="c1">rem Use python to execute the python script having the same name as this batch</span>
+<span class="c1">rem file, but without any extension, located in the same directory as this</span>
+<span class="c1">rem batch file</span>
+<span class="s2">"</span><span class="nv">%~dpn0</span><span class="s2">"</span> <span class="nv">%*</span>
+</pre></div>
+<p>I was not sure if that batch script was going to work, but if it was good enough for
+PyLint, I figured it was a good enough starting place for me.</p>
+<h3 id="almost-finished">Almost Finished<a class="headerlink" href="#almost-finished" title="Permanent link">¶</a></h3>
+<p>Two simple things were left before my first attempt to compile my first Python package.
+The first thing was to add a simple <code>LICENSE.txt</code> file to the project
+to establish the use of the project.  The other was to add a <code>__init__.py</code> module
+to the <code>pymarkdown</code> directory to make sure that the base of the project was considered
+a module for setup to pick up.</p>
+<p>With those two things addressed and out of the way, it was time to compile the setup
+for the project!</p>
+<h2 id="the-fun-begins-getting-packaging-to-work">The Fun Begins: Getting Packaging To Work<a class="headerlink" href="#the-fun-begins-getting-packaging-to-work" title="Permanent link">¶</a></h2>
+<p>To start compiling the setup, I included the <code>twine</code> and <code>setuptools</code> into my
+development environment using <code>pipenv install twine setuptools</code>.  Once that
+was complete, I added the following <code>package.cmd</code> script to the repository to make things
+easier:</p>
+<div class="highlight"><pre><span></span><span class="k">rmdir</span> /s /q dist
+<span class="k">rmdir</span> /s /q build
+<span class="k">rmdir</span> /s /q PyMarkdown.egg-info
+
+pipenv run python setup.py sdist bdist_wheel
+pipenv run twine check dist/*
+</pre></div>
+<p>It was nothing fancy, but it allowed me to repeatedly repackage the project to test
+any changes in an efficient manner.  Basically, it removes any signs of a previous
+build before running the <code>setup.py</code> script and then the <code>twine</code> script.  While it
+is not as fancy as the Gradle scripts I have for Java projects at work, I found that it
+is uncomplicated and works very well.  I purposefully did not add any error handling to
+the batch script as I wanted to make sure I saw all the information that was reported,
+unfiltered.</p>
+<p>To assist in testing those changes, I created a new project <code>pymtest</code> at the same level
+as the <code>PyMarkdown</code> project and left it almost empty for now.  I created that project
+to be my test installation environment, useful once I had a package to install.  For now,
+I just wanted to get it ready for later.  Thus, I created a simple <code>refresh_package.cmd</code>
+script with these contents:</p>
+<div class="highlight"><pre><span></span>pipenv uninstall PyMarkdown
+pipenv install ..\pymarkdown\dist\PyMarkdown-0.5.0.tar.gz
+</pre></div>
+<p>Simply, uninstall any existing <code>PyMarkdown</code> package and install a new one right from
+the <code>dist</code> directory of the <code>PyMarkdown</code> project.</p>
+<p>Now on to the real work: debugging the install script.</p>
+<h3 id="pass-1-getting-the-version-right">Pass 1: Getting The Version Right<a class="headerlink" href="#pass-1-getting-the-version-right" title="Permanent link">¶</a></h3>
+<p>Executing the <code>package.cmd</code> script, everything worked fine, and I had a new package to
+test!  Switching over to my test project, I executed the <code>refresh_package.cmd</code> batch
+script… and waited.  Looking at the output, the <code>uninstall</code> command was completing
+in under a second, but the install command was taking its time on the Resolving
+phase of installing the package.  It was agonizing!</p>
+<p>But when it was done, it displayed the following error:</p>
+<div class="highlight"><pre><span></span>    ERROR: Command errored out with exit status 1:
+...    
+    FileNotFoundError: [Errno 2] No such file or directory: '..pip-req-build-mfg5j1bu\\version.py'
+    ----------------------------------------
+ERROR: Command errored out with exit status 1: python setup.py egg_info Check the logs for full command output.
+</pre></div>
+<p>I tried a couple of different things with no luck before I opened the
+<code>PyMarkdown-0.5.0.tar.gz</code> archive file from the project’s <code>dist</code> directory and examined
+its contents.  When I did that, I noticed that there was no <code>version.py</code> file anywhere in
+the archive.</p>
+<p>At that point, I spent about an hour or so trying to figure out how to get that
+<code>version.py</code> file into the archive at the right place before deciding to go with a more
+intuitive approach.  After looking
+at how the files were installed after the <code>install pymarkdown</code> command was completed,
+it was obvious that my current approach would necessitate copying the <code>version.py</code> file
+into the <code>pymarkdown</code> directory.  So, instead of trying to figure out how to do that
+“complicated” action, I decided on the “simple” action to move the <code>version.py</code> file
+into the <code>pymarkdown</code> directory.</p>
+<p>With that decision made, I rewrote the <code>get_semantic_version</code> in the <code>setup.py</code>
+module as follows:</p>
+<div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">get_semantic_version</span><span class="p">():</span>
+    <span class="n">version_meta</span> <span class="o">=</span> <span class="n">runpy</span><span class="o">.</span><span class="n">run_path</span><span class="p">(</span><span class="s2">"./pymarkdown/version.py"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">version_meta</span><span class="p">[</span><span class="s2">"__version__"</span><span class="p">]</span>
+</pre></div>
+<p>I also rewrote the <code>__get_semantic_version</code> function in the <code>main.py</code> module as follows:</p>
+<div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">__get_semantic_version</span><span class="p">():</span>
+        <span class="n">file_path</span> <span class="o">=</span> <span class="vm">__file__</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isabs</span><span class="p">(</span><span class="n">file_path</span><span class="p">):</span>
+            <span class="k">assert</span> <span class="bp">False</span>
+        <span class="n">file_path</span> <span class="o">=</span> <span class="n">file_path</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">sep</span><span class="p">,</span> <span class="s2">"/"</span><span class="p">)</span>
+        <span class="n">last_index</span> <span class="o">=</span> <span class="n">file_path</span><span class="o">.</span><span class="n">rindex</span><span class="p">(</span><span class="s2">"/"</span><span class="p">)</span>
+        <span class="n">file_path</span> <span class="o">=</span> <span class="n">file_path</span><span class="p">[</span><span class="mi">0</span> <span class="p">:</span> <span class="n">last_index</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="s2">"version.py"</span>
+        <span class="n">version_meta</span> <span class="o">=</span> <span class="n">runpy</span><span class="o">.</span><span class="n">run_path</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">version_meta</span><span class="p">[</span><span class="s2">"__version__"</span><span class="p">]</span>
+</pre></div>
+<p>With the <code>version.py</code> file moved into the <code>pymarkdown</code> directory, and with both references
+to that file now looking for it in the new location, that error was now resolved.</p>
+<h3 id="pass-2-file-name-casing-matters">Pass 2: File Name Casing Matters<a class="headerlink" href="#pass-2-file-name-casing-matters" title="Permanent link">¶</a></h3>
+<p>After packaging the project again, I ran the <code>refresh_package.cmd</code> script and
+was now greeted with this error:</p>
+<div class="highlight"><pre><span></span>FileNotFoundError: [Errno 2] No such file or directory: 'README.md'
+</pre></div>
+<p>I examined the directory structure of the archive a good four or five times without any
+ideas coming to mind.  I even looked at the Python install pages to see if I could find
+anything. But all I could find with a list of the
+<a href="https://docs.python.org/3.8/distutils/sourcedist.html?highlight=readme#specifying-the-files-to-distribute">files to distribute</a>.
+This included other types of readme files, but not specifically the <code>README.md</code> file.
+Double checking the project that Nicolas set up, I saw that he was using <code>README.md</code> as
+a source for his long documentation without any apparent extra setup needed to include
+that file.  So, I figured it must be something else.</p>
+<p>That is when it hit me.  Windows has many uses as an operating system<sup id="fnref:religious"><a class="footnote-ref" href="#fn:religious">3</a></sup>, but one
+of the things I do not like about it is the case-insensitivity of the file system.  In
+this case, I had called the readme file <code>readme.md</code> instead of <code>READMD.md</code>.  Simply
+correcting the case of the file name resolved this issue.</p>
+<p>After a simple case of “cannot see the forest
+<a href="https://idioms.thefreedictionary.com/cannot+see+the+forest+for+the+trees">because of the trees</a>”,
+it was on to the next issue.</p>
+<h3 id="pass-3-making-sure-the-right-files-are-included">Pass 3: Making Sure The Right Files Are Included<a class="headerlink" href="#pass-3-making-sure-the-right-files-are-included" title="Permanent link">¶</a></h3>
+<p>This time, when I executed the <code>refresh_package.cmd</code> script after repackaging the project,
+I was greeted with this error:</p>
+<div class="highlight"><pre><span></span>FileNotFoundError: [Errno 2] No such file or directory: 'install-requirements.txt'
+</pre></div>
+<p>With some newfound experience under my belt, I immediately opened the archive and
+found that the <code>install-requirements.txt</code> file was not in the archive. Thankfully, in
+looking for solutions for the last error, I came across a solution to include data
+files into the setup process using a <code>MANIFEST.in</code> file. Located in the same section where
+I found the information detailing which files were
+automatically included in the setup archive,
+<a href="https://docs.python.org/3.8/distutils/sourcedist.html?highlight=readme#specifying-the-files-to-distribute">that section</a>
+there is information on the <code>MANIFEST.in</code> file near the end of that section.
+Following those instructions, I was quickly able to create a new <code>MANIFEST.in</code> file
+with the following contents:</p>
+<div class="highlight"><pre><span></span>include install-requirements.txt
+</pre></div>
+<p>After a quick repackaging and reinstalling, this error was indeed solved.</p>
+<h3 id="pass-4-lather-rinse-repeat">Pass 4: Lather, Rinse, Repeat<a class="headerlink" href="#pass-4-lather-rinse-repeat" title="Permanent link">¶</a></h3>
+<p>While that file was now present in the archive, the new error was complaining about
+a missing directory:</p>
+<div class="highlight"><pre><span></span>error: package directory 'pymarkdown\resources' does not exist
+</pre></div>
+<p>The main reason for this directory is to host the <code>entities.json</code> file.  That file
+contains each of the named entities, with the corresponding Unicode character they each
+entity maps to.  I tried adding
+an <code>__init__.py</code> and other such workarounds to get the file included, but nothing worked.
+Convinced that I had tried other approaches, I followed the same approach as the last
+section, and added it to the <code>MANIFEST.in</code> file:</p>
+<div class="highlight"><pre><span></span>include pymarkdown/resources/entities.json
+</pre></div>
+<p>I do not want to make it sound that I dislike the <code>MANIFEST.in</code> approach to including files
+in the setup archive.  I don’t.  But to me, it feels like that file is the last option to
+include files, with all other options having been exhausted.  For me, that is my own
+<a href="https://idioms.thefreedictionary.com/sniff+test">sniff test</a>
+for whether the use of the <code>MANIFEST.in</code> file is warranted. For example, I would rather
+figure out that I need to change the <code>readme.md</code> file into the <code>README.md</code> file before I
+thought about adding it to the <code>MANIFEST.in</code> file.  In this case, I was convinced that
+there was no other way to include the file, and as such, I had passed my own sniff test.</p>
+<h3 id="and-it-was-done">And It Was Done<a class="headerlink" href="#and-it-was-done" title="Permanent link">¶</a></h3>
+<p>With that change made, I was now seeing the refresh of the packaging complete without
+any errors:</p>
+<div class="highlight"><pre><span></span>Installing ..\pymarkdown\dist\PyMarkdown-0.5.0.tar.gz...
+Adding PyMarkdown to Pipfile's [packages]...
+Installation Succeeded
+Pipfile.lock (db4242) out of date, updating to (29513d)...
+Locking [dev-packages] dependencies...
+Locking [packages] dependencies...
+ Locking...Building requirements...
+Resolving dependencies...
+Success!
+Updated Pipfile.lock (29513d)!
+Installing dependencies from Pipfile.lock (29513d)...
+  ================================ 1/1 - 00:00:05
+To activate this project's virtualenv, run pipenv shell.
+Alternatively, run a command inside the virtualenv with pipenv run.
+</pre></div>
+<h2 id="and-now-verifying-the-usage">And Now, Verifying The Usage<a class="headerlink" href="#and-now-verifying-the-usage" title="Permanent link">¶</a></h2>
+<p>With everything looking good in the packaging and installation, the next step was
+to test the usage of the newly installed library.  With optimism in my heart, I went to
+execute my first test command, <code>pipenv run pymarkdown --help</code>, and I waited.  After a good
+couple of minutes, I killed the script, checked things again, and everything seemed fine.</p>
+<p>It seemed like I was not done debugging the setup process quite yet.</p>
+<h3 id="pass-1-proper-script-files">Pass 1: Proper Script Files<a class="headerlink" href="#pass-1-proper-script-files" title="Permanent link">¶</a></h3>
+<p>Having “imported” the script files from the PyLint project, I hoped they would work
+out of the box, but assumed that I would have to do some work to get them operational.
+I liked the idea of calling the <code>pymarkdown</code> script from the <code>pymarkdown.bat</code> script,
+but after 45 minutes and approximately 4 attempts at rewriting the scripts, I gave up.
+Just like before, I decided to go with simplicity for both files, the <code>pymarkdown</code> file:</p>
+<div class="highlight"><pre><span></span><span class="ch">#!/usr/bin/env python</span>
+
+<span class="kn">from</span> <span class="nn">pymarkdown</span> <span class="kn">import</span> <span class="n">PyMarkdownLint</span>
+<span class="n">PyMarkdownLint</span><span class="p">()</span><span class="o">.</span><span class="n">main</span><span class="p">()</span>
+</pre></div>
+<p>and the <code>pymarkdown.bat</code> file:</p>
+<div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">-</span><span class="n">c</span> <span class="s2">"from pymarkdown import PyMarkdownLint; PyMarkdownLint().main()"</span> <span class="o">%*</span>
+</pre></div>
+<p>Instead of having one script call the other, I opted for matching the contents of both
+scripts as closely as possible.  In the shell version, the
+<a href="https://en.wikipedia.org/wiki/Shebang_(Unix)">shebang</a>
+at the start of script takes care of invoking Python and Python itself takes care
+of the command line arguments.  In the batch script version, I needed to explicitly
+call Python with the <code>-c</code> argument to tell Python to execute the next argument as
+a Python script.  Finally, the <code>$*</code> at the end of that line causes any arguments passed
+to the batch script to be passed to the Python program specified with the <code>-c</code> argument.</p>
+<p>After a couple of tries, mostly due to small typing mistakes, when I executed the
+command line <code>pipenv run pymarkdown --help</code>, I was welcomed with the help documentation
+for the project.  Success!</p>
+<h3 id="pass-2-init-files">Pass 2:  Init Files<a class="headerlink" href="#pass-2-init-files" title="Permanent link">¶</a></h3>
+<p>With the batch
+script issue in the last section resolved, the execution of the test command
+<code>pipenv run pymarkdown --help</code> now yielded this error:</p>
+<div class="highlight"><pre><span></span>Traceback (most recent call last):
+  File "&lt;string&gt;", line 1, in &lt;module&gt;
+ImportError: cannot import name 'PyMarkdownLint' from 'pymarkdown' (C:\Users\jackd\.virtualenvs\pymtest-W-bOTTm6\lib\site-packages\pymarkdown\__init__.py)
+</pre></div>
+<p>Perhaps it is my knowledge of other programming languages, but I favor direct imports
+in the files that need them over the use of <code>__init__.py</code> modules.  For me, it just
+seems like overkill in 98% of the cases, leading to a hard-to-understand view of
+dependencies between files.  In the case of creating a setup package, this
+turned out to be one of the 2% cases that I had not come across yet.  </p>
+<p>But, seeing it as this was an obvious request for a proper <code>__init__.py</code> module, I added
+one to the <code>pymarkdown</code> package with the contents:</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pymarkdown.main</span> <span class="kn">import</span> <span class="n">PyMarkdownLint</span>
+</pre></div>
+<p>I do not use it in any of the other modules for the project, but it is there for the
+<code>setup.py</code> module and any others that need it.  As such, I can stay true to how I use
+<code>import</code> statements while providing the information that the setup scripts need.
+For me, that is a win-win.</p>
+<h2 id="pass-3-including-data-files">Pass 3:  Including Data Files<a class="headerlink" href="#pass-3-including-data-files" title="Permanent link">¶</a></h2>
+<p>With the <code>pipenv run pymarkdown --help</code> command now running without any issues, I wanted
+to include some more complex examples to test in the <code>refresh_package.cmd</code> script.  To
+that extent, I added the following lines to the end of that file:</p>
+<div class="highlight"><pre><span></span>pipenv run pymarkdown plugins list
+pipenv run pymarkdown plugins info md048
+pipenv run pymarkdown plugins info md047
+pipenv run pymarkdown scan ..\blog-content\website\content\articles
+</pre></div>
+<p>Going through the reinstall process with the new version of this script, the installation
+and the first three commands all went off without any issues.  However, when it got to the
+<code>scan</code> command, the following error was emitted:</p>
+<div class="highlight"><pre><span></span>BadTokenizationError encountered while initializing tokenizer:
+Named character entity map file '..\lib\site-packages\pymarkdown\resources\entities.json' was not loaded ([Errno 2] No such file or directory: '..\\lib\\site-packages\\pymarkdown\\resources\\entities.json').
+</pre></div>
+<p>Going back to the useful
+<a href="https://docs.python.org/3.8/distutils/sourcedist.html?highlight=readme#specifying-the-files-to-distribute">files to distribute section</a>,
+I quickly noticed that one of the items in the list was labelled
+<a href="https://docs.python.org/3.8/distutils/setupscript.html#installing-additional-files">Installing Additional Files</a>.
+This seemed to fit the situation that I had before me exactly.  Reading the information
+on the other side of that link, I knew what to do within a couple of minutes.  Within a
+couple more minutes, I had this change coded up and inserted at the end of the <code>setup</code>
+function call in the <code>setup.py</code> module:</p>
+<div class="highlight"><pre><span></span><span class="n">setup</span><span class="p">(</span>
+    <span class="o">...</span>
+    <span class="n">data_files</span><span class="o">=</span><span class="p">[(</span><span class="s1">'Lib/site-packages/pymarkdown/resources'</span><span class="p">,</span> <span class="p">[</span><span class="s1">'pymarkdown/resources/entities.json'</span><span class="p">])]</span>
+<span class="p">)</span>
+</pre></div>
+<p>Going through the entire process again, everything worked fine, and I was now done
+with the test scenarios I had in mind.  I tried a handful of additional scenarios to
+make sure I had them all covered, and each scenario worked as I expected it to. I
+had a fully functioning install script!</p>
+<h3 id="pass-31-cleanup">Pass 3.1: Cleanup<a class="headerlink" href="#pass-31-cleanup" title="Permanent link">¶</a></h3>
+<p>This was not really a pass on its own, but a little bit of cleanup that I wanted to
+do.  While looking at various other Python setup articles and library packages, I
+decided to add three more arguments to the <code>setup</code> function call:</p>
+<div class="highlight"><pre><span></span><span class="n">setup</span><span class="p">(</span>
+    <span class="o">...</span>
+    <span class="n">maintainer</span><span class="o">=</span><span class="n">AUTHOR</span><span class="p">,</span>
+    <span class="n">maintainer_email</span><span class="o">=</span><span class="n">AUTHOR_EMAIL</span><span class="p">,</span>
+    <span class="n">url</span><span class="o">=</span><span class="n">PROJECT_URL</span><span class="p">,</span>
+    <span class="o">...</span>
+</pre></div>
+<p>Since I am both the author and the maintainer, it just made sense to set the <code>maintainer</code>
+fields to the same values as with the <code>author</code> fields.  I also wanted people to be able to
+get more information on the project, so setting the <code>url</code> field also made sense.</p>
+<h2 id="what-was-my-experience-so-far">What Was My Experience So Far?<a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link">¶</a></h2>
+<p>Based on my experience with other languages, creating an installation package for the
+project in Python was a walk in the park.  There was no fancy extra packaging required,
+everything was written in Python.  While it took me about four hours to make sure
+everything was working properly, I would estimate that a similar installer for C# or
+Java would easily take at least eight hours to get into a similarly finished form.
+For me, that is a win.</p>
+<p>In general, I am very pleased with how this work went on getting the setup code into proper
+shape.  There were some very good examples that I could lean on to get my code working,
+and the starting points were all well-defined.  That made the distance I needed to travel
+from sample code to working code very short,  which was very pleasant for once.  During
+the creation of the setup script, I did notice a couple of extra things that I want to
+clean up before the initial release.  But like before, they are all small and reasonable,
+so I am confident I can make short work of them.</p>
+<h2 id="what-is-next">What is Next?<a class="headerlink" href="#what-is-next" title="Permanent link">¶</a></h2>
+<p>With the setup packaging complete for now, I move on to simplifying the output from
+some of the commands and starting to update the rules for the initial release.</p>
+<div class="footnote">
+<hr/>
+<ol>
+<li id="fn:duh">
+<p>I almost feel that a “duh?!” would be warranted here, but do not feel that it is appropriate. <a class="footnote-backref" href="#fnref:duh" title="Jump back to footnote 1 in the text">↩</a></p>
+</li>
+<li id="fn:since">
+<p>Since I took a look, someone refactored the setup code.  Please look at <a href="https://github.com/PyCQA/pylint/commit/e8b44339a28630e087373416e4e725e454ed025f#diff-60f61ab7a8d1910d86d9fda2261620314edcae5894d5aaa236b821c7256badd7">this code</a>, which is the code I cribbed from. <a class="footnote-backref" href="#fnref:since" title="Jump back to footnote 2 in the text">↩</a></p>
+</li>
+<li id="fn:religious">
+<p>This comment is not meant to start a religious war.  I firmly believe that there are many different jobs that need done, with some tools being the obvious choice for that job.  There are other jobs where the tools that can be used are more on personal preference combined with the job at hand.  For myself, operating systems are just that: tools. <a class="footnote-backref" href="#fnref:religious" title="Jump back to footnote 3 in the text">↩</a></p>
+</li>
+</ol>
+</div>
+
+
+             
+ 
+                <p id="post-share-links">
+    Like this post? Share on:
+    <a href="https://twitter.com/intent/tweet?text=Markdown%20Linter%20-%20Road%20To%20Initial%20Release%20-%20Creating%20A%20Package&url=https%3A//jackdewinter.github.io/2021/04/12/markdown-linter-road-to-initial-release-creating-a-package/&hashtags=markdown-linter,core-linter" target="_blank" rel="nofollow noopener noreferrer" title="Share on Twitter">Twitter</a>
+    ❄
+    <a href="https://www.facebook.com/sharer/sharer.php?u=https%3A//jackdewinter.github.io/2021/04/12/markdown-linter-road-to-initial-release-creating-a-package/" target="_blank" rel="nofollow noopener noreferrer" title="Share on Facebook">Facebook</a>
+    ❄
+    <a href="mailto:?subject=Markdown%20Linter%20-%20Road%20To%20Initial%20Release%20-%20Creating%20A%20Package&amp;body=https%3A//jackdewinter.github.io/2021/04/12/markdown-linter-road-to-initial-release-creating-a-package/" target="_blank" rel="nofollow noopener noreferrer" title="Share via Email">Email</a>
+    </p>
+
+            
+            
+
+
+
+
+
+
+<section>
+    <h6 style="display:none;">Comments</h6>
+    <p id="comment-message">So what do you think? Did I miss something? Is any part unclear? Leave your comments below. </p>
+
+    <div class="accordion" id="accordion2">
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                <a class="accordion-toggle disqus-comment-count comment-count"
+                   data-toggle="collapse"
+                   data-parent="#accordion2"
+                   href="https://jackdewinter.github.io/2021/04/12/markdown-linter-road-to-initial-release-creating-a-package/#comment_thread"
+                   id="comment-accordion-toggle">
+                    Comments
+                </a>
+            </div>
+            <div id="comment_thread" class="accordion-body collapse">
+                <div class="accordion-inner">
+                    <div class="comments">
+
+                        <script src="https://utteranc.es/client.js"
+        data-repo="jackdewinter/jackdewinter.github.io"
+        data-issue-term="markdown-linter-road-to-release-j"
+        data-label="Comments"
+        data-theme="github-light"
+        crossorigin="anonymous"
+        async>
+</script>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+            <hr/>
+            <aside>
+            <nav>
+            <ul class="articles-timeline">
+                <li class="previous-article">« <a href="https://jackdewinter.github.io/2021/04/05/markdown-linter-road-to-initial-release-cleaning-up/" title="Previous: Markdown Linter - Road To Initial Release - Cleaning Up">Markdown Linter - Road To Initial Release - Cleaning Up</a></li>
+            </ul>
+            </nav>
+            </aside>
+        </div>
+        <section id="article-sidebar" class="span2">
+    <h4>Reading Time</h4>
+    <p>~19 min read</p>
+            <h4>Published</h4>
+            <time itemprop="dateCreated" datetime="2021-04-12T00:00:00-07:00">Apr 12, 2021</time>
+        <h4>Markdown Linter Road To Initial Release</h4>
+    <ul class="multi-parts-list">
+            <li >
+            <a href="https://jackdewinter.github.io/2021/02/08/markdown-linter-road-to-initial-release-learned-and-useful-things/" title="Markdown Linter - Road To Initial Release - Learned and Useful Things">Part 1: Markdown Linter - Road To Initial Release - Learned and Useful Things</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2021/02/15/markdown-linter-road-to-initial-release-refactoring/" title="Markdown Linter - Road To Initial Release - Refactoring">Part 2: Markdown Linter - Road To Initial Release - Refactoring</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2021/02/22/markdown-linter-road-to-initial-release-starting-performance/" title="Markdown Linter - Road To Initial Release - Starting Performance">Part 3: Markdown Linter - Road To Initial Release - Starting Performance</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2021/03/01/markdown-linter-road-to-initial-release-measured-performance-increases/" title="Markdown Linter - Road To Initial Release - Measured Performance Increases">Part 4: Markdown Linter - Road To Initial Release - Measured Performance Increases</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2021/03/08/markdown-linter-road-to-initial-release-cleaning-up-the-list-and-readability/" title="Markdown Linter - Road To Initial Release - Cleaning Up The List and Readability">Part 5: Markdown Linter - Road To Initial Release - Cleaning Up The List and Readability</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2021/03/15/markdown-linter-road-to-initial-release-front-matter/" title="Markdown Linter - Road To Initial Release - Front-Matter">Part 6: Markdown Linter - Road To Initial Release - Front-Matter</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2021/03/22/markdown-linter-road-to-initial-release-configuration/" title="Markdown Linter - Road To Initial Release - Configuration">Part 7: Markdown Linter - Road To Initial Release - Configuration</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2021/03/29/markdown-linter-road-to-initial-release-command-lines/" title="Markdown Linter - Road To Initial Release - Command Lines">Part 8: Markdown Linter - Road To Initial Release - Command Lines</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2021/04/05/markdown-linter-road-to-initial-release-cleaning-up/" title="Markdown Linter - Road To Initial Release - Cleaning Up">Part 9: Markdown Linter - Road To Initial Release - Cleaning Up</a>
+            </li>
+            <li  class="active-part">
+            Part 10: Markdown Linter - Road To Initial Release - Creating A Package
+            </li>
+    </ul>
+            <h4>Category</h4>
+            <a class="category-link" href="https://jackdewinter.github.io/categories#software-quality-ref">Software Quality</a>
+            <h4>Tags</h4>
+            <ul class="list-of-tags tags-in-article">
+                <li><a href="https://jackdewinter.github.io/tags#core-linter-ref">core linter
+                    <span>50</span>
+</a></li>
+                <li><a href="https://jackdewinter.github.io/tags#markdown-linter-ref">markdown linter
+                    <span>68</span>
+</a></li>
+            </ul>
+<h4>Stay in Touch</h4>
+<div id="sidebar-social-link">
+    <a href="https://github.com/jackdewinter" title="github-alt" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="GitHub" role="img" viewBox="0 0 512 512"><rect width="512" height="512" rx="15%" fill="#1B1817"/><path fill="#fff" d="M335 499c14 0 12 17 12 17H165s-2-17 12-17c13 0 16-6 16-12l-1-50c-71 16-86-28-86-28-12-30-28-37-28-37-24-16 1-16 1-16 26 2 40 26 40 26 22 39 59 28 74 22 2-17 9-28 16-35-57-6-116-28-116-126 0-28 10-51 26-69-3-6-11-32 3-67 0 0 21-7 70 26 42-12 86-12 128 0 49-33 70-26 70-26 14 35 6 61 3 67 16 18 26 41 26 69 0 98-60 120-117 126 10 8 18 24 18 48l-1 70c0 6 3 12 16 12z"/></svg>
+    </a>
+    <a href="https://www.linkedin.com/in/jackdewinter/" title="linkedin" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="LinkedIn" role="img" viewBox="0 0 512 512" fill="#fff"><rect width="512" height="512" rx="15%" fill="#0077b5"/><circle cx="142" cy="138" r="37"/><path stroke="#fff" stroke-width="66" d="M244 194v198M142 194v198"/><path d="M276 282c0-20 13-40 36-40 24 0 33 18 33 45v105h66V279c0-61-32-89-76-89-34 0-51 19-59 32"/></svg>
+    </a>
+    <a href="https://jackdewinter.github.io/feeds/all.atom.xml" title="" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="RSS" role="img" viewBox="0 0 512 512"><rect width="512" height="512" rx="15%" fill="#f80"/><circle cx="145" cy="367" r="35" fill="#fff"/><path fill="none" stroke="#fff" stroke-width="60" d="M109 241c89 0 162 73 162 162M109 127c152 0 276 124 276 276"/></svg>
+    </a>
+</div>
+            
+
+
+
+
+
+            
+
+
+
+
+
+        </section>
+</div>
+</article>
+                    </div>
+                    <div class="span1"></div>
+                </div>
+            </div>
+        </div>
+<footer>
+    <div>
+        
+&copy; Copyright 2020 by Jack De Winter and licensed under a <a rel="license"
+  href="http://creativecommons.org/licenses/by/4.0/">
+  <img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/80x15.png" />
+  Creative Commons Attribution 4.0 International License</a>.
+
+    </div>
+
+
+
+
+    <div id="fpowered">
+        Powered by: <a href="http://getpelican.com/" title="Pelican Home Page" target="_blank" rel="nofollow noopener noreferrer">Pelican</a>
+        Theme: <a href="https://elegant.oncrashreboot.com/" title="Theme Elegant Home Page" target="_blank" rel="nofollow noopener noreferrer">Elegant</a>
+    </div>
+</footer>            <script src="//code.jquery.com/jquery.min.js"></script>
+        <script src="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>
+        <script>
+            function validateForm(query)
+            {
+                return (query.length > 0);
+            }
+        </script>
+
+    <script>
+    (function () {
+        if (window.location.hash.match(/^#comment-\d+$/)) {
+            $('#comment_thread').collapse('show');
+        }
+    })();
+    window.onhashchange=function(){
+        if (window.location.hash.match(/^#comment-\d+$/))
+            window.location.reload(true);
+    }
+    $('#comment_thread').on('shown', function () {
+        var link = document.getElementById('comment-accordion-toggle');
+        var old_innerHTML = link.innerHTML;
+        $(link).fadeOut(200, function() {
+            $(this).text('Click here to hide comments').fadeIn(200);
+        });
+        $('#comment_thread').on('hidden', function () {
+            $(link).fadeOut(200, function() {
+                $(this).text(old_innerHTML).fadeIn(200);
+            });
+        })
+    })
+</script>
+
+    </body>
+    <!-- Theme: Elegant built for Pelican
+        License : MIT -->
+</html>
