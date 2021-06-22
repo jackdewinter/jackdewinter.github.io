@@ -1,5 +1,304 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench - Software Quality</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/software-quality.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2021-06-14T00:00:00-07:00</updated><entry><title>Markdown Linter - Getting Stuff Done</title><link href="https://jackdewinter.github.io/2021/06/14/markdown-linter-getting-stuff-done/" rel="alternate"></link><published>2021-06-14T00:00:00-07:00</published><updated>2021-06-14T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2021-06-14:/2021/06/14/markdown-linter-getting-stuff-done/</id><summary type="html">
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench - Software Quality</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/software-quality.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2021-06-21T00:00:00-07:00</updated><entry><title>Markdown Linter - Elevating Extensions</title><link href="https://jackdewinter.github.io/2021/06/21/markdown-linter-elevating-extensions/" rel="alternate"></link><published>2021-06-21T00:00:00-07:00</published><updated>2021-06-21T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2021-06-21:/2021/06/21/markdown-linter-elevating-extensions/</id><summary type="html">
+&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In my
+&lt;a href="https://jackdewinter.github.io/2021/06/14/markdown-linter-getting-stuff-done/"&gt;last article&lt;/a&gt;, I talked
+about getting back to PyMarkdown and my efforts to remove items from the issues list.
+In this article, I talk about elevating the extension object support in the PyMarkdown
+project to the same level as plugins rules.&lt;/p&gt;
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;This is not going to …&lt;/p&gt;</summary><content type="html">
+&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In my
+&lt;a href="https://jackdewinter.github.io/2021/06/14/markdown-linter-getting-stuff-done/"&gt;last article&lt;/a&gt;, I talked
+about getting back to PyMarkdown and my efforts to remove items from the issues list.
+In this article, I talk about elevating the extension object support in the PyMarkdown
+project to the same level as plugins rules.&lt;/p&gt;
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;This is not going to be a terribly long article.  Not for lack of content, but for
+lack of cleanly reportable content.  For me, cleanly reportable contents are things
+that I can say “here is what I did” or “I did this because”.  And for this week’s
+work, that content is mostly about documentation and reorganization.&lt;/p&gt;
+&lt;p&gt;It was in the weeks leading up to this work that I started thinking about extensions
+in a different light.  That light was that extensions and plugin rules were similar
+concepts, but for different foundation objects.  As soon as that idea settled into
+my brain, I knew I needed to elevate extensions to the same level as plugins.&lt;/p&gt;
+&lt;p&gt;But here is the hard part for a writer.  Writing about documentation is boring.
+Writing about refactoring is boring.  “Hey, I refactored this function from
+this module to this other module and made it work” is not exactly something
+that screams “read me!”  Neither is talking about how I spent hours agonizing
+over trying to get the right theme and voice for the documentation.  I mean,
+readers that are writers may sympathize, but I am very sure that is all.
+And while I do talk about why I made certain moves
+or enhancements, there is only so much of that content available.&lt;/p&gt;
+&lt;p&gt;Here is to hoping that I can make refactoring and documentation more interesting!&lt;/p&gt;
+&lt;h2 id="what-is-the-audience-for-this-article"&gt;What Is the Audience for This Article?&lt;a class="headerlink" href="#what-is-the-audience-for-this-article" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;While detailed more eloquently in
+&lt;a href="https://jackdewinter.github.io/2020/04/05/what-is-the-audience-for-my-blog/#what-is-the-audience-for-my-blog"&gt;this article&lt;/a&gt;,
+my goal for this technical article is to focus on the reasoning behind my solutions,
+rather that the solutions themselves.  For a full record of the solutions presented in
+this article, please consult the commits that occurred between
+&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/59f4aa04507c0ae43a67de5634eb3c14a0f2866d"&gt;17 Jun 2021&lt;/a&gt;
+and
+&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/d5064dacc0d04cfaad0217ab3cb37fd6a22a031f"&gt;20 Jun 2021&lt;/a&gt;.&lt;/p&gt;
+&lt;h2 id="making-extensions-first-class-citizens"&gt;Making Extensions First-Class Citizens&lt;a class="headerlink" href="#making-extensions-first-class-citizens" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;It was a while ago when I started asking myself if extensions needed to be on the same level
+as plugin rules.  In any kind of rules engine, such as a linter, the object holding the
+rules is a first-class citizen by default.  Basically, you need the engine, and you need
+the rule.  Without either one, the other one is useless.  As the rules are contained
+within plugin objects, those plugin rules are first-class citizens.  As one of my
+professors in college would say “Q.E.D.”&lt;/p&gt;
+&lt;p&gt;But what about extensions?  Was there a similar argument to be made for extensions
+being first-class citizens?  For the last few months, I was convinced that similar arguments
+could not be made for the extensions.  After all, what did extensions do for the rules
+engine?  How did they enhance the behavior of the linter?  At best, they were scan-time
+switches that had a bit of an algorithm behind them.&lt;/p&gt;
+&lt;p&gt;And then one evening, after one of the most embarrassing
+&lt;a href="https://en.wikipedia.org/wiki/Facepalm"&gt;face palms&lt;/a&gt;
+in my professional life, I realized that I was getting that answer because I had
+been asking the wrong question.
+I had been looking for a similar argument, starting at the same starting point as with
+plugin rules: the linter.  What I needed to ask myself is whether there are any other major
+components that I could use as a foundation element.  I needed think about whether
+one of the other components had a similar relationship with extensions that the plugin
+rules have with the linter.  At that point, it was obvious to me
+that there was a good solid answer: the PyMarkdown parser.&lt;/p&gt;
+&lt;p&gt;While I do not need the same flexibility with the extensions that I do with
+the plugin rules, I do need some of the same options.  The big options I currently
+need for the extensions are configurability and observability.  Extensions require
+configuration to allow them to be enabled or disabled, and not much more. As such,
+the configuration aspect was already dealt with, but could be made more transparent
+to the user.&lt;/p&gt;
+&lt;p&gt;The first half of the observability option was already taken care of: the token
+stream.  If enabled and if their conditions are met, both the Pragma extension and
+the Front-Matter extension place a token in the token stream generated by the parser.
+But the other half was important as well, and that was observability from
+the command line.  The Plugin Manager presents that information to the command
+line through the &lt;code&gt;list&lt;/code&gt; and &lt;code&gt;info&lt;/code&gt; subcommands.  And from my use of the command
+line to check to see if a plugin rule is enabled, it worked well.&lt;/p&gt;
+&lt;p&gt;But was it really a good model?  Would it work for users other than myself?
+It was an interesting idea, but I needed to give it more time to develop.
+Luckily enough, I needed to work on documentation first.&lt;/p&gt;
+&lt;h3 id="documentation-is-important"&gt;Documentation Is Important&lt;a class="headerlink" href="#documentation-is-important" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;I felt that it was the right decision to increase the project’s support for
+extensions to the same level as with the rule plugins.  I also knew that the
+first step on that path was to create a landing page
+&lt;a href="https://github.com/jackdewinter/pymarkdown/blob/main/docs/extensions.md"&gt;for extensions&lt;/a&gt;,
+linking the existing two placeholder pages for each extension to that page.  With
+that accomplished, the task to fill out those two placeholder pages was next on the
+list.&lt;/p&gt;
+&lt;p&gt;To show how seriously I took this effort, I did not want to commit something in that was
+half done.  So, even with about 90% of the work done by the time I started writing last
+week’s article, I elected to not commit that work that I had completed.  It just did not
+feel right, so it was not until I spent some time on Wednesday and Thursday to complete
+those two documents that I committed those changes.  And I was glad that I made that
+decision.&lt;/p&gt;
+&lt;p&gt;If any reader is under the delusion that documentation is easy, let me address that
+notion.  To be blunt, adding documentation is easy.  Sit down, write some stuff,
+and save it into a file.  Done.  But that will not produce good quality documentation
+that is well thought out, easy to read, and addresses the concepts that readers
+expect.  I am not sure about other writers, but for me that usually involves at least
+5 passes through the document, from a rough note pass in the beginning to a
+grammar/spelling/fine-tuning pass at the end.  The adage is true: Garbage in,
+garbage out.&lt;/p&gt;
+&lt;p&gt;So, I take my documentation tasks seriously. If I want the project to have a high
+level of quality, every part needs to have a high level of quality, including
+documentation.  For me, creating a project is about the completed picture that
+is presented by the project, not just the source code.  So, without reservations,
+I worked on the documentation, giving it the time that it needed and not
+compromising.&lt;/p&gt;
+&lt;h3 id="improving-through-documentation"&gt;Improving Through Documentation&lt;a class="headerlink" href="#improving-through-documentation" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;As I have talked about before, walking through documentation is also a great way to see
+if you have properly implemented and tested a feature.  This was no exception.
+Between both extensions, I added 10 new scenario tests to make sure the extensions
+were tested properly.  There were not any really serious omissions in the tests,
+just “interesting” corner cases that might come up in everyday usage.  It was not
+until I was walking through the documentation, writing the words, that I thought
+“well, what if I…”.&lt;/p&gt;
+&lt;p&gt;Along the way, to make things easier, I introduced the &lt;code&gt;ParseBlockPassProperties&lt;/code&gt;
+to contain any parsing related properties that I needed to pass around.  While I
+only had two extensions at this point, I knew that other ones were coming.  My
+intention is to use this class as a simple data class, allowing me to pass around
+properties that are moderately static.  At this point, I use the term “moderately
+static” to refer to instances that are not going to change during the parsing of
+the document.  As the flags to see if the extensions are enabled so not change
+during the parsing, this is a single place to put them that can easily be passed
+into functions.&lt;/p&gt;
+&lt;h2 id="adding-the-extension-manager"&gt;Adding The Extension Manager&lt;a class="headerlink" href="#adding-the-extension-manager" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;The next part on the journey to make extension first-class citizens was to create
+an Extension Manager.  My vision of the Plugin Manager was that it was the object
+completely responsible for anything to do with plugin rules. If that was so, then
+it made sense that I would create an Extension Manager to serve as the same type of
+foundational object, an object responsible for anything to do with the extensions.&lt;/p&gt;
+&lt;p&gt;That idea also made sense to me from a more practical point of view.  By going along the path
+that extensions and the Extension Manager were in the same mold as plugins and
+the Plugin Manager, it meant that there were common code and concepts that I
+could use from the Plugin Manager, saving some time.  From my viewpoint, if
+I honestly agreed that there was overlap, and did not force myself to believe
+there was overlap, I could probably repurpose any code that implemented overlapping
+functionality.&lt;/p&gt;
+&lt;p&gt;With that in mind, I created a copy of Plugin Manager and started pulling anything
+that was plugin specific out of the new Extension Manager.  Instead of scanning
+a directory and loading any found plugins, I decided that extension would only
+be added from a list maintained by the class.  While this resulted in the removal
+of the scanning and loading code, it was done for a more practical reason. Unlike
+the plugin rules, currently each extension requires a hard-coded entry point
+from the parser.  I hope to change that in the future, but that is where it is
+currently.&lt;/p&gt;
+&lt;p&gt;What was left?  The &lt;code&gt;apply_configuration&lt;/code&gt; function was slightly changed to handle
+the extensions, but the same idea of an “enabled extensions” list was maintained.
+That made it easy to keep the command line logic for listing the extensions, with
+only slight modifications.  Similarly, the logic for displaying the information
+on a specific extension on required slight changes, mostly in the formatting of
+the data to be displayed.&lt;/p&gt;
+&lt;p&gt;The determination of the enabled state of the extensions was also kept mostly
+intact, but with two key changes.  Whereas plugins have multiple identifiers,
+the plugin id and one or more plugin names, extensions only have one identifier.
+That simplified some code from six lines down to one line.  At least for now,
+another change is that I commented out the code to allow the extensions to be
+directly enabled and disabled from the command line.  To be honest, I am not
+sure if I feel the need to enabled extensions with the same flexibility and
+frequency as with plugins.  I will think about that and get back to that later.&lt;/p&gt;
+&lt;h3 id="wrapping-it-up"&gt;Wrapping It Up&lt;a class="headerlink" href="#wrapping-it-up" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;All in all, it took about a good solid six to eight hours to get everything
+coded and the tests all passing.  To round everything out, I decided to include
+a debug extension (&lt;code&gt;extension_one.py&lt;/code&gt;) and a roughed-out module for each
+extension listed in the GitHub Flavored Markdown specification.  The debug
+extension was just a tricky, hidden way in which I could test some of the
+more difficult to reach places in the Extension Manager.&lt;/p&gt;
+&lt;p&gt;As to the placeholder extensions, I just felt that it was a good time to
+get those features, or something standing in for those features, in the
+project.  I did not have any plans of adding them anytime soon, but I did
+want to show that I had plans to add them.  I also did some mental exercises
+and walked through how I might implement each one of them.  I did not do this
+out of a need to design those extensions, but to ensure that the work I
+was doing on the Extension Manager could support those hypothetical designs.&lt;/p&gt;
+&lt;p&gt;There really was not much to test, because this was largely a reorganization
+of features. As such, there were only a couple of small changes to the
+copies of the tests from the Plugin Manager, and a couple of extra tests to
+fill in some code coverage blind sports.&lt;/p&gt;
+&lt;p&gt;With that hard work done, it was on to the next thing!&lt;/p&gt;
+&lt;h2 id="welcoming-code-into-the-fold"&gt;Welcoming Code Into The Fold&lt;a class="headerlink" href="#welcoming-code-into-the-fold" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Next up was a simple set of refactorings to try and come up with
+a set of behaviors that would help constrain the extensions so that
+they could be treated as a class of objects instead of a collection
+of distinct objects.&lt;/p&gt;
+&lt;p&gt;To start, I looked at the &lt;code&gt;PluginDetails&lt;/code&gt; object from the Plugin
+Manager and created an &lt;code&gt;ExtensionDetails&lt;/code&gt; class.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="fm"&gt;__init__&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="n"&gt;extension_id&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="n"&gt;extension_name&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="n"&gt;extension_description&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="n"&gt;extension_enabled_by_default&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="n"&gt;extension_version&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="n"&gt;extension_interface_version&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="n"&gt;extension_url&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="bp"&gt;None&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="n"&gt;extension_configuration&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="bp"&gt;None&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="p"&gt;):&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Other than replacing the text &lt;code&gt;plugin&lt;/code&gt; with &lt;code&gt;extension&lt;/code&gt; and replacing
+&lt;code&gt;plugin_names&lt;/code&gt; with &lt;code&gt;extension_name&lt;/code&gt;, no changes were needed.  In addition,
+instead of using the pattern of having a &lt;code&gt;FoundPlugin&lt;/code&gt; class as the
+intermediary for this information, I decided to implement two separate
+member variables, one for each concern. The &lt;code&gt;self.__extension_objects&lt;/code&gt;
+variable contains a dictionary of the extension classes, while the
+&lt;code&gt;self.__extension_details&lt;/code&gt; variable contains a dictionary of their
+&lt;code&gt;ExtensionDetails&lt;/code&gt; classes.&lt;/p&gt;
+&lt;p&gt;To be honest, I am not sure which approach is cleaner.  Having a class that
+is the same as another class with one extra field or having two lists.
+At the very least, I think I want to come to a resolution on these
+approaches and unify them going forward.  But to do that, I need to
+see how both perform and decide.&lt;/p&gt;
+&lt;h3 id="and-to-finish-up"&gt;And To Finish Up&lt;a class="headerlink" href="#and-to-finish-up" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Given all that work to get everything extension related into the
+new Extension Manager class, there was one small bit of work left
+to do.  None of it was terribly difficult, but for the sake of
+neatness, I believe it was all required.&lt;/p&gt;
+&lt;p&gt;First, I took the existing content of the &lt;code&gt;__init__&lt;/code&gt; function of
+the &lt;code&gt;ParseBlockPassProperties&lt;/code&gt; class:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="fm"&gt;__init__&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;properties&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__properties&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;properties&lt;/span&gt;
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__front_matter_enabled&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__properties&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;get_boolean_property&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+            &lt;span class="s2"&gt;"extensions.front-matter.enabled"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;default_value&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="bp"&gt;False&lt;/span&gt;
+        &lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__pragmas_enabled&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__properties&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;get_boolean_property&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+            &lt;span class="s2"&gt;"extensions.pragmas.enabled"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;default_value&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="bp"&gt;True&lt;/span&gt;
+        &lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;and replaced it with a more Extension Manager friendly:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="fm"&gt;__init__&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;extension_manager&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__front_matter_enabled&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;extension_manager&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_front_matter_enabled&lt;/span&gt;
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__pragmas_enabled&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;extension_manager&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_linter_pragmas_enabled&lt;/span&gt;
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;pragma_lines&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Once again, nothing difficult, but it was important to me to get this main
+switch for the two existing extensions moved over.&lt;/p&gt;
+&lt;p&gt;After that, I moved the &lt;code&gt;compile_pragmas&lt;/code&gt; function from the Plugin Manager
+and the &lt;code&gt;look_for_pragmas&lt;/code&gt; function from the Container Block Processor
+over to the &lt;code&gt;PragmaExtension&lt;/code&gt; class.  In the process of moving that code
+over, I changed the identifer for the extension from &lt;code&gt;pragma&lt;/code&gt; to
+&lt;code&gt;linter-pragmas&lt;/code&gt;.&lt;/p&gt;
+&lt;h3 id="why-was-this-important"&gt;Why Was This Important?&lt;a class="headerlink" href="#why-was-this-important" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;There is a saying “if it ain’t broke, don’t fix it.”
+More often, this is used to indicate that if things do not require any
+effort to let them keep on going forward, do not disturb them. But that
+saying really relies on one important decision point: is the thing in
+question broken?&lt;/p&gt;
+&lt;p&gt;At some point soon, I do want to implement the other
+extensions outlined in the GFM Specification.  While some of them
+do not have a lot of benefit in my mind (strikethrough), there are others
+that I do assign a large benefit to (tables).  It makes sense to
+do some of that leg work now, knowing that I will use it later.&lt;/p&gt;
+&lt;p&gt;In my mind, there is another, more important factor to consider.
+That factor concerns the cost to implement some of the features
+in the Plugin Manager without going all in.  One of the reasons
+that I created the Extension Manager in the way I did was the
+low cost associated with copying it from the Plugin Manager.
+I was able to reuse most of the application code and the scenario
+test code in the process.  Sure, I had to change it to work with
+extensions instead of plugins, but I saved a lot of time and
+effort by taking that approach.&lt;/p&gt;
+&lt;p&gt;If I did not take that approach, I would have had to develop
+another type of manager with its own quirks.  That means starting
+out with a new set of requirements and tests that I needed to
+satisfy.  That would take time and effort.  And in the end,
+unless plugin rules and extensions do not have the overlap that
+I believe they do, I would probably want to collapse them into
+one paradigm anyways.&lt;/p&gt;
+&lt;p&gt;I was confident that the overlap was sufficient to
+make copying the Plugin Manager code a smart move.  Now it is
+just a matter of time to prove to myself that it was the right
+choice.&lt;/p&gt;
+&lt;h2 id="what-was-my-experience-so-far"&gt;What Was My Experience So Far?&lt;a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;A friend of mine who is a writer has often reminded me that it is those
+things that we find more difficult to do are the most rewarding.  I
+am seriously not a writer; through I do try and write to the best of
+my ability.  While I am on the road to being a “capital-W” writer at
+some point, should I choose to do so, I still have a lot to learn.&lt;/p&gt;
+&lt;p&gt;But I do find it rewarding.  Yes, I even find writing documentation
+rewarding.  I find writing these weekly articles rewarding.
+Part of that is because I find satisfaction in helping people. What
+else is documentation than helping people understand or use a
+particular object or project?&lt;/p&gt;
+&lt;p&gt;And that is the key for me: it helps people… including myself.
+This process of adding an Extension Manager during this beta release
+period was not a decision that I made lightly.  It could have
+gone horribly wrong.  But it did not because I had a number of support
+structures in place, including documentation on the extensions.
+It was in walking through them that I figured out I needed to elevate
+extensions, and it was walking through them again that I helped
+myself have a coherent implementation about extensions.&lt;/p&gt;
+&lt;p&gt;So now I have an Extension Manager that cleanly takes care of the
+extensions.  It exposes a common command line interface with the
+Plugin Manager, so there is synergy there.  It is not as full featured
+as the Plugin Manager, but it does not need to be.  And I am
+happy with where it landed!&lt;/p&gt;
+&lt;h2 id="what-is-next"&gt;What is Next?&lt;a class="headerlink" href="#what-is-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;With that refactoring out of the way, I thought I would have some “fun”
+in the next week and try to solve an issue I have had for a while:
+making sure that the parser can handle transitions back and forth between
+lists and block quotes.&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry><entry><title>Markdown Linter - Getting Stuff Done</title><link href="https://jackdewinter.github.io/2021/06/14/markdown-linter-getting-stuff-done/" rel="alternate"></link><published>2021-06-14T00:00:00-07:00</published><updated>2021-06-14T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2021-06-14:/2021/06/14/markdown-linter-getting-stuff-done/</id><summary type="html">
 &lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;In my
 &lt;a href="https://jackdewinter.github.io/2021/06/07/python-packages-the-birth-of-application_properties/"&gt;last article&lt;/a&gt;, I talked
@@ -10970,386 +11269,4 @@ this project gets to its closing stages.  Do I really need it, or can it wait?&l
 &lt;p&gt;I was just as happy to get some holiday time off in which I could spend more time
 with my family as I was to be able to make some solid holiday progress.  This next
 week was going to be a good mixture of resolving solid issues, test cleanup, and
-code cleanup.  Stay tuned!&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry><entry><title>Markdown Linter - Delving Into the Issues - 13</title><link href="https://jackdewinter.github.io/2020/12/21/markdown-linter-delving-into-the-issues-13/" rel="alternate"></link><published>2020-12-21T00:00:00-08:00</published><updated>2020-12-21T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2020-12-21:/2020/12/21/markdown-linter-delving-into-the-issues-13/</id><summary type="html">
-&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;In my
-&lt;a href="https://jackdewinter.github.io/2020/12/14/markdown-linter-delving-into-the-issues-12/"&gt;last article&lt;/a&gt;,
-I worked diligently to resolve all the tests that I had marked as disabled in the
-previous week.  After cleaning up those issues, I finished cleaning up the remaining
-List Block issues before getting back up to speed on Block Quote issues.&lt;/p&gt;
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;After a …&lt;/p&gt;</summary><content type="html">
-&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;In my
-&lt;a href="https://jackdewinter.github.io/2020/12/14/markdown-linter-delving-into-the-issues-12/"&gt;last article&lt;/a&gt;,
-I worked diligently to resolve all the tests that I had marked as disabled in the
-previous week.  After cleaning up those issues, I finished cleaning up the remaining
-List Block issues before getting back up to speed on Block Quote issues.&lt;/p&gt;
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;After a week of digging deep to resolve the disabled tests, I checked the issues
-list.  With only a handful of items left in the List Blocks section, I figured it was a
-good time to make a push to finish with the List Blocks and start with the Block Quotes.&lt;/p&gt;
-&lt;p&gt;Knowing that I was about to do that transition made me happy and filled me with dread
-at the same
-time.  It made me happy as I was more aware of how close I was getting to the end of the
-first phase of the project.  It also filled me with a sense of dread because I had not
-done any serious work with Block Quotes in a while.  As such, I am not sure if the
-effort to get the Block Quotes to the same level as List Blocks will be the same.  I
-hope it is significantly less, but we will see.&lt;/p&gt;
-&lt;p&gt;If I think about it, I believe that
-sense of dread is from not knowing how long it will take to address any issues that
-arise.
-I do know, that unless I finish up the List Blocks and start the Block Quotes, that
-feeling will be stuck at dread.  So, time to buckle down and get stuff done!&lt;/p&gt;
-&lt;h2 id="what-is-the-audience-for-this-article"&gt;What Is the Audience for This Article?&lt;a class="headerlink" href="#what-is-the-audience-for-this-article" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;While detailed more eloquently in
-&lt;a href="https://jackdewinter.github.io/2020/04/05/what-is-the-audience-for-my-blog/#what-is-the-audience-for-my-blog"&gt;this article&lt;/a&gt;,
-my goal for this technical article is to focus on the reasoning behind my solutions,
-rather that the solutions themselves.  For a full record of the solutions presented in
-this article, please go to this project’s GitHub repository and consult the
-commits between
-&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/09682fe55c9e7962f18341be3212d3712b6888e8"&gt;10 Dec 2020&lt;/a&gt;
-and
-&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/6db64e26af671e757156652ddcc457595542bc84"&gt;13 Dec 2020&lt;/a&gt;.&lt;/p&gt;
-&lt;h2 id="closing-out-list-blocks"&gt;Closing Out List Blocks&lt;a class="headerlink" href="#closing-out-list-blocks" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Having finished cleaning up the disabled scenario tests, there were a few items on the
-issues list that I needed to get out of the way.  While not high-profile items,
-those items were standing between myself and a list with no list block related items
-on it.  That was motivation enough to put these items at the top of my list.&lt;/p&gt;
-&lt;h3 id="adding-variations-of-existing-patterns"&gt;Adding Variations of Existing Patterns&lt;a class="headerlink" href="#adding-variations-of-existing-patterns" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;During the previous three weeks, I had taken the Series M scenario tests and
-filled them out a lot.  As I filled them out, I did find parsing and transformation
-issues, all which got fixed.  But in creating that series, I needed to take some
-alternate path to properly exercise the specific patterns that I was trying to make sure
-were covered by the tests.  In doing so, I often veered away from the correct variation
-to faithfully create the right pattern in the group of scenario tests that I was
-working on.&lt;/p&gt;
-&lt;p&gt;Confused?  Hopefully, a concrete example will explain.  I started going through the
-tests in each group, starting with Fenced Code Blocks and the scenario test function
-&lt;code&gt;test_paragraph_series_m_ol_nl_fb&lt;/code&gt;:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;
-&lt;span class="o"&gt;```&lt;/span&gt;
-&lt;span class="n"&gt;foo&lt;/span&gt;
-&lt;span class="o"&gt;```&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;The purpose of that specific test was to make sure that a Fenced Code Block following an
-empty Order List start element was parsed properly.  However, from my point of view,
-there was another variation of that test that was possible.  Creating the new scenario
-test function &lt;code&gt;test_paragraph_series_m_ol_nl_all_i3_fb&lt;/code&gt;, I altered the Markdown
-slightly:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;
-   &lt;span class="o"&gt;```&lt;/span&gt;
-   &lt;span class="n"&gt;foo&lt;/span&gt;
-   &lt;span class="o"&gt;```&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Technically that was not a big change, but it was a significant one to me.  Instead of
-testing
-a variation where the Fenced Code Block terminates the List Block, it instead tests
-the inclusion of that Fenced Code Block into the List Block. I consider that
-the most correct form of that test.  At its base, that reason
-for that classification is that if I said I wanted “an empty list with a fenced code
-block”, that is what I would expect.  Nothing more, nothing less, just a simple example
-that had that Markdown in its simplest form.&lt;/p&gt;
-&lt;p&gt;I could have repeated that exercise with a lot of the scenario tests, but I
-stayed with four tests from each group: two tests with a single list and two tests with
-a sublist.  Starting with Fenced Control Blocks, I then proceded to HTML Blocks,
-Indented Code Blocks, and SetExt Headings.  I hoped that the new scenario tests were
-covering old scenarios, but I was not 100% confident that they were.  But as I executed
-those tests, one by one I was convinced they were old scenarios, just being covered by
-the Series M tests as a group.  Not one of the scenario tests failed!  After my
-usual process of adopting the scenario tests, each test passed on its first try,
-requiring no changes to the parser, the transformers, or the consistency checks.&lt;/p&gt;
-&lt;p&gt;In the end, I was able to mark all these items from the issues list as resolved:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="nv"&gt;variations&lt;/span&gt; &lt;span class="nv"&gt;of&lt;/span&gt; &lt;span class="nv"&gt;list&lt;/span&gt;&lt;span class="o"&gt;+&lt;/span&gt;&lt;span class="nv"&gt;fenced&lt;/span&gt; &lt;span class="nv"&gt;block&lt;/span&gt; &lt;span class="nv"&gt;with&lt;/span&gt; &lt;span class="nv"&gt;proper&lt;/span&gt; &lt;span class="nv"&gt;indent&lt;/span&gt; &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="nv"&gt;actual&lt;/span&gt; &lt;span class="nv"&gt;block&lt;/span&gt;
-&lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="nv"&gt;variations&lt;/span&gt; &lt;span class="nv"&gt;of&lt;/span&gt; &lt;span class="nv"&gt;list&lt;/span&gt;&lt;span class="o"&gt;+&lt;/span&gt;&lt;span class="nv"&gt;html&lt;/span&gt; &lt;span class="nv"&gt;block&lt;/span&gt; &lt;span class="nv"&gt;with&lt;/span&gt; &lt;span class="nv"&gt;proper&lt;/span&gt; &lt;span class="nv"&gt;indent&lt;/span&gt; &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="nv"&gt;actual&lt;/span&gt; &lt;span class="nv"&gt;block&lt;/span&gt;
-&lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="nv"&gt;variations&lt;/span&gt; &lt;span class="nv"&gt;of&lt;/span&gt; &lt;span class="nv"&gt;list&lt;/span&gt;&lt;span class="o"&gt;+&lt;/span&gt;&lt;span class="nv"&gt;indent&lt;/span&gt; &lt;span class="nv"&gt;block&lt;/span&gt; &lt;span class="nv"&gt;with&lt;/span&gt; &lt;span class="nv"&gt;proper&lt;/span&gt; &lt;span class="nv"&gt;indent&lt;/span&gt; &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="nv"&gt;actual&lt;/span&gt; &lt;span class="nv"&gt;block&lt;/span&gt;
-&lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="nv"&gt;variations&lt;/span&gt; &lt;span class="nv"&gt;of&lt;/span&gt; &lt;span class="nv"&gt;list&lt;/span&gt;&lt;span class="o"&gt;+&lt;/span&gt;&lt;span class="nv"&gt;set&lt;/span&gt; &lt;span class="nv"&gt;ext&lt;/span&gt; &lt;span class="nv"&gt;with&lt;/span&gt; &lt;span class="nv"&gt;proper&lt;/span&gt; &lt;span class="nv"&gt;indent&lt;/span&gt; &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="nv"&gt;actual&lt;/span&gt; &lt;span class="nv"&gt;block&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;h3 id="lazy-continuations-and-nested-list-blocks"&gt;Lazy Continuations and Nested List Blocks&lt;a class="headerlink" href="#lazy-continuations-and-nested-list-blocks" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;Another easy issue to get off the list was this one:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;3&lt;/span&gt; &lt;span class="n"&gt;levels&lt;/span&gt; &lt;span class="k"&gt;of&lt;/span&gt; &lt;span class="n"&gt;lists&lt;/span&gt; &lt;span class="k"&gt;with&lt;/span&gt; &lt;span class="n"&gt;lazy&lt;/span&gt; &lt;span class="n"&gt;continuation&lt;/span&gt; &lt;span class="n"&gt;lines&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Based on the work I had just completed to round out the Series M tests, I had confidence
-that these would also not require any changes.  It was a bit of an educated guess, but
-I believe that
-all I wanted to do here is to provide different levels of List Blocks, ensuring that
-the principle of
-&lt;a href="https://github.github.com/gfm/#lazy-continuation-line"&gt;lazy continuation lines in lists&lt;/a&gt;
-was being adhered to.&lt;/p&gt;
-&lt;p&gt;Starting with test function &lt;code&gt;test_list_blocks_extra_5a&lt;/code&gt;, I added the following Markdown:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt; &lt;span class="n"&gt;abc&lt;/span&gt;
-&lt;span class="n"&gt;def&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;ensuring that text &lt;code&gt;def&lt;/code&gt; continued the paragraph started in the level 1 List Block.
-Three tests later, the test function &lt;code&gt;test_list_blocks_extra_5d&lt;/code&gt; was testing the level 4
-List Block with the Markdown:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt; &lt;span class="n"&gt;abc&lt;/span&gt;
-   &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt; &lt;span class="n"&gt;abc&lt;/span&gt;
-      &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt; &lt;span class="n"&gt;abc&lt;/span&gt;
-         &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt; &lt;span class="n"&gt;abc&lt;/span&gt;
-&lt;span class="n"&gt;def&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;This was a simple set of scenarioes that passed right away, but I had expected them to.
-However, with some of the issues that I have had with List Blocks and lazy continuation
-lines, it was good to have some tests explicitly covering these cases.&lt;/p&gt;
-&lt;h3 id="simple-cleanup"&gt;Simple Cleanup&lt;a class="headerlink" href="#simple-cleanup" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;Having done some rewriting of code lately, I was debugging and found a couple of lines
-in the &lt;code&gt;__handle_blank_line&lt;/code&gt; function that were not being used anymore.  With the
-breadth of scenario tests and summaries of the code coverage of those tests also in
-place, it was easy to determine and test to make sure this code was no longer being
-used.  With that observation verified, that code was removed.&lt;/p&gt;
-&lt;h3 id="getting-clarity"&gt;Getting Clarity&lt;a class="headerlink" href="#getting-clarity" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;For a while, I have been convinced that I coded something wrong, but have not been able
-to prove whether it was correct or not correct.  The only thing that I was convinced
-of was that I needed to deal with this at some point.  With this being the last
-issue in the List Block section, it was time to deal with it.&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="nv"&gt;blank&lt;/span&gt; &lt;span class="nv"&gt;line&lt;/span&gt; &lt;span class="nv"&gt;ending&lt;/span&gt; &lt;span class="nv"&gt;a&lt;/span&gt; &lt;span class="nv"&gt;list&lt;/span&gt; &lt;span class="nv"&gt;is&lt;/span&gt; &lt;span class="nv"&gt;parsed&lt;/span&gt; &lt;span class="nv"&gt;wrong&lt;/span&gt; &lt;span class="nv"&gt;into&lt;/span&gt; &lt;span class="nv"&gt;tokens&lt;/span&gt;
-  &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;&amp;gt;&lt;/span&gt;&lt;span class="nv"&gt;stack_count&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&amp;gt;&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&amp;gt;&lt;/span&gt;&lt;span class="sc"&gt;#9&lt;/span&gt;:[&lt;span class="k"&gt;end&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="nv"&gt;ulist&lt;/span&gt;]
-  &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="nv"&gt;should&lt;/span&gt; &lt;span class="nv"&gt;be&lt;/span&gt; &lt;span class="k"&gt;end&lt;/span&gt; &lt;span class="nv"&gt;and&lt;/span&gt; &lt;span class="k"&gt;then&lt;/span&gt; &lt;span class="nv"&gt;blank&lt;/span&gt;, &lt;span class="nv"&gt;as&lt;/span&gt; &lt;span class="nv"&gt;the&lt;/span&gt; &lt;span class="nv"&gt;blank&lt;/span&gt; &lt;span class="nv"&gt;is&lt;/span&gt; &lt;span class="nv"&gt;outside&lt;/span&gt; &lt;span class="nv"&gt;of&lt;/span&gt; &lt;span class="nv"&gt;the&lt;/span&gt; &lt;span class="nv"&gt;list&lt;/span&gt;
-  &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="mi"&gt;233&lt;/span&gt; &lt;span class="nv"&gt;and&lt;/span&gt; &lt;span class="mi"&gt;235&lt;/span&gt;, &lt;span class="nv"&gt;should&lt;/span&gt; &lt;span class="nv"&gt;blank&lt;/span&gt; &lt;span class="nv"&gt;and&lt;/span&gt; &lt;span class="k"&gt;end&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="nv"&gt;list&lt;/span&gt; &lt;span class="nv"&gt;tokens&lt;/span&gt; &lt;span class="nv"&gt;be&lt;/span&gt; &lt;span class="nv"&gt;reversed&lt;/span&gt;?
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;The prototypical example of this was test function &lt;code&gt;test_list_blocks_233&lt;/code&gt;:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="n"&gt;one&lt;/span&gt;
-
- &lt;span class="n"&gt;two&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;While the HTML output for that Markdown was correct, I had questions about whether I
-was emitting the following tokens in the correct order:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="n"&gt;expected_tokens&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;
-        &lt;span class="s2"&gt;"[ulist(1,1):-::2:]"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-        &lt;span class="s2"&gt;"[para(1,3):]"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-        &lt;span class="s2"&gt;"[text(1,3):one:]"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-        &lt;span class="s2"&gt;"[end-para:::True]"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-        &lt;span class="s2"&gt;"[BLANK(2,1):]"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-        &lt;span class="s2"&gt;"[end-ulist:::True]"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-        &lt;span class="s2"&gt;"[para(3,2): ]"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-        &lt;span class="s2"&gt;"[text(3,2):two:]"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-        &lt;span class="s2"&gt;"[end-para:::True]"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-    &lt;span class="p"&gt;]&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Specifically, my question was around the Blank token and the end Unordered List token.
-Should the tokens be in Blank/Unordered order, or Unordered/Blank order?  Over the weeks
-that I have looked at this case, I had never taken the time to sit down and work through
-it.  As it was the last item for List Blocks in the Issue List, it was time.&lt;/p&gt;
-&lt;h4 id="doing-the-dirty-work"&gt;Doing the Dirty Work&lt;a class="headerlink" href="#doing-the-dirty-work" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h4&gt;
-&lt;p&gt;This may appear to be an easy case to some people, but I had issues with it.  Thinking
-about it at length, it felt that my understanding of this problem was influenced by
-which part of the GFM
-Specification I had last dealt with.  So, to deal with that influence head-on, I re-read
-the parts of the specification dealing with List Blocks, Paragraph Blocks, Blank
-Lines, and lazy continuation lines.  With that information in my head, I started to work
-through the problem logically.&lt;/p&gt;
-&lt;p&gt;Starting at the beginning, line 1 starts the tokens off with the first three tokens of
-the document, leaving an
-Unordered List item active and a Paragraph element open.  When the Blank Line element
-in line 2 is encountered, it closes the Paragraph element but leaves the Unordered List
-and Unordered List item open.  Therefore, the fourth and fifth tokens are generated and
-added to the document.&lt;/p&gt;
-&lt;p&gt;It was at this point in working the problem that the clarity surrounded this problem
-crystalized and became clear in my mind.  I am not sure why, but I had wrongly believed
-that the Blank Line
-element on line 2 not only closed the Paragraph Block but closed the List Block and
-List Block item as well.  The Markdown for
-&lt;a href="https://github.github.com/gfm/#example-240"&gt;example 240&lt;/a&gt;
-clearly shows this:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="n"&gt;foo&lt;/span&gt;
-
-
-  &lt;span class="n"&gt;bar&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;as the Markdown is trnslated into a single Unordered List Block with a single item
-that contains two paragraphs:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;ul&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
-&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;li&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
-&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;foo&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
-&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;bar&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
-&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;li&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
-&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;ul&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;This meant that when line 3 is interpreted, the List Block and List Block item are
-still open, but the previous Paragraph element was closed by the Blank Line.  As
-such, line 3 is not eligible for consideration as a lazy continuation line.  With
-that option removed, the single leading space character is not enough leading space
-to keep line 3 in the List Block, so that block is closed, and a new Paragraph element
-is opened with the contents of line 3.&lt;/p&gt;
-&lt;p&gt;It took a bit of work and a straight head to work through, but I had my answer!  To
-make sure I did not forget about it, I added a comment to function
-&lt;code&gt;test_list_blocks_232&lt;/code&gt;
-to make sure I can look back at it when I need to.  While this was not something that
-required a code solution, knowing that this issue was finally (and definitively)
-resolved brought a smile to my face!&lt;/p&gt;
-&lt;h2 id="starting-with-block-quotes"&gt;Starting with Block Quotes&lt;a class="headerlink" href="#starting-with-block-quotes" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;With that last issue, all the specifically List Block related items were crossed off
-the issues list.  It was now time to ease myself into work on Block Quotes and getting
-them up to a comparable level as I had reached with List Blocks.&lt;/p&gt;
-&lt;h3 id="starting-out-easy"&gt;Starting Out Easy&lt;a class="headerlink" href="#starting-out-easy" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;I decided to start with an easy item:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="s"&gt;# TODO add case with &amp;gt;&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt; &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="nv"&gt;tests&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;In the beginning, each of the scenario functions in the range &lt;code&gt;test_block_quotes_212&lt;/code&gt;
-to &lt;code&gt;test_block_quotes_216&lt;/code&gt; were simple tests that showed how lazy continuation lines
-work with Block Quote elements.  One of the observations that I made when adding those
-tests was that, to properly test lazy continuation lines, the removed &lt;code&gt;&amp;gt;&lt;/code&gt;
-character that makes the line “lazy” should be able to be inserted without changing
-the HTML output.  Basically, according to the GFM Specification:&lt;/p&gt;
-&lt;blockquote&gt;
-&lt;p&gt;If a string of lines Ls constitute a block quote with contents Bs, then the result of deleting the initial block quote marker from one or more lines in which the next non-whitespace character after the block quote marker is paragraph continuation text is a block quote with Bs as its content.&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;p&gt;To properly test this, I created &lt;code&gt;a&lt;/code&gt; variant functions of each of those five scenario
-tests, and in
-each case I added a variation with the &lt;code&gt;&amp;gt;&lt;/code&gt; character at the start of the line.  As
-I worked through the scenarios, all the variant tests were working fine except for
-function &lt;code&gt;test_block_quotes_213a&lt;/code&gt;.  Looking at what made that test different, the
-answer was obvious: it involved List Blocks.  Even after adding other variants of this
-test, I was unable to get any of them working.&lt;/p&gt;
-&lt;p&gt;I was not 100% sure it was the right thing to do, but in the name of progress, I
-marked the test functions &lt;code&gt;test_block_quotes_213a&lt;/code&gt; to &lt;code&gt;test_block_quotes_213d&lt;/code&gt; as
-disabled, knowing I would get back to them when testing Block Quotes and List Blocks
-and how they interacted.&lt;/p&gt;
-&lt;h3 id="three-quick-reviews"&gt;Three Quick Reviews&lt;a class="headerlink" href="#three-quick-reviews" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;The next three items that I resolved were all easy issues to resolve.&lt;/p&gt;
-&lt;p&gt;The first item was the removal of a piece of code that was no longer being used:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;            &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;is_in_paragraph&lt;/span&gt; &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="n"&gt;at_end_of_line&lt;/span&gt; &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="n"&gt;is_first_item_in_list&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-                &lt;span class="n"&gt;is_start&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;False&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;The next item was to remove the poorly worded item from the list and replace it with
-one that specified the problem more clearly:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="n"&gt;unify&lt;/span&gt; &lt;span class="mi"&gt;2&lt;/span&gt; &lt;span class="n"&gt;separate&lt;/span&gt; &lt;span class="n"&gt;calculations&lt;/span&gt; &lt;span class="k"&gt;in&lt;/span&gt; &lt;span class="ss"&gt;`__pre_list`&lt;/span&gt; &lt;span class="n"&gt;function&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;And finally, the last item was just to review the existing tests and make sure that
-agreed with their current state:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="mi"&gt;228&lt;/span&gt; &lt;span class="nv"&gt;and&lt;/span&gt; &lt;span class="mi"&gt;229&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="nv"&gt;what&lt;/span&gt; &lt;span class="nv"&gt;is&lt;/span&gt; &lt;span class="nv"&gt;the&lt;/span&gt; &lt;span class="nv"&gt;proper&lt;/span&gt; &lt;span class="nv"&gt;line&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="nv"&gt;col&lt;/span&gt; &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="s"&gt;&amp;gt;&amp;gt;&amp;gt;&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;?
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;None of these were tough tasks to undertake, but they were all helping me to get back
-up to speed on parsing Block Quotes.&lt;/p&gt;
-&lt;h3 id="mixed-levels-of-block-quotes-and-serendipity"&gt;Mixed Levels of Block Quotes and Serendipity&lt;a class="headerlink" href="#mixed-levels-of-block-quotes-and-serendipity" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;Going through the list looking for other easy items to resolve, this one caught my
-attention:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="nv"&gt;block&lt;/span&gt; &lt;span class="nv"&gt;quotes&lt;/span&gt; &lt;span class="nv"&gt;that&lt;/span&gt; &lt;span class="nv"&gt;start&lt;/span&gt; &lt;span class="nv"&gt;and&lt;/span&gt; &lt;span class="nv"&gt;stop&lt;/span&gt; &lt;span class="nv"&gt;i&lt;/span&gt;.&lt;span class="nv"&gt;e&lt;/span&gt;. &lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="k"&gt;then&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class="k"&gt;then&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="k"&gt;then&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;&amp;gt;&amp;gt;&lt;/span&gt;, &lt;span class="nv"&gt;etc&lt;/span&gt;.
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;To me, this looked like an easy issue to tackle.  The test function
-&lt;code&gt;test_block_quotes_229&lt;/code&gt; was a good base to start with.  However, I felt there needed
-to be a bit more data, so instead of three lines with varying numbers of Block Quote
-start characters, I created test function &lt;code&gt;test_block_quotes_229a&lt;/code&gt; as follows:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
-&lt;span class="o"&gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class="mi"&gt;2&lt;/span&gt;
-&lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
-&lt;span class="o"&gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="mi"&gt;3&lt;/span&gt;
-&lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="mi"&gt;2&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;and test function &lt;code&gt;test_block_quotes_229b&lt;/code&gt; with the same content, just blank lines
-between each of the original lines.  Basically, the first test would verify how the
-different lines worked together, and the blank lines in the second test would verify
-how each line worked isolated from any other lines.&lt;/p&gt;
-&lt;h4 id="serendipity"&gt;Serendipity&lt;a class="headerlink" href="#serendipity" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h4&gt;
-&lt;p&gt;Except for some moving code around to make sure it looked correct, only one real change
-needed to be done to get the tests working.  It was an interesting thing to run into,
-but it was also a lucky break for me.  If I had selected any other text for each line,
-things would have worked fine, and I would be none the wiser.  However, with the given
-content for each line, the parser thought that the number for each line was a possible
-start for an Ordered List Block.  As such, it consumed the digit and then looked for
-the &lt;code&gt;.&lt;/code&gt; or &lt;code&gt;)&lt;/code&gt; character to follow it.  When the end of the line was encountered instead
-of one of those characters, an &lt;code&gt;IndexError: string index out of range&lt;/code&gt; error was thrown.
-While this was quickly fixed by only setting that variable if the start of the List
-Block had been confirmed, it was a good issue to find!&lt;/p&gt;
-&lt;h3 id="building-up-test-coverage"&gt;Building Up Test Coverage&lt;a class="headerlink" href="#building-up-test-coverage" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;These issues were ones that I used to start the process of building up to the same
-level of coverage for various Block Quote scenario groups as I had done with List
-Blocks.  This effort was in response to the following issue list items:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="nv"&gt;tests&lt;/span&gt; &lt;span class="nv"&gt;like&lt;/span&gt; &lt;span class="nv"&gt;cov2&lt;/span&gt; &lt;span class="nv"&gt;with&lt;/span&gt; &lt;span class="nv"&gt;blank&lt;/span&gt; &lt;span class="nv"&gt;before&lt;/span&gt;, &lt;span class="nv"&gt;after&lt;/span&gt;, &lt;span class="nv"&gt;and&lt;/span&gt; &lt;span class="nv"&gt;both&lt;/span&gt; &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="nv"&gt;html&lt;/span&gt; &lt;span class="nv"&gt;blocks&lt;/span&gt; &lt;span class="nv"&gt;and&lt;/span&gt; &lt;span class="nv"&gt;other&lt;/span&gt; &lt;span class="nv"&gt;blocks&lt;/span&gt;
-&lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="nv"&gt;tests&lt;/span&gt; &lt;span class="nv"&gt;like&lt;/span&gt; &lt;span class="nv"&gt;cov2&lt;/span&gt; &lt;span class="nv"&gt;with&lt;/span&gt; &lt;span class="nv"&gt;multiple&lt;/span&gt; &lt;span class="nv"&gt;lines&lt;/span&gt; &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="nv"&gt;block&lt;/span&gt; &lt;span class="nv"&gt;items&lt;/span&gt;, &lt;span class="nv"&gt;like&lt;/span&gt; &lt;span class="nv"&gt;html&lt;/span&gt;
-&lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="nv"&gt;all&lt;/span&gt; &lt;span class="nv"&gt;leaf&lt;/span&gt; &lt;span class="nv"&gt;in&lt;/span&gt; &lt;span class="nv"&gt;all&lt;/span&gt; &lt;span class="nv"&gt;container&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;To accomplish this, variations of Paragraph Blocks were added to function
-&lt;code&gt;test_block_quotes_211&lt;/code&gt;, Thematic Breaks to function &lt;code&gt;test_block_quotes_212&lt;/code&gt;,
-Indented Code Blocks to function &lt;code&gt;test_block_quotes_214&lt;/code&gt;, and Fenced Code Blocks to
-function &lt;code&gt;test_block_quotes_215&lt;/code&gt;.  After adding 10 new scenario tests to address
-these issues, I felt that this was a good start to addressing the issue of coverage
-for Block Quotes.&lt;/p&gt;
-&lt;p&gt;With all those changes completed, I followed my usual process of verifying each
-scenario test.  Except for one issue with the Markdown transformer, the tests all
-passed without incident.  That one issue was that the Markdown rehydration for
-test function &lt;code&gt;test_block_quotes_214d&lt;/code&gt; included an extra &lt;code&gt;\x03&lt;/code&gt; character in the
-output.  As I have mentioned in
-&lt;a href="https://jackdewinter.github.io/2020/08/10/markdown-linter-adding-links-to-the-markdown-transformer/#moving-special-character-support"&gt;previous articles&lt;/a&gt;,
-that character is a NOOP character, and is used to essentially place a “Blank” in
-the tokens that can be removed if not needed.  In this case, that NOOP character was
-added to the content of the Text token to indicate that a Blank Line was part of that
-content.&lt;/p&gt;
-&lt;p&gt;As that information was not needed for the translation back to Markdown, I eventually
-added a call to the function &lt;code&gt;ParserHelper.resolve_noops_from_text&lt;/code&gt; at the end of the
-&lt;code&gt;__perform_container_post_processing_lists&lt;/code&gt; function to remove that extra character.
-While I knew that I needed to add a call to that function at some point in the
-processing chain, it took an hour or so of experimentation to find the right place
-to insert that call at.  Until I found and tested that location, I found lots of
-locations where test function &lt;code&gt;test_block_quotes_214d&lt;/code&gt; was passing, but other test
-functions started failing.  It was frustrating, but I was able to work through all
-that noise and find the right place, which was satisfying!&lt;/p&gt;
-&lt;h3 id="sunday-morning-relaxing"&gt;Sunday Morning Relaxing&lt;a class="headerlink" href="#sunday-morning-relaxing" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;With a solid amount of work completed during the week, I found myself sitting in
-front of my computer on another Sunday morning, wanting to get another issue resolved.
-I do not want anyone thinking that I am workaholic, as I am not.  Sunday mornings in
-our household are mostly for whatever personal projects we are working on.  As such,
-I choose to get up early on Sundays and try and get a couple more issues resolved from
-one of the projects that I am working on, before the family projects start taking
-control of my day.&lt;/p&gt;
-&lt;p&gt;Knowing that it was going to take a couple of hours, and having a couple of hours of
-peace and quiet available, I started looking at the following item:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="n"&gt;blank&lt;/span&gt; &lt;span class="n"&gt;lines&lt;/span&gt; &lt;span class="k"&gt;as&lt;/span&gt; &lt;span class="n"&gt;part&lt;/span&gt; &lt;span class="k"&gt;of&lt;/span&gt; &lt;span class="n"&gt;bquote&lt;/span&gt;
-  &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="n"&gt;compare&lt;/span&gt; &lt;span class="n"&gt;test_block_quotes_218&lt;/span&gt; &lt;span class="n"&gt;vs&lt;/span&gt; &lt;span class="n"&gt;test_blank_lines_197a&lt;/span&gt;
-  &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="n"&gt;already&lt;/span&gt; &lt;span class="n"&gt;fixed&lt;/span&gt; &lt;span class="n"&gt;test_list_blocks_260&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;257&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;While it may not seem like much, the positioning and whitespace of those blank lines
-are just slightly off.  Looking at this back at the end of June 2020, I noticed that
-within containers, the column number for blank lines was off.  Specifically, given this
-Markdown:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="n"&gt;foo&lt;/span&gt;
-&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="err"&gt;\&lt;/span&gt;&lt;span class="n"&gt;a&lt;/span&gt;&lt;span class="err"&gt;\&lt;/span&gt;&lt;span class="n"&gt;a&lt;/span&gt;&lt;span class="err"&gt;\&lt;/span&gt;&lt;span class="n"&gt;a&lt;/span&gt;
-&lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="n"&gt;bar&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;(where the &lt;code&gt;\a&lt;/code&gt; character is a visual indicator for a space character), the token for
-the blank line was being calculated as &lt;code&gt;[BLANK(2,5):]&lt;/code&gt;.  While that is one possible
-answer to Blank Line token for that line, it has issues.  Specifically, because it is
-within a List Block, the consistency checking had issues with that line because it
-did not appear to have the correct indentation.&lt;/p&gt;
-&lt;p&gt;After thinking about it, I eventually settled on the correct form of that token being
-&lt;code&gt;[BLANK(2,2):   ]&lt;/code&gt;.  As the spaces were all that was on the line, I figured that it was
-more correct to say that the column number was 2 followed by three space characters
-than a column number of 3 followed by two space characters.  Influenced by
-&lt;a href="https://github.github.com/gfm/#example-257"&gt;example 257&lt;/a&gt;,
-I have confidence that I made the correct choice, backed up by the commit I made
-on
-&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/4b681751cae38ce2007f3b0ada6158ed9a15f353"&gt;28 Jun 2020&lt;/a&gt;
-with that choice and the fallout from that choice.&lt;/p&gt;
-&lt;p&gt;At that time, I was focusing on List Blocks, and I added the item into the issues
-list to fix this for Block Quotes, and it was now time to fix that.  Unlike the
-fixes required to resolve this for List Blocks, the fixes required to resolve this
-for Block Quotes were relatively small.  The first part of that change was to
-set the column number to the length of the text removed by the owning container
-blocks.  This firmly set that column number to the first character after the
-container processing, removing the determination of the column number from the
-leaf block processing.  To balance that out, the calculation for
-initial whitespace to allow for a Blank Line token within a Block Quote was set
-to the amount of whitespace that was extracted.  Other than that, no other
-changes were made.&lt;/p&gt;
-&lt;h2 id="what-was-my-experience-so-far"&gt;What Was My Experience So Far?&lt;a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;As I mentioned earlier, it was a relief to wrap up the verification of the List Blocks
-and moving on to Block Quotes.  But with that transition, there was also a sense of
-dread that I felt as I started on Block Quotes.  Would getting a solid amount of
-coverage for Block Quotes take a couple of months as it had for List Blocks?  Would
-it be more? Would it be less?  I just did not know.  I was hoping it would be less,
-but that not knowing was just driving me nuts.&lt;/p&gt;
-&lt;p&gt;But I also realized that the sense of dread would not disappear until I started doing
-something about it.  Even by working on easy Block Quote items, I was getting a
-clearer picture of the effort it will take to cover Block Quotes properly.  Instead of
-a sense of dread, I believe I am at a place where I am confident that it will be less
-than four months, and probably more than two weeks.  Not sure where in that range it
-will land, but pretty confident it will be in there.&lt;/p&gt;
-&lt;p&gt;And that is okay for now.  The important thing is that I did not let that dread knock
-me down.  I took it, channeled it, and got some more information that helped me deal
-with it.  Cool!&lt;/p&gt;
-&lt;h2 id="what-is-next"&gt;What is Next?&lt;a class="headerlink" href="#what-is-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Still feeling a small amount of
-dread, but mostly I am feeling optimism about the progress I am making!
-As such, I expect to be working with Block Quotes for a while, possibly dipping into
-dealing with Block Quotes and List Blocks every so often.  &lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry></feed>
+code cleanup.  Stay tuned!&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry></feed>
