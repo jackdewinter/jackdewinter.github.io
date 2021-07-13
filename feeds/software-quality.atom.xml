@@ -1,8 +1,414 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench - Software Quality</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/software-quality.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2021-06-28T00:00:00-07:00</updated><entry><title>Markdown Linter - Sometimes You Have To Go Backwards...</title><link href="https://jackdewinter.github.io/2021/06/28/markdown-linter-sometimes-you-have-to-go-backwards/" rel="alternate"></link><published>2021-06-28T00:00:00-07:00</published><updated>2021-06-28T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2021-06-28:/2021/06/28/markdown-linter-sometimes-you-have-to-go-backwards/</id><summary type="html">
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench - Software Quality</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/software-quality.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2021-07-12T00:00:00-07:00</updated><entry><title>Markdown Linter - Full Of Sound And Fury</title><link href="https://jackdewinter.github.io/2021/07/12/markdown-linter-full-of-sound-and-fury/" rel="alternate"></link><published>2021-07-12T00:00:00-07:00</published><updated>2021-07-12T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2021-07-12:/2021/07/12/markdown-linter-full-of-sound-and-fury/</id><summary type="html">
 &lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;In my
-&lt;a href="https://jackdewinter.github.io/2021/06/14/markdown-linter-getting-stuff-done/"&gt;last article&lt;/a&gt;, I talked
+&lt;a href="https://jackdewinter.github.io/2021/06/28/markdown-linter-sometimes-you-have-to-go-backwards/"&gt;last article&lt;/a&gt;, I talked
+about starting to work on getting rid of some long-standing issues: nested Container Block elements.
+In this article, I talk about continuing that work and dealing with the remaining
+nested block scenario tests.&lt;/p&gt;
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;I wish I could say that this was a …&lt;/p&gt;</summary><content type="html">
+&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In my
+&lt;a href="https://jackdewinter.github.io/2021/06/28/markdown-linter-sometimes-you-have-to-go-backwards/"&gt;last article&lt;/a&gt;, I talked
+about starting to work on getting rid of some long-standing issues: nested Container Block elements.
+In this article, I talk about continuing that work and dealing with the remaining
+nested block scenario tests.&lt;/p&gt;
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;I wish I could say that this was a good week, but it was not.  It was not even this week
+that I am about to talk about here; that was last week.  Despite my best intentions,
+I got sick, and it has taken the better part of a week for me to get better.  To hear
+me talk about it, please read my upcoming article, Autism and Patience Do Not Mix,
+coming out later this week.&lt;/p&gt;
+&lt;p&gt;Before Monday afternoon when I got too sick to work, I had 90% of this article finished.
+I knew I was getting sick, but I did not feel good about publishing something that was
+only “mostly” done.  I hope my decision to delay publishing this article for
+a week is okay with any readers.  I would rather postpone publishing an article
+for a full week than to release something that I did not think was a quality article.&lt;/p&gt;
+&lt;p&gt;And on a similar level, I did not want the care that I put into that week’s work
+to be glossed over by an article that was not on par with that work.  As I talk about
+below, I was stunned to find out that there were only 2 examples out of 673 examples
+in the GFM specification
+that deal with relative indentation of block elements.  It was something that I knew
+about and something that I should have dealt with earlier.  But with no pressure
+from the specification’s examples to deal with relative indentation, it was not until
+this week that I worked to resolve the issue.&lt;/p&gt;
+&lt;h2 id="what-is-the-audience-for-this-article"&gt;What Is the Audience for This Article?&lt;a class="headerlink" href="#what-is-the-audience-for-this-article" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;While detailed more eloquently in
+&lt;a href="https://jackdewinter.github.io/2020/04/05/what-is-the-audience-for-my-blog/#what-is-the-audience-for-my-blog"&gt;this article&lt;/a&gt;,
+my goal for this technical article is to focus on the reasoning behind my solutions,
+rather that the solutions themselves.  For a full record of the solutions presented in
+this article, please consult the commits that occurred between
+&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/60abfcb562098a63910dc3bc3dc954186df2a7ee"&gt;04 Jul 2021&lt;/a&gt;
+and
+&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/9d3f1bb66b32fe8cec2cf3c4dde0ac141400435b"&gt;05 Jul 2021&lt;/a&gt;.&lt;/p&gt;
+&lt;h2 id="why-do-i-use-detailed-log-files"&gt;Why Do I Use Detailed Log Files?&lt;a class="headerlink" href="#why-do-i-use-detailed-log-files" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;One thing that I do not think I have ever mentioned is why I use log file output
+instead of just debugging the code interactively.  In normal everyday development, I do a bit of both
+as the issue requires.  For me, the real understanding comes from looking at
+a big picture and comparing it to other pictures.  Whether the right comparison pictures
+are from earlier runs of the same scenario or pictures of similar scenarios depends on
+what I am looking for.  Basically, I see it as a puzzle with lots of data that
+I need to solve, and I love it!&lt;/p&gt;
+&lt;p&gt;While the success of this technique may vary from person to person, it just
+works well for me.  If I am comparing the output of one test to another test, this technique
+allows me to copy the relevant section of the log files to another editor, run the
+tests again, and examine the both log file sections side-by-side.  If I did not
+understand something well enough, I can reset my position in both log files to an
+earlier point and restart my examination from those new positions.  Most importantly,
+it allows me to see a larger sequence of values than the ones visible from a single
+breakpoint within the code.  At it with that data that I can better see the bigger
+picture.&lt;/p&gt;
+&lt;p&gt;For those reasons and others, more detailed log files just work better for
+me.  Knowing the parser because of my experience with it, I find it easy to
+follow along with how each line is parsed, even though the complicated
+sections dealing with Container Block elements.  I have learned that I need
+to usually ignore most of the “stuff” in those blocks of the logs unless
+I am looking for something specifically to do with Container Blocks.&lt;/p&gt;
+&lt;p&gt;But even with all that good stuff working in my favor, that does not always
+make the job of fixing issues easier.&lt;/p&gt;
+&lt;h3 id="more-detail-does-mean-more-work"&gt;More Detail Does Mean More Work&lt;a class="headerlink" href="#more-detail-does-mean-more-work" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;While there are benefits to using more detailed log files, there are drawbacks
+as well.  If you are not used to the volume of data, it can be overwhelming.
+Even being used to the volume, there are still times that I need to walk
+away because it becomes overwhelming.  There are still times where I look
+at all the data without the right mindset, and it all looks like gibberish.
+I find closing my eyes and taking three or four deep breaths does wonders
+for getting the right mindset, but even that does not always work.  Sometimes
+I need to clear my mind by walking around for 10 to 15 minutes until my
+head clears.&lt;/p&gt;
+&lt;p&gt;But in the end, my evaluation on whether the costs are worth the benefits always
+produce a resounding “Yes!”.  But even with that yes, I do admit that there are
+times, like with Scenario Test 237 and 238, that those costs and benefits
+get tested… sometimes to their maximums.&lt;/p&gt;
+&lt;h2 id="scenario-test-237"&gt;Scenario Test 237&lt;a class="headerlink" href="#scenario-test-237" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Starting with what I believed to be the easiest of the two disabled tests, I
+started with Scenario Test &lt;code&gt;test_list_blocks_237&lt;/code&gt;, quickly renamed &lt;code&gt;test_list_blocks_237x&lt;/code&gt;:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;   &lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;  &lt;span class="n"&gt;one&lt;/span&gt;
+&lt;span class="o"&gt;&amp;gt;&amp;gt;&lt;/span&gt;
+&lt;span class="o"&gt;&amp;gt;&amp;gt;&lt;/span&gt;     &lt;span class="n"&gt;two&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Unlike the previous two tests, these two tests were introducing something
+that was a core tenet to the nesting of Container Blocks:  relative spacing.
+Not complaining to the writers of the
+&lt;a href="https://github.github.com/gfm/"&gt;GFM specification&lt;/a&gt; too much,
+but as this is a core concept of nested blocks, I wonder why the specification
+allocated only two examples to this concept and not more.  With all seriousness,
+every other example in their specification can be properly converted into
+HTML without worrying about relative spacing.  So, what is relative spacing
+or more properly &lt;code&gt;relative nested container block spacing&lt;/code&gt;?&lt;/p&gt;
+&lt;p&gt;Basically, the GFM specification talks about how nested block spacing is not
+absolute, but relative to the last Container Block element on that line.  To put
+this into perspective, consider the above example.  When properly parsed,
+the specification says that it will produce the following HTML output:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;blockquote&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;blockquote&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;ol&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;li&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;one&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;two&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;p&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;li&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;ol&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;blockquote&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;blockquote&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;But if you look at the Markdown example with an absolute mindset, the text
+&lt;code&gt;two&lt;/code&gt; is clearly not indented enough to qualify as being within the
+Ordered List element.  So what gives?&lt;/p&gt;
+&lt;p&gt;From a relative positioning point of view, the first line is broken down
+into the following sections: &lt;code&gt;{space}{space}{space}&amp;gt;{space}&amp;gt;{space}&lt;/code&gt; for
+the two nested Block Quotes elements that start the line, &lt;code&gt;1.{space}{space}&lt;/code&gt; for
+the Ordered List element that is next on that same line, and &lt;code&gt;one&lt;/code&gt; for the text
+for first List Item of that Ordered List element.  Using that same
+relative point of view, this means that there are four characters after
+the Block Quote elements before the text of that List Block element begins.&lt;/p&gt;
+&lt;p&gt;Applying that to the last line of the example, the two nested Block
+Quote elements take up &lt;code&gt;&amp;gt;&amp;gt;{space}&lt;/code&gt;, with the following nested Ordered List element
+coming into effect after the four space characters &lt;code&gt;{space}{space}{space}{space}&lt;/code&gt;.
+At that point, the text &lt;code&gt;two&lt;/code&gt; is present.  This means that, relatively speaking,
+the text &lt;code&gt;two&lt;/code&gt; is validly indented to remaining part of the Ordered List element.
+Looking at the HTML output above, this is indeed how that is parsed.&lt;/p&gt;
+&lt;h3 id="how-to-approach-that-change"&gt;How To Approach That Change&lt;a class="headerlink" href="#how-to-approach-that-change" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;In adding this support to the PyMarkdown parser, I was faced with two
+options: make the parser’s handling of nested sections relative-aware
+or make adjustments where needed.  While I would like to eventually
+adjust the parser to be more relative-aware, I quickly figured out
+that it would take quite a bit to make that change.  I spent a good
+day going through some preview steps of what it would take, just
+to get an idea of the effort.  If I had to guess, it would take
+at least a month or two, if not more.  Seeing as I want to get the
+PyMarkdown linter out there, that was out.  So, the only good option
+left was to make adjustments where needed.&lt;/p&gt;
+&lt;h3 id="subtle-changes"&gt;Subtle Changes&lt;a class="headerlink" href="#subtle-changes" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;To be fully honest, getting to this set of changes took a long
+time to figure out, including at least three times where I had to walk
+away to clear my head.&lt;/p&gt;
+&lt;p&gt;The first part of solving that puzzle was recognizing from the
+logs that the &lt;code&gt;__handle_block_quote_section&lt;/code&gt; function was not
+providing the right adjusted text.  Specifically, in handling
+this case under normal situations, the correct number of space
+characters are placed in the respective Block Quote token.  But
+because they both start on the same line, things got messed up.
+To correct this, I added the following code to ensure the
+&lt;code&gt;adjusted_removed_text&lt;/code&gt; and &lt;code&gt;adj_leading_spaces&lt;/code&gt; variables both
+had the correct values.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
+        &lt;span class="n"&gt;container_start_bq_count&lt;/span&gt;
+        &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="n"&gt;parser_state&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;stack_index&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_block_quote&lt;/span&gt;
+    &lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="n"&gt;count_of_actual_starts&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;ParserHelper&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;count_characters_in_text&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+            &lt;span class="n"&gt;adjusted_removed_text&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;"&amp;gt;"&lt;/span&gt;
+        &lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="k"&gt;assert&lt;/span&gt; &lt;span class="n"&gt;count_of_actual_starts&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="n"&gt;this_bq_count&lt;/span&gt;
+        &lt;span class="n"&gt;adj_leading_spaces&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;parser_state&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;
+            &lt;span class="n"&gt;stack_index&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
+        &lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;matching_markdown_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;leading_spaces&lt;/span&gt;
+        &lt;span class="k"&gt;while&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;text_removed_by_container&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+            &lt;span class="n"&gt;adj_leading_spaces&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;adjusted_removed_text&lt;/span&gt;
+        &lt;span class="p"&gt;):&lt;/span&gt;
+            &lt;span class="n"&gt;adj_leading_spaces&lt;/span&gt; &lt;span class="o"&gt;+=&lt;/span&gt; &lt;span class="s2"&gt;" "&lt;/span&gt;
+        &lt;span class="n"&gt;adjusted_removed_text&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;adj_leading_spaces&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;adjusted_removed_text&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;With that text now adjusted properly, it was on to modifications to
+the &lt;code&gt;__handle_nested_container_blocks&lt;/code&gt; function.  For this function,
+the &lt;code&gt;indent_level&lt;/code&gt; member variable of the start List Block token was
+being set to a number that indicated absolute position, not relative
+position.  To remedy that, I added code to calculate the indentation
+difference between the original Block Quote element and the original
+List Block element.  The &lt;code&gt;adjusted_indent_level&lt;/code&gt; variable was then
+adjusted to properly reflect the indentation relative to the Block
+Quote element and how it was set on the current line.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="n"&gt;indent_level&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;parser_state&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;nested_list_start&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;indent_level&lt;/span&gt;
+    &lt;span class="n"&gt;list_start_token_index&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;parser_state&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_document&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;index&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+        &lt;span class="n"&gt;parser_state&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;nested_list_start&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;matching_markdown_token&lt;/span&gt;
+    &lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;token_after_list_start&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;parser_state&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_document&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;
+        &lt;span class="n"&gt;list_start_token_index&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
+    &lt;span class="p"&gt;]&lt;/span&gt;
+    &lt;span class="k"&gt;assert&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
+        &lt;span class="n"&gt;parser_state&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;nested_list_start&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;matching_markdown_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;line_number&lt;/span&gt;
+        &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="n"&gt;token_after_list_start&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;line_number&lt;/span&gt;
+    &lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;column_number_delta&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
+        &lt;span class="n"&gt;token_after_list_start&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;column_number&lt;/span&gt;
+        &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="n"&gt;parser_state&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;nested_list_start&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;matching_markdown_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;column_number&lt;/span&gt;
+    &lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;adjusted_indent_level&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
+        &lt;span class="n"&gt;column_number_delta&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;end_container_indices&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;block_index&lt;/span&gt;
+    &lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;With those values calculated, it then allowed me to do the final changes
+to the function.  Before the big change was added, I needed the function
+to recompute the &lt;code&gt;indent_level&lt;/code&gt; variable to allow for an adjustment to
+the relative positioning.   However, before I reset &lt;code&gt;indent_level&lt;/code&gt;, I
+needed the algorithm to be aware of whether there was any difference
+between the &lt;code&gt;indent_level&lt;/code&gt; variable and the &lt;code&gt;adjusted_indent_level&lt;/code&gt; variable,
+so adjustments could be made later.&lt;/p&gt;
+&lt;p&gt;After all those changes, it came down to the two lines at the end of
+the following example:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;indent_level&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;adjusted_indent_level&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="n"&gt;delta&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;indent_level&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="n"&gt;adjusted_indent_level&lt;/span&gt;
+    &lt;span class="n"&gt;indent_level&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
+        &lt;span class="n"&gt;column_number_delta&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;end&lt;/span&gt;
+&lt;span class="o"&gt;...&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
+        &lt;span class="n"&gt;parser_state&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_document&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_blank_line&lt;/span&gt;
+        &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;end_container_indices&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;block_index&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;start_index&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="o"&gt;&amp;lt;&lt;/span&gt; &lt;span class="n"&gt;indent_level&lt;/span&gt;
+    &lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="o"&gt;...&lt;/span&gt;                    
+    &lt;span class="k"&gt;elif&lt;/span&gt; &lt;span class="n"&gt;delta&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="n"&gt;adj_line_to_parse&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;adj_line_to_parse&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;delta&lt;/span&gt;&lt;span class="p"&gt;:]&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;After all that work, the only thing that still needed to be
+adjusted was the &lt;code&gt;adj_line_to_parse&lt;/code&gt; variable containing the
+current line.  Because both Container Block elements are processed
+independently of any other elements, the &lt;code&gt;adj_line_to_parse&lt;/code&gt; variable
+is reset to remove any whitespace that is part of the whitespace for
+one of the Container Block elements.  In this scenario, the right
+amount of whitespace was not removed, leading the Leaf Block
+element processing to be wrong.&lt;/p&gt;
+&lt;p&gt;By removing that extra whitespace, everything fell into place, and
+it worked!  It was a long way to get there, but it was worth it.&lt;/p&gt;
+&lt;h2 id="scenario-test-238"&gt;Scenario Test 238&lt;a class="headerlink" href="#scenario-test-238" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Taking a quick look at this issue, on the surface it seemed to be the
+same issue as with scenario test 237, just the order in which the
+different indents were applied were on the last line, not the first:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&amp;gt;-&lt;/span&gt; &lt;span class="n"&gt;one&lt;/span&gt;
+&lt;span class="o"&gt;&amp;gt;&amp;gt;&lt;/span&gt;
+  &lt;span class="o"&gt;&amp;gt;&lt;/span&gt;  &lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;two&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Looking at the output tokens, everything looked fine, and the HTML was
+being generated properly.  But on closer examination, there was one little
+difference that changed the output of the Markdown generator: an extra
+line of leading whitespace.&lt;/p&gt;
+&lt;p&gt;To make sure that the Block Quote element is being represented properly,
+when each line inside of the Block Quote element is tokenized, the leading
+spaces including the &lt;code&gt;&amp;gt;&lt;/code&gt; character are stored within the owning Block
+Quote token.  This allows for it to be reconstructed without any issues as
+all leading Block Quote information is present, even if it varies.  But in
+this case, the leading spaces for the first Block Quote were added to the
+token, followed by a newline character and a fully indented representation
+of the second Block Quote element, both from that line.  While each one
+was accurate by itself, when they were combined by the Markdown generator,
+they added a lot of extra whitespace.  That was the issue.&lt;/p&gt;
+&lt;p&gt;It took a bit of head scratching before I figured it out, but I did
+figure it out.  In a nutshell, because of two spaces between the first
+Block Quote character and the second Block Quote character, they were not
+interpreted as a “group” of Block Quote elements.  Rather, they were
+interpreted as a Block Quote element, a space, and another Block Quote
+element.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;special_case&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;False&lt;/span&gt;
+&lt;span class="n"&gt;special_case_adjusted_text&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;
+&lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
+    &lt;span class="n"&gt;container_start_bq_count&lt;/span&gt;
+    &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="n"&gt;stack_bq_count&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
+    &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="n"&gt;container_start_bq_count&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="n"&gt;stack_bq_count&lt;/span&gt;
+&lt;span class="p"&gt;):&lt;/span&gt;
+
+    &lt;span class="n"&gt;stack_index&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
+    &lt;span class="n"&gt;block_quote_token_count&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;
+    &lt;span class="k"&gt;while&lt;/span&gt; &lt;span class="bp"&gt;True&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;parser_state&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;stack_index&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_block_quote&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="n"&gt;block_quote_token_count&lt;/span&gt; &lt;span class="o"&gt;+=&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
+            &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;block_quote_token_count&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="n"&gt;stack_bq_count&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+                &lt;span class="k"&gt;break&lt;/span&gt;
+        &lt;span class="n"&gt;stack_index&lt;/span&gt; &lt;span class="o"&gt;+=&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
+        &lt;span class="k"&gt;assert&lt;/span&gt; &lt;span class="n"&gt;stack_index&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;parser_state&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_stack&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="k"&gt;assert&lt;/span&gt; &lt;span class="n"&gt;stack_index&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;parser_state&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_stack&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;matching_block_quote_token&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;parser_state&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;
+        &lt;span class="n"&gt;stack_index&lt;/span&gt;
+    &lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;matching_markdown_token&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;matching_block_quote_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;leading_spaces&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="n"&gt;last_newline_index&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
+            &lt;span class="n"&gt;matching_block_quote_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;leading_spaces&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;rindex&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="n"&gt;special_case_adjusted_text&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
+            &lt;span class="n"&gt;matching_block_quote_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;leading_spaces&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;
+                &lt;span class="n"&gt;last_newline_index&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt; &lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="p"&gt;]&lt;/span&gt;
+        &lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="n"&gt;special_case&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;True&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;h2 id="cleaning-up-with-small-variations"&gt;Cleaning Up With Small Variations&lt;a class="headerlink" href="#cleaning-up-with-small-variations" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Having a Monday off and with this week’s article started, I wanted to see if
+I could make some progress on two variations: one for scenario test 237 and
+one for scenario test 238.  &lt;/p&gt;
+&lt;p&gt;As detailed above, the Markdown for scenario test 237 is:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;   &lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;  &lt;span class="n"&gt;one&lt;/span&gt;
+&lt;span class="o"&gt;&amp;gt;&amp;gt;&lt;/span&gt;
+&lt;span class="o"&gt;&amp;gt;&amp;gt;&lt;/span&gt;     &lt;span class="n"&gt;two&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;where the indentation on the final line allows that line to be included
+in the Ordered List element started on line 1.  The small variation there
+was to create test function &lt;code&gt;test_list_blocks_237e&lt;/code&gt; with one less space
+character on that final line:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;   &lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;  &lt;span class="n"&gt;one&lt;/span&gt;
+&lt;span class="o"&gt;&amp;gt;&amp;gt;&lt;/span&gt;
+&lt;span class="o"&gt;&amp;gt;&amp;gt;&lt;/span&gt;    &lt;span class="n"&gt;two&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;This reduction in indentation on that final line makes that final line
+ineligible for the Ordered List element. I was pleasantly surprised that
+it worked right away, without any changes required.&lt;/p&gt;
+&lt;p&gt;Scenario test &lt;code&gt;test_list_blocks_238a&lt;/code&gt; includes a similar change, this
+time adding an extra space on the final line to make it eligible for
+the Unordered List element:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&amp;gt;-&lt;/span&gt; &lt;span class="n"&gt;one&lt;/span&gt;
+&lt;span class="o"&gt;&amp;gt;&amp;gt;&lt;/span&gt;
+  &lt;span class="o"&gt;&amp;gt;&lt;/span&gt;  &lt;span class="o"&gt;&amp;gt;&lt;/span&gt;  &lt;span class="n"&gt;two&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;While this new test was not as successful as test function
+&lt;code&gt;test_list_blocks_237e&lt;/code&gt; was, it only required minimal changes
+to make it work properly.  The HTML output was already consistent
+with what was expected, but the Markdown generator had additional
+whitespace in its output for the final line.  Specifically, when
+that final line was parsed, the Paragraph token started with the
+extraction of two space characters.  This meant that the regenerated
+output had four space character between the final &lt;code&gt;&amp;gt;&lt;/code&gt; character and
+the &lt;code&gt;two&lt;/code&gt; text.&lt;/p&gt;
+&lt;p&gt;Addressing that issue did not require that much work.  In the
+&lt;code&gt;__handle_nested_container_blocks&lt;/code&gt; function, I added the following
+code to reduce the number of spaces by the appropriate amount:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;elif&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
+        &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="n"&gt;nested_container_starts&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;block_index&lt;/span&gt;
+        &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="n"&gt;adj_line_to_parse&lt;/span&gt;
+        &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="n"&gt;adj_line_to_parse&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="s2"&gt;" "&lt;/span&gt;
+        &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="n"&gt;indent_was_adjusted&lt;/span&gt;
+        &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="n"&gt;parser_state&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;nested_list_start&lt;/span&gt;
+    &lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="k"&gt;assert&lt;/span&gt; &lt;span class="n"&gt;adj_line_to_parse&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;startswith&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+            &lt;span class="n"&gt;parser_state&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;nested_list_start&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;matching_markdown_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;extracted_whitespace&lt;/span&gt;
+        &lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="n"&gt;adj_line_to_parse&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;adj_line_to_parse&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;
+            &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+                &lt;span class="n"&gt;parser_state&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;nested_list_start&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;matching_markdown_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;extracted_whitespace&lt;/span&gt;
+            &lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="p"&gt;]&lt;/span&gt;
+        &lt;span class="n"&gt;already_adjusted&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;True&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;This code was added specifically to address the extra space characters
+and to remove them from the adjusted line variable &lt;code&gt;adj_line_to_parse&lt;/code&gt;.
+If the indent was adjusted and the current line includes a nested list start
+token, this code reduces that adjusted line variable by the list’s indent.
+The code itself was made simpler by the handling of an increase in the spacing
+already being handled previously in that same function.&lt;/p&gt;
+&lt;p&gt;After taking a bit to figure out that solution, once it was implemented,
+everything worked fine.&lt;/p&gt;
+&lt;h2 id="what-was-my-experience-so-far"&gt;What Was My Experience So Far?&lt;a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;The full quote from Shakespeare’s Macbeth is:&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;It is a tale told by an idiot, full of sound and fury, signifying nothing.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;Trying to mentally return to when I learned this line in high school, I
+remember talking specifically about that line.  I seem to remember that we
+were talking about how Macbeth’s wife had just died, and he did not see that
+life contained any meaning for him after that point.
+Over the years since high school, my thoughts on that line have changed a
+bit.  I now think of that same line
+in situations where someone goes on and on about something, only to have
+it appear in real life as something with little sound or fury.&lt;/p&gt;
+&lt;p&gt;The work that I documented in this article really did feel like that.  When
+I started the work, I was not sure how difficult the work was going to be,
+only that it would require some changes.  Now, it may be because of the
+research that I did to get prepared for these changes, but those changes
+ended up
+feeling… well… trivial.  I was worried that I was going to have to make
+some grand changes to the project to accommodate this “little” issue that
+needed to be fixed, and the actual work was “little”.&lt;/p&gt;
+&lt;p&gt;Do not get me wrong, I am grateful that those issues required less than
+100 lines of code to change.  But at the same time, I realized that I had
+built this issue up as “THE NASTY CHANGES REQUIRED TO…”&lt;sup id="fnref:caps"&gt;&lt;a class="footnote-ref" href="#fn:caps"&gt;1&lt;/a&gt;&lt;/sup&gt; instead of
+“yup, just some normal tweaking” changes.  For context, I spent a full evening working
+on the research and trying simple changes out until I was convinced it would
+take a more concerted effort to solve.  And even then, I did some more testing
+to make sure that my research was correct. For me, usually that amount of
+research leads to a lot of changes.&lt;/p&gt;
+&lt;p&gt;And maybe that is why I feel that it went from “sound and fury” to almost “nothing”:
+I did proper research.  Sure, it took some time to figure out the correct decisions
+to make based on that research, but it was that research that was pivotal.
+For me, that is a just a good feeling to have.  While I was not able to show
+any actual code as a result of that research, it helped me prune many decision
+trees early on, resulting in allowing me to follow a quick path to
+the actual work I needed to do.  Essentially, it pointed out the 90% of the
+work that I should avoid and had me focus on the 10% of the work that would
+be most beneficial.  And that helped a lot!&lt;/p&gt;
+&lt;p&gt;In the end, the way I see it, while the “sound and fury” of debugging is
+usually where I expect the hard work to be, there are cases where the
+“signifying (almost) nothing” portion of the debugging work is where it is at!&lt;/p&gt;
+&lt;h2 id="what-is-next"&gt;What is Next?&lt;a class="headerlink" href="#what-is-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;After the week I have had being sick, I really am not sure what is going on yet.
+Stay tuned!&lt;/p&gt;
+&lt;div class="footnote"&gt;
+&lt;hr/&gt;
+&lt;ol&gt;
+&lt;li id="fn:caps"&gt;
+&lt;p&gt;For any readers not fluent in text-speak or DM/IM-speak, the extended use of capital letters usually implies that the author of the text is yelling.  In this case, it would be more of a “booming load” voice, implying sound and fury. &lt;a class="footnote-backref" href="#fnref:caps" title="Jump back to footnote 1 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/div&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry><entry><title>Markdown Linter - Sometimes You Have To Go Backwards...</title><link href="https://jackdewinter.github.io/2021/06/28/markdown-linter-sometimes-you-have-to-go-backwards/" rel="alternate"></link><published>2021-06-28T00:00:00-07:00</published><updated>2021-06-28T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2021-06-28:/2021/06/28/markdown-linter-sometimes-you-have-to-go-backwards/</id><summary type="html">
+&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In my
+&lt;a href="https://jackdewinter.github.io/2021/06/21/markdown-linter-elevating-extensions/"&gt;last article&lt;/a&gt;, I talked
 about elevating the extension object support in the PyMarkdown project to the
 same level as plugins rules.  In this article, I talk about starting to work on
 getting rid of some long-standing issues: nested container blocks.&lt;/p&gt;
@@ -10,7 +416,7 @@ getting rid of some long-standing issues: nested container blocks.&lt;/p&gt;
 &lt;p&gt;There are times in my professional …&lt;/p&gt;</summary><content type="html">
 &lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;In my
-&lt;a href="https://jackdewinter.github.io/2021/06/14/markdown-linter-getting-stuff-done/"&gt;last article&lt;/a&gt;, I talked
+&lt;a href="https://jackdewinter.github.io/2021/06/21/markdown-linter-elevating-extensions/"&gt;last article&lt;/a&gt;, I talked
 about elevating the extension object support in the PyMarkdown project to the
 same level as plugins rules.  In this article, I talk about starting to work on
 getting rid of some long-standing issues: nested container blocks.&lt;/p&gt;
@@ -41,9 +447,9 @@ good steps forward, I need to take a couple of steps back.&lt;/p&gt;
 my goal for this technical article is to focus on the reasoning behind my solutions,
 rather that the solutions themselves.  For a full record of the solutions presented in
 this article, please consult the commits that occurred between
-&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/59f4aa04507c0ae43a67de5634eb3c14a0f2866d"&gt;17 Jun 2021&lt;/a&gt;
+&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/1a46d3c119a58be175a4ee642493f7e3ed2d8840"&gt;26 Jun 2021&lt;/a&gt;
 and
-&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/d5064dacc0d04cfaad0217ab3cb37fd6a22a031f"&gt;20 Jun 2021&lt;/a&gt;.&lt;/p&gt;
+&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/40c1333324e1927b51d9800e3957a893077e6fa9"&gt;27 Jun 2021&lt;/a&gt;.&lt;/p&gt;
 &lt;h2 id="giving-it-some-context"&gt;Giving It Some Context&lt;a class="headerlink" href="#giving-it-some-context" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;I am going to start this article with a set of statements that I believe sums
 up my work on this project.  The first is that writing a Markdown parser is hard.
@@ -10969,477 +11375,6 @@ it would get me closer to an initial release.&lt;/p&gt;
 &lt;ol&gt;
 &lt;li id="fn:honey"&gt;
 &lt;p&gt;To be fair, in our household we have one honey-do list for me and one honey-do list for my spouse.  And we both ignore some items until reminded and get some items off the list on our own.  You know, typical list. &lt;a class="footnote-backref" href="#fnref:honey" title="Jump back to footnote 1 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
-&lt;/li&gt;
-&lt;/ol&gt;
-&lt;/div&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry><entry><title>Markdown Linter - Delving Into the Issues - 15</title><link href="https://jackdewinter.github.io/2021/01/04/markdown-linter-delving-into-the-issues-15/" rel="alternate"></link><published>2021-01-04T00:00:00-08:00</published><updated>2021-01-04T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2021-01-04:/2021/01/04/markdown-linter-delving-into-the-issues-15/</id><summary type="html">
-&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;In my
-&lt;a href="https://jackdewinter.github.io/2020/12/28/markdown-linter-delving-into-the-issues-14/"&gt;last article&lt;/a&gt;,
-I continued working on Block Quote issues and issues with Block Quotes and their
-interactions with List Blocks.  In this article, I document that work that was done
-to address those issues and resolve them.&lt;/p&gt;
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;With a couple of weeks off for the holidays …&lt;/p&gt;</summary><content type="html">
-&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;In my
-&lt;a href="https://jackdewinter.github.io/2020/12/28/markdown-linter-delving-into-the-issues-14/"&gt;last article&lt;/a&gt;,
-I continued working on Block Quote issues and issues with Block Quotes and their
-interactions with List Blocks.  In this article, I document that work that was done
-to address those issues and resolve them.&lt;/p&gt;
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;With a couple of weeks off for the holidays and relatively light “honey-do” schedule
-around the house, I was hoping to have some good relaxing days along with some good
-productive project days.  In my head, I was mentally starting to evaluate each of the
-remaining items in the list, assigning them a priority between 1 (highest) and
-4 (lowest).  I knew completing the Block Quote issues and Block Quote adjacent issues
-has a priority of 1, but I needed to take some time to think about the others.  And
-while I was thinking about those others, it was a good time to get some solid work in!&lt;/p&gt;
-&lt;h2 id="what-is-the-audience-for-this-article"&gt;What Is the Audience for This Article?&lt;a class="headerlink" href="#what-is-the-audience-for-this-article" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;While detailed more eloquently in
-&lt;a href="https://jackdewinter.github.io/2020/04/05/what-is-the-audience-for-my-blog/#what-is-the-audience-for-my-blog"&gt;this article&lt;/a&gt;,
-my goal for this technical article is to focus on the reasoning behind my solutions,
-rather that the solutions themselves.  For a full record of the solutions presented in
-this article, please go to this project’s GitHub repository and consult the
-commits between
-&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/4c0432c60f6a3984052a585861c017ee2df0036d"&gt;22 Dec 2020&lt;/a&gt;
-and
-&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/b5b42bce4f351febd62ad0303087ee0a9b190296"&gt;27 Dec 2020&lt;/a&gt;.&lt;/p&gt;
-&lt;h2 id="creating-a-new-scenario-series"&gt;Creating A New Scenario Series&lt;a class="headerlink" href="#creating-a-new-scenario-series" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;After doing a block of work with Block Quotes, I thought it was a good time to start
-making a new scenario test group for them, Series N.  To start this new series off, I
-simply copied and pasted
-example scenarios from other series and began to work through the permutations.  Once
-I had those roughly filled out, I created the &lt;code&gt;test_markdown_paragraph_series_n.py&lt;/code&gt;
-module to hold the scenario tests, and just started working on putting them together.
-After I had the first group of tests in Series N filled out, it was almost cut-and-paste
-to get the next group of tests ready, with a simple change to the specific Markdown
-element I was testing in that group.&lt;/p&gt;
-&lt;p&gt;As nothing is ever easy (it seems…), I ran into some failures that I needed to fix.
-The first set of failures occurred with unquoted HTML Blocks, in that those HTML
-Blocks did not end the Block Quote element.  This was quickly followed up by the same
-issue occurring with Atx Heading elements.  As I had already solved this problem for
-List Blocks, it was quickly fixed by adding checks in the &lt;code&gt;check_for_lazy_handling&lt;/code&gt;
-function for both the Atx Heading element starting (&lt;code&gt;LeafBlockProcessor.is_atx_heading&lt;/code&gt;)
-or the HTML Block element starting (&lt;code&gt;HtmlHelper.is_html_block&lt;/code&gt;).&lt;/p&gt;
-&lt;p&gt;At the same time, to handle two extra list-based scenarios, I added the
-&lt;code&gt;test_block_quotes_213aa&lt;/code&gt; function and &lt;code&gt;test_block_quotes_213ab&lt;/code&gt; function as variations
-on the &lt;code&gt;test_block_quotes_213a&lt;/code&gt; test function.  I tried for a good hour or so to resolve
-the issues with all these functions, but I did not make a lot of progress.  In the
-end, I got test function &lt;code&gt;test_block_quotes_213ab&lt;/code&gt; working, but functions
-&lt;code&gt;test_block_quotes_213a&lt;/code&gt; and &lt;code&gt;test_block_quotes_213aa&lt;/code&gt; just did not want to seem to
-work.&lt;/p&gt;
-&lt;p&gt;My main priority at the time was filling out the Series N set of tests, so I left
-those two tests disabled while I proceeded to fill out the Series N tests.  Nothing
-exciting to report from that task… it was just a lot of moving, documenting,
-checking, and rechecking. You know, the normal stuff.&lt;/p&gt;
-&lt;h3 id="addressing-those-tests"&gt;Addressing Those Tests&lt;a class="headerlink" href="#addressing-those-tests" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;In looking good and hard at those disabled tests, I was able to eventually see that a
-good group of those tests were dealing with nested containers.  Specifically, they
-were dealing with a Block Quote element inside of a List Block element, or the other
-way around. Putting the disabled tests, their Markdown documents, and their
-expected tokens under a metaphorical microscope, it was a while before I noticed
-something that I had previously missed.  When I followed the examples closely, it
-looked like Block Quote elements within
-a List Block element were not being properly closed in each example.&lt;/p&gt;
-&lt;p&gt;In debugging this issue, I added a handful of extra tests to help me analyze the
-situation. The Markdown for one of those tests, the &lt;code&gt;test_block_quotes_extra_02a&lt;/code&gt; test
-function, is as follows:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="nv"&gt;start&lt;/span&gt;
-&lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="nv"&gt;quote&lt;/span&gt;
-&lt;span class="o"&gt;&amp;gt;&lt;/span&gt;
-&lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="k"&gt;end&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;and the list of tokens produced for that Markdown were:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;[
-    '[block-quote(1,1)::&amp;gt; \n&amp;gt; \n&amp;gt;\n&amp;gt; ]',
-    '[para(1,3):]',
-    '[text(1,3):start:]',
-    '[end-para:::True]',
-    '[ulist(2,3):-::4:  ]',
-    '[para(2,5):]',
-    '[text(2,5):quote:]',
-    '[end-para:::True]',
-    '[BLANK(3,2):]',
-    '[para(4,3):]',
-    '[text(4,3):end:]',
-    '[end-para:::True]',
-    '[end-ulist:::True]',
-    '[end-block-quote:::True]'
-]
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;As I worked through the example, following the Markdown document and the parser’s
-tokens,
-I discovered the issue.  The Blank Line element on line 3 ended the first Paragraph
-element, and I was good with that.  But more importantly, because that Paragraph element
-was closed due to the Blank Line being encountered, the new text on line 4 was not
-eligible to be included as paragraph continuation text.  Based on that information, the
-new Paragraph element for line 4 needed to be created outside of the List Block element,
-as it did not have the indentation to support being included in the list.&lt;/p&gt;
-&lt;p&gt;Basically, the end Unordered List Block token was in the wrong place.  To fix it, I would
-need to move it above the occurrence of the Blank Line element.&lt;/p&gt;
-&lt;!--- pyml disable-next-line no-trailing-punctuation --&gt;
-&lt;h3 id="fixing-it-right"&gt;Fixing It Right!&lt;a class="headerlink" href="#fixing-it-right" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;Being an issue with the tokenization of the Markdown Document, I needed to start
-with the parser and the &lt;code&gt;BlockQuoteProcessor&lt;/code&gt; class.  From the above information, I knew
-that I needed to alter the way in which the &lt;code&gt;parser_state.handle_blank_line_fn&lt;/code&gt; function
-was called, as it was not properly closing the right blocks.  After trying a few
-other things, I reverted to a very basic approach to solve the issue:  forgo the
-complicated calculations and just do the simple calculation where needed.  So, in the
-&lt;code&gt;__handle_block_quote_section&lt;/code&gt; function, before the &lt;code&gt;handle_blank_line_fn&lt;/code&gt; function is
-called, a quick calculation is done to see if the List Block should possibly be closed.
-If so, the actual index number is set in the &lt;code&gt;forced_close_until_index&lt;/code&gt; variable.  Then,
-making a small change to the &lt;code&gt;handle_blank_line_fn&lt;/code&gt; function, that variable is passed in
-and all tokens on the stack are closed until they get to that point.&lt;/p&gt;
-&lt;p&gt;At the time, it felt like I was using a large sledgehammer to fix a small problem, but
-it worked.  The tokens were being generated properly, and I was able to move on from
-there. While I could them go on to describe all the problems I had with the Markdown
-transformer, I will spare any reader the pain.  While the basic handling of Block Quote
-elements was working
-fine, the proper handling of indents within Block Quote elements needed a good solid
-day’s overhaul to get it right.  It was a good thing I was on holiday, because I had
-that time to devote to working through all the issues and getting the Markdown
-rehydration of Block Quotes and their indents just right.&lt;/p&gt;
-&lt;p&gt;Following that, I expected a lot of issues with the consistency checks, but there was
-only one major issue.  In the &lt;code&gt;__validate_new_line&lt;/code&gt; function, the &lt;code&gt;leading_text_index&lt;/code&gt;
-member variable of the Block Quote token was not being updated properly, resulting in
-an off-by-one error.  Unlike the problems with the Markdown transformer, this issue
-took less than half an hour to find and fix.  Phew!&lt;/p&gt;
-&lt;p&gt;In the end, I was able to enable four of the &lt;code&gt;test_block_quotes_213&lt;/code&gt; test functions
-and all five of the new test functions that I had added.  That was a good feeling.&lt;/p&gt;
-&lt;h3 id="still-missing-one"&gt;Still Missing One&lt;a class="headerlink" href="#still-missing-one" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;After a good night’s worth of sleep, I got back to tackling the disabled functions,
-specifically test function &lt;code&gt;test_block_quotes_213aa&lt;/code&gt;.  With a Markdown document of:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="n"&gt;foo&lt;/span&gt;
-&lt;span class="o"&gt;&amp;gt;&lt;/span&gt;   &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="n"&gt;boo&lt;/span&gt;
-&lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="n"&gt;bar&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;it was immediately obvious that this was somewhat related to the work that I completed
-the day before.  It was just figuring out how that stumped me for a while.&lt;/p&gt;
-&lt;p&gt;Adding some debug, I started to suspect that the “can I start a container block” logic
-in the &lt;code&gt;__get_nested_container_starts&lt;/code&gt; function was not working properly.  Adding more
-specific debugging in that function, my guess was confirmed.  Specifically, there were
-cases where I felt it was obvious that a new List Block element should start, but the
-code was skipping over those chances.&lt;/p&gt;
-&lt;p&gt;Stepping through that code, I noticed weird behavior when I got to this part of that
-function:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;        &lt;span class="n"&gt;nested_ulist_start&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;_&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;ListBlockProcessor&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_ulist_start&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
-            &lt;span class="n"&gt;parser_state&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;line_to_parse&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;""&lt;/span&gt;
-        &lt;span class="p"&gt;)&lt;/span&gt;
-        &lt;span class="n"&gt;nested_olist_start&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;_&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;_&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;_&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;ListBlockProcessor&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_olist_start&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
-            &lt;span class="n"&gt;parser_state&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;line_to_parse&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;""&lt;/span&gt;
-        &lt;span class="p"&gt;)&lt;/span&gt;
-        &lt;span class="n"&gt;nested_block_start&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;BlockQuoteProcessor&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_block_quote_start&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
-            &lt;span class="n"&gt;line_to_parse&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;""&lt;/span&gt;
-        &lt;span class="p"&gt;)&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Looking at the debug output for that code while debugging the &lt;code&gt;test_block_quotes_213aa&lt;/code&gt;
-function, it was obvious that on the second line of the document, the code was not
-determining that a new block was starting.  It just skipped right over it.&lt;/p&gt;
-&lt;p&gt;Thinking through the issue while I was debugging, this started to make sense.  It was
-not triggering on any of the above start checks because the wrong information was being
-presented to it.  In fact, the data presented to it for line 2 of the above Markdown
-was literally two space characters followed by the Unsigned List Block start character
-(&lt;code&gt;-&lt;/code&gt;).  While that specific form of data made sense for the
-&lt;code&gt;__get_nested_container_starts&lt;/code&gt;
-function, trying to invoke any one of the three Container block start functions with
-that data would never succeed.  Each of those functions expected the line to at least
-be minimally processed, and that line of data clearly had not been.&lt;/p&gt;
-&lt;p&gt;Trying the simple approach first, I tested the following change while debugging function
-&lt;code&gt;test_block_quotes_213aa&lt;/code&gt;:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;        &lt;span class="n"&gt;after_ws_index&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;ex_whitespace&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;ParserHelper&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;extract_whitespace&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
-            &lt;span class="n"&gt;line_to_parse&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;
-        &lt;span class="p"&gt;)&lt;/span&gt;
-
-        &lt;span class="n"&gt;nested_ulist_start&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;_&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;ListBlockProcessor&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_ulist_start&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
-            &lt;span class="n"&gt;parser_state&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;line_to_parse&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;after_ws_index&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;ex_whitespace&lt;/span&gt;
-        &lt;span class="p"&gt;)&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;and it worked!  Debugging through the test again, that processing allowed the
-&lt;code&gt;is_ulist_start&lt;/code&gt; to work with the processed line data, resulting in a non-None
-result being returned.  After applying that same change to the other two start Container
-block functions, I ran the tests again and everything was good.  The tests were passing
-without any additional changes being required of the Markdown transformer or the
-consistency checks.  I was stoked!&lt;/p&gt;
-&lt;h2 id="making-the-test-invocation-more-efficient"&gt;Making the Test Invocation More Efficient&lt;a class="headerlink" href="#making-the-test-invocation-more-efficient" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;As I was making the changes to all these scenario tests, one thing was becoming
-obvious to me: I was not changing the call pattern.  In the beginning of the project, I
-was concerned that I was going to have a wide array of ways to invoke the scenario tests
-based on need.  While it was a valid concern at the time, it had not played out that
-way.  For each scenario test, I was always adding the following boilerplate code:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="c1"&gt;# Act&lt;/span&gt;
-    &lt;span class="n"&gt;actual_tokens&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;tokenizer&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;transform&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;source_markdown&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-    &lt;span class="n"&gt;actual_gfm&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;transformer&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;transform&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;actual_tokens&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-
-    &lt;span class="c1"&gt;# Assert&lt;/span&gt;
-    &lt;span class="n"&gt;assert_if_lists_different&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;expected_tokens&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;actual_tokens&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-    &lt;span class="n"&gt;assert_if_strings_different&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;expected_gfm&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;actual_gfm&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-    &lt;span class="n"&gt;assert_token_consistency&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;source_markdown&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;actual_tokens&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;While those seven lines are not a lot, over the course of approximately 2,000 scenario
-tests, those lines added up.  Thinking about it a bit, I realized that I was not going
-to change this format because it was consistently worked well for me.  Declared before
-this code block
-in each test, the variables &lt;code&gt;source_markdown&lt;/code&gt;, &lt;code&gt;expected_tokens&lt;/code&gt; and &lt;code&gt;expected_gfm&lt;/code&gt; held
-the relative information for each test.  Once set, I could not think of any reason to
-alter from the pattern of calling the three validation functions, one after another.&lt;/p&gt;
-&lt;p&gt;At the same time, if I was going to make this change on a large scale, I wanted to start
-out with a smaller scope of work and validate it first.  At that point, I created a new
-&lt;code&gt;act_and_assert&lt;/code&gt; function to contain those seven lines of code, and changed that code
-block from above to the following:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="c1"&gt;# Act &amp;amp; Assert&lt;/span&gt;
-    &lt;span class="n"&gt;act_and_assert&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;source_markdown&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;expected_gfm&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;expected_tokens&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;After testing it out on a couple of scenario tests, I applied it to all the scenario
-tests in the &lt;code&gt;test_markdown_paragraph_series_n.py&lt;/code&gt; module and the
-&lt;code&gt;test_markdown_block_quotes.py&lt;/code&gt; module.  Making sure the scenario tests all worked,
-including introducing some false failures that I immediately fixed, I decided to leave
-it alone for a while.  My thought process was that I would let it “set” in my mind.
-If I was still interested in making the change after a week or so, I could
-work on it over the course of a couple of weeks.&lt;/p&gt;
-&lt;h2 id="link-reference-definitions-and-containers"&gt;Link Reference Definitions and Containers&lt;a class="headerlink" href="#link-reference-definitions-and-containers" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Looking at the issues list, the following item gained my attention:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="n"&gt;split&lt;/span&gt; &lt;span class="n"&gt;up&lt;/span&gt; &lt;span class="n"&gt;link&lt;/span&gt; &lt;span class="n"&gt;definition&lt;/span&gt; &lt;span class="n"&gt;within&lt;/span&gt; &lt;span class="n"&gt;a&lt;/span&gt; &lt;span class="n"&gt;block&lt;/span&gt; &lt;span class="n"&gt;quote&lt;/span&gt; &lt;span class="k"&gt;or&lt;/span&gt; &lt;span class="n"&gt;list&lt;/span&gt;&lt;span class="o"&gt;?&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;While I was not sure it was going to be easy, I at least figured that it would be fun!
-At the base level, it was an interesting question.  Block Quote elements and List Block
-elements altered the way a line was processed, and Link Reference Definitions could span
-lines and not appear to follow the right rules.  To that end, I added three new
-scenario tests &lt;code&gt;test_block_quotes_extra_03x&lt;/code&gt; to &lt;code&gt;test_block_quotes_extra_03b&lt;/code&gt; and I
-added three new scenario tests &lt;code&gt;test_list_items_extra_01x&lt;/code&gt; to &lt;code&gt;test_list_items_extra_01b&lt;/code&gt;.&lt;/p&gt;
-&lt;p&gt;The bad news first.  Try as I may, I was not able to get the new Block Quote tests to
-pass within a decent amount of time.  As such, I had to commit them as disabled tests.&lt;/p&gt;
-&lt;p&gt;The ContainerBlockProcessor was largely unchanged, with the changes in that class being
-made to get rid of code or simplify code, rather than fix issues.  The Markdown transformer
-was altered to produce the proper output if there were any leading spaces in the list that
-were not being merged in by the Link Reference Definition token.  Those were the easier
-two fixes.  The hard changes involved the HTML transformer.&lt;/p&gt;
-&lt;h3 id="list-looseness-again"&gt;List Looseness… Again&lt;a class="headerlink" href="#list-looseness-again" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;While I thought all my issues regarding list looseness were behind me, I was wrong.
-Specifically:&lt;/p&gt;
-&lt;blockquote&gt;
-&lt;p&gt;A list is loose if any of its constituent list items are separated by blank lines, or if any of its constituent list items directly contain two block-level elements with a blank line between them.&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;p&gt;Breaking that down, a list is lose if, for any item within the list:&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;it is not the first item and preceded by a blank line&lt;/li&gt;
-&lt;li&gt;it is not the last item and followed by a blank line&lt;/li&gt;
-&lt;li&gt;any item contains any two block elements that are separated by a blank line&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;How is this related to Link Reference Definitions?  When the PyMarkdown processors
-parse a Link Reference Definition element, it creates a token that represents that
-element so it can be analyzed.  However, from an HTML point of view, it does not exist.
-As such, the following Markdown:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;foo&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="err"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;url&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="ss"&gt;"title"&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
-&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;foo&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;is for HTML output purposes equal to the Markdown:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;
-&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;foo&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Basically, from the HTML transformer point of view, it is a Blank Line element. I had some
-code in the &lt;code&gt;__is_token_loose&lt;/code&gt; function to report a Link Reference Definition as a Blank
-Line element and in the &lt;code&gt;__calculate_list_looseness&lt;/code&gt; to trigger off a block, but it
-was not that simple.  Rereading the above section on looseness, it only really mattered
-inside of the list item if that Blank Line element was between two blocks.&lt;/p&gt;
-&lt;p&gt;Fixing that specific case took a bit of work in the &lt;code&gt;__calculate_list_looseness&lt;/code&gt; function
-to redesign the way I was handling those cases.  In cases where the previous token was
-a Blank Line, I had to change the algorithm to look before that element and see if there
-was a valid block token there.  It so, the logic from the last point above would come
-into play,
-and it would discover a valid case to check.  Otherwise, the Blank Line token or the
-Link Reference Definition token would be intentionally overlooked, and the search would
-continue.&lt;/p&gt;
-&lt;h3 id="repeat-with-block-quotes"&gt;Repeat, With Block Quotes&lt;a class="headerlink" href="#repeat-with-block-quotes" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;It was no surprise that I had to do similar work with Block Quote elements to make sure
-that they were also working properly.  To accommodate that, I added five new scenarios
-and did a lot of debugging.  In the end, the fix was to add a flag in the
-&lt;code&gt;__handle_blank_line&lt;/code&gt; function that triggered when a Link Referenced Definition had
-been started.  Rather than avoid the default handling in this case, that handle was
-carried out and appended to the already created tokens, resulting the proper output.&lt;/p&gt;
-&lt;p&gt;Once that fix was made, getting the consistency checks to agree with it was
-easy, with one calculation for the &lt;code&gt;leading_text_index&lt;/code&gt; being off by 1.  After a
-simple adjustment to compensate for that case, those tests were now passing.
-After only an hour and a half of work to get this working, I understood that I was
-lucky that it did not end up taking as long as the last set of issues to fix.  I
-was grateful!&lt;/p&gt;
-&lt;h2 id="evaluating-how-i-was-spending-my-holiday"&gt;Evaluating How I Was Spending My Holiday&lt;a class="headerlink" href="#evaluating-how-i-was-spending-my-holiday" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;I do not think that I am a workaholic, I just like to keep busy.  Whether it is figuring
-out how to do something with home automation, working on a puzzle, cleaning up the
-garage (again!?), or working on this project, it does not matter.  If it is
-something that keeps me from spending hours doing one thing with no recognizable thing
-to show for it, I am good.  Spending time with my wife helping her out with shopping
-works wonderfully for that.  I get to spend time doing crossword puzzles and other fun
-things on my phone while waiting for her to finish at various stores she needs to go
-to.  For me, it is all about perspective.&lt;/p&gt;
-&lt;p&gt;So, it was part of the way through Christmas Eve Day when I thought about this with
-respect to the project.  While it was true that I was resolving items from the issues
-list, it just was not feeling like it was the right thing to do at that time.  As I had
-the weeks before and after Christmas off, I sat back and decided that I wanted
-to do something for the project that would be hard to do at any other time.  I mean,
-since I have the time, was I using it to my best advantage?&lt;/p&gt;
-&lt;p&gt;Within minutes, I had an answer of “No, I was not using my time wisely!”.  I had a
-couple of long-term things I wanted to
-do with the code base, but those things would be hard to fit into a normal week’s worth
-of work.  It was time to shift gears.&lt;/p&gt;
-&lt;h3 id="reducing-the-code-required-to-check-for-a-specific-token"&gt;Reducing the Code Required To Check For A Specific Token&lt;a class="headerlink" href="#reducing-the-code-required-to-check-for-a-specific-token" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;While this was done very leisurly over two days, this change was something I had wanted to
-do for a while.  As the project’s growth was organic, I had started out check for the
-pressence of a given token by looking at its name.  At that time, given the rule module
-&lt;code&gt;rule_md_019.py&lt;/code&gt;, if I wanted to see if a given token was a paragraph, I would use:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;type_name&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="n"&gt;MarkdownToken&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_paragraph&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-    &lt;span class="k"&gt;pass&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;There is nothing intrinsically wrong with that comparison, but it did have things going
-against it.  The first was that I had to make sure to import the MarkdownToken class into
-any module where I wanted such a comparison.  Next was my observation that I usually had
-to go to the &lt;code&gt;markdown_token.py&lt;/code&gt; module and find out exactly how the token’s type name
-was spelled, hopefully avoiding any naming errors.  Finally, I found it bulky.  I guess
-if I had to add more description to bulky, it was that it took an awful lot of typing to
-figure out that the token was a paragraph.  And if it took a lot of typing, it would also
-take a lot of reading to do the same thing.  I needed something simpler.&lt;/p&gt;
-&lt;p&gt;Working through a couple of possibilities, I decided to use a simple approach and replace
-that entire line with:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_paragraph&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-    &lt;span class="k"&gt;pass&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;It required no extra imports, the naming was easy to remember, and it was as simple as I
-could make it without short forms that would make it to read.  Sure &lt;code&gt;is_para&lt;/code&gt; might be more
-compact, but what was I really going to save with that?&lt;/p&gt;
-&lt;p&gt;Over the course of approximately ten commits, I transferred all the Markdown Tokens from the
-old way of comparing token types to the new way.  I started with Paragraphs and the other
-Leaf Block tokens, moving on to Container Block tokens, before finishing up with
-Inline tokens.  By the time I was done, there were more lines and functions present in
-the base MarkdownToken class, but the entire code base seemed to read better.&lt;/p&gt;
-&lt;p&gt;And that was the point of these changes.  No scenario tests were changed as a part of
-this code base change, I just wanted it to read better!&lt;/p&gt;
-&lt;h3 id="do-i-make-the-code-more-object-oriented"&gt;Do I Make The Code More Object Oriented?&lt;a class="headerlink" href="#do-i-make-the-code-more-object-oriented" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;Having made those changes, I felt emboldened to make another set of changes that I had
-been itching to do for a while: making the code more object oriented.&lt;/p&gt;
-&lt;p&gt;While each programming paradigm has its good points and bad points, object-oriented was
-something I have had a lot of experience with.  At its core
-&lt;a href="https://en.wikipedia.org/wiki/Object-oriented_programming"&gt;object-oriented programming&lt;/a&gt;
-had three pivotal concepts: encapsulation, composition, and polymorphism.  As the
-PyMarkdown project generates tokens after parsing the Markdown document, I was most
-interested in encapsulation and polymorphism and how they could be applied to tokens.&lt;/p&gt;
-&lt;p&gt;From an encapsulation point of view, with a couple of exceptions&lt;sup id="fnref:tokens"&gt;&lt;a class="footnote-ref" href="#fn:tokens"&gt;1&lt;/a&gt;&lt;/sup&gt; there is no
-reason to want to change the values of any of those parsed tokens.  In the case of those
-exceptional tokens, there is a
-multiline concept present in that token that needs to be properly tracked by any
-after-parsing process.  Other than providing that tracking information during a specific
-after-parsing process, those fields do not have any meaning to a consumer.  Therefore,
-it is okay that they are exposed.  However, I did not feel that it was the case with
-the other values.&lt;/p&gt;
-&lt;p&gt;And from a polymorphism point of view, it makes sense to me that the tokens should be
-organized
-into groups of tokens that have similar properties: Container Blocks, Leaf Blocks, and
-Inlines. As such, it also follows that some properties and methods are present in one or
-more of those groups of tokens, but not all those groups.  So having a base class for each
-of those groups is something to work towards.&lt;/p&gt;
-&lt;p&gt;For both reasons, it just made sense to me to proceed!&lt;/p&gt;
-&lt;h3 id="starting-with-endmarkdowntoken"&gt;Starting with EndMarkdownToken&lt;a class="headerlink" href="#starting-with-endmarkdowntoken" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;With the decision made to move forward with this transition, I started at the base by
-making those changes with the &lt;code&gt;EndMarkdownToken&lt;/code&gt; class.  To be honest, as I worked
-through the project’s development, I always felt a bit guilty that I had let the use
-of this token get out of control.&lt;/p&gt;
-&lt;p&gt;From my observations, this class is a “hidden” fourth class of tokens, providing a
-close token to any of the tokens that provide for start functionality.  As this
-functionality ranges across all three groups of tokens, the &lt;code&gt;EndMarkdownToken&lt;/code&gt; exists off
-to the side in its own space.  Because of this special grouping, it was the ideal token
-to start with.&lt;/p&gt;
-&lt;p&gt;To change this token, I started off with the &lt;code&gt;EndMarkdownToken.type_name_prefix&lt;/code&gt; field
-which contains the string that gets prepended to the start of any &lt;code&gt;EndMarkdownToken&lt;/code&gt;
-type name.  Moving it into the &lt;code&gt;MarkdownToken&lt;/code&gt; class made the use of that field
-self-contained, allowing it be modified into a protected field.&lt;sup id="fnref:protected"&gt;&lt;a class="footnote-ref" href="#fn:protected"&gt;2&lt;/a&gt;&lt;/sup&gt;  To accomplish
-that change, I created a new &lt;code&gt;generate_close_markdown_token_from_markdown_token&lt;/code&gt; function
-that allowed me to generate the proper &lt;code&gt;EndMarkdownToken&lt;/code&gt; from a given Markdown token.&lt;/p&gt;
-&lt;p&gt;To me, this just made sense.  By performing these changes, I had an easy way of
-generating
-an &lt;code&gt;EndMarkdownToken&lt;/code&gt; that was documented and set all the right fields.  I was able to
-make sure that the &lt;code&gt;start_markdown_token&lt;/code&gt; field was set.  As it had not been
-set consistently, there were places in the code base where I had to do work arounds to
-try
-and figure out where the start token for a given end token was.  This was just cleaner.&lt;/p&gt;
-&lt;h3 id="simple-refactorings"&gt;Simple Refactorings&lt;a class="headerlink" href="#simple-refactorings" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;Two of the paradigms that have served me well in my years of software development are
-&lt;a href="https://en.wikipedia.org/wiki/Don%27t_repeat_yourself"&gt;D.R.Y.&lt;/a&gt; and
-&lt;a href="https://en.wikipedia.org/wiki/SOLID"&gt;S.O.L.I.D&lt;/a&gt;. The ‘L” in S.O.L.I.D. stands for the
-&lt;a href="https://en.wikipedia.org/wiki/Liskov_substitution_principle"&gt;Liskov substitution principle&lt;/a&gt;,
-which (in its abbreviated form) states that an object should be able to be replaced
-with another object that adheres to the same contract without any parent objects being
-aware of the change.&lt;/p&gt;
-&lt;p&gt;With respect to the PyMarkdown project, I had been using the &lt;code&gt;isinstance&lt;/code&gt; built-in
-to deal with things instead of following the principle.  However, with the recent
-round of refactorings completed, I was able to fix that.  While it may not seem like
-much, it made me feel better to change:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="nb"&gt;isinstance&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;AtxHeadingMarkdownToken&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
-        &lt;span class="k"&gt;pass&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;into a more SOLID-like:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_atx_heading&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-        &lt;span class="k"&gt;pass&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;While I know that there is only one implementation of the &lt;code&gt;AtxHeadingMarkdownToken&lt;/code&gt;
-class, I was just not comfortable with having calls of &lt;code&gt;isinstance&lt;/code&gt; scattered throughout
-the code base.  Over two commits, I was able to eliminate all uses of &lt;code&gt;isinstance&lt;/code&gt; except
-for six legitimate uses of it in pivotal parts of the code base.&lt;/p&gt;
-&lt;p&gt;As with the other changes, this change was a simple change, but an effective one.  With all
-the checks for various tokens using a single manner of access, it was now easier to scan
-the code base for locations where a given token was referenced.  That, and to me, it just
-looked neater.&lt;/p&gt;
-&lt;h3 id="cleaning-up-the-leaf-block-tokens-and-endmarkdowntoken"&gt;Cleaning Up The Leaf Block Tokens and EndMarkdownToken&lt;a class="headerlink" href="#cleaning-up-the-leaf-block-tokens-and-endmarkdowntoken" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;All those changes inspired me, and I gave myself the green light to further encapsulate the
-private fields as Python private fields.  It was not even remotely exciting, but it was
-something I knew would make the code cleaner and more maintainable.  Using this
-stripped-down example of the &lt;code&gt;EndMarkdownToken&lt;/code&gt;, this is where all the tokens started:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;class&lt;/span&gt; &lt;span class="nc"&gt;EndMarkdownToken&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;MarkdownToken&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
-    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="fm"&gt;__init__&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
-        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-        &lt;span class="n"&gt;type_name&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-    &lt;span class="p"&gt;):&lt;/span&gt;
-        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;type_name&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;type_name&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;For each of the Leaf Block tokens, I then started by adding the two underscores to the
-start of the field name, per Python requirements.  But as that made the field “invisible”
-to other objects, I then needed to add a new function with the &lt;code&gt;property&lt;/code&gt; decorator to
-be able to retrieve the value.&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;class&lt;/span&gt; &lt;span class="nc"&gt;EndMarkdownToken&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;MarkdownToken&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
-    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="fm"&gt;__init__&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
-        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-        &lt;span class="n"&gt;type_name&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-    &lt;span class="p"&gt;):&lt;/span&gt;
-        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__type_name&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;type_name&lt;/span&gt;
-
-    &lt;span class="nd"&gt;@property&lt;/span&gt;
-    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;type_name&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
-        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__type_name&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Lather, rinse, repeat.  Nothing special or exciting, which was what I was going for.  There
-were no weird cases with these tokens that required a special setter function, so no
-workarounds were needed.  And because the previously public field name and the newly added
-property name had the exact same name, so changes were needed in other parts of the code.&lt;/p&gt;
-&lt;h2 id="what-was-my-experience-so-far"&gt;What Was My Experience So Far?&lt;a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;I really cannot lie on this one.  While it was good to resolve some items off the
-issues list, it was really good to get these refactorings done.  I have had those
-ideas on how to clean up the project in my mind for weeks, and just getting them
-done gave me a bit of an extra pep in my step.  It is not that they were any more
-or less important than the other items, it is just that their large scope meant it
-was going to be hard to fit them in.  As such, they always went into the “if I
-ever have some time” bucket… and never seen again.&lt;/p&gt;
-&lt;p&gt;I honestly think that taking the time to focus on what was important to me with
-this project was good for me and the project.  It helped me refocus on the things
-that I find important.  It helped the project by being able to present a more
-concise and readable code base to any interested parties.  In all, it was a win-win.&lt;/p&gt;
-&lt;h2 id="what-is-next"&gt;What is Next?&lt;a class="headerlink" href="#what-is-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;With a week left of holidays, I had hoped to get a similar mix of items dealt with
-in the next week as I had the week before. Stay tuned!&lt;/p&gt;
-&lt;div class="footnote"&gt;
-&lt;hr/&gt;
-&lt;ol&gt;
-&lt;li id="fn:tokens"&gt;
-&lt;p&gt;The exceptions as the &lt;code&gt;rehydrate_index&lt;/code&gt; field for Paragraph tokens, the &lt;code&gt;leading_spaces_index&lt;/code&gt; field for List Block tokens, and the &lt;code&gt;leading_text_index&lt;/code&gt; field for Block Quote tokens. &lt;a class="footnote-backref" href="#fnref:tokens" title="Jump back to footnote 1 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
-&lt;/li&gt;
-&lt;li id="fn:protected"&gt;
-&lt;p&gt;Python does not have a protected field specifically.  The common practice of naming fields to be used in a protected-like manner is to preface them with a single &lt;code&gt;_&lt;/code&gt;. &lt;a class="footnote-backref" href="#fnref:protected" title="Jump back to footnote 2 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
 &lt;/li&gt;
 &lt;/ol&gt;
 &lt;/div&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry></feed>
