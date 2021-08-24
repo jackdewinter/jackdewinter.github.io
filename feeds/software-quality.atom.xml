@@ -1,5 +1,546 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench - Software Quality</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/software-quality.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2021-08-16T00:00:00-07:00</updated><entry><title>Markdown Linter - Dealing With Rule Md027</title><link href="https://jackdewinter.github.io/2021/08/16/markdown-linter-dealing-with-rule-md027/" rel="alternate"></link><published>2021-08-16T00:00:00-07:00</published><updated>2021-08-16T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2021-08-16:/2021/08/16/markdown-linter-dealing-with-rule-md027/</id><summary type="html">
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench - Software Quality</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/software-quality.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2021-08-23T00:00:00-07:00</updated><entry><title>Markdown Linter - Three More Rules</title><link href="https://jackdewinter.github.io/2021/08/23/markdown-linter-three-more-rules/" rel="alternate"></link><published>2021-08-23T00:00:00-07:00</published><updated>2021-08-23T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2021-08-23:/2021/08/23/markdown-linter-three-more-rules/</id><summary type="html">
+&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In my
+&lt;a href="https://jackdewinter.github.io/2021/08/16/markdown-linter-dealing-with-rule-md027/"&gt;last article&lt;/a&gt;, I talked
+about the work I put into getting Rule Md027 implemented. In this article, I
+talk about the next three rules I worked on.&lt;/p&gt;
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;It felt good to get Rule Md027 off of the Issues List.  I hated
+to put it on there …&lt;/p&gt;</summary><content type="html">
+&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In my
+&lt;a href="https://jackdewinter.github.io/2021/08/16/markdown-linter-dealing-with-rule-md027/"&gt;last article&lt;/a&gt;, I talked
+about the work I put into getting Rule Md027 implemented. In this article, I
+talk about the next three rules I worked on.&lt;/p&gt;
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;It felt good to get Rule Md027 off of the Issues List.  I hated
+to put it on there a couple of weeks ago, but it was the right call at the
+time.  And since I had to tackle it at some point, reserving a week to
+work on it and deal with it last week was also the right call.&lt;/p&gt;
+&lt;p&gt;But with that work now completed, I needed to get back on track.  And the
+closer I am getting to having all the rules implemented, the more I
+want them to be done.  I know that is normal to feel that way, but I need
+to make sure I temper that feeling with patience and keep following the rules
+that got me here.&lt;/p&gt;
+&lt;p&gt;Once more into the breach I go!&lt;/p&gt;
+&lt;h2 id="what-is-the-audience-for-this-article"&gt;What Is the Audience for This Article?&lt;a class="headerlink" href="#what-is-the-audience-for-this-article" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;While detailed more eloquently in
+&lt;a href="https://jackdewinter.github.io/2020/04/05/what-is-the-audience-for-my-blog/#what-is-the-audience-for-my-blog"&gt;this article&lt;/a&gt;,
+my goal for this technical article is to focus on the reasoning behind my solutions,
+rather that the solutions themselves.  For a full record of the solutions presented in
+this article, please consult the commits that occurred between
+&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/aaa2c345e6a16f219ecd2dd930bbcbe0d3460af2"&gt;18 Aug 2021&lt;/a&gt;
+and
+&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/87d7901287d6f741832c40f35f84b2c4a240015f"&gt;22 Aug 2021&lt;/a&gt;.&lt;/p&gt;
+&lt;h2 id="fenced-blocks-elements-and-blank-lines"&gt;Fenced Blocks Elements and Blank Lines&lt;a class="headerlink" href="#fenced-blocks-elements-and-blank-lines" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Having taken the entirety of last week to finish Rule Md027, I was hoping
+that I could get this rule completed in less time than one week.  Just
+from looking at the rule, it sure looked a lot simpler.  Instead of a whole
+bunch of complicated stuff, just make sure that any Fenced Code Block
+elements are surrounded by at least one Blank Line.&lt;/p&gt;
+&lt;p&gt;The rule looked simple. But was it really going to be simple?&lt;/p&gt;
+&lt;h3 id="design"&gt;Design&lt;a class="headerlink" href="#design" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Based on my initial looks at this rule, I determined that there were
+going to be two groups of elements that I needed to deal with: the ones
+that crossed container boundaries and ones that don’t.&lt;/p&gt;
+&lt;p&gt;As soon as I figured out that the second group will cross container
+boundaries, I knew that I would need to keep track of the container
+tokens and which one of those tokens were active.  Thanks to Rule Md027 and the other
+rules before it, I had some good design and code that I could reuse.
+That was one part of the design taken care of.  Now on to the main
+part of the design: dealing with both groups.&lt;/p&gt;
+&lt;p&gt;Designing for that first group was easy.  For the opening of
+the Fenced Code Block element, keep track of the token used the
+last time the &lt;code&gt;next_token&lt;/code&gt; function was called.  If a start Fenced
+Code Block token is encountered, check that “last” token to see
+if it is a Blank Line token. The closing sequence is almost the same
+but in reverse.  Once the end Fenced Code Block token is encountered,
+set a variable to keep on looking for tokens.  In the next pass through
+the &lt;code&gt;next_token&lt;/code&gt; function, check to see if that token is a Blank Line token.&lt;/p&gt;
+&lt;p&gt;Logically, those two patterns came easy to me.  Track the Blank Lines in
+case we find a start Fenced Code Block element that needs them and track
+the Blank Lines after we found an end Fenced Code Block element.  Both
+made sense.  That was easy… almost too easy.  Then the design for
+the second group came into focus.&lt;/p&gt;
+&lt;p&gt;For the second group, that design was going to require adjustments to
+the existing design. For the opening part of the design, the “last”
+token variable should only be
+set if the token is not related to a container open or closing.  In that
+way, it can span those container boundaries without any issues.  After
+I ran through some simple examples in my head, I was sure that I had
+the right design for the opening part.&lt;/p&gt;
+&lt;p&gt;For the closing part, I started thinking that the same
+consideration applies.  But after some thought, I realized it did not.
+From the point of view of the Fenced Code Bock element, if it exists
+inside of a container element, it makes sense to look after any end
+tokens to determine whether any Blank Lines follow the Fenced Code Block
+element.  The element does not care if those end tokens are there as
+they simply offer a logical encapsulation of an element.  In most
+cases, the end tokens do not represent actual text in the document.
+Thus, if a new element and its token are present instead of the required
+Blank Line, it should trigger the rule.&lt;/p&gt;
+&lt;p&gt;Taking a second look at those designs, things looked solid.  It was time
+to move on.&lt;/p&gt;
+&lt;h3 id="testing-and-implementation"&gt;Testing and Implementation&lt;a class="headerlink" href="#testing-and-implementation" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;After the massive 85 scenario tests last week for Rule Md027, I was happy when
+I counted the scenario tests for this rule, and I ended up with 16 scenario tests.
+They started with the simple tests without containers and quickly morphed
+into those simple tests with containers.  The 16 scenario tests were a
+quantity of scenario tests that I could easily deal with.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;next_token&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;context&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_fenced_code_block&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__handle_fenced_code_block&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;context&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="k"&gt;elif&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_fenced_code_block_end&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__end_fenced_code_block_token&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;
+    &lt;span class="k"&gt;elif&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__end_fenced_code_block_token&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__handle_end_fenced_code_block&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;context&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_end_token&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__last_non_end_token&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Starting to work on the rule implementation, getting the tests
+for the first group passing was the priority.  Following the
+design, I created a simple function that dealt with the before
+and after cases properly, as well as setting the last token.&lt;/p&gt;
+&lt;p&gt;Handing off the processing of the before case to the
+&lt;code&gt;__handle_fenced_code_block&lt;/code&gt; function, that function proved easy
+to implement:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;__handle_fenced_code_block&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;context&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__last_non_end_token&lt;/span&gt;
+        &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__last_non_end_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_blank_line&lt;/span&gt;
+    &lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;report_next_token_error&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;context&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Just like the design specified, if the last token before the
+start Fenced Code Block token is not a Blank Line, trigger the
+rule.  Furthermore, because the design stipulates that end tokens
+were not important, only non-end tokens will be in the
+&lt;code&gt;__last_non_end_token&lt;/code&gt; variable.&lt;/p&gt;
+&lt;p&gt;While the before case with the first function was easy to implement,
+the handling of the after case and the &lt;code&gt;__handle_end_fenced_code_block&lt;/code&gt;
+function was a bit trickier:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;__handle_end_fenced_code_block&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;context&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_blank_line&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="n"&gt;line_number_delta&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__last_non_end_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_text&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;count&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="mi"&gt;2&lt;/span&gt;
+        &lt;span class="n"&gt;column_number_delta&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
+            &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__end_fenced_code_block_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;start_markdown_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;column_number&lt;/span&gt;
+        &lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
+            &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__end_fenced_code_block_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;start_markdown_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;extracted_whitespace&lt;/span&gt;
+        &lt;span class="p"&gt;):&lt;/span&gt;
+            &lt;span class="n"&gt;column_number_delta&lt;/span&gt; &lt;span class="o"&gt;-=&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+                &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__end_fenced_code_block_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;start_markdown_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;extracted_whitespace&lt;/span&gt;
+            &lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__end_fenced_code_block_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;extracted_whitespace&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="n"&gt;column_number_delta&lt;/span&gt; &lt;span class="o"&gt;+=&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+                &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__end_fenced_code_block_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;extracted_whitespace&lt;/span&gt;
+            &lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="n"&gt;column_number_delta&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;column_number_delta&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;report_next_token_error&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+            &lt;span class="n"&gt;context&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+            &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__end_fenced_code_block_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;start_markdown_token&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+            &lt;span class="n"&gt;line_number_delta&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;line_number_delta&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+            &lt;span class="n"&gt;column_number_delta&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;column_number_delta&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__end_fenced_code_block_token&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;The detection part of the function was straight forward, taken
+care of by the first statement and the last two statements of the
+function.  The focus for this function was calculating the
+deltas to apply to the token’s line number and column number.  As
+end tokens do not contain any position information, the position of
+the end token needs to be reconstructed using information from
+the start Fenced Code Block token and the Text token within the
+block.  Once that calculation was performed, a small variance was
+needed to alter the column delta to compensate for any indent of
+the end Fenced Code Block token, and it was done.&lt;/p&gt;
+&lt;p&gt;Then it was on to the container tokens.&lt;/p&gt;
+&lt;h3 id="the-second-group"&gt;The Second Group&lt;a class="headerlink" href="#the-second-group" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Having track container tokens and their scopes for a couple of
+rules, I have an established pattern for handling containers.  Therefore,
+that code was easy to add at the start of the main function:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;next_token&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;context&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_block_quote_start&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__container_token_stack&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;append&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="k"&gt;elif&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_block_quote_end&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="k"&gt;del&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__container_token_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+    &lt;span class="k"&gt;elif&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_list_start&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__container_token_stack&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;append&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="k"&gt;elif&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_list_end&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="k"&gt;del&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__container_token_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+    &lt;span class="k"&gt;elif&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_fenced_code_block&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+&lt;span class="o"&gt;...&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;To complete the handle of the before case, I needed to change
+the &lt;code&gt;if&lt;/code&gt; statement around the setting of the &lt;code&gt;__last_non_end_token&lt;/code&gt;
+variable.  To ensure that a new container does not disrupt
+this check, the &lt;code&gt;if&lt;/code&gt; statement was changed slightly to ensure
+that it does not set the &lt;code&gt;__last_non_end_token&lt;/code&gt; on either of
+the end container tokens or the start container tokens:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
+        &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_end_token&lt;/span&gt;
+        &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_block_quote_start&lt;/span&gt;
+        &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_list_start&lt;/span&gt;
+    &lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__last_non_end_token&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;With those in place, the Blank Line checks in both
+helper functions only required a simple change to ensure
+that they would fire properly with start List elements:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_blank_line&lt;/span&gt; &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__container_token_stack&lt;/span&gt; &lt;span class="ow"&gt;and&lt;/span&gt; \
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__container_token_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_list_start&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Doing my usual due diligence, I went through the code and
+tightened up variable names and organized the code to my standards.
+I then went through and experimented with about ten different
+container scenarios, checking to see if the rule fired properly
+for each of them.  In each case, the rule fired properly, and I
+was able to reduce the experimental scenario down to a scenario
+that was already present in a scenario test.&lt;/p&gt;
+&lt;h3 id="adding-configuration-support"&gt;Adding Configuration Support&lt;a class="headerlink" href="#adding-configuration-support" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;With everything working and double checked, I added code to respond
+to the &lt;code&gt;list_items&lt;/code&gt; configuration value.  Once loaded in the
+&lt;code&gt;initialize_from_config&lt;/code&gt; function, responding to it in the code was easy:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="n"&gt;can_trigger&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;True&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__container_token_stack&lt;/span&gt;
+        &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__container_token_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_list_start&lt;/span&gt;
+    &lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="n"&gt;can_trigger&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__trigger_in_list_items&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_blank_line&lt;/span&gt; &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="n"&gt;can_trigger&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+&lt;span class="o"&gt;...&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;The last example from the previous section was simply altered to
+allow the rule to trigger in a general case.  In the case where
+the trigger is occurring within a List element, it allows triggering
+based on the configured value.  Not a bit change, but it was
+nice that the scope was small.&lt;/p&gt;
+&lt;p&gt;Checking everything again, I committed the change and started looking
+at the next rule.&lt;/p&gt;
+&lt;h2 id="list-elements-and-blank-lines"&gt;List Elements and Blank Lines&lt;a class="headerlink" href="#list-elements-and-blank-lines" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Knowing that there is efficiency in working on tasks that share
+a common theme, I decided to find another rule that was not yet
+implemented and deals with Blank Lines like Rule Md031.  I did not
+have to look far before I found Rule Md032.   Dealing
+with List elements and Blank Lines, I hoped that I could leverage
+my work from Rule Md031 to get this rule implemented quickly.  But,
+as always, design first before implementation.&lt;/p&gt;
+&lt;h3 id="design_1"&gt;Design&lt;a class="headerlink" href="#design_1" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;To be honest, I really did not do that much design on this rule.  Once
+I started figuring out the design on paper, I quickly realized that
+it was a watered-down version of Rule Md031.  There was the same
+concern about working properly within containers, and the same concern
+about tracking what happened at the start of the element and at the end
+of the element.  Other than the token being tracked, they looked the same.&lt;/p&gt;
+&lt;p&gt;Therefore, the change of token and my previous design for Rule Md031 made
+it trivial to design.  Remove the logic for Fenced Code Block elements,
+replace them with logic for the List elements, and I was practically done.&lt;/p&gt;
+&lt;p&gt;From there, it was time for testing and implementation.&lt;/p&gt;
+&lt;h3 id="testing-and-implementation_1"&gt;Testing and Implementation&lt;a class="headerlink" href="#testing-and-implementation_1" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Following the same process for generating test scenarios as with
+Rule Md031, I quickly came up with a solid group of ten scenario
+tests for this rule.  Like the design work for this rule,
+almost all the scenarios were just slightly changed versions
+of the scenarios from the previous rule.&lt;/p&gt;
+&lt;p&gt;From there, it just made sense to use the code for Rule Md031
+as a base, modifying it as needed.  This was not a difficult task.
+The Block Quote token related portions of the rule did not change,
+and the code for the Fenced Code Block tokens and List tokens
+were merged.  Between those changes, it was less than
+five minutes before I got the first scenario test to pass.
+The rest of the scenario tests were passing in quick order
+as well.&lt;/p&gt;
+&lt;p&gt;Everything was quickly working properly in all scenarios, except for two
+of the more unusual scenarios. In these scenarios, there is a transition
+from a Block Quote element to a List element and then to another element.
+To be honest, I do not remember every having written a document
+where those elements were nested in that fashion, but as it is
+allowable by the specification, I knew that I needed to support it.&lt;/p&gt;
+&lt;p&gt;So, after doing some debugging with these scenarios, the solution
+was to move one block of code:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;elif&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__end_list_end_token&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_blank_line&lt;/span&gt; &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_new_list_item&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;report_next_token_error&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;context&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;line_number_delta&lt;/span&gt;&lt;span class="o"&gt;=-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__end_list_end_token&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;to the start of the function:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;next_token&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;context&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__end_list_end_token&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_blank_line&lt;/span&gt; &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_new_list_item&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;report_next_token_error&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;context&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;line_number_delta&lt;/span&gt;&lt;span class="o"&gt;=-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__end_list_end_token&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Based on my debugging, the &lt;code&gt;if&lt;/code&gt; conditions that preceded the
+original position of the statement were causing the other handlers
+for the container tokens to be executed instead of that block of
+code.  By placing it at the start of the function, the &lt;code&gt;if&lt;/code&gt; block was
+guaranteed to be executed without the container tokens getting in the way.&lt;/p&gt;
+&lt;p&gt;Having discovered and fixed this issue for Rule Md032, I started
+to wonder if I had missed it as well in other rules that I had
+recently worked on.  I needed to check it out.&lt;/p&gt;
+&lt;h3 id="cleaning-up"&gt;Cleaning Up&lt;a class="headerlink" href="#cleaning-up" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;In going over the scenario tests for this rule, I realized that I
+may have missed some scenario tests in some of the rules that recently
+worked on.  Adding additional scenario tests to those projects, I soon
+had a small list of things that I fixed.&lt;/p&gt;
+&lt;p&gt;Adding four scenario tests to the tests for Rule Md031, I found that
+the Fenced Code Block elements within certain containers were not
+behavior properly, as was the case for Rule Md032.  In that case, I
+solved the issue in the same way by moving the end Fenced Code Block
+handling to the top of the function.  A couple of extra passes over
+the code, and everything looked good.&lt;/p&gt;
+&lt;p&gt;Likewise, after adding four scenario tests to Rule Md022, I noticed
+that I had missed some scenarios with the handling of the end Block
+Quote tokens.  Taking some time to debug, the problems with these
+scenarios proved easy enough to fix, simply requiring the addition of
+&lt;code&gt;and not token.is_block_quote_end&lt;/code&gt; to two of the existing conditions.
+While I initially added another three scenario
+tests for a total of seven new scenario tests, I eventually decided
+that those scenarios were duplicates of the base four scenarios and
+removed them.&lt;/p&gt;
+&lt;p&gt;Having done that work, I look at the scenario tests for Rule Md027,
+to see if there was anything that I missed for that rule and found
+nothing obvious.  However, during that exploration, I was not happy with the
+way that the code looked and did some refactoring on the code to
+make it clearer.  Nothing drastic, just little changes here and there
+to make it read better.&lt;/p&gt;
+&lt;h3 id="taking-the-time"&gt;Taking The Time&lt;a class="headerlink" href="#taking-the-time" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Sometimes I wonder if things like this just waste of my time.  I mean,
+instead of taking time to look at issues like these, I could be starting
+on a new rule or addressing some other issue.  But then I take a breath
+and realized that it is the right thing for me to do.  In the above
+cases, I found some new scenarios for what I was working on and wondered
+if the more recent rules handled them properly.  The absolute worst
+scenario was that I consumed time and did not get much in return.  The
+absolute best is that I found issues in all three rules and fixed them.
+As it was, I found issues in two of the rules, and code that I was
+not 100% happy with in the third rule.&lt;/p&gt;
+&lt;p&gt;Call me an optimist, but I think that was a good use of my time.  But
+now that I had that finished, it was time to get one last rule in this
+week.&lt;/p&gt;
+&lt;h2 id="unordered-list-indentation"&gt;Unordered List Indentation&lt;a class="headerlink" href="#unordered-list-indentation" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Sometimes, I plan an order to my tasks to make my work more efficient.
+Sometimes, I look back and wish that I had planned my work in a different
+order so that I could be more efficient.  At my first glance of this
+rule, I was not sure which of those categories this rule was in.&lt;/p&gt;
+&lt;p&gt;The only way to find out?  Dig right in and get to work.&lt;/p&gt;
+&lt;h3 id="design_2"&gt;Design&lt;a class="headerlink" href="#design_2" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;At a high level, the design of this rule is simple: make
+sure that there is an expected level of indentation for Unordered
+List elements.  By itself, that was an easy concept to design for.  The
+algorithm would assume that an item in an Unordered List element
+would be indented by 2 space characters as a default.
+Therefore, the very first List element would be a level 1 List element,
+indented by 0 space characters, the List element within that List would
+be a level 2 List element and indented by 2 space characters, as so on.
+From a design point of view, that means checking the current indentation
+against the equivalent of &lt;code&gt;level-1 * 2&lt;/code&gt;, and triggering if the indentation
+is different.&lt;/p&gt;
+&lt;p&gt;The interesting parts of that design were what followed that initial
+design.  And yes, they are all about container tokens.&lt;/p&gt;
+&lt;h4 id="container-tokens"&gt;Container Tokens&lt;a class="headerlink" href="#container-tokens" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h4&gt;
+&lt;p&gt;The above design assumes that there is a simple definition of what the
+current indentation is, and that is not always the case.  In the case
+of this example:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="k"&gt;level&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
+  &lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="k"&gt;level&lt;/span&gt; &lt;span class="mi"&gt;2&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;the definition of current indentation on the first level is &lt;code&gt;0&lt;/code&gt;, and on
+the second level is &lt;code&gt;2&lt;/code&gt;.  Those indentations are easy to calculate because there
+is literally nothing before that List element on each line.&lt;/p&gt;
+&lt;p&gt;But taking one step into container blocks, this simple example changes
+that definition somewhat:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt; &lt;span class="k"&gt;level&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
+   &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="k"&gt;level&lt;/span&gt; &lt;span class="mi"&gt;2&lt;/span&gt; 
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;In this example, the indentation for the first line is still &lt;code&gt;0&lt;/code&gt;, but the
+indentation for the second line is &lt;code&gt;3&lt;/code&gt;.  This is because the level 1 List
+element is an Ordered List element whose text and spacing creates a base
+indentation of &lt;code&gt;3&lt;/code&gt;.  This means that the indentation of &lt;code&gt;3&lt;/code&gt; for the Level
+1 Unordered List element is correct.  I had to remind myself (many times)
+that while Ordered List elements and Unordered List elements are both List
+elements, they are not the same.  And as they are not the same, they are
+treated differently.&lt;/p&gt;
+&lt;p&gt;This idea extends to Block Quote elements as well:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="k"&gt;level&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Because the Block Quote element includes the space after the &lt;code&gt;&amp;gt;&lt;/code&gt; character,
+it has a base indentation of &lt;code&gt;2&lt;/code&gt;.  Therefore, the Unordered List element
+has an indentation of 0 spaces after the Block Quote sequence.&lt;/p&gt;
+&lt;p&gt;Once nesting of container elements comes into play, things get messy quickly.
+But at their basis are those three examples.  I worked through a couple or
+the more complex nesting example and made sure that they are taken care of.
+From what I could see from the ones I chose, things looked good.&lt;/p&gt;
+&lt;h4 id="block-quotes-and-leading-spaces"&gt;Block Quotes And Leading Spaces&lt;a class="headerlink" href="#block-quotes-and-leading-spaces" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h4&gt;
+&lt;p&gt;Having written a good design and implementation of traversal of Block Quote
+tokens and their &lt;code&gt;leading_spaces&lt;/code&gt; lines, I knew that this design should
+leverage that work.&lt;/p&gt;
+&lt;p&gt;One of my refactoring rules is “Code it twice, on the fence; code it
+thrice, don’t do it again”.  As this was the second time, I wanted to
+try and capture the previous work in one or two functions that I
+could refactor into the old rules with later.  What was important
+to me was that I did not have to write it “one more time” after this.&lt;/p&gt;
+&lt;p&gt;Keeping that in mind, I continued to design for the container tokens.&lt;/p&gt;
+&lt;h4 id="designing-for-container-tokens"&gt;Designing For Container Tokens&lt;a class="headerlink" href="#designing-for-container-tokens" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h4&gt;
+&lt;p&gt;Given those constraints and that research, I was now ready to design the tough
+part of this rule: the definition of the current indentation.&lt;/p&gt;
+&lt;p&gt;For the purposes of this rule, the current indentation is the number of spaces
+required to get back to the last meaningful container token that serves as an
+anchor for the Unordered List element.  If there are no such tokens, then the
+anchor is the start of the line.  Because Unordered List elements nest nicely,
+this means that the algorithm needs to go back to before any such nesting
+occurs.  From there, the algorithm needs to leverage the data stored within
+the other container tokens to establish that anchor token.  Once the anchor
+token is established, the indentation for a token is the number of space
+characters required to get back to that anchor token’s column.  Phew!&lt;/p&gt;
+&lt;p&gt;While I had the general design figured out, I knew in advance that I was
+going to have to be fluid with the second half of the implementation of
+finding the anchor token.  I have written enough rules to know that sometimes
+the List elements and Block Quote elements can play off each other in
+weird ways, and I needed to consider that from the outset. To me,
+this was not going “meh, I’ll design it later”, it was “I cannot design
+it until I get there”.  Seeing as I have been very good at doing design
+before implementation, one intentional deviation with a good reason
+behind it wouldn’t hurt.&lt;/p&gt;
+&lt;h3 id="testing-and-implementation_2"&gt;Testing and Implementation&lt;a class="headerlink" href="#testing-and-implementation_2" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Working through all the scenarios, I ended up with 28 scenarios to
+test.  The good part of that is that 9 of those scenario tests were
+from the refactored &lt;code&gt;leading_spaces&lt;/code&gt; code, so hopefully this would
+be one of the last times those needed to be tested.&lt;/p&gt;
+&lt;p&gt;Moving on to the &lt;code&gt;next_token&lt;/code&gt; function, it started simple and
+remains simple:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;next_token&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;context&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_unordered_list_start&lt;/span&gt; &lt;span class="ow"&gt;or&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
+        &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_new_list_item&lt;/span&gt;
+        &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__container_token_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_unordered_list_start&lt;/span&gt;
+    &lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__check&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;context&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+    &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;manage_container_tokens&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;The core of this rule is very simple.  If the token is starting
+an Unordered List element or is a new List Item within an existing
+Unordered List element, the rule needs to check if it is properly
+indented.  Otherwise, the &lt;code&gt;manage_container_tokens&lt;/code&gt; function manages
+the container token stack’s &lt;code&gt;__container_token_stack&lt;/code&gt; variable and any required
+index into a Block Quote token’s &lt;code&gt;leading_spaces&lt;/code&gt; field.&lt;/p&gt;
+&lt;p&gt;For the small portion of tokens that get selected for further checking,
+the &lt;code&gt;__check&lt;/code&gt; function handles that:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;__check&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;context&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="p"&gt;(&lt;/span&gt;
+        &lt;span class="n"&gt;container_base_column&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="n"&gt;block_quote_base&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="n"&gt;list_depth&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__calculate_base_column&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_new_list_item&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="n"&gt;list_depth&lt;/span&gt; &lt;span class="o"&gt;-=&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
+
+    &lt;span class="n"&gt;adjusted_column_number&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;column_number&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="n"&gt;container_base_column&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;block_quote_base&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="n"&gt;container_base_column&lt;/span&gt; &lt;span class="o"&gt;-=&lt;/span&gt; &lt;span class="n"&gt;block_quote_base&lt;/span&gt;
+    &lt;span class="k"&gt;elif&lt;/span&gt; &lt;span class="n"&gt;container_base_column&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="n"&gt;container_base_column&lt;/span&gt; &lt;span class="o"&gt;+=&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
+
+    &lt;span class="n"&gt;calculated_column_number&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;list_depth&lt;/span&gt; &lt;span class="o"&gt;*&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__indent_basis&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;adjusted_column_number&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="n"&gt;calculated_column_number&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;report_next_token_error&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;context&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Per the design, the base column and two other variables are
+calculated based on what is currently in the &lt;code&gt;__container_token_stack&lt;/code&gt;
+variable.  With that information, the token’s &lt;code&gt;column_number&lt;/code&gt; field can
+be adjusted to switch from a column number based on the line to an
+indentation based on the anchor token.  Then, using the &lt;code&gt;list_depth&lt;/code&gt;
+variable, the &lt;code&gt;calculated_column_number&lt;/code&gt; variable can be calculated,
+leading to a comparison between the &lt;code&gt;calculated_column_number&lt;/code&gt; variable
+and the &lt;code&gt;adjusted_column_number&lt;/code&gt; variable.&lt;/p&gt;
+&lt;h4 id="calculating-the-base-column"&gt;Calculating The Base Column&lt;a class="headerlink" href="#calculating-the-base-column" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h4&gt;
+&lt;p&gt;Calculating the base column turned out to be the function that
+took the most time to figure out.  As I noted before, I allowed for
+a certain amount of fluidity in the design for this function, and I
+used most of it up getting this function right.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt; &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;__calculate_base_column&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="n"&gt;container_base_column&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;
+    &lt;span class="n"&gt;block_quote_base&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;
+    &lt;span class="n"&gt;list_depth&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__container_token_stack&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="n"&gt;stack_index&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__container_token_stack&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
+        &lt;span class="k"&gt;while&lt;/span&gt; &lt;span class="n"&gt;stack_index&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__container_token_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;stack_index&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_unordered_list_start&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+                &lt;span class="k"&gt;break&lt;/span&gt;
+            &lt;span class="n"&gt;list_depth&lt;/span&gt; &lt;span class="o"&gt;+=&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
+            &lt;span class="n"&gt;stack_index&lt;/span&gt; &lt;span class="o"&gt;-=&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
+        &lt;span class="n"&gt;ignore_list_starts&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;False&lt;/span&gt;
+        &lt;span class="k"&gt;while&lt;/span&gt; &lt;span class="n"&gt;stack_index&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__container_token_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;stack_index&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_ordered_list_start&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+                &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="n"&gt;ignore_list_starts&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+                    &lt;span class="n"&gt;container_base_column&lt;/span&gt; &lt;span class="o"&gt;+=&lt;/span&gt;
+                        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__container_token_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;stack_index&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;indent_level&lt;/span&gt;
+                &lt;span class="n"&gt;ignore_list_starts&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;True&lt;/span&gt;
+            &lt;span class="k"&gt;elif&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__container_token_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;stack_index&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_block_quote_start&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+                &lt;span class="n"&gt;bq_index&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__bq_line_index&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;stack_index&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+                &lt;span class="n"&gt;split_leading_spaces&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt;
+                    &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__container_token_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;stack_index&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;leading_spaces&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;split&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+                &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="n"&gt;block_quote_base&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+                    &lt;span class="n"&gt;block_quote_base&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;container_base_column&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt;
+                        &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;split_leading_spaces&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;bq_index&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
+                &lt;span class="n"&gt;container_base_column&lt;/span&gt; &lt;span class="o"&gt;+=&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;split_leading_spaces&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;bq_index&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
+                &lt;span class="n"&gt;ignore_list_starts&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;False&lt;/span&gt;
+            &lt;span class="n"&gt;stack_index&lt;/span&gt; &lt;span class="o"&gt;-=&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
+    &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;container_base_column&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;block_quote_base&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;list_depth&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;For the scenarios that do not have any tokens in the token stack, this
+function returns simple default values.  Otherwise, this function starts
+at the end of the stack and works its way to the start of the list.&lt;/p&gt;
+&lt;p&gt;The first &lt;code&gt;while&lt;/code&gt; loop gets rid of the easy tokens on the stack: the
+Unordered List tokens.  As these tokens stack together nicely, nothing
+special is needed in processing these tokens other than incrementing
+the &lt;code&gt;list_depth&lt;/code&gt; variable for later.&lt;/p&gt;
+&lt;p&gt;The second &lt;code&gt;while&lt;/code&gt; loop takes care of the other container tokens.  Once
+again, if there is nothing left on the stack (i.e. &lt;code&gt;stack_index == 0&lt;/code&gt;),
+nothing more processing is needed.  However, if there are more tokens
+left on the stack, they are Block Quote tokens and Ordered List tokens.
+To properly figure out what the base column is, those tokens need to
+be examined until the beginning of the stack is reached.  At that point,
+the proper base column should be in the &lt;code&gt;container_base_column&lt;/code&gt; variable.&lt;/p&gt;
+&lt;h4 id="taking-the-long-way"&gt;Taking The Long Way&lt;a class="headerlink" href="#taking-the-long-way" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h4&gt;
+&lt;p&gt;It took quite a bit of effort and time to figure out the
+base column part of this rule, even if it was theoretically
+simple.  I was right in thinking that the List elements and the
+Block Quote elements would play off each other.  As it is,
+I went a couple of levels deep in the container elements and
+got those right, but I didn’t go deeper.  In hindsight, I am hesitant
+to say that I got all the combinations of container elements.  However,
+I am confident enough to say that I believe I got most of the
+combinations that matter.&lt;/p&gt;
+&lt;p&gt;And with that, I stopped working on the rule and started
+working on this article.  Taking a couple of breaks, I did
+my usual cleaning up and linting of the rule, before committing
+it to the project.&lt;/p&gt;
+&lt;h2 id="what-was-my-experience-so-far"&gt;What Was My Experience So Far?&lt;a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;From a pure numerical standpoint, the number of completed rules
+is now 23 and the number of rules remaining is now 8.  As my
+expected benchmark was 3 completed rules per week, I was
+successful in meeting that goal.  From a quality point of
+view, I was able to find a handful of new parser issues, logging
+them for future fixing.  While they will require future work to fix
+them, I see those issues as issues that users of the project will not find.
+And from an efficiency point of view, things were going well.
+My adherence to my design rules were serving me well and keeping
+me focused.&lt;/p&gt;
+&lt;p&gt;The only negative?  I still have 8 rules left to finish.  I know
+it might sound like whining, but I really want to get those rules
+implemented so I can release and fix the issues that I have found.
+And because of that impatience, I had to take a couple of extra
+breaks this week to make sure that I was working on the project
+with the right mindset.&lt;/p&gt;
+&lt;p&gt;And yes, I am a glass-half-full type of guy.  How did you guess?&lt;/p&gt;
+&lt;h2 id="what-is-next"&gt;What is Next?&lt;a class="headerlink" href="#what-is-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;It felt good to get more than one rule done.  For next week,
+I know I am going to be close to finishing off the rules,
+but I won’t know if I get there until next Sunday. Stay tuned!&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry><entry><title>Markdown Linter - Dealing With Rule Md027</title><link href="https://jackdewinter.github.io/2021/08/16/markdown-linter-dealing-with-rule-md027/" rel="alternate"></link><published>2021-08-16T00:00:00-07:00</published><updated>2021-08-16T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2021-08-16:/2021/08/16/markdown-linter-dealing-with-rule-md027/</id><summary type="html">
 &lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;In my
 &lt;a href="https://jackdewinter.github.io/2021/08/09/markdown-linter-continuing-progress-on-implementing-new-rules/"&gt;last article&lt;/a&gt;, I talked
@@ -11343,501 +11884,4 @@ and to try and improve the performance of the PyMarkdown project some more.  Sta
 &lt;p&gt;Yes, I am not doing any safety checking on this.  I was doing a simple test to see if this would work.  That kind of safety checking was added before I checked in the actual version of this class that made it into the repository. &lt;a class="footnote-backref" href="#fnref:yes" title="Jump back to footnote 1 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
 &lt;/li&gt;
 &lt;/ol&gt;
-&lt;/div&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry><entry><title>Markdown Linter - Road To Initial Release - Refactoring</title><link href="https://jackdewinter.github.io/2021/02/15/markdown-linter-road-to-initial-release-refactoring/" rel="alternate"></link><published>2021-02-15T00:00:00-08:00</published><updated>2021-02-15T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2021-02-15:/2021/02/15/markdown-linter-road-to-initial-release-refactoring/</id><summary type="html">
-&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;In my
-&lt;a href="https://jackdewinter.github.io/2021/02/08/markdown-linter-road-to-initial-release-learned-and-useful-things/"&gt;last article&lt;/a&gt;, I took a break
-to look back over the last year’s work and what I learned on my path to this point.
-In this article, I look at some refactoring that I have wanted to do for a while,
-and why I can accomplish …&lt;/p&gt;</summary><content type="html">
-&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;In my
-&lt;a href="https://jackdewinter.github.io/2021/02/08/markdown-linter-road-to-initial-release-learned-and-useful-things/"&gt;last article&lt;/a&gt;, I took a break
-to look back over the last year’s work and what I learned on my path to this point.
-In this article, I look at some refactoring that I have wanted to do for a while,
-and why I can accomplish those changes successfully.&lt;/p&gt;
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Refactoring can often be a tricky subject to bring up with software developers.  Depending
-on the specific goals and experiences of a given software developer, saying the phrase
-“Can we talk about refactoring your code?” can either be met with enthusiasm, with
-judgement, or with something in between.  In the majority of situations, developers have
-been trained
-to only write code that is good enough to meet the set of requirements before them, and
-not more.  While this satisfies the immediate needs of the project, it can often cause
-long term problems in terms of maintenance and support.
-As with the more personal reactions to the phrase, I find that they occur more rarely
-these days, but they still occur.  If someone hears that phrase, it is possible that they
-think you are judging their code to not be correct or “good enough”.  In those cases,
-you want to try and remove that judgement aspect from their and move on.&lt;/p&gt;
-&lt;p&gt;Luckily for me, I am the only one on this project and I have a very enthusiastic response
-to that phrase.  For me, if someone asks that questions, they are seeing the same problem
-that I solved, but through a different light. I see it as a chance to see the given
-project from a different viewpont, engaging in a good discussion along the way.
-From there, if it is agree that I need to work on the refactoring, it is just a question of
-making sure that I have solid requirements for any refactoring and a solid block of time
-to work on them.&lt;/p&gt;
-&lt;p&gt;As luck would have it, I control both for the PyMarkdown project, so let’s go!&lt;/p&gt;
-&lt;h2 id="what-is-the-audience-for-this-article"&gt;What Is the Audience for This Article?&lt;a class="headerlink" href="#what-is-the-audience-for-this-article" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;While detailed more eloquently in
-&lt;a href="https://jackdewinter.github.io/2020/04/05/what-is-the-audience-for-my-blog/#what-is-the-audience-for-my-blog"&gt;this article&lt;/a&gt;,
-my goal for this technical article is to focus on the reasoning behind my solutions,
-rather that the solutions themselves.  For a full record of the solutions presented in
-this article, please go to this project’s GitHub repository and consult the
-commits between
-&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/10473f951bc17c4f74eeb067b40e6417bcad8a25"&gt;27 Jan 2021&lt;/a&gt;
-and
-&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/9433471e996e83bea13dbd6472ff447f29fff9a7"&gt;02 Feb 2021&lt;/a&gt;.&lt;/p&gt;
-&lt;h2 id="refactoring"&gt;Refactoring&lt;a class="headerlink" href="#refactoring" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;The most concise and accurate definition of what I believe refactoring to be, comes from
-the website
-&lt;a href="https://www.refactoring.com/#:~:text=verb%3A%20to%20restructure%20software%20%20by%20applying%20a,technique%20for%20improving%20the%20health%20of%20a%20code-base."&gt;Refactoring.Com&lt;/a&gt;
-which defines refactoring as:&lt;/p&gt;
-&lt;blockquote&gt;
-&lt;p&gt;verb: to restructure software by applying a series of refactorings without changing its observable behavior.&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;p&gt;For me, that definition hits all the salient points that I believe need to be in the
-definition. The first point is “to restructure software”.  Refactoring is not about
-adding any new features to the software project, it is about improving some aspect of
-the software in question.  The second point is that it is “a series of refactorings”.
-Very rarely in my years of experience have I found that a refactoring is as simple as
-just a small change.  Usually, it involves a number of small changes that bring about
-the stated requirements of the refactorings, each one doing their part to meet the
-goal.&lt;/p&gt;
-&lt;p&gt;The third point is “without changing its observable behavior”, and I mostly agree with
-that statement.  In my eyes, to be more correct, I would add the phrase “unless directed
-to” to the end of that statement.  It is normally correct that any refactoring should
-not change
-the observable behavior.  However, I would argue that there are times where the
-purpose of the refactoring is to change that observable behavior along a very narrow and
-specific axis.
-A good example of this is performance refactoring.  In that case, I want every other
-observable part of the system to remain the same, but I want the observed time taken
-to process the data to be reduced.&lt;/p&gt;
-&lt;p&gt;But with my little caveat at the end, I think it is a solid definition of refactoring.&lt;/p&gt;
-&lt;h3 id="how-i-work"&gt;How I Work&lt;a class="headerlink" href="#how-i-work" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;It is my usual practice to start writing a new feature or resolving an issue by having
-a group of scenario tests that clearly define the problem.  From there, I write the code
-as it comes to me, iterating over it in a natural way until it passes the scenario tests
-that I am coding against.  While this may not be the way others work, I find that it helps
-me keep the big concepts broken up into smaller concepts that I can more deftly handle.
-Once I am finished with the code and all the scenario tests are passing, I usually look
-locally and see if there are any simple refactorings that I can do.  If I have something
-specific in mind, I may look globally to see if I can apply whatever I just coded on a
-more global scale, but in many cases, I leave that for later.&lt;/p&gt;
-&lt;p&gt;This process is very useful to me because I am very insistent on keeping my code coverage
-numbers above the 95% mark, and in many cases above the 99% mark.  While this can often
-lead to some tests that are frustrating to write, the reward for that pain is in the
-confidence with which I can make changes.  Due to my high code coverage percentage, I
-can make changes in any given piece of code, knowing that if there are any unintended
-side effects, the scenario tests providing that high code coverage will detect them.&lt;/p&gt;
-&lt;p&gt;For me, that is a plus that allows me to perform certain tasks, such as refactoring,
-with a very high degree of confidence.&lt;/p&gt;
-&lt;h3 id="cleaning-up-requeuing"&gt;Cleaning Up Requeuing&lt;a class="headerlink" href="#cleaning-up-requeuing" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;One of the first things that I wanted to cleanup was my use of the parameters
-&lt;code&gt;lines_to_requeue&lt;/code&gt; and &lt;code&gt;force_ignore_first_as_lrd&lt;/code&gt;.  A long time ago (in project years),
-I needed to add code throughout the code base to handle the requeuing needed by Link
-Reference Definition parsing.  That concept of requeuing was introduced
-&lt;a href="https://jackdewinter.github.io/2020/04/06/markdown-linter-adding-link-reference-definitions/"&gt;in April 2020&lt;/a&gt;
-along with an explanation of why Link Reference Definition parsing needs the ability to
-rewind the stack.  At the time, I wasn’t sure if those two parameters were the only
-two parameters that I would need for any needed requeues, or if there were any other
-elements that would
-require requeues.  After more than nine months with no changes, I believed that those two
-parameters were the first target for refactoring.&lt;/p&gt;
-&lt;p&gt;When I looked at that code, there were two possible refactorings that came to mind:
-reducing the number of parameters to one and raising an exception instead of using
-return codes.  Since the second refactoring would make use of the work done for the
-first refactoring, it made sense to start with that refactoring.  But replacing
-those two parameters with an instance of a new class would require some work.&lt;/p&gt;
-&lt;h4 id="phase-1-search-and-replace"&gt;Phase 1: Search and Replace&lt;a class="headerlink" href="#phase-1-search-and-replace" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h4&gt;
-&lt;p&gt;The first phase of the refactoring was dead simple: locate any instances of the variables
-&lt;code&gt;lines_to_requeue&lt;/code&gt; and &lt;code&gt;force_ignore_first_as_lrd&lt;/code&gt; and place them within a new instance
-of the newly created &lt;code&gt;RequeueLineInfo&lt;/code&gt; class.  This took a while to complete but it was
-relatively easy
-to do.  In each case, I started with a call to the &lt;code&gt;process_link_reference_definition&lt;/code&gt;
-function and worked backwards through the code.  As I worked backwards from that function,
-I changed the
-calling function’s two return values to a new single instance of the &lt;code&gt;RequeueLineInfo&lt;/code&gt;
-class.  To ensure that there were no external changes other than that, I
-immediately dereferenced both member variables as local variables.  Because that practice
-kept any changes localized, I was able to execute the scenario tests after each step to
-verify that the current set of changes were correct.&lt;/p&gt;
-&lt;p&gt;The big issues that I ran into with these changes were the blank line function
-&lt;code&gt;handle_blank_line_fn&lt;/code&gt; and the close blocks function &lt;code&gt;close_open_blocks_fn&lt;/code&gt;.  As both
-functions can terminate a Link Reference Definition, both had to be changed to return a
-single argument instead of the double arguments.  While the change for the
-&lt;code&gt;handle_blank_line_fn&lt;/code&gt; function only required 1 change, the change for the
-&lt;code&gt;close_open_blocks_fn&lt;/code&gt; function had to be implemented in 22 separate calls, each change
-following the pattern mentioned above.  It was a handful but was completed without
-incident. Well, without incident after I corrected some typos.&lt;/p&gt;
-&lt;p&gt;A good example of these changes are the changes performed to the
-&lt;code&gt;__close_required_lists_after_start&lt;/code&gt; function.  Before this change, the function’s code
-around the call to the &lt;code&gt;close_open_blocks_fn&lt;/code&gt; function looked like this:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;        &lt;span class="p"&gt;(&lt;/span&gt;
-            &lt;span class="n"&gt;container_level_tokens&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-            &lt;span class="n"&gt;lines_to_requeue&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-            &lt;span class="n"&gt;force_ignore_first_as_lrd&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-        &lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;parser_state&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;close_open_blocks_fn&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
-            &lt;span class="n"&gt;parser_state&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-            &lt;span class="n"&gt;until_this_index&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;last_list_index&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-            &lt;span class="n"&gt;caller_can_handle_requeue&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="bp"&gt;True&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-        &lt;span class="p"&gt;)&lt;/span&gt;
-        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;lines_to_requeue&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;After the change, this code was changed to:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;        &lt;span class="p"&gt;(&lt;/span&gt;
-            &lt;span class="n"&gt;container_level_tokens&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-            &lt;span class="n"&gt;requeue_line_info&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-        &lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;parser_state&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;close_open_blocks_fn&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
-            &lt;span class="n"&gt;parser_state&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-            &lt;span class="n"&gt;until_this_index&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;last_list_index&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-            &lt;span class="n"&gt;caller_can_handle_requeue&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="bp"&gt;True&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-        &lt;span class="p"&gt;)&lt;/span&gt;
-        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;requeue_line_info&lt;/span&gt; &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="n"&gt;requeue_line_info&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;lines_to_requeue&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-            &lt;span class="n"&gt;lines_to_requeue&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;requeue_line_info&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;lines_to_requeue&lt;/span&gt;
-            &lt;span class="n"&gt;force_ignore_first_as_lrd&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;requeue_line_info&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;force_ignore_first_as_lrd&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;The pivotal thing to notice here is that while the function was handling the single
-&lt;code&gt;requeue_line_info&lt;/code&gt; return value instead of the two return values &lt;code&gt;lines_to_requeue&lt;/code&gt;
-and &lt;code&gt;force_ignore_first_as_lrd&lt;/code&gt;, those changes are completely localized.  That isolation
-of the change is what helped make this a great refactoring.&lt;/p&gt;
-&lt;h4 id="phase-2-reduce-the-instances"&gt;Phase 2: Reduce the Instances&lt;a class="headerlink" href="#phase-2-reduce-the-instances" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h4&gt;
-&lt;p&gt;With the scenario tests still verifying that everything was working properly, I started to
-work on reducing the number of new instances of the &lt;code&gt;RequeueLineInfo&lt;/code&gt; class.  While
-isolating the changes was a good priority for Phase 1, it resulted in a lot of extra
-overhead whenever those new instances were returned from a function.  For this phase, the
-focus was on identifying paths where that dereferencing was not necessary, replacing
-them with the returned instance of the &lt;code&gt;RequeueLineInfo&lt;/code&gt; class.&lt;/p&gt;
-&lt;p&gt;Following along with the example of the &lt;code&gt;__close_required_lists_after_start&lt;/code&gt; function,
-that function was again modified.  Inside of that function, any references to the variable
-&lt;code&gt;lines_to_requeue&lt;/code&gt; was replaced with a reference to &lt;code&gt;requeue_line_info.lines_to_requeue&lt;/code&gt;,
-with a similar change being made for the &lt;code&gt;force_ignore_first_as_lrd&lt;/code&gt; variable.  At the end
-of the function, instead of returning:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;lines_to_requeue&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;force_ignore_first_as_lrd&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;the following was returned:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;requeue_line_info&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;At that point, any function that calls the function was located, and switched to use the
-new single value instead of the old double value.  This was usually repeated until the
-function to be modified was the main &lt;code&gt;parse_line_for_container_blocks&lt;/code&gt; function.&lt;/p&gt;
-&lt;p&gt;Executing scenario tests as I went, there were only two issues that popped up.  The first
-issue had to do with the &lt;code&gt;requeue_line_info&lt;/code&gt; being &lt;code&gt;None&lt;/code&gt;.  In those cases, I had to make
-sure to add some &lt;code&gt;if requeue_line_info:&lt;/code&gt; statements around sensitive code, ensuring that it
-wouldn’t fail.  As I worked my way back up to the main function, most of those &lt;code&gt;if&lt;/code&gt;
-statements that I added were removed as I refactored my way up towards the main function.
-The second issue occurred in
-functions that had multiple paths that required the changes.  In that case, I simply noted
-down the name of the functions as I went.  When I finished all the “easy” paths, I went
-back to that list as started checking items off that list one-by-one.&lt;/p&gt;
-&lt;p&gt;By the end of this phase, there were only a few handfuls of new instances being created.
-Cleaning those up were my next priority.&lt;/p&gt;
-&lt;h4 id="phase-3-and-then-there-was-one"&gt;Phase 3: And Then There Was One&lt;a class="headerlink" href="#phase-3-and-then-there-was-one" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h4&gt;
-&lt;p&gt;With the above work accomplished, there was only a little bit of cleanup left to do.
-My goal was to get from the few new instances that still existed down to one new instance.
-Ideally, the
-&lt;code&gt;process_link_reference_definition&lt;/code&gt; function was the only function that needed to create
-a new instance, and I wanted to make that so.&lt;/p&gt;
-&lt;p&gt;The new instances that were usually in places that had already been transformed before
-this refactoring began.  These were usually functions like the
-&lt;code&gt;parse_line_for_container_blocks&lt;/code&gt; function which had been one of my test functions for
-this refactoring.  In those cases, I simply repeated the process that I
-used in Phase 2 to remove those extra instances.  In cleaning up those instances, there
-were a few cases where a “non-requeue” was being returned in a &lt;code&gt;requeue_line_info&lt;/code&gt;
-instance, accomplished by setting the &lt;code&gt;lines_to_requeue&lt;/code&gt; member variable to &lt;code&gt;None&lt;/code&gt;.  While
-these were not difficult to deal with, it did increase the challenge factor for the
-refactoring.&lt;/p&gt;
-&lt;h4 id="the-result"&gt;The Result&lt;a class="headerlink" href="#the-result" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h4&gt;
-&lt;p&gt;At each step of each phase, I was able to execute the scenario tests, ensuring that the
-changes were not changing the output of the parser.  This was pivotal.  With 238 additions
-and 271 deletions over 11 changed files, I would not have noticed any bad effects from
-some of these changes without those scenario tests.  This refactoring was also very pivotal
-in ensuring that I had confidence to make other refactorings.  Because this was not a
-simple refactoring, I knew that completing this refactoring meant many others were
-not only possible, but possible with confidence that they could be accomplished.&lt;/p&gt;
-&lt;p&gt;What about raising exceptions instead of returning the instances? After having done this
-work, I had a high degree of confidence that there will be issues with that approach.
-The main issue that I saw was that a few functions recursively call the
-&lt;code&gt;parse_line_for_container_blocks&lt;/code&gt; function.  While I think that it may be possible,
-I wanted to focus on refactorings that I believe will positively impact the code with
-a high probability of success.  At the time that I wrapped the refactoring up, I made
-a decision that raising an exception with the information fell below my definition of
-“a high probability of success”.&lt;/p&gt;
-&lt;h3 id="bolstering-the-consistency-checks"&gt;Bolstering The Consistency Checks&lt;a class="headerlink" href="#bolstering-the-consistency-checks" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;As I scanned through items in the issues list, there were a couple of items that I
-thought would be easy to either verify or complete.  The first one was about
-confirming that the &lt;code&gt;rehydrate_index&lt;/code&gt; was being verified in the consistency checks.
-Looking into that one, I was pleased to find that there was already a check in the
-Markdown transformer.  Looking at the &lt;code&gt;verify_line_and_column_numbers.py&lt;/code&gt; module,
-I did not find the same check, but adding it was very easy. Similarly, confirming the
-presence of the same types of checks for the &lt;code&gt;leading_space_index&lt;/code&gt; was just as easy.
-However, in this case, all the needed checks were already in place, so no code changes
-were required.&lt;/p&gt;
-&lt;h3 id="validating-inline-tokens"&gt;Validating Inline Tokens&lt;a class="headerlink" href="#validating-inline-tokens" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;The next item was not as easy, but it was close to it.  For some reason that is now lost
-to me, I had a suspicion that I had a blind spot with the inline tokens at the end of
-a Text block.  If I had to guess, I was worried that I did not have at least one example
-of every Inline token and end Inline token at the end of a Text block, meaning there was
-a possibility that one of those calculations were off.&lt;/p&gt;
-&lt;p&gt;While I was pretty sure that I had since covered that item, I wanted to make sure that
-I had concrete proof of that.  Looking around the scenario test groups, I was happy to
-find that the Paragraph Series D tests were constructed to have only a single inline
-element in each paragraph.  By that very definition, each of the inline elements used
-in those tests were both the first and the last token in each paragraph.  After verifying
-that each inline token was present at least once, I resolved that item.&lt;/p&gt;
-&lt;h3 id="a-quick-refactor"&gt;A Quick Refactor&lt;a class="headerlink" href="#a-quick-refactor" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;Before moving on to some more substantial refactorings, I wanted to make sure I had
-a bit more practice to boost my confidence.  To that extent, I started by taking the
-function &lt;code&gt;count_of_block_quotes_on_stack&lt;/code&gt; from the &lt;code&gt;BlockQuoteProcessor&lt;/code&gt; class
-and moving it to the &lt;code&gt;ParserHelper&lt;/code&gt; class.  It just did not feel right being in the
-&lt;code&gt;BlockQuoteProcessor&lt;/code&gt; class, and this took care of that problem.&lt;/p&gt;
-&lt;p&gt;Once that task was accomplished, I started work on a new related function:
-&lt;code&gt;find_last_block_quote_on_stack&lt;/code&gt;.  The purpose of function itself was simple.  Start at
-the end of the &lt;code&gt;token_stack&lt;/code&gt; list and work backwards until a Block Quote token was
-encountered. I was doing this manually in four different places, and this change
-simplified that code in those four locations.&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;find_last_block_quote_on_stack&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
-        &lt;span class="n"&gt;last_stack_index&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_stack&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
-        &lt;span class="k"&gt;while&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;last_stack_index&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_document&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-            &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;last_stack_index&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_block_quote&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-                &lt;span class="k"&gt;break&lt;/span&gt;
-            &lt;span class="n"&gt;last_stack_index&lt;/span&gt; &lt;span class="o"&gt;-=&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
-        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;last_stack_index&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Once that was completed, I also created variants of that function, the
-&lt;code&gt;find_last_container_on_stack&lt;/code&gt; for finding the last container block on the stack
-(which was useful) and the &lt;code&gt;find_last_list_block_on_stack&lt;/code&gt; function (which was not
-useful).  While these refactorings did not have the impact that I had hoped, each
-one still left the code more readable by describing what they were doing in their function
-name.&lt;/p&gt;
-&lt;h2 id="doing-more-of-a-heavy-lift"&gt;Doing More Of A Heavy Lift&lt;a class="headerlink" href="#doing-more-of-a-heavy-lift" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;After completing the above tasks, I felt sufficiently confident to attempt some
-more interesting refactorings.  These refactorings were only interesting in that the
-code that used them was all over the place, usually in calculations that would have
-to be individually examined before each refactoring.  But, as this group of refactorings is
-a group that I have noted in the issues list, I need to push through them.  On top of that,
-with my recent successes, it just felt
-like the right time to deal with those issues.&lt;/p&gt;
-&lt;p&gt;On the surface, none of these new functions created for the refactorings are special.
-Each one does a single, very basic thing, but it does it once.  In visiting different
-parts of the project’s code base, I had a
-loosely organized picture of which patterns were common, and I started looking for them
-to confirm that they were indeed common.  While I talk about the five patterns that I
-noticed here, there were also two other patterns that I chose not to do as I did not see
-a common pattern in them.  While I do believe that refactoring those patterns to clean
-up the code would be useful, I do not believe that a refactoring of either one of those two
-patterns would substantially benefit the code base.  At least not yet.&lt;/p&gt;
-&lt;h3 id="count_newlines_in_text"&gt;count_newlines_in_text&lt;a class="headerlink" href="#count_newlines_in_text" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;This function was already in the &lt;code&gt;ParserHelper&lt;/code&gt; class, but it was not widely used outside
-of the parser code itself.  In particular, every instance of this pattern was found in
-the consitency checks.  In each case, a pattern like:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;inline_height&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;resolved_text&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;split&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;ParserHelper&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;newline_character&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;was replaced with:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;inline_height&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;ParserHelper&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;count_newlines_in_text&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;resolved_text&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;It just made sense to replace the old code with the function call.  The function was
-already in the &lt;code&gt;ParserHelper&lt;/code&gt; class and it was already battle tested.  In addition,
-by using the function, the function itself could be tweaked to be more performant
-without having to change the calling code.&lt;/p&gt;
-&lt;h3 id="calculate_deltas"&gt;calculate_deltas&lt;a class="headerlink" href="#calculate_deltas" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;Always near the top of my “refactor list” was a new function to calculate the deltas
-for the line number and column number for a given text string.  I already knew that I
-had this copied this in various forms into at least eight locations, and it just seemed
-bad form not to refactor it. While
-this code was easy to use once tested, there were a number of small tunings that could
-make it more performant once its various implementations were gathered together in a
-function with one single implementation.&lt;/p&gt;
-&lt;p&gt;The essence of this new function is the logic to ensure that the line/column number pair
-is updated to properly account for any element that was just parsed.  While the case for
-updating a single line element is trivial, there are a few steps that must be
-followed to ensure that a multiple line element’s position is updated properly.  The
-change in the line number is the simple part, being a count of the number of newline
-characters in the element’s source text.  The column is trickier.  Once any special
-characters have been removed, the new column number is the number of characters that
-occur after the last newline character.  With its little nuances, it just seemed right
-to do this properly once.&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="nd"&gt;@staticmethod&lt;/span&gt;
-    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;calculate_deltas&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;text_to_analyze&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
-
-        &lt;span class="n"&gt;delta_line_number&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;
-        &lt;span class="n"&gt;delta_column_number&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;
-        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;ParserHelper&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;newline_character&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;text_to_analyze&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-            &lt;span class="n"&gt;split_raw_tag&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;text_to_analyze&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;split&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;ParserHelper&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;newline_character&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-            &lt;span class="n"&gt;delta_line_number&lt;/span&gt; &lt;span class="o"&gt;+=&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;split_raw_tag&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
-
-            &lt;span class="n"&gt;last_element&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;split_raw_tag&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
-            &lt;span class="n"&gt;last_element&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;ParserHelper&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;resolve_replacement_markers_from_text&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
-                &lt;span class="n"&gt;last_element&lt;/span&gt;
-            &lt;span class="p"&gt;)&lt;/span&gt;
-            &lt;span class="n"&gt;last_element&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;ParserHelper&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;remove_escapes_from_text&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;last_element&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-            &lt;span class="n"&gt;length_of_last_elements&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;last_element&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-
-            &lt;span class="n"&gt;delta_column_number&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;length_of_last_elements&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-        &lt;span class="k"&gt;else&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-            &lt;span class="n"&gt;delta_column_number&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;text_to_analyze&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;delta_line_number&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;delta_column_number&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;I picked up the code from one of the three places that I found the code and was able
-to easily create the &lt;code&gt;calculate_deltas&lt;/code&gt; function.  Replacing the code from the original
-function that I copied it from, I found it just as easy to replace the other two instances
-of that code.  To make its use simpler, I did some extra work to massage the input to
-include surrounding characters in the calculation, to avoid extra math.  For example,
-in the &lt;code&gt;handle_angle_brackets&lt;/code&gt; function, instead of a more complex calculation of the
-column number, I simply adjusted the &lt;code&gt;between_brackets&lt;/code&gt; variable passed to the
-&lt;code&gt;calculate_deltas&lt;/code&gt; function to include the actual angle brackets that were used.&lt;/p&gt;
-&lt;h3 id="calculate_last_line"&gt;calculate_last_line&lt;a class="headerlink" href="#calculate_last_line" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;This is one that I thought I had in more places than I found when I started
-looking.  I thought that I was splitting a line in more than two places, using that
-last line to determine what was left on a line.  My best guess is that most of those
-cases were removed when I condensed most of that logic into the &lt;code&gt;calculate_deltas&lt;/code&gt;
-function.&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="nd"&gt;@staticmethod&lt;/span&gt;
-    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;calculate_last_line&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;text_string&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
-
-        &lt;span class="n"&gt;split_label&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;text_string&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;split&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;ParserHelper&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;newline_character&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;split_label&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;But even so, clearly spelling out that the code was working with the last line of
-text in a multiple line string was worth it to me!&lt;/p&gt;
-&lt;h3 id="recombine_string_with_whitespace"&gt;recombine_string_with_whitespace&lt;a class="headerlink" href="#recombine_string_with_whitespace" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;The last refactoring that I wanted to get out of the way was essentially a
-&lt;a href="https://en.wikipedia.org/wiki/Swiss_Army_knife"&gt;Swiss Army Knife&lt;/a&gt; function
-that I could use to recombine a string with its leading whitespace.  In each case,
-the pattern started the same: split the text, split the whitespace.  It was the next
-part, piecing the whitespace and the text together once split, where the various
-functions varied in their approach.  But, taking my time, I was able to assemble
-a single function with five default parameters that worked in each of the twelve
-instances where that logic appeared.&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="nd"&gt;@staticmethod&lt;/span&gt;
-    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;recombine_string_with_whitespace&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
-        &lt;span class="n"&gt;text_string&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;whitespace_string&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;start_index&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;add_replace_marker_if_empty&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="bp"&gt;False&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-        &lt;span class="n"&gt;post_increment_index&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="bp"&gt;False&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;start_text_index&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;add_whitespace_after&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="bp"&gt;False&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-    &lt;span class="p"&gt;):&lt;/span&gt;
-        &lt;span class="n"&gt;split_text_string&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;text_string&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;split&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;ParserHelper&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;newline_character&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-        &lt;span class="n"&gt;split_whitespace_string&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;whitespace_string&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;split&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
-            &lt;span class="n"&gt;ParserHelper&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;newline_character&lt;/span&gt;
-        &lt;span class="p"&gt;)&lt;/span&gt;
-        &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="nb"&gt;range&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;start_text_index&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;split_text_string&lt;/span&gt;&lt;span class="p"&gt;)):&lt;/span&gt;
-            &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="n"&gt;post_increment_index&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-                &lt;span class="n"&gt;start_index&lt;/span&gt; &lt;span class="o"&gt;+=&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
-            &lt;span class="n"&gt;ew_part&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;split_whitespace_string&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;start_index&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
-            &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;ew_part&lt;/span&gt; &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="n"&gt;add_replace_marker_if_empty&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-                &lt;span class="n"&gt;ew_part&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;ParserHelper&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;create_replace_with_nothing_marker&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;ew_part&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-            &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;add_whitespace_after&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-                &lt;span class="n"&gt;split_text_string&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;split_text_string&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;ew_part&lt;/span&gt;
-            &lt;span class="k"&gt;else&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-                &lt;span class="n"&gt;split_text_string&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;ew_part&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;split_text_string&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
-            &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;post_increment_index&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-                &lt;span class="n"&gt;start_index&lt;/span&gt; &lt;span class="o"&gt;+=&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
-        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;ParserHelper&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;newline_character&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;join&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;split_text_string&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt; &lt;span class="n"&gt;start_index&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;It looks a bit ugly because of the optional parameters, but it is basically simple.
-Given a processed string with its leading spaces removed and a separate string with
-those leading spaces that were removed, recombine them into the original string.
-All the “ugliness” is making sure to handle the various combinations and twists
-needed to accommodate each use of this function.&lt;/p&gt;
-&lt;h3 id="calculate_next_leading_space_part"&gt;calculate_next_leading_space_part&lt;a class="headerlink" href="#calculate_next_leading_space_part" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;Unlike the other refactorings in this section, this refactoring was added to the
-&lt;code&gt;ContainerMarkdownToken&lt;/code&gt; class.  One pattern that I found was that I kept on
-copying and pasting code to to deal with Block Quote tokens, specifically to determine
-what part of the &lt;code&gt;leading_spaces&lt;/code&gt; property of a Block Quote token was current.
-Furthermore, I also
-needed to ensure that in multiple cases, if I used that leading space, that I incremented
-the &lt;code&gt;leading_text_index&lt;/code&gt; member variable to reflect that usage.&lt;/p&gt;
-&lt;p&gt;Hence, the &lt;code&gt;calculate_next_leading_space_part&lt;/code&gt; was created:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;calculate_next_leading_space_part&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;increment_index&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="bp"&gt;True&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
-
-        &lt;span class="n"&gt;split_leading_spaces&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;leading_spaces&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;split&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;ParserHelper&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;newline_character&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-        &lt;span class="n"&gt;leading_text&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;split_leading_spaces&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;leading_text_index&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
-        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;increment_index&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-            &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;leading_text_index&lt;/span&gt; &lt;span class="o"&gt;+=&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
-        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;leading_text&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;h3 id="and-it-logically-follows"&gt;And It Logically Follows&lt;a class="headerlink" href="#and-it-logically-follows" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;After completing the last set of refactorings, I took a bit of time to look around the code
-and see if I could see anything that jumped out at me.  The first thing that I noticed
-was that the &lt;code&gt;recombine_string_with_whitespace&lt;/code&gt; was already set up to handle both single
-line and multiple line strings.  As such, doing a check to see if the string being passed
-into the &lt;code&gt;recombine_string_with_whitespace&lt;/code&gt; function contained a newline character did
-not have any benefit.  Hence, I simplified a few &lt;code&gt;if&lt;/code&gt; statements that occurred before
-a call to &lt;code&gt;recombine_string_with_whitespace&lt;/code&gt;.&lt;/p&gt;
-&lt;p&gt;Once that was done, I also noticed that the &lt;code&gt;__handle_extracted_paragraph_whitespace&lt;/code&gt;
-function was almost a duplicate for the &lt;code&gt;recombine_string_with_whitespace&lt;/code&gt; function.
-This meant that I could rewrite the &lt;code&gt;__rehydrate_inline_code_span&lt;/code&gt; function to use
-the &lt;code&gt;recombine_string_with_whitespace&lt;/code&gt; function instead.  The only other reference
-to the &lt;code&gt;__handle_extracted_paragraph_whitespace&lt;/code&gt; function was in the
-&lt;code&gt;__rehydrate_inline_raw_html&lt;/code&gt; function, which was mainly using it to increase the
-&lt;code&gt;rehydrate_index&lt;/code&gt; if it was within a paragraph.  Once that code was written inline,
-the entire &lt;code&gt;__handle_extracted_paragraph_whitespace&lt;/code&gt; function was deleted.&lt;/p&gt;
-&lt;p&gt;While neither of these refactorings were needed, they both left the source code in
-a better condition, so I went ahead and completed them.  In my evaluation, as I was
-refactoring the code in that area anyways, it did not seem right to not do those
-refactorings as a cleanup task.&lt;/p&gt;
-&lt;h2 id="ending-on-a-high-note"&gt;Ending On A High Note&lt;a class="headerlink" href="#ending-on-a-high-note" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;In some cases, a refactor is simple but looks really messy.  That is the case with the
-commit for
-&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/9433471e996e83bea13dbd6472ff447f29fff9a7"&gt;this refactoring&lt;/a&gt;.
-If you look at the commit, it looks like I changed the entire function to do something,
-but what that something is seems obscured by the changes.  Looking at that commit
-closely, there are only two small changes.&lt;/p&gt;
-&lt;p&gt;The first change was an extremely simple one.  I changed the code in the &lt;code&gt;except&lt;/code&gt; block
-of the &lt;code&gt;__transform&lt;/code&gt; function from:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;raise&lt;/span&gt; &lt;span class="n"&gt;BadTokenizationError&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt; &lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;this_exception&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;to:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;raise&lt;/span&gt; &lt;span class="n"&gt;BadTokenizationError&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"An unhandled error occurred processing the document."&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;this_exception&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;to provide more information to the user if such an exception is ever caught.  That change
-is very clear in the commit referenced above.&lt;/p&gt;
-&lt;p&gt;The second change in the commit was also an equally simple one.  I changed the bulk of the
-code in the
-&lt;code&gt;__parse_blocks_pass&lt;/code&gt; function to be enclosed in a &lt;code&gt;try/except&lt;/code&gt; block to be able to
-more accurately report on any assertions that were fired within the code.  To be clear,
-I added a &lt;code&gt;try:&lt;/code&gt; near the top of the function and the following code at the end of the
-function:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;        &lt;span class="k"&gt;except&lt;/span&gt; &lt;span class="ne"&gt;AssertionError&lt;/span&gt; &lt;span class="k"&gt;as&lt;/span&gt; &lt;span class="n"&gt;this_exception&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-            &lt;span class="n"&gt;error_message&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
-                &lt;span class="s2"&gt;"A project assertion failed on line "&lt;/span&gt;
-                &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="nb"&gt;str&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;line_number&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-                &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s2"&gt;" of the current document."&lt;/span&gt;
-            &lt;span class="p"&gt;)&lt;/span&gt;
-            &lt;span class="k"&gt;raise&lt;/span&gt; &lt;span class="n"&gt;BadTokenizationError&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;error_message&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;this_exception&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;The rest of the changes that are reported?  Indentation.  Yes, adding an indentation of
-four to ensure that it compiled properly created the mess that shows up as differences
-in the commit log.&lt;/p&gt;
-&lt;h2 id="what-was-my-experience-so-far"&gt;What Was My Experience So Far?&lt;a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;While I am not a perfectionist in my coding, I do believe that I have a different sense
-of weights when trying to figure out what level of weight to associate with an aspect of
-a project.  For me, having 10 mostly working and tested scenarios is not as important as
-having 3 or 4 well tested and maintainable scenarios.  While that is my default weighting,
-I have also learned to be able to adjust that weighting depending on certain situations.
-In my professional life, I think what helps me be successful with those changing weightings
-is that I usually state each of the relevant options, their weightings, and how I
-calculated the weighting.&lt;/p&gt;
-&lt;p&gt;For this project, I am both the developer, the tester, and the manager, so it is a bit
-more nuanced.  During most of the duration of this project, my focus was to drive
-the project towards completion, so I use the set of weightings that allowed me to
-develop and test more efficiently.  But I always knew that those weightings would be
-temporary, and that I am now moving towards the proper set of weightings for this project.&lt;/p&gt;
-&lt;p&gt;So why that long description?  It is to back up my statement which is: meh.  I am still
-confident about this project, but refactorings of this type were always expected, and I
-realized that.  As such, it is just something to get done.  No hype, no fanfare, just
-grunt work.&lt;/p&gt;
-&lt;p&gt;Don’t get me wrong, I am happy that it moves me one more step towards the release, and
-I am happy that it went off without that many issues, but it is just a step.  To me,
-refactorings are just a fact of life when you are a software developer.  If you are doing
-them right, they will be simple, methodical, and uneventful. As they should be.&lt;/p&gt;
-&lt;p&gt;I was able to keep the refactorings uneventful by having some clear goals in mind.
-The first goal I have is to maintain a set of scenario tests that provide a high percentage
-of test coverage for the project.  If something changes, I want to know about it as
-quickly as possbile. The second goal I have it to always take small enough steps that I
-can use my scenario tests to continually ensure that any changes are going in the right
-direction.  Finally, my third goal is to have a solid plan going into each refactoring,
-ensuring that I don’t get distracted along the way.&lt;/p&gt;
-&lt;p&gt;I believe it was by following these goals that I was able to keep these refactorings
-simple, methodical, and uneventful!&lt;/p&gt;
-&lt;h2 id="what-is-next"&gt;What is Next?&lt;a class="headerlink" href="#what-is-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;While I do continue with some refactorings next week, my big focus was to apply some
-of my recent learnings regarding performance to the project.  Stay tuned!&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry></feed>
+&lt;/div&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry></feed>
