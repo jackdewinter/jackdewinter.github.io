@@ -1,5 +1,504 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench - Software Quality</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/software-quality.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2021-10-25T00:00:00-07:00</updated><entry><title>Markdown Linter - Fun With Nested Containers</title><link href="https://jackdewinter.github.io/2021/10/25/markdown-linter-fun-with-nested-containers/" rel="alternate"></link><published>2021-10-25T00:00:00-07:00</published><updated>2021-10-25T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2021-10-25:/2021/10/25/markdown-linter-fun-with-nested-containers/</id><summary type="html">
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench - Software Quality</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/software-quality.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2021-11-01T00:00:00-07:00</updated><entry><title>Markdown Linter - Double Checking My Double Checks</title><link href="https://jackdewinter.github.io/2021/11/01/markdown-linter-double-checking-my-double-checks/" rel="alternate"></link><published>2021-11-01T00:00:00-07:00</published><updated>2021-11-01T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2021-11-01:/2021/11/01/markdown-linter-double-checking-my-double-checks/</id><summary type="html">
+&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In my
+&lt;a href="{filename}/articles/SoftwareQuality/beta-bugs-e.md"&gt;last article&lt;/a&gt;, I talked
+about my continuing efforts to clean up the scenario tests and the existing parser
+issues. In this article, I talk about my efforts to bolster the consistency
+checks I have built into the project.&lt;/p&gt;
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;By now, all the low hanging fruit from …&lt;/p&gt;</summary><content type="html">
+&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In my
+&lt;a href="{filename}/articles/SoftwareQuality/beta-bugs-e.md"&gt;last article&lt;/a&gt;, I talked
+about my continuing efforts to clean up the scenario tests and the existing parser
+issues. In this article, I talk about my efforts to bolster the consistency
+checks I have built into the project.&lt;/p&gt;
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;By now, all the low hanging fruit from the Issues List have been picked, preserved,
+and stored away. What are left are the more difficult to deal with issues.  Depending
+on how one feels about challenges, this is either a good thing or a bad thing.
+I choose to interpret it as a good thing.  But I also know that a challenge usually
+means more work.
+And in the case of getting the PyMarkdown project’s consistency checks working
+at full strength, it was going to take a lot of intense debugging work.&lt;/p&gt;
+&lt;h2 id="what-is-the-audience-for-this-article"&gt;What Is the Audience for This Article?&lt;a class="headerlink" href="#what-is-the-audience-for-this-article" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;While detailed more eloquently in
+&lt;a href="https://jackdewinter.github.io/2020/04/05/what-is-the-audience-for-my-blog/#what-is-the-audience-for-my-blog"&gt;this article&lt;/a&gt;,
+my goal for this technical article is to focus on the reasoning behind my solutions,
+rather than the solutions themselves.  For a full record of the solutions presented in
+this article, please consult the commits that occurred between
+&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/521b5ab61e38f30472562804f63797174a2c5ba9"&gt;26 Oct 2021&lt;/a&gt;
+and
+&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/479ace2d2d9dd5def81c72ef3b58bce6fb76f594"&gt;31 Oct 2021&lt;/a&gt;.&lt;/p&gt;
+&lt;h2 id="why-do-i-care-about-consistency-checks"&gt;Why Do I Care About Consistency Checks?&lt;a class="headerlink" href="#why-do-i-care-about-consistency-checks" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;As I started to implement the parser part of the PyMarkdown project, I quickly
+came to one unshakeable conclusion: I was undertaking something that would be huge
+in scope.  I knew that the 673 examples that came with the
+&lt;a href="https://github.github.com/gfm/"&gt;GitHub Flavored Markdown&lt;/a&gt;
+specification were only the start of the testing. I figured that those cases would
+be most useful in verifying that the correct HTML was being generated, and that verification
+would lend some confidence to the parser processing the documents properly.  But
+as those examples only include HTML output, I would need to verify the tokenized output
+independently of those examples.  And my guess was that the other verification would explode
+the number of scenario tests to somewhere over 2500, which is what I thought was a decent
+estimate at the time.&lt;/p&gt;
+&lt;p&gt;To overcome this perceived testing deficiency, I added two levels of checks to
+verify the consistency of the parsed Markdown tokens.   The first level of checks,
+the Markdown generator, tests the ability to parse from Markdown into a token stream
+and back again.  While the presence of container blocks requires extra code to
+manage the complexity, this is meant to check prove that that parsing is a relatively
+simple bi-directional
+process without any loss of information.  The second level check, the position
+checker, is a more intense look at the information provided with each token.  Basically,
+it specifically focused
+on the size of each token and whether the position of the token plus the size
+of the token equals the position of the next token.&lt;/p&gt;
+&lt;p&gt;These two types of checks account for around 95% of the discovered and reported
+issues that I have found so far.  And as the easy-to-find issues are mostly gone, it is the
+difficult-to-find issues that are now showing up.  Knowing this, I can easily guess
+that if any new scenario tests uncover issues, they will probably uncover issues with either nested
+List elements or Link Reference Definition elements.  And in the last couple of
+months, I believe that only a handful of parser errors have been found, a slightly
+larger number of Markdown generation errors, with the position checked having
+the most issues.  Put together, there are two problem areas that are well tested
+in the parser, but the consistency checks are still finding issues, though mostly
+within their own code.  Not perfect, that that knowledge helps.&lt;/p&gt;
+&lt;p&gt;So why do I care about these consistency checks?  Because they are thorough
+in finding issues.  That is, when I do not disable them.&lt;/p&gt;
+&lt;h2 id="so-why-do-you-disable-them"&gt;So… Why Do You Disable Them?&lt;a class="headerlink" href="#so-why-do-you-disable-them" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;The truth is that the parser and the Markdown generator are the most stable
+components of the project.  Because of its very nature, the position checker is
+very precise on where it expects tokens to be positioned.  As such, I have often
+disabled the checks with &lt;code&gt;disable_consistency_checks=True&lt;/code&gt; when adding a
+new feature or fixing an existing issue.  I usually try for between one hour
+and three hours to get the checks working, but after the two-hour mark, I go
+increasingly with disabling the check.
+I honestly admit that this is a bad habit, and one that I am trying to stop following.
+But that process does help me from getting stuck, so as with anything, it is not
+all bad.&lt;/p&gt;
+&lt;p&gt;In looking at what I wanted to do this week, I decided to focus on
+examining the existing tests with consistency checks disabled&lt;sup id="fnref:pragma"&gt;&lt;a class="footnote-ref" href="#fn:pragma"&gt;1&lt;/a&gt;&lt;/sup&gt;, with a
+goal to enable those checks.  Following a search-and-remove of that text from
+the scenario tests, I had eighteen tests that I needed to get passing.  And as
+I was removing that code, I did notice that the tests were in at least six groups:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;2 dealing with HTML Blocks&lt;/li&gt;
+&lt;li&gt;1 dealing with Paragraphs&lt;/li&gt;
+&lt;li&gt;1 dealing with Link Reference Definitions&lt;/li&gt;
+&lt;li&gt;8 dealing with List Blocks&lt;/li&gt;
+&lt;li&gt;1 dealing with Block Quotes&lt;/li&gt;
+&lt;li&gt;5 from the “extra” scenario tests&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Even with this limited information, I knew that this work would likely take me
+the rest of the week to complete.  With at least six distinct groups, it was
+highly likely that I was going to look at six or more different areas of the
+position checker code and address those issues.  That was going to be time
+consuming, as that meant I was going to be looking all over the position checker
+code.&lt;/p&gt;
+&lt;p&gt;As I started fixing issues with the position checker, I was not surprised when
+fixing those issues uncovered other errors with the Markdown generator and even
+the Markdown parser.  It just made sense to me.  If there was an issue with one
+of the two checkers, there was a decent chance that the issue would affect the
+other checked.  And with both consistency checks disabled, there was also a decent
+chance that a boundary condition failure was being missed.  From my experience,
+I had a feeling that once I was able to clear up any issues with the consistency
+checkers, I had a high degree of confidence that it would uncover at least two to
+three issues in the other components.  After all, that is what those consistency
+checks are designed to do.&lt;/p&gt;
+&lt;p&gt;Finishing the work for
+&lt;a href="https://github.com/jackdewinter/pymarkdown/issues/87"&gt;Issue 87&lt;/a&gt;,
+the issue I created to contain this work, it took me until right around noon on
+Sunday to get everything completed.  I am not in the least bit surprised that it
+took that long to complete.  The amount of debugging I did this week was just
+immense.  If I had to guess, I probably added as much debug code as non-debug
+code, just to be able to follow what was going on in the code.  But the goal was
+reached: all eighteen scenario tests are now fully enabled.&lt;/p&gt;
+&lt;h2 id="the-journey"&gt;The Journey&lt;a class="headerlink" href="#the-journey" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;The journey to get there was not an easy one, but it was one that paid off in
+the end.  While these are in order of where they were found, the order in
+which they were found was all over the place.  In one case, I found three issues
+at the same time and had to focus on one before getting to the others.  In my mind,
+it was more important to fix things and note how long they took to fix, not the order
+in which they were fixed. That, and I arranged my notes by where they were found
+and not the order in which they were fixed.&lt;/p&gt;
+&lt;h3 id="it-just-so-happened-that-this-was-first"&gt;It Just So Happened That This Was First&lt;a class="headerlink" href="#it-just-so-happened-that-this-was-first" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Picking one of the tests at random, I settled on test function &lt;code&gt;test_list_blocks_237g&lt;/code&gt;.
+While I was there for problems with the position checked, I noticed something
+almost at once upon looking at the tokenized output for the test: the
+Blank Line token was repeated when there was only one Blank Line present in the
+Markdown document.  Enabling debug and rerunning the test, it was obvious to see
+why.  As far as I could tell, the Blank Line element was being properly processed
+within the Block Quote element.  But once that was complete, that same Blank Line
+was also being handed off to the Leaf Block Processor where it was processed again,
+yielding another Blank Line token.  It was a parser issue!&lt;/p&gt;
+&lt;p&gt;Fortunately for me, I was able to figure out a quick way to resolve this issue.
+The following code was already in place to handle the Blank Line within the
+Block Quote element:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;did_blank&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+    &lt;span class="n"&gt;POGGER&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;debug&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"&amp;gt;&amp;gt;already handled blank line. returning."&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;container_level_tokens&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;extend&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;leaf_tokens&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;container_level_tokens&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;line_to_parse&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;this_bq_count&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;I just made one minor change to that code:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;container_level_tokens&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;line_to_parse&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;this_bq_count&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="bp"&gt;True&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;as well as other changes to the returns in that function and the functions that
+call that function. While it was correctly parsing the Blank Line the first time,
+that function was not passing back any information that would allow the second
+parsing of the Blank
+line to be avoided.  By returning that &lt;code&gt;True&lt;/code&gt; from that code, downstream code
+was notified that the Blank Line had already been processed, and that it did
+not need to continue.&lt;/p&gt;
+&lt;p&gt;That was one of the easier issues to debug.&lt;/p&gt;
+&lt;h3 id="double-check-your-output-twice"&gt;Double Check Your Output… Twice&lt;a class="headerlink" href="#double-check-your-output-twice" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Another test that looked weird when I looked at it was test function
+&lt;code&gt;test_extra_007cx&lt;/code&gt;.  When I look at a scenario test that is failing, the first
+thing that I do is go over the Markdown and the tokens to make sure that I
+have familiarity with the content that is being parsed.  As I did that for
+this test function, I noticed that trailing whitespace was missing.
+After I double checked my initial findings, I did indeed have another parser
+issue.  In this case, any whitespace within Text elements within Link elements
+was being omitted from the Link token.  Not an easy find, but a good one.&lt;/p&gt;
+&lt;p&gt;Tracking through the code with the debugger, I came to the &lt;code&gt;__complete_inline_loop&lt;/code&gt;
+function, where I was firmly convinced the issue was.  Looking through the logs,
+the Link token and the encompassed Text token agreed up to this point,
+and they diverged after it.  And while it was not much, the space at the end of
+the line was present in the Link’s Text element, but not in the Link element
+itself.&lt;/p&gt;
+&lt;p&gt;Doing a bit of experimentation, I added the following code to correct this behavior.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;new_string&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt; &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="n"&gt;end_string&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+    &lt;span class="n"&gt;split_end_string&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;end_string&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;split&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;ParserHelper&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;newline_character&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;POGGER&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;debug&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+        &lt;span class="s2"&gt;"split_end_string&amp;gt;&amp;gt;$&amp;gt;&amp;gt;"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="n"&gt;split_end_string&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;split_end_string&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;=&lt;/span&gt; &lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="n"&gt;new_string&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;split_end_string&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;split_end_string&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;new_string&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;As the trailing space was present in text block, but not in link element, I knew
+that I should not touch the &lt;code&gt;new_string&lt;/code&gt; variable, only the &lt;code&gt;new_string_unresolved&lt;/code&gt;
+variable.  It took a while to get the second &lt;code&gt;if&lt;/code&gt; conditional right, adding an
+extra scenario test to help tune the code properly.&lt;/p&gt;
+&lt;p&gt;The interesting part of trying to solve this issue was not the challenge in
+fixing the issue itself, that was the easy part.  The interesting part was that
+the definition of the issue was tricky and often nuanced.  As I said above:&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;any whitespace within Text elements within Link elements was being omitted from
+the Link token&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;This was easily a boundary case, and a good find.  But not all the solutions were
+as easy as these two.&lt;/p&gt;
+&lt;h2 id="transforming-into-markdown"&gt;Transforming Into Markdown&lt;a class="headerlink" href="#transforming-into-markdown" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;When I was looking for a next scenario test to clean, function &lt;code&gt;test_block_quotes_extra_02ae&lt;/code&gt;
+and its related scenario tests looked like they were an excellent choice.  At some point
+in the resolution work, I noticed that there were four scenario
+tests that were failing their consistency checks due to Markdown generation. Before
+I spent more time digging deeper into the position check, I felt that my time would
+be best spent getting these four functions working properly.&lt;/p&gt;
+&lt;p&gt;As I examined each of the failing scenario tests, I noticed that they all focused
+on one single are: extra whitespace at the start of a Block Quote element line.
+There were slightly different variations on this issue, but underneath they all
+had the same cause.  Digging into the cause, it was a simple matter to overlapping
+data due to nested container elements.  Specifically, in the case of test function
+&lt;code&gt;test_block_quotes_extra_02ae&lt;/code&gt;, it was the overlapping data of the List element
+and the Paragraph element.&lt;/p&gt;
+&lt;p&gt;During the development of the List elements and the Block Quote elements, I made
+some decisions that have affected later work.  The easy decision to explain is the
+decision about the Block Quote element.  Looking across all the examples in the
+&lt;a href="https://github.github.com/gfm/"&gt;GitHub Flavored Markdown&lt;/a&gt;
+specification, there are a good collection of properly spaced Block Quote characters
+and improperly spaced Block Quote characters.  Given that information, I made the
+hard choice to include those starting characters in the field &lt;code&gt;leading_spaces&lt;/code&gt;
+for the Block Quote token that owns that line.  Managing that field and tracking
+along with it will parsing and checking has been frustrating, but it still makes
+sense to me.  However, because of the more rigorous spacing requirements and a reduced
+quantity of improperly indented List element examples, for List tokens I
+decided to record their indentation levels in the &lt;code&gt;indent_level&lt;/code&gt; and dealing
+with any outliers as they surfaced.&lt;/p&gt;
+&lt;p&gt;Based on the data that I had at the time, I sincerely believe that was the correct
+choice to make.  Adding that same &lt;code&gt;leading_spaces&lt;/code&gt;  field to the List tokens
+would have been too ambitious given the requirements for it.  And whether I liked
+it or not, this situation was a direct result of that decision.  But because of
+those decisions when this Markdown is parsed:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="nv"&gt;start&lt;/span&gt;
+&lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="nv"&gt;quote&lt;/span&gt;
+&lt;span class="o"&gt;&amp;gt;&lt;/span&gt;
+&lt;span class="o"&gt;&amp;gt;&lt;/span&gt;   &lt;span class="k"&gt;end&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;the last line gets parsed into a Paragraph token starting with two spaces inside
+of a List token with an indent of &lt;code&gt;4&lt;/code&gt;.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;extracted_whitespace&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+    &lt;span class="n"&gt;found_block_token&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;
+    &lt;span class="n"&gt;was_list_found&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;False&lt;/span&gt;
+    &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="nb"&gt;range&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;container_token_stack&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;container_token_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_block_quote_start&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="n"&gt;found_block_token&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;container_token_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+            &lt;span class="k"&gt;break&lt;/span&gt;
+        &lt;span class="n"&gt;was_list_found&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;True&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;found_block_token&lt;/span&gt; &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="n"&gt;was_list_found&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="n"&gt;split_leading_spaces&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;found_block_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;leading_spaces&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;split&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+            &lt;span class="n"&gt;ParserHelper&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;newline_character&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="n"&gt;specific_start&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;split_leading_spaces&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;
+            &lt;span class="n"&gt;found_block_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;leading_text_index&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;specific_start&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;=&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;extracted_whitespace&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+            &lt;span class="n"&gt;extracted_whitespace&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;extracted_whitespace&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;specific_start&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;:]&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;It took a bit of time to get there, but finally I arrived at the above code
+to mitigate this issue.  Because of the overlap the whitespace in the Paragraph
+token and the List indent, this code detects that very circumstance with an existing
+Block Quote element and changes the &lt;code&gt;extracted_whitespace&lt;/code&gt; variable to reduce
+the amount of whitespace.  With a decent amount of testing, this was able to knock
+a couple of issues off the list all by itself!&lt;/p&gt;
+&lt;h2 id="position-checker-woes"&gt;Position Checker Woes&lt;a class="headerlink" href="#position-checker-woes" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;At this point in the debugging process, I was keenly aware of two things.
+The first was that I probably had any existing parser issues and Markdown generator issues
+resolved.  While that meant that I needed to be vigilant about my work in getting
+the position checker issues resolved, it gave me the confidence to know that I
+probably would get most of the serious issues resolved.  At the time and while I was
+writing this, I was incredibly careful to think “most” and not “all”.  Issues are tricky
+things, and my experience makes me believe that you never get all.&lt;/p&gt;
+&lt;p&gt;The second thing was that this work was taking a lot of time.  Just for the analysis,
+debugging, fixing, and testing of the three prior issues, I was up over twelve hours
+in total.  While that included one or two of the issues in this section, the
+point was clear.  This was taking a lot of time to get right.  But I still felt
+strongly that it needed to get done, so I continued to push forward.&lt;/p&gt;
+&lt;h3 id="providing-foundational-support"&gt;Providing Foundational Support&lt;a class="headerlink" href="#providing-foundational-support" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;The most obvious thing that I needed to add was a sense of whether a Block Quote
+element was in effect when validating a given set of tokens.  While the actual code
+to use it would come later, this code was added in a couple of places, such as in
+the &lt;code&gt;__validate_block_token_height&lt;/code&gt; function, to calculate that token:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;container_token_index&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;actual_tokens&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;index&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;last_token&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="n"&gt;block_container_token&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;
+&lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;container_token_index&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt; &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="n"&gt;actual_tokens&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;container_token_index&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_block_quote_start&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+    &lt;span class="n"&gt;block_container_token&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;actual_tokens&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;container_token_index&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;While I would normally be more carefully about copy-and-paste code, I already
+have plans to revisit the consistency check modules to see about improving them.
+As such, this was both quicker and would give me a chance to evaluate some refactoring
+tools in the new future.&lt;/p&gt;
+&lt;p&gt;Along the same path, I added proper support for Block Quotes elements within List
+elements in the &lt;code&gt;__maintain_block_stack&lt;/code&gt; function. It was not much, but I knew that
+I needed to have that value calculated in multiple places. This was providing that support
+while adding the necessary code only in a single place.&lt;/p&gt;
+&lt;h3 id="list-elements-and-block-quote-elements-redux"&gt;List Elements and Block Quote Elements - Redux&lt;a class="headerlink" href="#list-elements-and-block-quote-elements-redux" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Like the work detailed in the
+&lt;a href="#transforming-into-markdown"&gt;Transforming Into Markdown&lt;/a&gt; section,
+this change to the &lt;code&gt;__validate_new_line&lt;/code&gt; function needed to account for Block Quote
+tokens and List tokens being used at the same time.  Although the code looks slightly
+different, both changes are accomplishing the same goals, just in different ways.
+In this function, because of the position checks that go on, the code was a lot
+more convoluted and nuanced.  But with a solid group of five scenario tests that
+all looked similar:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;FAILED test/test_markdown_block_quotes.py::test_block_quotes_extra_02ae - AssertionError: Line:4:[para(4,5):  ]
+FAILED test/test_markdown_list_blocks.py::test_list_blocks_237x - AssertionError: Line:3:[para(3,8):]
+FAILED test/test_markdown_list_blocks.py::test_list_blocks_237f - AssertionError: Line:4:[para(4,8):]
+FAILED test/test_markdown_list_blocks.py::test_list_blocks_237g - AssertionError: Line:4:[para(4,8):]
+FAILED test/test_markdown_list_blocks.py::test_list_blocks_238a - AssertionError: Line:3:[para(3,10):]
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;it was easy to go through and look for commonalities. It did take a fair amount
+of time to get the solution dialed in properly, but it was worth it.&lt;/p&gt;
+&lt;h3 id="block-quotes-and-blank-lines"&gt;Block Quotes and Blank Lines&lt;a class="headerlink" href="#block-quotes-and-blank-lines" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Not yet finished with those tests, I resolved the issue in the previous section,
+only for me to be greeted by another issue with those same five scenario tests:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;FAILED test/test_markdown_block_quotes.py::test_block_quotes_extra_02ae - AssertionError: Line:3:[BLANK(3,2):]
+FAILED test/test_markdown_list_blocks.py::test_list_blocks_237x - AssertionError: Line:2:[BLANK(2,3):]
+FAILED test/test_markdown_list_blocks.py::test_list_blocks_237f - AssertionError: Line:3:[BLANK(3,3):]
+FAILED test/test_markdown_list_blocks.py::test_list_blocks_237g - AssertionError: Line:3:[BLANK(3,3):]
+FAILED test/test_markdown_list_blocks.py::test_list_blocks_238a - AssertionError: Line:2:[BLANK(2,3):]
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;I had taken care of one issue, only to have another one replace it. I cannot say
+that I was surprised because I was not.  This entire week was about things getting
+uncovered that also needed fixing.  And like the other issues, this one was
+obvious when I looked at it.  When computing the estimated column number for a
+Blank Line element, the estimated was sometimes off by two within Block Quote elements.&lt;/p&gt;
+&lt;p&gt;While this was obviously the problem, the issue with this issue was in defining the
+circumstances in which this was the problem.  This code:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;elif&lt;/span&gt; &lt;span class="n"&gt;container_block_stack&lt;/span&gt; &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="n"&gt;current_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_blank_line&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;container_block_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_block_quote_start&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="n"&gt;leading_text&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;did_x&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
+            &lt;span class="n"&gt;container_block_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;calculate_next_leading_space_part&lt;/span&gt;&lt;span class="p"&gt;(),&lt;/span&gt;
+            &lt;span class="bp"&gt;True&lt;/span&gt;&lt;span class="p"&gt;,)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;was obviously being used in all cases, and there was at least one case where it
+was being used improperly.  After performing handful of experiments, it turned out that
+there were three cases.  The first was if the Blank Line token was followed by
+end tokens.  If it was only followed by end tokens, then that recalculation
+needs to be applied.  The second was if the “block” of end tokens after the
+Blank Line did not include an end List token.  Finally, the block part of
+the logic depended on whether the last block token was a Block Quote token
+or if the first block token was a Block Quote token.&lt;/p&gt;
+&lt;p&gt;After about four hours of experimentation and debugging, I arrived at this code:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;elif&lt;/span&gt; &lt;span class="n"&gt;container_block_stack&lt;/span&gt; &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="n"&gt;current_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_blank_line&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+    &lt;span class="n"&gt;top_block&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;container_block_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_block_quote_start&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="n"&gt;top_block&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;container_block_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+    &lt;span class="k"&gt;elif&lt;/span&gt; &lt;span class="n"&gt;top_block_token&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="n"&gt;top_block&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;top_block_token&lt;/span&gt;
+
+    &lt;span class="n"&gt;needs_recalculation&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;False&lt;/span&gt;
+    &lt;span class="n"&gt;was_end_list_end&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;False&lt;/span&gt;
+    &lt;span class="n"&gt;next_token_index&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;actual_tokens&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;index&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;current_token&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
+    &lt;span class="k"&gt;while&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
+        &lt;span class="n"&gt;next_token_index&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;actual_tokens&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="n"&gt;actual_tokens&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;next_token_index&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_end_token&lt;/span&gt;
+    &lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;actual_tokens&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;next_token_index&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_list_end&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="n"&gt;was_end_list_end&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;True&lt;/span&gt;
+        &lt;span class="n"&gt;next_token_index&lt;/span&gt; &lt;span class="o"&gt;+=&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;next_token_index&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;actual_tokens&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="n"&gt;needs_recalculation&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;True&lt;/span&gt;
+    &lt;span class="k"&gt;else&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="n"&gt;needs_recalculation&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="n"&gt;was_end_list_end&lt;/span&gt;
+
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;top_block&lt;/span&gt; &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="n"&gt;needs_recalculation&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="n"&gt;leading_text&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;did_x&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
+            &lt;span class="n"&gt;container_block_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;calculate_next_leading_space_part&lt;/span&gt;&lt;span class="p"&gt;(),&lt;/span&gt;
+            &lt;span class="n"&gt;top_block&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;calculate_next_leading_space_part&lt;/span&gt;&lt;span class="p"&gt;(),&lt;/span&gt;
+            &lt;span class="bp"&gt;True&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+        &lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;It backed up my earlier suspicion that the code was right, just not being used
+properly.  It did take a while to nail down the nuances of this code, but it
+all made sense then I got there!&lt;/p&gt;
+&lt;h3 id="second-verse-same-as-the-first"&gt;Second Verse, Same as The First&lt;a class="headerlink" href="#second-verse-same-as-the-first" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;And it seems like a continuing theme, having to adjust for Block Quote idents
+in various pieces of code, and the changes to the &lt;code&gt;__process_previous_token&lt;/code&gt; function
+and the &lt;code&gt;__verify_next_inline_handle_previous_end&lt;/code&gt; were no different. The change
+for the &lt;code&gt;__process_previous_token&lt;/code&gt; function was to add this code:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;block_container_token&lt;/span&gt; &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="n"&gt;old_line_number&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="n"&gt;estimated_line_number&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+    &lt;span class="n"&gt;delta&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;estimated_line_number&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="n"&gt;old_line_number&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="n"&gt;current_inline_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_inline_link_end&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+        &lt;span class="n"&gt;block_container_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;leading_text_index&lt;/span&gt; &lt;span class="o"&gt;+=&lt;/span&gt; &lt;span class="n"&gt;delta&lt;/span&gt;
+    &lt;span class="n"&gt;split_leading_spaces&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;block_container_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;leading_spaces&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;split&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+        &lt;span class="n"&gt;ParserHelper&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;newline_character&lt;/span&gt;
+    &lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;estimated_column_number&lt;/span&gt; &lt;span class="o"&gt;+=&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+        &lt;span class="n"&gt;split_leading_spaces&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;block_container_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;leading_text_index&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+    &lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;and the change to the &lt;code&gt;__verify_next_inline_handle_previous_end&lt;/code&gt; function was
+to add this code:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;block_container_token&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+    &lt;span class="n"&gt;block_container_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;leading_text_index&lt;/span&gt; &lt;span class="o"&gt;+=&lt;/span&gt; &lt;span class="n"&gt;new_lines&lt;/span&gt;
+    &lt;span class="n"&gt;split_leading_spaces&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;block_container_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;leading_spaces&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;split&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+        &lt;span class="n"&gt;ParserHelper&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;newline_character&lt;/span&gt;
+    &lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;new_estimated_column_number&lt;/span&gt; &lt;span class="o"&gt;+=&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+        &lt;span class="n"&gt;split_leading_spaces&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;block_container_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;leading_text_index&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+    &lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Both sets of changes are almost identical, except for a couple of slight changes.
+But that was always expected, so it was comforting in a way to find these last
+two sets of changes to be so alike.  If the triggering condition was met, update
+the &lt;code&gt;leading_text_index&lt;/code&gt; field, grab the part of the &lt;code&gt;leading_spaces&lt;/code&gt; field
+relating to the index, and add the length of that value to the current column
+number.&lt;/p&gt;
+&lt;p&gt;And with that, things were clean.  Well, almost.  As I mentioned at least once
+in this article, nested container blocks are nuanced.  As such, when I tried to
+test something against alternating container blocks that were four levels deep,
+I ran into an issue.  While I do want to tackle that as time allows, this work
+was about cleaning up disabled consistency checks, not nested blocks.  As such,
+left those two tests in the code and disabled them for now.&lt;/p&gt;
+&lt;p&gt;I must admit that I wanted to deal with them right away, but I knew that I had
+enough to do as it was.  Taking that on would just delay things.  I believe
+I made the right move in delaying that work, but sometimes it does not feel that
+way.&lt;/p&gt;
+&lt;h2 id="doing-my-usual-cleanup"&gt;Doing My Usual Cleanup&lt;a class="headerlink" href="#doing-my-usual-cleanup" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;When I was going through that work, I did notice that there were unusual
+cases where I was still using string concatenation instead of f-strings.  While
+gearing up for the actual check of the reported issues, I thought it would be
+good to go through and clean those up.  While it does not show us as increased
+code coverage or increased scenario coverage, it just felt good to get it done
+and have everything using f-strings.&lt;/p&gt;
+&lt;h2 id="the-main-event"&gt;The Main Event&lt;a class="headerlink" href="#the-main-event" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Yes, after all this work, there was one more thing to do: The Main Event.
+With a solid set of passing tests, with all consistency checks working properly,
+I could now start verifying that the Paragraph token’s &lt;code&gt;rehydrate_index&lt;/code&gt; field
+and the Block Quote token’s &lt;code&gt;leading_text_index&lt;/code&gt; field were
+working as intended. This was the plan all along, but I had to be sure everything
+else was in place before I could start on this.&lt;/p&gt;
+&lt;p&gt;Working through all the scenario tests listed in the issue, I was able to verify
+that any paragraph hydration concerns with those scenario tests had been fixed as
+I was unable to reproduce even one failure.  There were now multiple checks to verify
+that the &lt;code&gt;rehydrate_index&lt;/code&gt; field was being used properly, and all those checks were passing properly.
+That was the focus, and after a solid week of work to get there,
+I was able to resolve those issues from the Issues List. That was the good news.&lt;/p&gt;
+&lt;p&gt;The bad news was that the same could not be said for the checks for the &lt;code&gt;leading_text_index&lt;/code&gt;
+field.  At the end of the &lt;code&gt;__rehydrate_block_quote_end&lt;/code&gt; function
+was an assert that was commented out:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="c1"&gt;# assert (&lt;/span&gt;
+&lt;span class="c1"&gt;#     leading_text_index == expected_leading_text_index&lt;/span&gt;
+&lt;span class="c1"&gt;# ), f"leading_text_index={str(leading_text_index)};expected_leading_text_index={str(expected_leading_text_index)}"&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;After two hours of trying to resolve all the issues, I added an issue to the
+project’s Issues List and cleaned things up.  What I was able to do however, was
+to get it closer to the final state:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;assert&lt;/span&gt; &lt;span class="n"&gt;leading_text_index&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;
+    &lt;span class="n"&gt;expected_leading_text_index&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+    &lt;span class="n"&gt;expected_leading_text_index&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
+&lt;span class="p"&gt;],&lt;/span&gt; &lt;span class="n"&gt;f&lt;/span&gt;&lt;span class="s2"&gt;"leading_text_index={leading_text_index};expected_leading_text_index={expected_leading_text_index}"&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;This uncovered an unnoticed issue in the &lt;code&gt;parse_paragraph&lt;/code&gt; function that caused
+the parser to emit an extra newline character.  This issue is a weird
+boundary condition, and without the above assert, the likelihood of me finding
+it was remote at best.  Things must align properly for this to happen,
+as the code to detect this condition shows:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;apply_paragraph_adjustment&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;True&lt;/span&gt;
+&lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
+    &lt;span class="n"&gt;container_index&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;parser_state&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_stack&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="n"&gt;position_marker&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;line_number&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="n"&gt;top_block_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;matching_markdown_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;line_number&lt;/span&gt;
+    &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="n"&gt;container_index&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;
+    &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="n"&gt;parser_state&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;container_index&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_list&lt;/span&gt;
+&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
+        &lt;span class="n"&gt;position_marker&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;line_number&lt;/span&gt;
+        &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="n"&gt;parser_state&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;
+            &lt;span class="n"&gt;container_index&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
+        &lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;matching_markdown_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;line_number&lt;/span&gt;
+    &lt;span class="p"&gt;):&lt;/span&gt;
+        &lt;span class="n"&gt;apply_paragraph_adjustment&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;False&lt;/span&gt;
+
+&lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;apply_paragraph_adjustment&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;And, once again, it took a while to figure it out, but I got there.&lt;/p&gt;
+&lt;h2 id="what-was-my-experience-so-far"&gt;What Was My Experience So Far?&lt;a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Sometimes the solution hits you right away, and sometimes you must fight for
+every part of that solution. This week, there was a lot of fighting.  While some
+of the time it was about the problem and not the solution, most of the time it
+was around discovering the nuances of the problem.  And that was challenging, but
+the work was exceedingly difficult to focus on.  It required me to keep a level head and to clearly write things
+out for myself, so that I could look at the problem from different angles.&lt;/p&gt;
+&lt;p&gt;And that is what ultimately saved me.  Writing things out.  Yes, lots of scribbles
+and pages of weird drawings with arrows and boxes, but it worked.  What I found
+useful about my usual practice of using paper to design was that in trying to
+figure out the actual problem, I was not establishing a clean visualization of the
+problem.  Only when I was able to get enough test data represented in a cohesive
+form on those pieces of paper, all visible at the same time, was I able to properly
+view the problems and make my breakthroughs.&lt;/p&gt;
+&lt;p&gt;Now, am I saying that everyone should use paper? Nope.  But for me, the pivotal thing
+is that it helps me to visualize things.  It does not matter if it works
+for anyone else, but that helps me to visualized.  And the more difficult things
+get, the more important it is to find a way to visualize things in a cohesive
+manner that is digestible.  For me, that formula is a decent amount of paper scribbles
+mixed in with good logging.  That just allows me to keep state and assumptions
+on paper while testing them as I go through the log files and recording the actual
+changes. As I said at the start of the paragraph, it just must work for me.&lt;/p&gt;
+&lt;p&gt;So, was it hard? Yes… it was hard.  But I also moved the project forward while
+starting to refine another skill to add to my toolbox.  That was unexpected, but
+cool!&lt;/p&gt;
+&lt;h2 id="what-is-next"&gt;What is Next?&lt;a class="headerlink" href="#what-is-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Looking ahead in the Issues List, I would like to make more progress on getting
+things cleared out.  And with me removing the disabled consistency checks
+this past week, I at least want to try and tackle the pragma issues.
+Stay tuned!&lt;/p&gt;
+&lt;div class="footnote"&gt;
+&lt;hr/&gt;
+&lt;ol&gt;
+&lt;li id="fn:pragma"&gt;
+&lt;p&gt;Except for pragmas, that hopefully will be next week. &lt;a class="footnote-backref" href="#fnref:pragma" title="Jump back to footnote 1 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/div&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry><entry><title>Markdown Linter - Fun With Nested Containers</title><link href="https://jackdewinter.github.io/2021/10/25/markdown-linter-fun-with-nested-containers/" rel="alternate"></link><published>2021-10-25T00:00:00-07:00</published><updated>2021-10-25T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2021-10-25:/2021/10/25/markdown-linter-fun-with-nested-containers/</id><summary type="html">
 &lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;In my
 &lt;a href="{filename}/articles/SoftwareQuality/beta-bugs-d.md"&gt;last article&lt;/a&gt;, I talked
@@ -10924,583 +11423,4 @@ to look at.  Never a dull moment!&lt;/p&gt;
 &lt;h2 id="what-is-next"&gt;What is Next?&lt;a class="headerlink" href="#what-is-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;With each plugin rule examined and working properly, I needed to get back to
 my proper coding mindset and make sure that each rule was passing all quality
-bars and each rule was properly documented.  Stay tuned!&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry><entry><title>Markdown Linter - Road To Initial Release - Gearing Up For Plugins</title><link href="https://jackdewinter.github.io/2021/04/19/markdown-linter-road-to-initial-release-gearing-up-for-plugins/" rel="alternate"></link><published>2021-04-19T00:00:00-07:00</published><updated>2021-04-19T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2021-04-19:/2021/04/19/markdown-linter-road-to-initial-release-gearing-up-for-plugins/</id><summary type="html">
-&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;In my
-&lt;a href="https://jackdewinter.github.io/2021/04/12/markdown-linter-road-to-initial-release-creating-a-package/"&gt;last article&lt;/a&gt;, I talked about
-how I worked through the issues to create an installable package for the project.  In
-this article, I talk about gearing up for the work that I need to do on the plugins to
-get them ready for the release.&lt;/p&gt;
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Having …&lt;/p&gt;</summary><content type="html">
-&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;In my
-&lt;a href="https://jackdewinter.github.io/2021/04/12/markdown-linter-road-to-initial-release-creating-a-package/"&gt;last article&lt;/a&gt;, I talked about
-how I worked through the issues to create an installable package for the project.  In
-this article, I talk about gearing up for the work that I need to do on the plugins to
-get them ready for the release.&lt;/p&gt;
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Having made great progress towards the initial release, I knew that I needed to spend
-some time focusing on the heart of the PyMarkdown linter project: the rule plugins.  To be
-honest, the last time that I have spent any serious time looking at the rules was at
-least five or six months ago.  In that time, I have changed a lot of code, both improving
-how things performed and fixing issues.  It just made sense that before I release the
-project, that I go through the already implemented rules and make sure they get the same
-thorough treatment that I have given the rest of the project.&lt;/p&gt;
-&lt;h2 id="what-is-the-audience-for-this-article"&gt;What Is the Audience for This Article?&lt;a class="headerlink" href="#what-is-the-audience-for-this-article" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;While detailed more eloquently in
-&lt;a href="https://jackdewinter.github.io/2020/04/05/what-is-the-audience-for-my-blog/#what-is-the-audience-for-my-blog"&gt;this article&lt;/a&gt;,
-my goal for this technical article is to focus on the reasoning behind my solutions,
-rather that the solutions themselves.  For a full record of the solutions presented in
-this article, please go to this project’s GitHub repository and consult the
-commits between
-&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/2c3d4f65c9f1aa1cbd079f6939c6fbb4d3a7008c"&gt;03 Apr 2021&lt;/a&gt;
-and
-&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/2ee5154b52250231e7f5ea1afc6582c5655521c9"&gt;10 Apr 2021&lt;/a&gt;.&lt;/p&gt;
-&lt;h2 id="where-to-start"&gt;Where To Start?&lt;a class="headerlink" href="#where-to-start" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Looking at the current set of issues that I had with the configuration system, I noticed
-two little problems and one slightly bigger problem.  The first little problem had
-to deal with the error output from the plugin manager.  If there was any kind of
-exception in the plugin, it was being handled and replaced with a more standard error.
-But the issue that I had with it was that I needed more information to be provided with
-that error, to debug plugin issues more effectively.  The second problem was the
-inverse of the first problem: too much information.  When listing the plugins from the
-command line, I felt that I was providing too much information and needed a way to filter
-out plugins that were in development.&lt;/p&gt;
-&lt;p&gt;The bigger problem was going to take more time, but I also felt that it was important.  I
-needed to find an effective way to override any configuration file properties from the
-command line.
-In any useful command line tool that I have used, that tool almost always has support
-for a configuration file and configuration from the command line.  Having used tools
-with this functionality implemented, I sincerely felt it is a better, more efficient way
-to work.  I felt it was important enough to take the time to implemented it and do
-implement it right.&lt;/p&gt;
-&lt;p&gt;With those three issues to fix, it was time to get to work!&lt;/p&gt;
-&lt;h2 id="adding-in-where-exceptions-occur"&gt;Adding In Where Exceptions Occur&lt;a class="headerlink" href="#adding-in-where-exceptions-occur" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;As I mentioned above, the first issue that I wanted to tackle was one that I believe is
-helpful in debugging issues with PyMarkdown’s rule plugin modules.  Prior to this change,
-if one of the rules thrown an exception, plenty of information was included about the
-exception that occurred.  What that information that was missing was any information
-detailing where the parser was in the Markdown document when the exception occurred.
-While that
-may seem like a small thing, that extra content is often pivotal to diagnosing why the
-exception was raised in the first place.&lt;/p&gt;
-&lt;p&gt;Thankfully, adding that information was rather trivial.  To start, the &lt;code&gt;__init__&lt;/code&gt; function
-of the &lt;code&gt;BadPluginError&lt;/code&gt; class was changed to accept four new arguments: &lt;code&gt;line_number&lt;/code&gt;,
-&lt;code&gt;column_number&lt;/code&gt;, &lt;code&gt;actual_line&lt;/code&gt;, and &lt;code&gt;actual_token&lt;/code&gt;.  The handling of those arguments
-was then added to the end of the processing of the &lt;code&gt;formatted_message&lt;/code&gt; variable in
-the &lt;code&gt;__init__&lt;/code&gt; function:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;line_number&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;column_number&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-            &lt;span class="n"&gt;position_message&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;f&lt;/span&gt;&lt;span class="s2"&gt;"({line_number},{column_number})"&lt;/span&gt;
-        &lt;span class="k"&gt;else&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-            &lt;span class="n"&gt;position_message&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;f&lt;/span&gt;&lt;span class="s2"&gt;"(Line {line_number})"&lt;/span&gt;
-        &lt;span class="n"&gt;formatted_message&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;f&lt;/span&gt;&lt;span class="s2"&gt;"{position_message}: {formatted_message}"&lt;/span&gt;
-    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;actual_line&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-        &lt;span class="n"&gt;formatted_message&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;f&lt;/span&gt;&lt;span class="s2"&gt;"{formatted_message}&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;Actual Line: {actual_line}"&lt;/span&gt;
-    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;actual_token&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-        &lt;span class="n"&gt;formatted_message&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;f&lt;/span&gt;&lt;span class="s2"&gt;"{formatted_message}&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;Actual Token: {ParserHelper.make_value_visible(actual_token)}"&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Basically, if the &lt;code&gt;line_number&lt;/code&gt; argument is provided, then the &lt;code&gt;line_number&lt;/code&gt; and
-optionally the &lt;code&gt;column_number&lt;/code&gt; are added to the end of the &lt;code&gt;formatted_message&lt;/code&gt;
-variable.  Additionly, if a line is being processed when the error occurs, the
-&lt;code&gt;actual_line&lt;/code&gt; is specified, and that variable is added on its own line.  Similarly,
-if a token is being processed when the error occurs, the &lt;code&gt;actual_token&lt;/code&gt; is added
-on its own line.&lt;/p&gt;
-&lt;p&gt;With that work completed, it was then time to wire up the other side of the exception:
-where the &lt;code&gt;PluginManager&lt;/code&gt; class raised those exceptions.  To ensure that the extra
-information would only be provided when requested, its presence was enabled by passing the
-&lt;code&gt;arg.show_stack_trace&lt;/code&gt; variable
-from the command line into the class.  Once set as the &lt;code&gt;self.__show_stack_trace&lt;/code&gt;
-member variable, the &lt;code&gt;next_line&lt;/code&gt; function was changed to:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;next_line&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;context&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;line_number&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;line&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
-    &lt;span class="n"&gt;context&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;line_number&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;line_number&lt;/span&gt;
-    &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;next_plugin&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__enabled_plugins_for_next_line&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-        &lt;span class="k"&gt;try&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-            &lt;span class="n"&gt;next_plugin&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;plugin_instance&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;next_line&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;context&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;line&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-        &lt;span class="k"&gt;except&lt;/span&gt; &lt;span class="ne"&gt;Exception&lt;/span&gt; &lt;span class="k"&gt;as&lt;/span&gt; &lt;span class="n"&gt;this_exception&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-            &lt;span class="n"&gt;actual_line&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;line&lt;/span&gt; &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__show_stack_trace&lt;/span&gt; &lt;span class="k"&gt;else&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;
-
-            &lt;span class="k"&gt;raise&lt;/span&gt; &lt;span class="n"&gt;BadPluginError&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
-                &lt;span class="n"&gt;next_plugin&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;plugin_id&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;inspect&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;stack&lt;/span&gt;&lt;span class="p"&gt;()[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;function&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;line_number&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;line_number&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;actual_line&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;actual_line&lt;/span&gt;
-            &lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;this_exception&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;and the &lt;code&gt;next_token&lt;/code&gt; function was changed to:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;next_token&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;context&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
-    &lt;span class="sd"&gt;"""&lt;/span&gt;
-&lt;span class="sd"&gt;    Inform any listeners of a new token that has been processed.&lt;/span&gt;
-&lt;span class="sd"&gt;    """&lt;/span&gt;
-    &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;next_plugin&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__enabled_plugins_for_next_token&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-        &lt;span class="k"&gt;try&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-            &lt;span class="n"&gt;next_plugin&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;plugin_instance&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;next_token&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;context&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-        &lt;span class="k"&gt;except&lt;/span&gt; &lt;span class="ne"&gt;Exception&lt;/span&gt; &lt;span class="k"&gt;as&lt;/span&gt; &lt;span class="n"&gt;this_exception&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-            &lt;span class="n"&gt;actual_token&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt; &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__show_stack_trace&lt;/span&gt; &lt;span class="k"&gt;else&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;
-
-            &lt;span class="k"&gt;raise&lt;/span&gt; &lt;span class="n"&gt;BadPluginError&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
-                &lt;span class="n"&gt;next_plugin&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;plugin_id&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;inspect&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;stack&lt;/span&gt;&lt;span class="p"&gt;()[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;function&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;line_number&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;line_number&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;column_number&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;column_number&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;actual_token&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;actual_token&lt;/span&gt;
-            &lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;this_exception&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;In the &lt;code&gt;next_line&lt;/code&gt; function, the &lt;code&gt;line_number&lt;/code&gt; is always passed on to the exception when
-it is raised.  Keying off of the &lt;code&gt;self.__show_stack_trace&lt;/code&gt; member variable, the
-&lt;code&gt;actual_line&lt;/code&gt; is either set to &lt;code&gt;None&lt;/code&gt; or to the current line.  As expected, the changes
-to the &lt;code&gt;next_token&lt;/code&gt; function perform the same actions, just with a token-based approach
-instead of a line-based approach.&lt;/p&gt;
-&lt;p&gt;Once this code was in place, I started to execute the scenario tests, and was welcomed
-by the behavior that I expected.  The four scenario tests that I expected would
-change did change.  In addition, when I added two additional scenario tests to ensure
-that the code was properly covered, the output for those two tests was as I expected.
-With a bit of cleanup to ensure that all &lt;code&gt;PyLint&lt;/code&gt; checks pass, it was then on to the
-next planned change.&lt;/p&gt;
-&lt;h2 id="only-displaying-implemented-plugins"&gt;Only Displaying Implemented Plugins&lt;a class="headerlink" href="#only-displaying-implemented-plugins" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;For the initial release, I wanted everything to look nice and clean.  As such, when I was
-going through the command line to document what I saw there, there was something in the
-output for the &lt;code&gt;plugins list&lt;/code&gt; subcommand that I did not like: unimplemented rules were
-showing up.  I wanted those “in-development” rules plugins to be included in the project
-to remind me to complete them, but I did not want them to show up until they were done.
-When I added the version numbers for all the rules, I set the version numbers of those
-“in-development” rules to &lt;code&gt;0.0.0&lt;/code&gt; as a visual reminder that they were not yet ready.
-But now that I wanted to clean things up, that did not look as clean as I wanted it to,
-so I needed to change it.&lt;/p&gt;
-&lt;p&gt;To preserve the existing behavior, I changed the command line parser to implement a
-new &lt;code&gt;--all&lt;/code&gt; flag:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;sub_sub_parser&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;add_argument&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
-    &lt;span class="s2"&gt;"--all"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-    &lt;span class="n"&gt;dest&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;"show_all"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-    &lt;span class="n"&gt;action&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;"store_true"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-    &lt;span class="n"&gt;default&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="bp"&gt;False&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-    &lt;span class="n"&gt;help&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;"show all loaded plugins (default is False)"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-&lt;span class="p"&gt;)&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Then, in the &lt;code&gt;__handle_argparse_subparser_list&lt;/code&gt; function that handles the list of
-plugins, I made a small change:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;next_plugin&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;plugin_version&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="s2"&gt;"0.0.0"&lt;/span&gt; &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="n"&gt;args&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;show_all&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-        &lt;span class="k"&gt;continue&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;These two small changes together specified that by default, if a plugin containing a
-rule has a version of &lt;code&gt;0.0.0&lt;/code&gt;, it will be skipped over in the list, unless the &lt;code&gt;--all&lt;/code&gt;
-flag is specified.  Scenario tests that previously emitted:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;  md009  no-trailing-spaces     False              False              0.0.0
-  md019  no-multiple-space-atx  True               True               0.5.0
-  md029  ol-prefix              False              False              0.0.0
-  md039  no-space-in-links      False              False              0.0.0
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;now emitted:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;  md019  no-multiple-space-atx  True               True               0.5.0
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;unless the &lt;code&gt;--all&lt;/code&gt; flag was set.  By default, only those rules that were no longer in
-development would be listed.  In my eyes, it just looked cleaner and more correct.&lt;/p&gt;
-&lt;h2 id="setting-configuration-values-manually"&gt;Setting Configuration Values Manually&lt;a class="headerlink" href="#setting-configuration-values-manually" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;With the two small issues out of the way, it was time for me to focus on the large
-issue.  The
-definition of the issue itself was easy.  There already existed a good way to set
-configuration values using the configuration files, as mentioned in my article on
-the project’s new
-&lt;a href="https://jackdewinter.github.io/2021/03/22/markdown-linter-road-to-initial-release-configuration/"&gt;configuration system&lt;/a&gt;.
-But for me, that was not enough.  I wanted to be able to set configuration values
-directly from the command line.&lt;/p&gt;
-&lt;h3 id="why"&gt;Why?&lt;a class="headerlink" href="#why" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;When I am starting to use any tool like the PyMarkdown linter, I usually need to
-experiment with the configuration to get it dialed in the way I want it.  With tools that
-only have a configuration file, I find that that process that I use to figure out
-settings is inefficient.  That process involves a lot of repetitions of the following
-tasks: look something up or consult the tool’s command line help, figure out
-a variation that is close to how I want it, change the configuration file, save that file,
-and run the tool to verify the new behavior.  The biggest issue I have with this process
-is that I am
-constantly switching contexts from one tool to another, figuring things out for the next
-step.  The second biggest issue is that it is very easy to forget the “save that file”
-step of the process.  I do that a lot!&lt;/p&gt;
-&lt;p&gt;Then there are those few tools that I find both useful and efficient, like PyTest.  By
-default,
-PyTest reads its configuration from the &lt;code&gt;setup.cfg&lt;/code&gt; file.  However, any setting in the
-tool can be overridden from the command line.  That one simple change made configuring
-PyTest simple and easy.  Sure, I still had the consult, figure, and execute steps from
-above, but I eliminated the change and save steps.  To make the PyMarkdown project easier
-to configure for users, I wanted to adopt a similar style of interface: configuration
-file for “tested” values and the command line for “experimental” values.&lt;/p&gt;
-&lt;h3 id="figuring-out-requirements"&gt;Figuring Out Requirements&lt;a class="headerlink" href="#figuring-out-requirements" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;The first step in adopting a similar type of interface for the PyMarkdown project was to
-take the time to figure out a solid set of requirements.  Specifying the property name
-from the command line was the relatively easy part.  As I had used the &lt;code&gt;.&lt;/code&gt; character as a
-property name separator character, there were a couple of easy combinations that I needed
-to prevent against as they made no sense.  Then focusing in on each one of those property
-parts, there was another set of requirements that arose from ensuring that each part was
-consistent and valid. Adding the &lt;code&gt;=&lt;/code&gt; character to separate the property name from the
-property value add a couple of small requirements, but nothing big.  For good measure,
-I decided that whitespaces within the property name were going to be too much trouble,
-so I added those characters to the list of illegal characters in a property name.&lt;/p&gt;
-&lt;p&gt;Then there was the big design decision:  How to handle the property values?  At this
-point, the configuration system itself can handle properties that are strings, integers,
-and booleans.  Without any modifications, the command line flag &lt;code&gt;-set key=value&lt;/code&gt; can
-handle only one type of property values: strings.  I needed to figure out a simple way
-to allow for that one type to be extended to include the extra types supported by
-the configuration system.  The question was how to do that in a way that made sense?&lt;/p&gt;
-&lt;h3 id="research"&gt;Research&lt;a class="headerlink" href="#research" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;A good subtitle for this section could be “Jack sits around and scribbles on paper like a
-maniac for a week”.  Even if that is what it looked like, “Research” was a more precise
-definition of what I was doing.  As readers of past articles might have picked up, I try
-to always put my best work out there, so I go the extra distance to try and make the
-right decisions for the right reasons.  This was no
-different.  The problem that I was facing was that there were few good examples out there
-to compare to.&lt;/p&gt;
-&lt;p&gt;I do not blame other teams for taking the easy way out and making simple decisions.  If
-you have a configuration system that is relatively simple, the design decisions that come
-out of providing information to that system are also relatively simple.  When I
-looked at other configuration systems and interfaces, most of what I found were
-simple configuration systems.  If the tools went so far as to provide any additional
-interfaces, those provided interfaces were also simple.  To be plain and concise, for a
-lot of applications, only supporting a string type
-is perfectly fine, so their configuration systems support that.  If any extra meaning is
-to be imparted to that string, it is up to the developer to add that extra level of
-meaning and handle any errors.&lt;/p&gt;
-&lt;p&gt;The problem with that approach is that the PyMarkdown project does not have a simple
-configuration system, it has a
-&lt;a href="https://jackdewinter.github.io/2021/03/22/markdown-linter-road-to-initial-release-configuration/#which-is-best-for-this-project"&gt;complex one&lt;/a&gt;.
-As part of the design of the configuration system, it just made sense to have that system
-understand the difference between the different types of data.  For me, to not support
-that functionality would make the configuration system seem like it was half done.  But
-now I knew that I had to come up with an equally easy solution for manually setting the
-property values as I had for the rest of the configuration system.&lt;/p&gt;
-&lt;p&gt;I tried many different alternatives that attempted to figure out the type of the string
-without any explicit declarations being used.  But for every 95% of the cases that I was
-able to get working well, the remaining 5% of the cases always seemed to sink the
-approach.  One good example is the string &lt;code&gt;True&lt;/code&gt; or &lt;code&gt;true&lt;/code&gt;.  Is it meant to be a string
-or is it meant to be a boolean?  Similarly with the string &lt;code&gt;010&lt;/code&gt;.  Is it meant to be a
-string or an integer?  If it is an integer, is it in decimal form or binary form?  While
-I can make sense of when to translate or not, figuring out an algorithm to implicitly
-make that same decision seemed pointless.  In addition, I did not want any required
-translation to occur any later than it had to.  If that translation fails, I would rather
-the translation failed fast, as soon as it could reasonably fail.&lt;/p&gt;
-&lt;h3 id="where-did-i-land"&gt;Where Did I Land?&lt;a class="headerlink" href="#where-did-i-land" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;Like many other features in this project, after spending a good amount of time trying to
-do things the fancy way, I was able to find success in using the simple approach.  For
-the configuration values, I decided that a string should only be interpreted as something
-else if the user explicitly specifies so.  As I mentioned in the last section, I was able
-to make sense of when to translate or not and I believe the user is also the best
-entity to decide whether to translate or not.  Therefore,
-I decided to use the &lt;code&gt;$&lt;/code&gt; character to start special handling of translation of the
-configuration value to other types.&lt;/p&gt;
-&lt;p&gt;Hopefully keeping it simple, if the configuration string is of the form &lt;code&gt;key=value&lt;/code&gt; or
-&lt;code&gt;key=$$value&lt;/code&gt;, then the string &lt;code&gt;value&lt;/code&gt; is assigned to the property named &lt;code&gt;key&lt;/code&gt;.  If
-that value needs to be an integer, then the form &lt;code&gt;key=$#value&lt;/code&gt; is used.  Similarly, if
-that value needs to be a boolean, then the form &lt;code&gt;key=$!value&lt;/code&gt; is used.  Trying to keep
-things simple, I figured that a decent percentage of the users will not have issues
-identifying the &lt;code&gt;$&lt;/code&gt; character with a string, the &lt;code&gt;#&lt;/code&gt; with an integer, and the &lt;code&gt;!&lt;/code&gt; with
-a boolean.  To further keep things simple, the integer can only be provided in the normal
-base 10 notation (with a sign and leading zeros a sign if desired) and the boolean is set
-to true if lowercase value equals the string &lt;code&gt;true&lt;/code&gt;.&lt;/p&gt;
-&lt;p&gt;After spending some time to enumerate all the different scenarios that I wanted to handle,
-I felt good about the research.  The only thing I was concerned about were the boundary
-cases, so I examine the algorithms again looking for any potential issues.  I felt mostly
-silly for missing one of the boundary conditions, but I did find it before I started
-coding, that was the important thing.  That boundary condition was to have a &lt;code&gt;$&lt;/code&gt;
-character that was not followed by any other of the type characters.&lt;/p&gt;
-&lt;p&gt;A couple of quick adjustments to the algorithm, and another check to make sure that I
-did not miss any other boundary cases, and it was on to the implementation!&lt;/p&gt;
-&lt;h3 id="implementation"&gt;Implementation&lt;a class="headerlink" href="#implementation" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;After all that research, I felt an extra sense of urgency to get this feature completed.
-I do not regret taking almost six days to figure out the right decision for this feature,
-but it was six days.  I wanted to get this feature completed so I could move on to the
-next thing in the issues list.  Given the research from above, I already had more than
-ten scenarios derived, so I coded each scenario into its own scenario test and
-started to get to work coding the new &lt;code&gt;set_manual_property&lt;/code&gt; function.&lt;/p&gt;
-&lt;p&gt;The first version of the new &lt;code&gt;set_manual_property&lt;/code&gt; function was simple:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;__assignment_operator&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;"="&lt;/span&gt;
-
-&lt;span class="o"&gt;...&lt;/span&gt;
-
-&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;set_manual_property&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;combined_string&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
-
-    &lt;span class="n"&gt;equals_index&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;combined_string&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;find&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;ApplicationProperties&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__assignment_operator&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-    &lt;span class="n"&gt;property_key&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;combined_string&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="n"&gt;equals_index&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;lower&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
-    &lt;span class="n"&gt;property_value&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;combined_string&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;equals_index&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt; &lt;span class="p"&gt;:]&lt;/span&gt;
-
-    &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__flat_property_map&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;property_key&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;copy&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;deepcopy&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;property_value&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Keeping things simple, my goal was to just get the first scenario tests with the simplest
-scenario passing.  As such, the task was simply to split the string up into its
-constituent parts and add it to the dictionary.  It was a simple start, but a good start.&lt;/p&gt;
-&lt;h3 id="verifying-the-manual-property-string"&gt;Verifying The Manual Property String&lt;a class="headerlink" href="#verifying-the-manual-property-string" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;With the foundation in place, it was then time to start adding the layers.  The first
-layer that i needed to add was to verify the form of the manual property string.  Where
-possible, I strongly believe that a utility should provide as much information about
-why something is wrong as is possible.  With that in mind, I created the first iteration
-of the &lt;code&gt;verify_manual_property_form&lt;/code&gt; function:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nd"&gt;@staticmethod&lt;/span&gt;
-&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;verify_manual_property_form&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;string_to_verify&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
-    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="nb"&gt;isinstance&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;string_to_verify&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="nb"&gt;str&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
-        &lt;span class="k"&gt;raise&lt;/span&gt; &lt;span class="ne"&gt;ValueError&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"Manual property form must be a string."&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-    &lt;span class="n"&gt;equals_index&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;string_to_verify&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;find&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
-        &lt;span class="n"&gt;ApplicationProperties&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__assignment_operator&lt;/span&gt;
-    &lt;span class="p"&gt;)&lt;/span&gt;
-    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;equals_index&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-        &lt;span class="k"&gt;raise&lt;/span&gt; &lt;span class="ne"&gt;ValueError&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
-            &lt;span class="s2"&gt;"Manual property key and value must be separated by the '=' character."&lt;/span&gt;
-        &lt;span class="p"&gt;)&lt;/span&gt;
-    &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;string_to_verify&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;It was not much, but it was a good start.  This function was there to verify that the
-entire string was a properly formed string, with good error messages if it was not.
-With that accomplished, it was on to the next step.&lt;/p&gt;
-&lt;h3 id="verifying-the-property-key"&gt;Verifying The Property Key&lt;a class="headerlink" href="#verifying-the-property-key" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;The next step was to extend the verification to verify that the property keys on the
-left of the manual property string were validly formed.  This was easily done by adding
-these two lines at the end of the &lt;code&gt;verify_manual_property_form&lt;/code&gt; function:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="n"&gt;property_key&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;string_to_verify&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="n"&gt;equals_index&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
-    &lt;span class="n"&gt;ApplicationProperties&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;verify_full_key_form&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;property_key&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;With that call to the new &lt;code&gt;verify_full_key_form&lt;/code&gt; function coded, it was time to implement
-that function:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nd"&gt;@staticmethod&lt;/span&gt;
-&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;verify_full_key_form&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;property_key&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
-
-    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;property_key&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;startswith&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
-        &lt;span class="n"&gt;ApplicationProperties&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__separator&lt;/span&gt;
-    &lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="ow"&gt;or&lt;/span&gt; &lt;span class="n"&gt;property_key&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;endswith&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;ApplicationProperties&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__separator&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
-        &lt;span class="k"&gt;raise&lt;/span&gt; &lt;span class="ne"&gt;ValueError&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
-            &lt;span class="n"&gt;f&lt;/span&gt;&lt;span class="s2"&gt;"Full property key must not start or end with the '{ApplicationProperties.__separator}' character."&lt;/span&gt;
-        &lt;span class="p"&gt;)&lt;/span&gt;
-    &lt;span class="n"&gt;doubles&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
-        &lt;span class="n"&gt;f&lt;/span&gt;&lt;span class="s2"&gt;"{ApplicationProperties.__separator}{ApplicationProperties.__separator}"&lt;/span&gt;
-    &lt;span class="p"&gt;)&lt;/span&gt;
-    &lt;span class="n"&gt;doubles_index&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;property_key&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;find&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;doubles&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;doubles_index&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-        &lt;span class="k"&gt;raise&lt;/span&gt; &lt;span class="ne"&gt;ValueError&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
-            &lt;span class="n"&gt;f&lt;/span&gt;&lt;span class="s2"&gt;"Full property key cannot contain multiples of the {ApplicationProperties.__separator} without any text between them."&lt;/span&gt;
-        &lt;span class="p"&gt;)&lt;/span&gt;
-    &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;property_key&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Like the previous function, this function takes a slice of the string to verify
-and focuses on that slice.  For this function, that focus was on making sure that the
-&lt;code&gt;property_key&lt;/code&gt; argument was validly formed.  This task broke down into two checks: does
-the key start or end with the separator character and does the
-key contain two separator characters in a row.  By focusing on these checks, the function
-can then return the &lt;code&gt;property_key&lt;/code&gt; argument knowing that there are no cases of any part
-of that property key that does not contain at least one character.&lt;/p&gt;
-&lt;p&gt;And just like the last section, it was then on to the next, and in this case, last step.&lt;/p&gt;
-&lt;h3 id="verifying-the-property-key-parts"&gt;Verifying The Property Key Parts&lt;a class="headerlink" href="#verifying-the-property-key-parts" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;In the same way that I added to the call to the &lt;code&gt;verify_full_key_form&lt;/code&gt; function to the
-&lt;code&gt;verify_manual_property_form&lt;/code&gt; function, I now added a call to the &lt;code&gt;verify_full_part_form&lt;/code&gt;
-function to the &lt;code&gt;verify_full_key_form&lt;/code&gt; function.&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="n"&gt;split_key&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;property_key&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;split&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;ApplicationProperties&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__separator&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-    &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;next_key&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;split_key&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-        &lt;span class="n"&gt;ApplicationProperties&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;verify_full_part_form&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;next_key&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Constricting the focus even further, it was now time to examine each part of the
-&lt;code&gt;property_key&lt;/code&gt; argument:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nd"&gt;@staticmethod&lt;/span&gt;
-&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;verify_full_part_form&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;property_key&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
-    &lt;span class="sd"&gt;"""&lt;/span&gt;
-&lt;span class="sd"&gt;    Given one part of a full key, verify that it is composed properly.&lt;/span&gt;
-&lt;span class="sd"&gt;    """&lt;/span&gt;
-
-    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
-        &lt;span class="s2"&gt;" "&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;property_key&lt;/span&gt;
-        &lt;span class="ow"&gt;or&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="se"&gt;\t&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;property_key&lt;/span&gt;
-        &lt;span class="ow"&gt;or&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;property_key&lt;/span&gt;
-        &lt;span class="ow"&gt;or&lt;/span&gt; &lt;span class="n"&gt;ApplicationProperties&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__assignment_operator&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;property_key&lt;/span&gt;
-    &lt;span class="p"&gt;):&lt;/span&gt;
-        &lt;span class="k"&gt;raise&lt;/span&gt; &lt;span class="ne"&gt;ValueError&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
-            &lt;span class="n"&gt;f&lt;/span&gt;&lt;span class="s2"&gt;"Each part of the property key must not contain a whitespace character or the '{ApplicationProperties.__separator}' character."&lt;/span&gt;
-        &lt;span class="p"&gt;)&lt;/span&gt;
-    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="n"&gt;property_key&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-        &lt;span class="k"&gt;raise&lt;/span&gt; &lt;span class="ne"&gt;ValueError&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
-            &lt;span class="s2"&gt;"Each part of the property key must contain at least one character."&lt;/span&gt;
-        &lt;span class="p"&gt;)&lt;/span&gt;
-    &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;property_key&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Having eliminated all of the high-level checks, this function could then focus on the
-task of ensuring that each part of the property key was validly formed.  That task was
-then simply to check two things: that the part of the key did not contain a whitespace
-character or the assignment character (&lt;code&gt;=&lt;/code&gt;), and that the part had at least one character
-in it.  I will admit freely that the last check was probably overkill. I just felt better
-adding it in for now, knowing that I could easily take it out once I proved it was not
-needed.&lt;/p&gt;
-&lt;p&gt;And with that done, I had the validation for the string passed to the
-&lt;code&gt;set_manual_property&lt;/code&gt; function completed.&lt;/p&gt;
-&lt;h3 id="why-did-i-do-it-this-way"&gt;Why Did I Do It This Way?&lt;a class="headerlink" href="#why-did-i-do-it-this-way" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;One thing I have learned in the years I have been developing software is that it is
-important to keep things simple.  If things are simple, they are easy to read.  If they
-are easy to read, they are generally easy to debug.  By placing each level of
-verification in its own function, I kept things small, concise, and simple. And
-as an extra benefit, I could reuse those functions in other parts of the application
-properties library!&lt;/p&gt;
-&lt;p&gt;Having followed principles like “Keep It Simple”, I do get confused when I see people
-trying to cram more than one responsibility into a given function.  Sometimes I can
-understand how a single responsibility can organically grow into a pair of
-responsibilities, but even in those cases will I try and refactor the code.  Anything
-more than two
-responsibilities and I wonder why the person who wrote or modified the code did not
-refactor it.  From my point of view, the closer you keep the code to being simple
-and having a single responsibility, the easier it is to maintain and the fewer bugs
-I usually find in them.  Just my experience, but maybe others have a different
-experience.&lt;/p&gt;
-&lt;h3 id="adding-the-type-system"&gt;Adding The Type System&lt;a class="headerlink" href="#adding-the-type-system" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;With the changes in place to validate the form of the string and the key part of that
-string, it was then time to add the type system I designed, as summarized in the section
-&lt;a href="https://jackdewinter.github.io/2021/04/19/markdown-linter-road-to-initial-release-gearing-up-for-plugins/#where-did-i-land"&gt;Where Did I Land?&lt;/a&gt;.&lt;/p&gt;
-&lt;p&gt;To add the type system, I started by defining the prefix values at the top of the
-&lt;code&gt;ApplicationProperties&lt;/code&gt; class:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="n"&gt;__manual_property_type_prefix&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;"$"&lt;/span&gt;
-    &lt;span class="n"&gt;__manual_property_type_string&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;"$"&lt;/span&gt;
-    &lt;span class="n"&gt;__manual_property_type_integer&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;"#"&lt;/span&gt;
-    &lt;span class="n"&gt;__manual_property_type_boolean&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;"!"&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;From there, the next step was to explicitly look for the &lt;code&gt;__manual_property_type_prefix&lt;/code&gt;
-character with the following code:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
-        &lt;span class="n"&gt;property_value&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;startswith&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
-            &lt;span class="n"&gt;ApplicationProperties&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__manual_property_type_prefix&lt;/span&gt;
-        &lt;span class="p"&gt;)&lt;/span&gt;
-        &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;property_value&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;=&lt;/span&gt; &lt;span class="mi"&gt;2&lt;/span&gt;
-    &lt;span class="p"&gt;):&lt;/span&gt;
-        &lt;span class="k"&gt;pass&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;This condition was simple to code.  Each of the special sequence starts with a &lt;code&gt;$&lt;/code&gt;
-character and contains exactly 2 characters.  Therefore, if the &lt;code&gt;property_value&lt;/code&gt;
-variable did not meet that criteria, there was no use taking those extra steps.&lt;/p&gt;
-&lt;p&gt;From there, it was then on to adding the first of the types.  Since the string type was
-the easiest, and probably going to be the most frequently accessed, it made sense to add
-it at the start of the &lt;code&gt;if&lt;/code&gt; block:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
-        &lt;span class="n"&gt;property_value&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;startswith&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
-            &lt;span class="n"&gt;ApplicationProperties&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__manual_property_type_prefix&lt;/span&gt;
-        &lt;span class="p"&gt;)&lt;/span&gt;
-        &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;property_value&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;=&lt;/span&gt; &lt;span class="mi"&gt;2&lt;/span&gt;
-    &lt;span class="p"&gt;):&lt;/span&gt;
-        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;property_value&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="n"&gt;ApplicationProperties&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__manual_property_type_string&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-            &lt;span class="n"&gt;property_value&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;property_value&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="p"&gt;:]&lt;/span&gt;
-        &lt;span class="k"&gt;else&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-            &lt;span class="n"&gt;property_value&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;property_value&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;:]&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Replacing the &lt;code&gt;pass&lt;/code&gt; from the last example with the &lt;code&gt;if-else&lt;/code&gt; conditional, this
-handling of the string type was easy.  Knowing that there were other types to come,
-this was purposefully coded using an &lt;code&gt;if-else&lt;/code&gt; instead of a &lt;code&gt;trinary assignment&lt;/code&gt;.
-At this point, there was either another &lt;code&gt;$&lt;/code&gt; character after the first &lt;code&gt;$&lt;/code&gt; character
-or there was not.  In either case, the &lt;code&gt;property_value&lt;/code&gt; was modified to skip over those
-characters, as the &lt;code&gt;property_value&lt;/code&gt; variable was already a string type and did not need
-any modifications.&lt;/p&gt;
-&lt;p&gt;That simplicity was then changed with the introduction of the boolean type.  As per the
-design, this value gets assigned a &lt;code&gt;True&lt;/code&gt; value or a &lt;code&gt;False&lt;/code&gt; value based on whether the
-lowercase value of the remaining string exactly equals &lt;code&gt;true&lt;/code&gt;:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;            &lt;span class="n"&gt;property_value&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;property_value&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="p"&gt;:]&lt;/span&gt;
-        &lt;span class="k"&gt;elif&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
-            &lt;span class="n"&gt;property_value&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
-            &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="n"&gt;ApplicationProperties&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__manual_property_type_boolean&lt;/span&gt;
-        &lt;span class="p"&gt;):&lt;/span&gt;
-            &lt;span class="n"&gt;property_value&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;property_value&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="p"&gt;:]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;lower&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="s2"&gt;"true"&lt;/span&gt;
-        &lt;span class="k"&gt;else&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;I went back and forth on whether to modify the check to include other values and
-handling of whitespace, but I decided to keep it simple as designed. By keeping it
-simple, it made it easier to explain and document: it is either &lt;code&gt;true&lt;/code&gt; or it is not.
-And stripping whitespace seemed mostly pointless.  I guess someone could pass a
-boolean argument with &lt;code&gt;true&lt;/code&gt; as the value.  But I just did not feel like that was
-a path that I wanted to take.  So, I decided on no whitespace stripping and no
-alternate values.&lt;/p&gt;
-&lt;p&gt;Finally, it was time to handle the integer type:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;        &lt;span class="k"&gt;elif&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
-            &lt;span class="n"&gt;property_value&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
-            &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="n"&gt;ApplicationProperties&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__manual_property_type_integer&lt;/span&gt;
-        &lt;span class="p"&gt;):&lt;/span&gt;
-            &lt;span class="k"&gt;try&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-                &lt;span class="n"&gt;property_value&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nb"&gt;int&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;property_value&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="p"&gt;:])&lt;/span&gt;
-            &lt;span class="k"&gt;except&lt;/span&gt; &lt;span class="ne"&gt;ValueError&lt;/span&gt; &lt;span class="k"&gt;as&lt;/span&gt; &lt;span class="n"&gt;this_exception&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-                &lt;span class="k"&gt;raise&lt;/span&gt; &lt;span class="ne"&gt;ValueError&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
-                    &lt;span class="n"&gt;f&lt;/span&gt;&lt;span class="s2"&gt;"Manual property value '{property_value}' cannot be translated into an integer."&lt;/span&gt;
-                &lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;this_exception&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;This translation was a bit different than the boolean type in that it may throw an
-exception if a bad value was passed for the integer.  I thought this was a useful
-scenario and wanted to test it out to make sure it worked properly.  I can see myself
-extending these translations in the future and knowing that the system can handle a
-&lt;code&gt;ValueError&lt;/code&gt; being thrown is a good thing.&lt;/p&gt;
-&lt;p&gt;With the final type wired up, all the scenario tests were all passing properly.  Looking
-at the code coverage for the project, I noticed a couple of gaps in the coverage,
-so I coded some extra scenarios to cover those gaps.  Other than that, everything was
-working as planned.&lt;/p&gt;
-&lt;h2 id="wiring-it-up-to-the-command-line"&gt;Wiring It Up To The Command Line&lt;a class="headerlink" href="#wiring-it-up-to-the-command-line" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Once I had the &lt;code&gt;set_manual_property&lt;/code&gt; function thoroughly tested, it was time to wire it
-up to the command line and to get that working.  To do this, I added the following code
-to incorporate the command into the base command line parser instance:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="n"&gt;parser&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;add_argument&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
-        &lt;span class="s2"&gt;"--set"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-        &lt;span class="s2"&gt;"-s"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-        &lt;span class="n"&gt;dest&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;"set_configuration"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-        &lt;span class="n"&gt;action&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;"append"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-        &lt;span class="n"&gt;default&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="bp"&gt;None&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-        &lt;span class="n"&gt;help&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s2"&gt;"manualy set properties"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-        &lt;span class="nb"&gt;type&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;ApplicationProperties&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;verify_manual_property_form&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-    &lt;span class="p"&gt;)&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Then, in the &lt;code&gt;__set_initial_state&lt;/code&gt; function, I simply passed the value collected
-from the command line the &lt;code&gt;ApplicationProperties&lt;/code&gt; instance as follows:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;args&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;set_configuration&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__properties&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;set_manual_property&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;args&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;set_configuration&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;That is all it took. With that all done, I ran some basic tests, and everything went
-fine.  Almost.  When
-I decided to set multiple configuration items from the same command line, the &lt;code&gt;append&lt;/code&gt;
-action from &lt;code&gt;argparse&lt;/code&gt; kicked in and the &lt;code&gt;combined_string&lt;/code&gt; arguments to the
-&lt;code&gt;set_manual_property&lt;/code&gt; function was now an array of strings.  While I had thought about
-it when I designed the &lt;code&gt;set_manual_property&lt;/code&gt; function, I did not think it would be an
-issue and I guess wrong.  It was a simple omittance, and one that was easy to fix.&lt;/p&gt;
-&lt;p&gt;The way that I saw it at the time was that I could either modify the existing function
-to handle the “array of strings” case, or I could write a helper function that would
-perform that same action, but under a different function name.  I played around with
-splitting the functionality out into a new &lt;code&gt;set_manual_properties&lt;/code&gt; function but decided
-against it.  With the determination to keep all the code in one place, I added this
-block of code to the start of the function:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="nb"&gt;isinstance&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;combined_string&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="nb"&gt;str&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
-        &lt;span class="n"&gt;iterator&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;
-        &lt;span class="k"&gt;try&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-            &lt;span class="n"&gt;iterator&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nb"&gt;iter&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;combined_string&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-        &lt;span class="k"&gt;except&lt;/span&gt; &lt;span class="ne"&gt;TypeError&lt;/span&gt; &lt;span class="k"&gt;as&lt;/span&gt; &lt;span class="n"&gt;this_exception&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-            &lt;span class="k"&gt;raise&lt;/span&gt; &lt;span class="ne"&gt;ValueError&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
-                &lt;span class="s2"&gt;"Manual property form must either be a string or an iterable of strings."&lt;/span&gt;
-            &lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="kn"&gt;from&lt;/span&gt; &lt;span class="nn"&gt;this_exception&lt;/span&gt;
-        &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;iterator&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-            &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;set_manual_property&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-        &lt;span class="k"&gt;return&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;There were a couple of cases here that I wanted to handle. I wanted to prevent execution
-of the function for non-string arguments other than an iterable of strings.  Without
-implementing &lt;code&gt;mypy&lt;/code&gt; and generics, the best I can do is to make sure that if the value
-is not a string, then it is an iterable of some sort.  Then, when passing the individual
-elements of the iterable instance to the &lt;code&gt;set_manual_property&lt;/code&gt; function, the function
-itself can verify that those elements are strings or not.&lt;/p&gt;
-&lt;p&gt;It was not perfect, but it was a good design and a faithful implementation.  With these
-changes in place, I was looking forward to verifying that the existing rules were
-up to date.&lt;/p&gt;
-&lt;h2 id="what-was-my-experience-so-far"&gt;What Was My Experience So Far?&lt;a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;This block of work was both normal and humbling at the same time.  From my viewpoint,
-this was just me looking at what needed to be cleaned up and getting it done.
-That really does not change from project to project or task to task.  But finding
-something that I really needed to take a lot of time to focus on and design right was a
-bit of a shocker.&lt;/p&gt;
-&lt;p&gt;I know I am not perfect.  Clear on that.  But I do my best to see what are my next tasks
-and plan the design for those tasks in advance.  If I am going to make a
-change to my backyard, I probably have thought about it for at least a month, talked to
-at least four or five people about it, and sketched it out at least three or four times.
-It’s not that I strive for perfection, I just like to understand the variables of the
-task dealt with so I can focus on the implementation problems when I am working on the
-task.&lt;/p&gt;
-&lt;p&gt;When I started to think about what I needed for to handle types, I honestly thought I
-would find plenty of examples that I could use to guide the modelling of my own system.
-I was wrong.  It was because of that once omittance that I needed to dig deep and
-figure things out on my own and weigh the good point and bad points myself.  To be
-clear, it is not the work that I was upset about, but that I missed the need for that
-work to be planned for.&lt;/p&gt;
-&lt;p&gt;That was the humbling part.  But as I write this article, I am also starting to see it
-in a different light.  Yeah, I missed a design point, and my ego was bruised a bit.
-So what?  I kept to my principles and did the work to make sure I was making the right
-decision.  Do I wish that I could have done that in the spare moments of working on
-other stuff?  Sure… but I did not and did it anyway.&lt;/p&gt;
-&lt;p&gt;As one of my professors once said to me:&lt;/p&gt;
-&lt;blockquote&gt;
-&lt;p&gt;Principles aren’t things that you see clearly in the light.  It takes some form of darkness for you to see them for what they truly are.&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;h2 id="what-is-next"&gt;What is Next?&lt;a class="headerlink" href="#what-is-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;With all that foundational work out of the way so I can focus on the implemented rules
-plugins, I knew my next task was to start working through those plugins and verify that
-they worked as advertised.  Stay tuned!&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry></feed>
+bars and each rule was properly documented.  Stay tuned!&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry></feed>
