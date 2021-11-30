@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="author" content="Jack De Winter" />
+
+        <meta name="description" content="Summary¶ In my last article, I talked about my progress in refactoring and my experience with the three added tools. In this article, I talk about the work I did this week, including the bug that almost knocked me down for the count! Introduction¶ What a long two weeks of …
+" />
+        <meta property="og:type" content="article" />
+        <meta name="twitter:card" content="summary">
+
+<meta name="keywords" content="markdown linter, core linter, Software Quality, " />
+
+<meta property="og:title" content="Markdown Linter - The Bug That Almost Knocked Me Down "/>
+<meta property="og:url" content="https://jackdewinter.github.io/2021/11/29/markdown-linter-the-bug-that-almost-knocked-me-down/" />
+<meta property="og:description" content="Summary¶ In my last article, I talked about my progress in refactoring and my experience with the three added tools. In this article, I talk about the work I did this week, including the bug that almost knocked me down for the count! Introduction¶ What a long two weeks of …" />
+<meta property="og:site_name" content="Jack&#39;s Digital Workbench" />
+<meta property="og:article:author" content="Jack De Winter" />
+<meta property="og:article:published_time" content="2021-11-29T00:00:00-08:00" />
+<meta name="twitter:title" content="Markdown Linter - The Bug That Almost Knocked Me Down ">
+<meta name="twitter:description" content="Summary¶ In my last article, I talked about my progress in refactoring and my experience with the three added tools. In this article, I talk about the work I did this week, including the bug that almost knocked me down for the count! Introduction¶ What a long two weeks of …">
+
+        <title>Markdown Linter - The Bug That Almost Knocked Me Down  · Jack&#39;s Digital Workbench
+</title>
+        <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://jackdewinter.github.io/theme/css/style.min.css?bec7d543">
+
+        <link href="https://jackdewinter.github.io/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Jack&#39;s Digital Workbench - Full Atom Feed" />
+
+
+    </head>
+    <body>
+        <div id="content">
+            <div class="navbar navbar-static-top">
+                <div class="navbar-inner">
+                    <div class="container-fluid">
+                        <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                        </a>
+                        <a class="brand" href="https://jackdewinter.github.io/"><span class=site-name>Jack's Digital Workbench</span></a>
+                        <div class="nav-collapse collapse">
+                            <ul class="nav pull-right top-menu">
+                                <li >
+                                    <a href=
+                                       https://jackdewinter.github.io
+                                    >Home</a>
+                                </li>
+                                <li ><a href="https://jackdewinter.github.io/categories">Categories</a></li>
+                                <li ><a href="https://jackdewinter.github.io/tags">Tags</a></li>
+                                <li ><a href="https://jackdewinter.github.io/archives">Archives</a></li>
+                                <li><form class="navbar-search" action="https://jackdewinter.github.io/search.html" onsubmit="return validateForm(this.elements['q'].value);"> <input type="text" class="search-query" placeholder="Search" name="q" id="tipue_search_input"></form></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="container-fluid">
+                <div class="row-fluid">
+                    <div class="span1"></div>
+                    <div class="span10">
+<article itemscope>
+<div class="row-fluid">
+    <header class="page-header span10 offset2">
+        <h1>
+            <a href="https://jackdewinter.github.io/2021/11/29/markdown-linter-the-bug-that-almost-knocked-me-down/">
+                Markdown Linter - The Bug That Almost Knocked Me Down
+            </a>
+        </h1>
+    </header>
+</div>
+
+<div class="row-fluid">
+    <div class="span2 table-of-content">
+        <nav>
+        <h4>Contents</h4>
+        <div class="toc">
+<ul>
+<li><a href="#summary">Summary</a></li>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#what-is-the-audience-for-this-article">What Is the Audience for This Article?</a></li>
+<li><a href="#issue-151-doing-some-cleanup">Issue 151 - Doing Some Cleanup</a></li>
+<li><a href="#issue-155-refactoring-common-structures">Issue 155 - Refactoring Common Structures</a></li>
+<li><a href="#issue-157-upgrading-test-scripts">Issue 157 - Upgrading Test Scripts</a></li>
+<li><a href="#issue-93-this-is-that-bug">Issue 93 - This Is That Bug</a><ul>
+<li><a href="#the-decision">The Decision</a></li>
+<li><a href="#just-get-on-with-it">Just Get On With It</a></li>
+</ul>
+</li>
+<li><a href="#what-was-my-experience-so-far">What Was My Experience So Far?</a></li>
+<li><a href="#what-is-next">What is Next?</a></li>
+</ul>
+</div>
+        </nav>
+    </div>
+    <div class="span8 article-content">
+            
+            
+<h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">¶</a></h2>
+<p>In my
+<a href="https://jackdewinter.github.io/2021/11/22/improving-quality-finding-better-tooling-extact-method/">last article</a>, I talked
+about my progress in refactoring and my experience with the three added tools. In
+this article, I talk about the work I did this week, including the bug that almost
+knocked me down for the count!</p>
+<h2 id="introduction">Introduction<a class="headerlink" href="#introduction" title="Permanent link">¶</a></h2>
+<p>What a long two weeks of work I just had on the PyMarkdown project!  I took those two weeks and
+invested them wisely in doing some major refactoring on the project.  The project itself was
+in decent shape, but I had let some of the functions grow to large and with too many
+responsibilities.  For my own sanity and for the project’s own good, I needed to
+take some time and get it closer to what I would consider to be a good, healthy
+code base.</p>
+<p>But that did not mean the work was over.  Not by far.  There were still a couple
+of cleanup items that I needed to attend to, plus a list of issues that I found
+while doing the refactoring. And while it was nice to take a bit of a break, I
+needed to get back to focusing on getting things progressing forward to a non-beta
+release soon.</p>
+<h2 id="what-is-the-audience-for-this-article">What Is the Audience for This Article?<a class="headerlink" href="#what-is-the-audience-for-this-article" title="Permanent link">¶</a></h2>
+<p>While detailed more eloquently in
+<a href="https://jackdewinter.github.io/2020/04/05/what-is-the-audience-for-my-blog/#what-is-the-audience-for-my-blog">this article</a>,
+my goal for this technical article is to focus on the reasoning behind my solutions,
+rather than the solutions themselves.  For a full record of the solutions presented in
+this article, please consult the commits that occurred between
+<a href="https://github.com/jackdewinter/pymarkdown/commit/e842435752235675cfca5ed17e62122608042e85">22 Nov 2021</a>
+and
+<a href="https://github.com/jackdewinter/pymarkdown/commit/5ab751db859c92bd25f3edcc253d71b0b889659f">28 Nov 2021</a>.</p>
+<h2 id="issue-151-doing-some-cleanup"><a href="https://github.com/jackdewinter/pymarkdown/issues/151">Issue 151</a> - Doing Some Cleanup<a class="headerlink" href="#issue-151-doing-some-cleanup" title="Permanent link">¶</a></h2>
+<p>It will probably not surprise any long-time readers that I decided to take
+a small amount of additional time to tidy up some loose ends left after the
+work I did in the last two weeks.  Having touched a substantial part of the files
+in the project’s core, I wanted
+to at least go over the code once and look for anything that I could easily
+simplify to make it more maintainable.</p>
+<p>There were no tremendous changes, just a lot of little ones.  Things like simplifying:</p>
+<div class="highlight"><pre><span></span><span class="n">coalesced_list</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">coalesced_list</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">first_pass_results</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">1</span><span class="p">])</span>
+</pre></div>
+<p>into:</p>
+<div class="highlight"><pre><span></span><span class="n">coalesced_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">first_pass_results</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+</pre></div>
+<p>and moving small classes such as the <code>ContainerIndices</code> class into their own modules.
+I also double checked the use of return codes from functions to make sure that
+they were still being used and removed them if they were not being used.</p>
+<p>Other than that, there were cases where I took multiple variable initializations,
+such as:</p>
+<div class="highlight"><pre><span></span><span class="n">start_index</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">processed_parts</span> <span class="o">=</span> <span class="p">[]</span>
+</pre></div>
+<p>and condensed them down into:</p>
+<div class="highlight"><pre><span></span><span class="n">start_index</span><span class="p">,</span> <span class="n">processed_parts</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="p">[]</span>
+</pre></div>
+<p>Even with <a href="https://pypi.org/project/black/">Black</a> reformatting such assignments
+across multiple lines, I have gradually been moving towards grouping all my
+variable initializations together in that manner. I
+am not sure if every Python developer feels that it is a good style, but I do.
+For me, it clearly states that these variables are being set together and eases
+my ability to read the functions.  Basically, it works for me.</p>
+<p>But after an evening of going through the source code and cleaning it up,
+I knew I had to start making progress on the other issues.</p>
+<h2 id="issue-155-refactoring-common-structures"><a href="https://github.com/jackdewinter/pymarkdown/issues/155">Issue 155</a> - Refactoring Common Structures<a class="headerlink" href="#issue-155-refactoring-common-structures" title="Permanent link">¶</a></h2>
+<p>Looking at the code base over the last few weeks, I really wanted to be able to
+harmonize a few of the
+variables that get passed repeatedly into functions.  While there are more examples
+of that in the code base than I would like, the ones that I picked to work on for
+this ticket were the <code>this_bq_count</code> and <code>stack_bq_count</code> variables.  These are
+just one example of variable tuples where two or more variables are usually seen
+together.</p>
+<p>While not used outside of the Container Block Processor, these two variables are
+heavily used inside of the Container Block Processor to capture the current count of
+block quotes.  As their names suggest, the <code>this_bq_count</code> variable tracks the
+“observed” count of block quote characters and the <code>stack_bq_count</code> variable tracks
+the current number of block quote tokens on the stack.  As a Block Quote element
+can start and stop on any line, these variables are passed together to ensure
+the current state is well known.</p>
+<p>At least they were passed together until this work was completed.  When I looked
+at the source code for the Container Block Processor, the Block Quote Processor,
+and the List Block Processor, there were only five places where these values were
+not passed together.  As such, it made sense to add a new class, BlockQuoteData,
+and encapsulate those values inside an instance of that class.  It was a bit of
+work to move the code to use the new variables, but it did make the code cleaner.
+And that means lower maintenance, so that was good!</p>
+<h2 id="issue-157-upgrading-test-scripts"><a href="https://github.com/jackdewinter/pymarkdown/issues/157">Issue 157</a> - Upgrading Test Scripts<a class="headerlink" href="#issue-157-upgrading-test-scripts" title="Permanent link">¶</a></h2>
+<p>From experience, depending on how software developers work, they typically either
+love typing things out manually on the command line or they love to use scripts.
+With my propensity for mistyping
+things, otherwise known as “fat-fingering”, I fall into the “love scripts” category.
+The PyMarkdown project is a fitting example of how I use scripts to make the simple
+development tasks into scripts.</p>
+<p>My ability to run Python tests using a script is a example of this practice.
+As I do my PyMarkdown work on Windows,
+I have a <code>ptest.cmd</code> script that has evolved to have a fair amount of usability,
+some of which is the re-used by my <code>clean.cmd</code> script.  But even with the functionality
+that it has,
+there were times where I could literally go to my kitchen, make a simple sandwich,
+eat it, and be back in front of my computer before the script completed.  Granted,
+that was running the <code>clean.cmd</code> script with a slowdown for measuring code coverage,
+but it was still a long time to wait for a script to complete.</p>
+<p>I had looked around and found a couple of PyTest addons that could possibly let
+me run the tests on multiple cores, something that would hopefully reduce those
+long testing times.  As the upside to finding a workable addon was huge, I took
+an evening and experimented with two candidates.  While the first candidate failed
+right away, the second candidates looked promising.  After a bit of research on
+the issues that I was seeing, I was able to resolve those issues and I added support
+for the <code>pytest-xdist</code> package into the project.</p>
+<p>I think the reasons that this package works is that it seems to keep things simple,
+and it has been around for a while.  By adding the <code>-n !CORES_TO_USE!</code> argument to
+where I invoke PyTest in the script, I was able to control how many cores were
+used by PyTest on my machine.  Deciding to take a cautious approach, I added the following
+code to the script to only use one-half of the available cores for testing:</p>
+<div class="highlight"><pre><span></span><span class="k">if</span> <span class="k">defined</span> <span class="nv">PTEST_MULTI_CORE_ARGS</span> <span class="p">(</span>
+    <span class="k">set</span> <span class="k">/a</span> <span class="nv">CORES_TO_USE</span><span class="o">=%</span><span class="nv">NUMBER_OF_PROCESSORS</span><span class="o">%/</span><span class="mi">2</span>
+    <span class="k">if</span> <span class="nv">!CORES_TO_USE!</span> <span class="ow">LSS</span> 1 <span class="p">(</span>
+        <span class="k">set</span> <span class="nv">CORES_TO_USE</span><span class="p">=</span>1
+    <span class="p">)</span>
+    <span class="k">set</span> <span class="nv">PTEST_MULTI_CORE_ARGS</span><span class="p">=</span>-n <span class="nv">!CORES_TO_USE!</span>
+<span class="p">)</span>
+</pre></div>
+<p>Digging into the occasional failures I was getting, I added the <code>--dist loadscope</code>
+flag as per a suggestion from a reply to a similar question on Stack Exchange. With
+the occasional failure not showing up since then, I knew I had a viable solution.</p>
+<p>To be open about the entire process, the bulk of the work for these changes was done while I was working
+on the previous two issues, so I had a lot of time to experiment with what settings
+work best with the way that I work.  That one-half of the available cores was arrived
+at because it seemed to be a good balancing point between making my system crawl
+and getting a good speed boost for the tests.  Similarly, I added an optional
+<code>--maxfail=5</code> to the PyTest command line to better manage the failure cases.  However, as there
+is a greater chance that failures will happen in large batches, such as when I
+am refactoring, the limit is enabled by default and disabled by using the <code>-a</code> flag.</p>
+<p>Based on the refactoring work I did during this last week, this work has been
+extremely useful in cutting down test run times.  The time for a full test run with
+coverage on my machine went from 7 minutes 32 seconds to 1 minute 35 seconds.
+For a nomrmal full run, the duration went from 1 minute 44 seconds to 36 seconds.
+Between that and similar tweaks to the other linters, I was happy
+with this progress.</p>
+<h2 id="issue-93-this-is-that-bug"><a href="https://github.com/jackdewinter/pymarkdown/issues/93">Issue 93</a> - This Is That Bug<a class="headerlink" href="#issue-93-this-is-that-bug" title="Permanent link">¶</a></h2>
+<p>Yes, this is the bug that almost knocked me down.  In all honesty, it probably knocked
+me down more than a couple of times, I just go back up right away and got back to work.
+I do know that at least once
+I needed to walk away and collect my cool before getting back to solving the problem.
+Basically, resolving this issue was a test of my will to properly fix this issue instead
+of doing a partial job.  And it was not always pretty.</p>
+<p>Due to commitments at home, I spent the American Thanksgiving holiday at home with my
+son.  While we had loose plans to chill out during the holiday weekend, we both had
+a lot on our plates and just decided to watch a Champions League game together and
+recharge our batteries.  This ended up being useful because of some research that I
+had started to do earlier on in the week on
+<a href="https://github.com/jackdewinter/pymarkdown/issues/93">Issue 93</a>.</p>
+<p>In doing my research and playing around with finding a quick solution for this issue,
+there was one thing that became at once clear.  Depending on how you look at the
+tokens, I either did not have the correct information or I had conflicting information
+in the tokens.  Specifically, I was noticing that the whitespace in and around List
+elements and Block Quote elements was not being stored in the tokens properly.</p>
+<p>The issue was around how this document was parsed:</p>
+<div class="highlight"><pre><span></span><span class="o">&gt;</span> <span class="mi">1</span><span class="p">.</span> <span class="n">list</span>
+<span class="o">&gt;</span>    <span class="n">this</span>
+<span class="o">&gt;</span>    <span class="o">*****</span>
+<span class="o">&gt;</span> <span class="mi">1</span><span class="p">.</span> <span class="n">that</span>
+</pre></div>
+<p>When parsed, the Block Quote token and the List token were both recording the
+whitespace associated with the first line.  In particular, the Block Quote token
+was storing <code>&gt;{space}</code> and the List token was storing <code>{space}{space}</code>.<sup id="fnref:curlies"><a class="footnote-ref" href="#fn:curlies">1</a></sup>
+My original thought was that this decision would be convenient in that the inner
+List token would simply “know” that its two space characters were the
+greater-than character and the space character from the Block Quote token. When
+I was working through that part of the parser, it made sense.</p>
+<p>Given time to work on other features, that decision was looking less and less
+correct.  There were competing parts of the algorithms that needed their data in
+one of two formats, and it was not always clear which format was correct.  On top
+of that, the extra work to convert between the two formats was not done consistently
+and needed more maintenance than I hoped for.</p>
+<p>So, before I did anything else, I needed to make a choice on how to
+approach this: pay now or pay later.</p>
+<h3 id="the-decision">The Decision<a class="headerlink" href="#the-decision" title="Permanent link">¶</a></h3>
+<p>Looking at a couple of relatively open days ahead of me, I needed to decide how
+to most effectively apply that time to the PyMarkdown project. The one
+option was to clear out multiple issues, but only touch the code that I
+needed to.  This would incur extra costs in the future, but I could budget those
+costs over a couple of weeks.  The other option was to buckle down with the current
+time I had and make major progress to getting that work done. That would incur an
+immediate expense but would involve less rewriting of code later.</p>
+<p>It was not any easy decision for me to make.  I knew that at the very least, I was
+talking about eight hours of work.  On the other end of the range, the duration for
+that same work could be in the three-to-four-day range.  At that point, it was in
+the middle of the day on Thursday, and the prospect  of my entire holiday being
+swallowed up was not a good one.</p>
+<p>But as I thought about it over the next couple of hours, my mind kept coming back
+to two points.  The first point was that this cost was something I was going to
+have to pay in the future.  That was not up for debate.  To make the whitespace in
+the container tokens more usable, I would need to make changes.  The second point
+was about whether I wanted to pay that cost in one large chunk and get it over
+with, or incur that cost in smaller chunks, but with interest added on.  The logic
+there was that if I chose smaller chunks, not only would I have to pay the main cost
+for the changes, but I would have to pay interest on those changes until the main
+changes were completed.</p>
+<p>With those two points crystalizing as the main differentiators in my decision, the
+decision almost made itself.  If I had the time to spend, it would be easier to
+do the work in one chunk and avoid the extra work incurred by the spreading that
+work out.</p>
+<p>And with that… the work started.</p>
+<h3 id="just-get-on-with-it">Just Get On With It<a class="headerlink" href="#just-get-on-with-it" title="Permanent link">¶</a></h3>
+<p>For my own sanity, I broke the work out into three chunks: getting the scenario tests
+passing, getting the Markdown checks passing, and getting the other consistency checks
+passing.  It was 11 am Pacific time on Friday morning when I started to make the
+changes, and it was after 2pm Pacific time on Sunday when I finished making the changes.
+I will not go into all the changes that I had to do, as I would prefer not to try and
+relive all that effort.  Do not get me wrong, it was the right thing to do, but it was
+just excessively precise work.</p>
+<p>The good points were as follows.</p>
+<p>The updated tooling effort from earlier in the
+week paid off handsomely during this effort.  Most the changes looked good when
+I sketched them out in my head, but when I implemented them about half of them,
+things changed.  Either
+that design did not work as well as I had hoped, or there were nasty side effects
+to consider.  By having a quickened “change-test-observed” loop, I could get to
+the observed part of the loop that much quicker.  </p>
+<p>Having a good set of scenario tests helped me make those changes with confidence.
+While I cannot account for tests that I have not added yet, the “test” part of the
+“change-test-observed” loop meant that these changes were about going forward and
+not introducing more problems. And as I debug best by looking at the overall
+picture, having good logging throughout the code base helped me diagnose the
+issues and verify the results of the changes.  A good set of tests and 100 percent
+code coverage gives me confidence.  But being able to follow the flow
+of data through the newly changed portions of the code raises that confidence
+even higher.</p>
+<p>I was also happy to see that one of the design points of the project, the keeping
+the container processing separate from the leaf processing, was still in place.
+While fixing this issue properly required substantial work in the Container Block
+Processor, only a couple of lines on the boundary between the Container Block
+Processor and the Leaf Block Processor needed to be changed.  And I believe most
+of those changes were just with logging input values.</p>
+<p>And now for the bad points.</p>
+<p>Changing the method with which I save whitespaces in container tokens would have
+been better made when I was designing the parser.  Doing it at this point was
+a nightmare like trying to talk on the phone on the tarmac at a busy airport.
+I had to try and keep my focus on what I specifically trying to target.  And
+that was not always easy. But while I think I may have been able to design
+that part of the system better, I am more convinced that I needed to see the
+old design and its flaws to arrive at this improved design.  Sometimes, we need
+to take one step backwards to take two steps forward.</p>
+<p>The other bad point that I saw is that I think I still have a way to
+go in simplifying
+the container handling.  These changes were obviously a huge step in the
+right direction, but I am sure I can simplify them even more.  It could be
+the nature of preserving the whitespace, but I found myself writing code that
+was “if in a list block that is in a block quote block”.  In one or two
+cases, I believe I had to write something even more devious than that code.</p>
+<p>While there may have been other points that I could include here, most were
+too minor to mention or on a list of things to look for
+when I get free time.  Things like more minor refactorings and patterns to
+look out for when writing any new Python code.</p>
+<h2 id="what-was-my-experience-so-far">What Was My Experience So Far?<a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link">¶</a></h2>
+<p>Given the arduous work that I put in, I found it useful to find my balance
+between the work I was doing and not letting the weekend slip away
+without taking advantage of it.  Similarly, I had to balance those previously
+mentioned good points and bad points with what I have carried out with the project.</p>
+<p>Yes, there were a couple of times that I yelled “why did I want to write a
+linter?” to my computer screen.  If I had chosen to write a Markdown-to-HTML
+parser, like <a href="https://commonmark.org/">CommonMark</a>, then I would be done.
+As HTML throws almost all the whitespace away, the parser just needed to
+understand the whitespace, not properly store it in a token.  If not for
+the fact that I have written a linter and that I wanted to be able to verify
+that I had parsed the Markdown properly, I would not need to get the extracted
+whitespace <em>exactly</em> correct.</p>
+<p>And to me… knowing that I made a hard call, but it was for what I consider
+to be the right reasons… that is good enough for me.</p>
+<h2 id="what-is-next">What is Next?<a class="headerlink" href="#what-is-next" title="Permanent link">¶</a></h2>
+<p>Having made good inroads to fixing the spacing issues in the parser, I know
+I want to find other related issues and see if I can resolve them or easily
+resolve them.  But I also would not mind getting some more small refactors
+done.  Not sure which is going to win out yet.
+Stay tuned!</p>
+<div class="footnote">
+<hr/>
+<ol>
+<li id="fn:curlies">
+<p>As Markdown does not like space characters inside of code spans, I have replaced any such spaces with the text <code>{space}</code>. <a class="footnote-backref" href="#fnref:curlies" title="Jump back to footnote 1 in the text">↩</a></p>
+</li>
+</ol>
+</div>
+
+
+             
+ 
+                <p id="post-share-links">
+    Like this post? Share on:
+    <a href="https://twitter.com/intent/tweet?text=Markdown%20Linter%20-%20The%20Bug%20That%20Almost%20Knocked%20Me%20Down&url=https%3A//jackdewinter.github.io/2021/11/29/markdown-linter-the-bug-that-almost-knocked-me-down/&hashtags=markdown-linter,core-linter" target="_blank" rel="nofollow noopener noreferrer" title="Share on Twitter">Twitter</a>
+    ❄
+    <a href="https://www.facebook.com/sharer/sharer.php?u=https%3A//jackdewinter.github.io/2021/11/29/markdown-linter-the-bug-that-almost-knocked-me-down/" target="_blank" rel="nofollow noopener noreferrer" title="Share on Facebook">Facebook</a>
+    ❄
+    <a href="mailto:?subject=Markdown%20Linter%20-%20The%20Bug%20That%20Almost%20Knocked%20Me%20Down&amp;body=https%3A//jackdewinter.github.io/2021/11/29/markdown-linter-the-bug-that-almost-knocked-me-down/" target="_blank" rel="nofollow noopener noreferrer" title="Share via Email">Email</a>
+    </p>
+
+            
+            
+
+
+
+
+
+
+<section>
+    <h6 style="display:none;">Comments</h6>
+    <p id="comment-message">So what do you think? Did I miss something? Is any part unclear? Leave your comments below. </p>
+
+    <div class="accordion" id="accordion2">
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                <a class="accordion-toggle disqus-comment-count comment-count"
+                   data-toggle="collapse"
+                   data-parent="#accordion2"
+                   href="https://jackdewinter.github.io/2021/11/29/markdown-linter-the-bug-that-almost-knocked-me-down/#comment_thread"
+                   id="comment-accordion-toggle">
+                    Comments
+                </a>
+            </div>
+            <div id="comment_thread" class="accordion-body collapse">
+                <div class="accordion-inner">
+                    <div class="comments">
+
+                        <script src="https://utteranc.es/client.js"
+        data-repo="jackdewinter/jackdewinter.github.io"
+        data-issue-term="markdown-linter-beta-bugs-h"
+        data-label="Comments"
+        data-theme="github-light"
+        crossorigin="anonymous"
+        async>
+</script>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+            <hr/>
+            <aside>
+            <nav>
+            <ul class="articles-timeline">
+                <li class="previous-article">« <a href="https://jackdewinter.github.io/2021/11/22/improving-quality-finding-better-tooling-extact-method/" title="Previous: Improving Quality - Finding Better Tooling + Extact Method">Improving Quality - Finding Better Tooling + Extact Method</a></li>
+            </ul>
+            </nav>
+            </aside>
+        </div>
+        <section id="article-sidebar" class="span2">
+    <h4>Reading Time</h4>
+    <p>~13 min read</p>
+            <h4>Published</h4>
+            <time itemprop="dateCreated" datetime="2021-11-29T00:00:00-08:00">Nov 29, 2021</time>
+        <h4>Markdown Linter Beta Bugs</h4>
+    <ul class="multi-parts-list">
+            <li >
+            <a href="https://jackdewinter.github.io/2021/09/27/markdown-linter-clearing-away-some-bugs/" title="Markdown Linter - Clearing Away Some Bugs">Part 1: Markdown Linter - Clearing Away Some Bugs</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2021/10/04/markdown-linter-more-beta-bugs/" title="Markdown Linter - More Beta Bugs">Part 2: Markdown Linter - More Beta Bugs</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2021/10/10/markdown-linter-cleaning-things-up/" title="Markdown Linter - Cleaning Things Up">Part 3: Markdown Linter - Cleaning Things Up</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2021/10/17/markdown-linter-tying-up-some-loose-ends/" title="Markdown Linter - Tying Up Some Loose Ends">Part 4: Markdown Linter - Tying Up Some Loose Ends</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2021/10/25/markdown-linter-fun-with-nested-containers/" title="Markdown Linter - Fun With Nested Containers">Part 5: Markdown Linter - Fun With Nested Containers</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2021/11/01/markdown-linter-double-checking-my-double-checks/" title="Markdown Linter - Double Checking My Double Checks">Part 6: Markdown Linter - Double Checking My Double Checks</a>
+            </li>
+            <li >
+            <a href="https://jackdewinter.github.io/2021/11/08/markdown-linter-fun-with-block-quotes/" title="Markdown Linter - Fun With Block Quotes">Part 7: Markdown Linter - Fun With Block Quotes</a>
+            </li>
+            <li  class="active-part">
+            Part 8: Markdown Linter - The Bug That Almost Knocked Me Down
+            </li>
+    </ul>
+            <h4>Category</h4>
+            <a class="category-link" href="https://jackdewinter.github.io/categories#software-quality-ref">Software Quality</a>
+            <h4>Tags</h4>
+            <ul class="list-of-tags tags-in-article">
+                <li><a href="https://jackdewinter.github.io/tags#core-linter-ref">core linter
+                    <span>76</span>
+</a></li>
+                <li><a href="https://jackdewinter.github.io/tags#markdown-linter-ref">markdown linter
+                    <span>94</span>
+</a></li>
+            </ul>
+<h4>Stay in Touch</h4>
+<div id="sidebar-social-link">
+    <a href="https://github.com/jackdewinter" title="github-alt" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="GitHub" role="img" viewBox="0 0 512 512"><rect width="512" height="512" rx="15%" fill="#1B1817"/><path fill="#fff" d="M335 499c14 0 12 17 12 17H165s-2-17 12-17c13 0 16-6 16-12l-1-50c-71 16-86-28-86-28-12-30-28-37-28-37-24-16 1-16 1-16 26 2 40 26 40 26 22 39 59 28 74 22 2-17 9-28 16-35-57-6-116-28-116-126 0-28 10-51 26-69-3-6-11-32 3-67 0 0 21-7 70 26 42-12 86-12 128 0 49-33 70-26 70-26 14 35 6 61 3 67 16 18 26 41 26 69 0 98-60 120-117 126 10 8 18 24 18 48l-1 70c0 6 3 12 16 12z"/></svg>
+    </a>
+    <a href="https://www.linkedin.com/in/jackdewinter/" title="linkedin" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="LinkedIn" role="img" viewBox="0 0 512 512" fill="#fff"><rect width="512" height="512" rx="15%" fill="#0077b5"/><circle cx="142" cy="138" r="37"/><path stroke="#fff" stroke-width="66" d="M244 194v198M142 194v198"/><path d="M276 282c0-20 13-40 36-40 24 0 33 18 33 45v105h66V279c0-61-32-89-76-89-34 0-51 19-59 32"/></svg>
+    </a>
+    <a href="https://jackdewinter.github.io/feeds/all.atom.xml" title="" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="RSS" role="img" viewBox="0 0 512 512"><rect width="512" height="512" rx="15%" fill="#f80"/><circle cx="145" cy="367" r="35" fill="#fff"/><path fill="none" stroke="#fff" stroke-width="60" d="M109 241c89 0 162 73 162 162M109 127c152 0 276 124 276 276"/></svg>
+    </a>
+</div>
+            
+
+
+
+
+
+            
+
+
+
+
+
+        </section>
+</div>
+</article>
+                    </div>
+                    <div class="span1"></div>
+                </div>
+            </div>
+        </div>
+<footer>
+    <div>
+        
+&copy; Copyright 2021 by Jack De Winter and licensed under a <a rel="license"
+  href="http://creativecommons.org/licenses/by/4.0/">
+  <img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/80x15.png" />
+  Creative Commons Attribution 4.0 International License</a>.
+
+    </div>
+
+
+
+
+    <div id="fpowered">
+        Powered by: <a href="http://getpelican.com/" title="Pelican Home Page" target="_blank" rel="nofollow noopener noreferrer">Pelican</a>
+        Theme: <a href="https://elegant.oncrashreboot.com/" title="Theme Elegant Home Page" target="_blank" rel="nofollow noopener noreferrer">Elegant</a>
+    </div>
+</footer>            <script src="//code.jquery.com/jquery.min.js"></script>
+        <script src="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>
+        <script>
+            function validateForm(query)
+            {
+                return (query.length > 0);
+            }
+        </script>
+
+    <script>
+    (function () {
+        if (window.location.hash.match(/^#comment-\d+$/)) {
+            $('#comment_thread').collapse('show');
+        }
+    })();
+    window.onhashchange=function(){
+        if (window.location.hash.match(/^#comment-\d+$/))
+            window.location.reload(true);
+    }
+    $('#comment_thread').on('shown', function () {
+        var link = document.getElementById('comment-accordion-toggle');
+        var old_innerHTML = link.innerHTML;
+        $(link).fadeOut(200, function() {
+            $(this).text('Click here to hide comments').fadeIn(200);
+        });
+        $('#comment_thread').on('hidden', function () {
+            $(link).fadeOut(200, function() {
+                $(this).text(old_innerHTML).fadeIn(200);
+            });
+        })
+    })
+</script>
+
+    </body>
+    <!-- Theme: Elegant built for Pelican
+        License : MIT -->
+</html>

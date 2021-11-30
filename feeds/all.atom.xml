@@ -1,5 +1,293 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/all.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2021-11-22T00:00:00-08:00</updated><entry><title>Improving Quality - Finding Better Tooling + Extact Method</title><link href="https://jackdewinter.github.io/2021/11/22/improving-quality-finding-better-tooling-extact-method/" rel="alternate"></link><published>2021-11-22T00:00:00-08:00</published><updated>2021-11-22T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2021-11-22:/2021/11/22/improving-quality-finding-better-tooling-extact-method/</id><summary type="html">
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/all.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2021-11-29T00:00:00-08:00</updated><entry><title>Markdown Linter - The Bug That Almost Knocked Me Down</title><link href="https://jackdewinter.github.io/2021/11/29/markdown-linter-the-bug-that-almost-knocked-me-down/" rel="alternate"></link><published>2021-11-29T00:00:00-08:00</published><updated>2021-11-29T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2021-11-29:/2021/11/29/markdown-linter-the-bug-that-almost-knocked-me-down/</id><summary type="html">
+&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In my
+&lt;a href="https://jackdewinter.github.io/2021/11/22/improving-quality-finding-better-tooling-extact-method/"&gt;last article&lt;/a&gt;, I talked
+about my progress in refactoring and my experience with the three added tools. In
+this article, I talk about the work I did this week, including the bug that almost
+knocked me down for the count!&lt;/p&gt;
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;What a long two weeks of …&lt;/p&gt;</summary><content type="html">
+&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In my
+&lt;a href="https://jackdewinter.github.io/2021/11/22/improving-quality-finding-better-tooling-extact-method/"&gt;last article&lt;/a&gt;, I talked
+about my progress in refactoring and my experience with the three added tools. In
+this article, I talk about the work I did this week, including the bug that almost
+knocked me down for the count!&lt;/p&gt;
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;What a long two weeks of work I just had on the PyMarkdown project!  I took those two weeks and
+invested them wisely in doing some major refactoring on the project.  The project itself was
+in decent shape, but I had let some of the functions grow to large and with too many
+responsibilities.  For my own sanity and for the project’s own good, I needed to
+take some time and get it closer to what I would consider to be a good, healthy
+code base.&lt;/p&gt;
+&lt;p&gt;But that did not mean the work was over.  Not by far.  There were still a couple
+of cleanup items that I needed to attend to, plus a list of issues that I found
+while doing the refactoring. And while it was nice to take a bit of a break, I
+needed to get back to focusing on getting things progressing forward to a non-beta
+release soon.&lt;/p&gt;
+&lt;h2 id="what-is-the-audience-for-this-article"&gt;What Is the Audience for This Article?&lt;a class="headerlink" href="#what-is-the-audience-for-this-article" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;While detailed more eloquently in
+&lt;a href="https://jackdewinter.github.io/2020/04/05/what-is-the-audience-for-my-blog/#what-is-the-audience-for-my-blog"&gt;this article&lt;/a&gt;,
+my goal for this technical article is to focus on the reasoning behind my solutions,
+rather than the solutions themselves.  For a full record of the solutions presented in
+this article, please consult the commits that occurred between
+&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/e842435752235675cfca5ed17e62122608042e85"&gt;22 Nov 2021&lt;/a&gt;
+and
+&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/5ab751db859c92bd25f3edcc253d71b0b889659f"&gt;28 Nov 2021&lt;/a&gt;.&lt;/p&gt;
+&lt;h2 id="issue-151-doing-some-cleanup"&gt;&lt;a href="https://github.com/jackdewinter/pymarkdown/issues/151"&gt;Issue 151&lt;/a&gt; - Doing Some Cleanup&lt;a class="headerlink" href="#issue-151-doing-some-cleanup" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;It will probably not surprise any long-time readers that I decided to take
+a small amount of additional time to tidy up some loose ends left after the
+work I did in the last two weeks.  Having touched a substantial part of the files
+in the project’s core, I wanted
+to at least go over the code once and look for anything that I could easily
+simplify to make it more maintainable.&lt;/p&gt;
+&lt;p&gt;There were no tremendous changes, just a lot of little ones.  Things like simplifying:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;coalesced_list&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[]&lt;/span&gt;
+&lt;span class="n"&gt;coalesced_list&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;extend&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;first_pass_results&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;into:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;coalesced_list&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;first_pass_results&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;]]&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;and moving small classes such as the &lt;code&gt;ContainerIndices&lt;/code&gt; class into their own modules.
+I also double checked the use of return codes from functions to make sure that
+they were still being used and removed them if they were not being used.&lt;/p&gt;
+&lt;p&gt;Other than that, there were cases where I took multiple variable initializations,
+such as:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;start_index&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;
+&lt;span class="n"&gt;processed_parts&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[]&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;and condensed them down into:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;start_index&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;processed_parts&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="p"&gt;[]&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Even with &lt;a href="https://pypi.org/project/black/"&gt;Black&lt;/a&gt; reformatting such assignments
+across multiple lines, I have gradually been moving towards grouping all my
+variable initializations together in that manner. I
+am not sure if every Python developer feels that it is a good style, but I do.
+For me, it clearly states that these variables are being set together and eases
+my ability to read the functions.  Basically, it works for me.&lt;/p&gt;
+&lt;p&gt;But after an evening of going through the source code and cleaning it up,
+I knew I had to start making progress on the other issues.&lt;/p&gt;
+&lt;h2 id="issue-155-refactoring-common-structures"&gt;&lt;a href="https://github.com/jackdewinter/pymarkdown/issues/155"&gt;Issue 155&lt;/a&gt; - Refactoring Common Structures&lt;a class="headerlink" href="#issue-155-refactoring-common-structures" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Looking at the code base over the last few weeks, I really wanted to be able to
+harmonize a few of the
+variables that get passed repeatedly into functions.  While there are more examples
+of that in the code base than I would like, the ones that I picked to work on for
+this ticket were the &lt;code&gt;this_bq_count&lt;/code&gt; and &lt;code&gt;stack_bq_count&lt;/code&gt; variables.  These are
+just one example of variable tuples where two or more variables are usually seen
+together.&lt;/p&gt;
+&lt;p&gt;While not used outside of the Container Block Processor, these two variables are
+heavily used inside of the Container Block Processor to capture the current count of
+block quotes.  As their names suggest, the &lt;code&gt;this_bq_count&lt;/code&gt; variable tracks the
+“observed” count of block quote characters and the &lt;code&gt;stack_bq_count&lt;/code&gt; variable tracks
+the current number of block quote tokens on the stack.  As a Block Quote element
+can start and stop on any line, these variables are passed together to ensure
+the current state is well known.&lt;/p&gt;
+&lt;p&gt;At least they were passed together until this work was completed.  When I looked
+at the source code for the Container Block Processor, the Block Quote Processor,
+and the List Block Processor, there were only five places where these values were
+not passed together.  As such, it made sense to add a new class, BlockQuoteData,
+and encapsulate those values inside an instance of that class.  It was a bit of
+work to move the code to use the new variables, but it did make the code cleaner.
+And that means lower maintenance, so that was good!&lt;/p&gt;
+&lt;h2 id="issue-157-upgrading-test-scripts"&gt;&lt;a href="https://github.com/jackdewinter/pymarkdown/issues/157"&gt;Issue 157&lt;/a&gt; - Upgrading Test Scripts&lt;a class="headerlink" href="#issue-157-upgrading-test-scripts" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;From experience, depending on how software developers work, they typically either
+love typing things out manually on the command line or they love to use scripts.
+With my propensity for mistyping
+things, otherwise known as “fat-fingering”, I fall into the “love scripts” category.
+The PyMarkdown project is a fitting example of how I use scripts to make the simple
+development tasks into scripts.&lt;/p&gt;
+&lt;p&gt;My ability to run Python tests using a script is a example of this practice.
+As I do my PyMarkdown work on Windows,
+I have a &lt;code&gt;ptest.cmd&lt;/code&gt; script that has evolved to have a fair amount of usability,
+some of which is the re-used by my &lt;code&gt;clean.cmd&lt;/code&gt; script.  But even with the functionality
+that it has,
+there were times where I could literally go to my kitchen, make a simple sandwich,
+eat it, and be back in front of my computer before the script completed.  Granted,
+that was running the &lt;code&gt;clean.cmd&lt;/code&gt; script with a slowdown for measuring code coverage,
+but it was still a long time to wait for a script to complete.&lt;/p&gt;
+&lt;p&gt;I had looked around and found a couple of PyTest addons that could possibly let
+me run the tests on multiple cores, something that would hopefully reduce those
+long testing times.  As the upside to finding a workable addon was huge, I took
+an evening and experimented with two candidates.  While the first candidate failed
+right away, the second candidates looked promising.  After a bit of research on
+the issues that I was seeing, I was able to resolve those issues and I added support
+for the &lt;code&gt;pytest-xdist&lt;/code&gt; package into the project.&lt;/p&gt;
+&lt;p&gt;I think the reasons that this package works is that it seems to keep things simple,
+and it has been around for a while.  By adding the &lt;code&gt;-n !CORES_TO_USE!&lt;/code&gt; argument to
+where I invoke PyTest in the script, I was able to control how many cores were
+used by PyTest on my machine.  Deciding to take a cautious approach, I added the following
+code to the script to only use one-half of the available cores for testing:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="k"&gt;defined&lt;/span&gt; &lt;span class="nv"&gt;PTEST_MULTI_CORE_ARGS&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
+    &lt;span class="k"&gt;set&lt;/span&gt; &lt;span class="k"&gt;/a&lt;/span&gt; &lt;span class="nv"&gt;CORES_TO_USE&lt;/span&gt;&lt;span class="o"&gt;=%&lt;/span&gt;&lt;span class="nv"&gt;NUMBER_OF_PROCESSORS&lt;/span&gt;&lt;span class="o"&gt;%/&lt;/span&gt;&lt;span class="mi"&gt;2&lt;/span&gt;
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="nv"&gt;!CORES_TO_USE!&lt;/span&gt; &lt;span class="ow"&gt;LSS&lt;/span&gt; 1 &lt;span class="p"&gt;(&lt;/span&gt;
+        &lt;span class="k"&gt;set&lt;/span&gt; &lt;span class="nv"&gt;CORES_TO_USE&lt;/span&gt;&lt;span class="p"&gt;=&lt;/span&gt;1
+    &lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="k"&gt;set&lt;/span&gt; &lt;span class="nv"&gt;PTEST_MULTI_CORE_ARGS&lt;/span&gt;&lt;span class="p"&gt;=&lt;/span&gt;-n &lt;span class="nv"&gt;!CORES_TO_USE!&lt;/span&gt;
+&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Digging into the occasional failures I was getting, I added the &lt;code&gt;--dist loadscope&lt;/code&gt;
+flag as per a suggestion from a reply to a similar question on Stack Exchange. With
+the occasional failure not showing up since then, I knew I had a viable solution.&lt;/p&gt;
+&lt;p&gt;To be open about the entire process, the bulk of the work for these changes was done while I was working
+on the previous two issues, so I had a lot of time to experiment with what settings
+work best with the way that I work.  That one-half of the available cores was arrived
+at because it seemed to be a good balancing point between making my system crawl
+and getting a good speed boost for the tests.  Similarly, I added an optional
+&lt;code&gt;--maxfail=5&lt;/code&gt; to the PyTest command line to better manage the failure cases.  However, as there
+is a greater chance that failures will happen in large batches, such as when I
+am refactoring, the limit is enabled by default and disabled by using the &lt;code&gt;-a&lt;/code&gt; flag.&lt;/p&gt;
+&lt;p&gt;Based on the refactoring work I did during this last week, this work has been
+extremely useful in cutting down test run times.  The time for a full test run with
+coverage on my machine went from 7 minutes 32 seconds to 1 minute 35 seconds.
+For a nomrmal full run, the duration went from 1 minute 44 seconds to 36 seconds.
+Between that and similar tweaks to the other linters, I was happy
+with this progress.&lt;/p&gt;
+&lt;h2 id="issue-93-this-is-that-bug"&gt;&lt;a href="https://github.com/jackdewinter/pymarkdown/issues/93"&gt;Issue 93&lt;/a&gt; - This Is That Bug&lt;a class="headerlink" href="#issue-93-this-is-that-bug" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Yes, this is the bug that almost knocked me down.  In all honesty, it probably knocked
+me down more than a couple of times, I just go back up right away and got back to work.
+I do know that at least once
+I needed to walk away and collect my cool before getting back to solving the problem.
+Basically, resolving this issue was a test of my will to properly fix this issue instead
+of doing a partial job.  And it was not always pretty.&lt;/p&gt;
+&lt;p&gt;Due to commitments at home, I spent the American Thanksgiving holiday at home with my
+son.  While we had loose plans to chill out during the holiday weekend, we both had
+a lot on our plates and just decided to watch a Champions League game together and
+recharge our batteries.  This ended up being useful because of some research that I
+had started to do earlier on in the week on
+&lt;a href="https://github.com/jackdewinter/pymarkdown/issues/93"&gt;Issue 93&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;In doing my research and playing around with finding a quick solution for this issue,
+there was one thing that became at once clear.  Depending on how you look at the
+tokens, I either did not have the correct information or I had conflicting information
+in the tokens.  Specifically, I was noticing that the whitespace in and around List
+elements and Block Quote elements was not being stored in the tokens properly.&lt;/p&gt;
+&lt;p&gt;The issue was around how this document was parsed:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt; &lt;span class="n"&gt;list&lt;/span&gt;
+&lt;span class="o"&gt;&amp;gt;&lt;/span&gt;    &lt;span class="n"&gt;this&lt;/span&gt;
+&lt;span class="o"&gt;&amp;gt;&lt;/span&gt;    &lt;span class="o"&gt;*****&lt;/span&gt;
+&lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt; &lt;span class="n"&gt;that&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;When parsed, the Block Quote token and the List token were both recording the
+whitespace associated with the first line.  In particular, the Block Quote token
+was storing &lt;code&gt;&amp;gt;{space}&lt;/code&gt; and the List token was storing &lt;code&gt;{space}{space}&lt;/code&gt;.&lt;sup id="fnref:curlies"&gt;&lt;a class="footnote-ref" href="#fn:curlies"&gt;1&lt;/a&gt;&lt;/sup&gt;
+My original thought was that this decision would be convenient in that the inner
+List token would simply “know” that its two space characters were the
+greater-than character and the space character from the Block Quote token. When
+I was working through that part of the parser, it made sense.&lt;/p&gt;
+&lt;p&gt;Given time to work on other features, that decision was looking less and less
+correct.  There were competing parts of the algorithms that needed their data in
+one of two formats, and it was not always clear which format was correct.  On top
+of that, the extra work to convert between the two formats was not done consistently
+and needed more maintenance than I hoped for.&lt;/p&gt;
+&lt;p&gt;So, before I did anything else, I needed to make a choice on how to
+approach this: pay now or pay later.&lt;/p&gt;
+&lt;h3 id="the-decision"&gt;The Decision&lt;a class="headerlink" href="#the-decision" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Looking at a couple of relatively open days ahead of me, I needed to decide how
+to most effectively apply that time to the PyMarkdown project. The one
+option was to clear out multiple issues, but only touch the code that I
+needed to.  This would incur extra costs in the future, but I could budget those
+costs over a couple of weeks.  The other option was to buckle down with the current
+time I had and make major progress to getting that work done. That would incur an
+immediate expense but would involve less rewriting of code later.&lt;/p&gt;
+&lt;p&gt;It was not any easy decision for me to make.  I knew that at the very least, I was
+talking about eight hours of work.  On the other end of the range, the duration for
+that same work could be in the three-to-four-day range.  At that point, it was in
+the middle of the day on Thursday, and the prospect  of my entire holiday being
+swallowed up was not a good one.&lt;/p&gt;
+&lt;p&gt;But as I thought about it over the next couple of hours, my mind kept coming back
+to two points.  The first point was that this cost was something I was going to
+have to pay in the future.  That was not up for debate.  To make the whitespace in
+the container tokens more usable, I would need to make changes.  The second point
+was about whether I wanted to pay that cost in one large chunk and get it over
+with, or incur that cost in smaller chunks, but with interest added on.  The logic
+there was that if I chose smaller chunks, not only would I have to pay the main cost
+for the changes, but I would have to pay interest on those changes until the main
+changes were completed.&lt;/p&gt;
+&lt;p&gt;With those two points crystalizing as the main differentiators in my decision, the
+decision almost made itself.  If I had the time to spend, it would be easier to
+do the work in one chunk and avoid the extra work incurred by the spreading that
+work out.&lt;/p&gt;
+&lt;p&gt;And with that… the work started.&lt;/p&gt;
+&lt;h3 id="just-get-on-with-it"&gt;Just Get On With It&lt;a class="headerlink" href="#just-get-on-with-it" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;For my own sanity, I broke the work out into three chunks: getting the scenario tests
+passing, getting the Markdown checks passing, and getting the other consistency checks
+passing.  It was 11 am Pacific time on Friday morning when I started to make the
+changes, and it was after 2pm Pacific time on Sunday when I finished making the changes.
+I will not go into all the changes that I had to do, as I would prefer not to try and
+relive all that effort.  Do not get me wrong, it was the right thing to do, but it was
+just excessively precise work.&lt;/p&gt;
+&lt;p&gt;The good points were as follows.&lt;/p&gt;
+&lt;p&gt;The updated tooling effort from earlier in the
+week paid off handsomely during this effort.  Most the changes looked good when
+I sketched them out in my head, but when I implemented them about half of them,
+things changed.  Either
+that design did not work as well as I had hoped, or there were nasty side effects
+to consider.  By having a quickened “change-test-observed” loop, I could get to
+the observed part of the loop that much quicker.  &lt;/p&gt;
+&lt;p&gt;Having a good set of scenario tests helped me make those changes with confidence.
+While I cannot account for tests that I have not added yet, the “test” part of the
+“change-test-observed” loop meant that these changes were about going forward and
+not introducing more problems. And as I debug best by looking at the overall
+picture, having good logging throughout the code base helped me diagnose the
+issues and verify the results of the changes.  A good set of tests and 100 percent
+code coverage gives me confidence.  But being able to follow the flow
+of data through the newly changed portions of the code raises that confidence
+even higher.&lt;/p&gt;
+&lt;p&gt;I was also happy to see that one of the design points of the project, the keeping
+the container processing separate from the leaf processing, was still in place.
+While fixing this issue properly required substantial work in the Container Block
+Processor, only a couple of lines on the boundary between the Container Block
+Processor and the Leaf Block Processor needed to be changed.  And I believe most
+of those changes were just with logging input values.&lt;/p&gt;
+&lt;p&gt;And now for the bad points.&lt;/p&gt;
+&lt;p&gt;Changing the method with which I save whitespaces in container tokens would have
+been better made when I was designing the parser.  Doing it at this point was
+a nightmare like trying to talk on the phone on the tarmac at a busy airport.
+I had to try and keep my focus on what I specifically trying to target.  And
+that was not always easy. But while I think I may have been able to design
+that part of the system better, I am more convinced that I needed to see the
+old design and its flaws to arrive at this improved design.  Sometimes, we need
+to take one step backwards to take two steps forward.&lt;/p&gt;
+&lt;p&gt;The other bad point that I saw is that I think I still have a way to
+go in simplifying
+the container handling.  These changes were obviously a huge step in the
+right direction, but I am sure I can simplify them even more.  It could be
+the nature of preserving the whitespace, but I found myself writing code that
+was “if in a list block that is in a block quote block”.  In one or two
+cases, I believe I had to write something even more devious than that code.&lt;/p&gt;
+&lt;p&gt;While there may have been other points that I could include here, most were
+too minor to mention or on a list of things to look for
+when I get free time.  Things like more minor refactorings and patterns to
+look out for when writing any new Python code.&lt;/p&gt;
+&lt;h2 id="what-was-my-experience-so-far"&gt;What Was My Experience So Far?&lt;a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Given the arduous work that I put in, I found it useful to find my balance
+between the work I was doing and not letting the weekend slip away
+without taking advantage of it.  Similarly, I had to balance those previously
+mentioned good points and bad points with what I have carried out with the project.&lt;/p&gt;
+&lt;p&gt;Yes, there were a couple of times that I yelled “why did I want to write a
+linter?” to my computer screen.  If I had chosen to write a Markdown-to-HTML
+parser, like &lt;a href="https://commonmark.org/"&gt;CommonMark&lt;/a&gt;, then I would be done.
+As HTML throws almost all the whitespace away, the parser just needed to
+understand the whitespace, not properly store it in a token.  If not for
+the fact that I have written a linter and that I wanted to be able to verify
+that I had parsed the Markdown properly, I would not need to get the extracted
+whitespace &lt;em&gt;exactly&lt;/em&gt; correct.&lt;/p&gt;
+&lt;p&gt;And to me… knowing that I made a hard call, but it was for what I consider
+to be the right reasons… that is good enough for me.&lt;/p&gt;
+&lt;h2 id="what-is-next"&gt;What is Next?&lt;a class="headerlink" href="#what-is-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Having made good inroads to fixing the spacing issues in the parser, I know
+I want to find other related issues and see if I can resolve them or easily
+resolve them.  But I also would not mind getting some more small refactors
+done.  Not sure which is going to win out yet.
+Stay tuned!&lt;/p&gt;
+&lt;div class="footnote"&gt;
+&lt;hr/&gt;
+&lt;ol&gt;
+&lt;li id="fn:curlies"&gt;
+&lt;p&gt;As Markdown does not like space characters inside of code spans, I have replaced any such spaces with the text &lt;code&gt;{space}&lt;/code&gt;. &lt;a class="footnote-backref" href="#fnref:curlies" title="Jump back to footnote 1 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/div&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry><entry><title>Improving Quality - Finding Better Tooling + Extact Method</title><link href="https://jackdewinter.github.io/2021/11/22/improving-quality-finding-better-tooling-extact-method/" rel="alternate"></link><published>2021-11-22T00:00:00-08:00</published><updated>2021-11-22T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2021-11-22:/2021/11/22/improving-quality-finding-better-tooling-extact-method/</id><summary type="html">
 &lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;In my
 &lt;a href="https://jackdewinter.github.io/2021/11/15/improving-quality-figuring-out-better-tooling/"&gt;last article&lt;/a&gt;, I talked
@@ -10003,453 +10291,4 @@ to knock a couple more things off that list.&lt;/p&gt;
 &lt;p&gt;While I would push back on this requirement from a quality point of view, I would also acknowledge that there may well be a business benefit to this overload for a variety of reasons. &lt;a class="footnote-backref" href="#fnref:push" title="Jump back to footnote 1 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
 &lt;/li&gt;
 &lt;/ol&gt;
-&lt;/div&gt;</content><category term="Software Quality"></category><category term="Python packages"></category></entry><entry><title>Markdown Linter - Road To Initial Release - Triple Check Everything</title><link href="https://jackdewinter.github.io/2021/05/31/markdown-linter-road-to-initial-release-triple-check-everything/" rel="alternate"></link><published>2021-05-31T00:00:00-07:00</published><updated>2021-05-31T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2021-05-31:/2021/05/31/markdown-linter-road-to-initial-release-triple-check-everything/</id><summary type="html">
-&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;In my
-&lt;a href="https://jackdewinter.github.io/2021/05/24/markdown-linter-road-to-initial-release-crossing-the-ts/"&gt;last article&lt;/a&gt;, I talked
-about getting the documentation cleaned up and ready for release.  In this article,
-I talk about the final changes that I needed to make to get the project ready for its
-initial release.&lt;/p&gt;
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;This was it!  After many hours of work, countless …&lt;/p&gt;</summary><content type="html">
-&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;In my
-&lt;a href="https://jackdewinter.github.io/2021/05/24/markdown-linter-road-to-initial-release-crossing-the-ts/"&gt;last article&lt;/a&gt;, I talked
-about getting the documentation cleaned up and ready for release.  In this article,
-I talk about the final changes that I needed to make to get the project ready for its
-initial release.&lt;/p&gt;
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;This was it!  After many hours of work, countless hours of debugging, and too many
-brain cells burnt debugging, the project was on the cusp of being ready.  I just
-had a few tasks to complete before I felt confident in announcing the release of
-the project.  Nothing spectacular, but just some (hopefully) small tasks to make
-sure everything was in place.&lt;/p&gt;
-&lt;h2 id="what-is-the-audience-for-this-article"&gt;What Is the Audience for This Article?&lt;a class="headerlink" href="#what-is-the-audience-for-this-article" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;While detailed more eloquently in
-&lt;a href="https://jackdewinter.github.io/2020/04/05/what-is-the-audience-for-my-blog/#what-is-the-audience-for-my-blog"&gt;this article&lt;/a&gt;,
-my goal for this technical article is to focus on the reasoning behind my solutions,
-rather that the solutions themselves.  For a full record of the solutions presented in
-this article, please go to this project’s GitHub repository and consult the
-commits between
-&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/5756cf6add036436866a56ec1a6cac9c5a07d333"&gt;27 May 2021&lt;/a&gt;
-and
-&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/d8526d3bb695e42be71f519f8bc8345c14edee86"&gt;31 May 2021&lt;/a&gt;.&lt;/p&gt;
-&lt;h2 id="the-true-initial-release-was-quiet"&gt;The True Initial Release Was Quiet&lt;a class="headerlink" href="#the-true-initial-release-was-quiet" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;The release of PyMarkdown &lt;code&gt;0.5.0&lt;/code&gt; or &lt;code&gt;pymarkdownlnt-0.5.0&lt;/code&gt; was
-done very quietly and without much fanfare.  Seriously quiet.  I mean,
-if you twist my arm, I might admit to doing enough of a victory dance that
-my wife asked what the noise in my office was.  But other than that, nothing.
-It was just a normal night, and the release was performed by following some
-simple instructions and using this command line:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;pipenv run python -m twine upload --config-file .pypirc --repository pypi dist/*
-&lt;/pre&gt;&lt;/div&gt;
-&lt;h2 id="and-the-work-goes-on"&gt;And The Work Goes On&lt;a class="headerlink" href="#and-the-work-goes-on" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;After taking a minute to appreciate what I had done, I got to work on finding
-out if there were any small tasks in the release that I had missed.  The first
-thing I did was bump the project version to &lt;code&gt;0.5.1&lt;/code&gt;.  After that, I double
-checked to make sure that the &lt;code&gt;setup.py&lt;/code&gt; file contained the PyPi name of the
-project, &lt;code&gt;pymarkdownlnt&lt;/code&gt;, and committed that change.&lt;/p&gt;
-&lt;p&gt;Having passed my 48-hour documentation cool off period, I went through
-each of the documentation files carefully and found a handful of small changes that
-I felt needed to be made.  Except for adding the missing &lt;code&gt;advanced_plugins.md&lt;/code&gt; file
-to the repository, most of the remaining changes were simple wording changes
-or organizational changes.&lt;/p&gt;
-&lt;p&gt;The main organizational change that I made were primarily made to provide
-a brief summary for each section.  While I am not sure it is the right
-approach, I decided to start each important section with a simple table
-containing the important concepts from that section.  My goal with these tables
-is to provide readers with a quick summary to help them decide if they
-wanted to read that section.  I am not sure if I have the right information
-or the right format yet, but I wanted to give it a try and see how it works
-out.&lt;/p&gt;
-&lt;p&gt;The other organizational change I made was along the same lines as the summary
-tables.  But instead of starting each section with a table, I decided to start
-the &lt;code&gt;readme.md&lt;/code&gt; file with some relevant badges.&lt;/p&gt;
-&lt;h3 id="what-are-badges"&gt;What Are Badges?&lt;a class="headerlink" href="#what-are-badges" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;Badges (or shields) are an interesting concept that leverage visual information with
-the advent of webservices.  A good example of this is the badge Markdown that
-I use for displaying the version number associated with the package uploaded
-to PyPi: &lt;a href="https://pypi.org/project/pymarkdownlnt"&gt;&lt;img alt="Version" src="https://img.shields.io/pypi/v/pymarkdownlnt.svg"/&gt;&lt;/a&gt;:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;[&lt;/span&gt;&lt;span class="n"&gt;![Version&lt;/span&gt;&lt;span class="o"&gt;]&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nl"&gt;https&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="o"&gt;//&lt;/span&gt;&lt;span class="n"&gt;img&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;shields&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;io&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;pypi&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;v&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;pymarkdownlnt&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;svg&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="err"&gt;]&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nl"&gt;https&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="o"&gt;//&lt;/span&gt;&lt;span class="n"&gt;pypi&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;org&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;project&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="n"&gt;pymarkdownlnt&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="w"&gt;&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;The most important part of the badge is the badge image link, which is the Image
-element specified inside of the Link’s label.  In this case, I
-use the provider &lt;code&gt;img.shields.io&lt;/code&gt; to provide a badge
-displaying the version (the &lt;code&gt;/v&lt;/code&gt;) from PyPi (the &lt;code&gt;/pypi&lt;/code&gt;) for this project
-(the &lt;code&gt;pymarkdownlnt&lt;/code&gt;) in the SVG image format (the &lt;code&gt;.svg&lt;/code&gt;).  This is all
-that is required to display the above image with the version information.
-Because nothing is hardcoded, when I upload a new version of the project to PyPi,
-eventually &lt;code&gt;img.shields.io&lt;/code&gt; will expire its cache and retrieve a new version.
-When that happens, the badge image automatically updates.&lt;/p&gt;
-&lt;p&gt;The second part of the badge is the optional outer Link element.  While it is optional,
-it is convenient in that it includes a link to something associated with the badge
-itself.  In the above case, as the badge shows the version of the package on PyPi,
-it made sense to include a link to the package page on PyPi.  For the badge that I
-use to display the project’s license agreement (&lt;a href="https://github.com/jackdewinter/pymarkdown/blob/main/LICENSE.txt"&gt;&lt;img alt="License" src="https://img.shields.io/github/license/jackdewinter/pymarkdown.svg"/&gt;&lt;/a&gt;), I specify the location of the &lt;code&gt;license.txt&lt;/code&gt;
-file in the project.  And for badges where there is no commonsense page
-to go to, such as the Black version used to format the Python for the project
-(&lt;img alt="GitHub Pipenv locked dependency version (branch)" src="https://img.shields.io/github/pipenv/locked/dependency-version/jackdewinter/pymarkdown/black/master"/&gt;), I just
-provide the image with no link.&lt;/p&gt;
-&lt;p&gt;While I initially viewed badges as frivolous, I quickly decided that they are useful
-for two things: quick links for me and quick information for others. Instead of
-maintaining multiple project links in my browser’s toolbar, I can just go to the
-project’s main page and reference them from there.  From the other people
-perspective, I can hopefully provide information to anyone interested in the project
-in a quick and easy to digest summary format.&lt;/p&gt;
-&lt;h3 id="and-that-completed-the-work-on-version-051"&gt;And That Completed The Work on Version 0.5.1&lt;a class="headerlink" href="#and-that-completed-the-work-on-version-051" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;Having cleaned up what I wanted to, I went ahead and packaged up the code and
-documentation for the project and uploaded version 0.5.1 of the project
-to &lt;a href="https://pypi.org/project/pymarkdownlnt/0.5.1/"&gt;PyPi&lt;/a&gt;.&lt;/p&gt;
-&lt;p&gt;I then started on one more thing that I wanted to get out of the way before
-the initial release: a good solid CI/CD pipeline.&lt;/p&gt;
-&lt;h2 id="cicd-pipelines-with-github-actions"&gt;CI/CD Pipelines With Github Actions&lt;a class="headerlink" href="#cicd-pipelines-with-github-actions" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;For those who are not in the know, CI/CD pipelines are all the rage
-these days, and with good reason.  The full name for them is Continuous Integration
-and Continuous Deployment pipelines, which is a mouthful.  And technically,
-while I want a pipeline in place before the initial release, it will only technically
-be a Continuous Integration pipeline.&lt;/p&gt;
-&lt;p&gt;The difference between the two is simple: one is for integration, and one is
-for deployment.  Before sending an email to me to let me know that I am responsible
-for a facepalm that was just performed, let me explain: common sense isn’t always
-common.  A lot of people that I know in the industry often get those two parts
-of the pipeline or two different pipelines confused, so let me try and clarify
-what I mean.&lt;/p&gt;
-&lt;p&gt;&lt;a href="https://en.wikipedia.org/wiki/Continuous_integration"&gt;Continuous Integration&lt;/a&gt;
-is the part of the pipeline that most people implement and
-takes care of updating the project’s main repository with the latest changes
-submitted by developers.  Once submitted, those changes are subjected to various
-checks and balances to ensure that those changes do not negatively affect the
-project.  In the case of the pipeline that I am setting up, I am more concerned
-about running extensive checks after I have finished my own subset of checks.
-However, many pipelines are setup to mandate that all checks pass before any
-changes are accepted into the repository.  As these checks happen with every
-change submitted, and not on a schedule, they are considered continuous integrations.&lt;/p&gt;
-&lt;p&gt;&lt;a href="https://en.wikipedia.org/wiki/Continuous_deployment"&gt;Continuous Deployment&lt;/a&gt; is
-similar, but different.  For this example, in addition to the PyMarkdown linter,
-assume that we also provide a simple webservice.  This webservice allows people
-to submit Markdown documents, with the webservice reporting any standard violations
-back to the submitter.  With that assumption in place, we can set up another
-pipeline to trigger once the Continuous Integration pipeline produces a new artifact.
-This new pipeline will probably then run extra checks to verify that the new
-artifact works properly.
-If those checks succeed, then the pipeline starts the process of deploying that
-new artifact to the location where the webservice is being hosted.  Once again,
-only if all the checks pass will the new webservice be deployed to the
-specified environment.  So, while the concepts of integration and deployment are
-different, the continuous prefix of both concepts are the same in that they
-happen automatically once something is produced.&lt;/p&gt;
-&lt;p&gt;For this project, I do not have anything that I need to deploy, so I am just
-implementing a CI pipeline.  For now, when I submit any changes, I want to
-ensure that the formatting of the changes is correct, and I want to run the
-full set of scenario
-tests on all three common platforms.  I do not want to have to ask for these
-to be kicked off, I want it to “just happen”.  And that is where GitHub Actions
-comes into play.&lt;/p&gt;
-&lt;h3 id="github-actions"&gt;GitHub Actions&lt;a class="headerlink" href="#github-actions" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;While GitHub Actions have only been around for a short while, they have made
-quite the splash in the software community.  As the main repository for the
-PyMarkdown project is a GitHub repository, I can associate specific actions
-with specific triggers that occur with the repository itself.&lt;/p&gt;
-&lt;h4 id="setting-the-initial-context"&gt;Setting The Initial Context&lt;a class="headerlink" href="#setting-the-initial-context" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h4&gt;
-&lt;p&gt;This is what I specified in the prefix of my &lt;code&gt;main.yml&lt;/code&gt; file, located in the
-&lt;code&gt;.github/workflows/main.yml&lt;/code&gt; directory of the repository:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nt"&gt;name&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="l l-Scalar l-Scalar-Plain"&gt;Main&lt;/span&gt;
-
-&lt;span class="nt"&gt;on&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-  &lt;span class="nt"&gt;push&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-  &lt;span class="nt"&gt;pull_request&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-  &lt;span class="nt"&gt;schedule&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-    &lt;span class="p p-Indicator"&gt;-&lt;/span&gt; &lt;span class="nt"&gt;cron&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="s"&gt;'0&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;0&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;*&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;*&lt;/span&gt;&lt;span class="nv"&gt; &lt;/span&gt;&lt;span class="s"&gt;*'&lt;/span&gt;  &lt;span class="c1"&gt;# daily&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Breaking it down, this workflow has a name &lt;code&gt;Main&lt;/code&gt;, and will be executed if
-one of three criteria are met: a push occurs, a pull request is created,
-or the scheduled time occurs.  In this case, that scheduled time is 00:00,
-or midnight server time.  It is important to note that this interpretation
-of midnight is up to the server’s interpretation of midnight, not the viewer’s.&lt;/p&gt;
-&lt;p&gt;After that initial context was established, I started working on
-the &lt;code&gt;jobs&lt;/code&gt; section, which initially looked like this:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nt"&gt;jobs&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-  &lt;span class="nt"&gt;install-test&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-    &lt;span class="nt"&gt;runs-on&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="l l-Scalar l-Scalar-Plain"&gt;ubuntu-latest&lt;/span&gt;
-
-    &lt;span class="nt"&gt;steps&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-    &lt;span class="p p-Indicator"&gt;-&lt;/span&gt; &lt;span class="nt"&gt;uses&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="l l-Scalar l-Scalar-Plain"&gt;actions/checkout@v2&lt;/span&gt; &lt;span class="c1"&gt;# Checking out the repo&lt;/span&gt;
-
-    &lt;span class="p p-Indicator"&gt;-&lt;/span&gt; &lt;span class="nt"&gt;name&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="l l-Scalar l-Scalar-Plain"&gt;Install dependecies&lt;/span&gt;
-      &lt;span class="nt"&gt;uses&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="l l-Scalar l-Scalar-Plain"&gt;VaultVulp/action-pipenv@v2.0.1&lt;/span&gt;
-      &lt;span class="nt"&gt;with&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-        &lt;span class="nt"&gt;command&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="l l-Scalar l-Scalar-Plain"&gt;install -d&lt;/span&gt; &lt;span class="c1"&gt;# Install all dependencies, including development ones&lt;/span&gt;
-
-    &lt;span class="p p-Indicator"&gt;-&lt;/span&gt; &lt;span class="nt"&gt;name&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="l l-Scalar l-Scalar-Plain"&gt;Test&lt;/span&gt;
-      &lt;span class="nt"&gt;uses&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="l l-Scalar l-Scalar-Plain"&gt;VaultVulp/action-pipenv@v2.0.1&lt;/span&gt;
-      &lt;span class="nt"&gt;with&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-        &lt;span class="nt"&gt;command&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="l l-Scalar l-Scalar-Plain"&gt;run pytest&lt;/span&gt; &lt;span class="c1"&gt;# Run custom `pytest` command defined in the `[scripts]` block of Pipfile&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Looking around for something that worked with the project, I read the documentation
-on the &lt;code&gt;VaultVulp/action-pipenv&lt;/code&gt; action and thought it would work.  However,
-after a few attempts, I wasn’t getting anywhere. I then moved on to the
-&lt;code&gt;dschep/install-pipenv-action@v1&lt;/code&gt; action:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nt"&gt;test-2&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-    &lt;span class="nt"&gt;runs-on&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="l l-Scalar l-Scalar-Plain"&gt;ubuntu-latest&lt;/span&gt;
-    &lt;span class="nt"&gt;steps&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-    &lt;span class="p p-Indicator"&gt;-&lt;/span&gt; &lt;span class="nt"&gt;uses&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="l l-Scalar l-Scalar-Plain"&gt;actions/checkout@master&lt;/span&gt;
-    &lt;span class="p p-Indicator"&gt;-&lt;/span&gt; &lt;span class="nt"&gt;uses&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="l l-Scalar l-Scalar-Plain"&gt;actions/setup-python@v1&lt;/span&gt;
-    &lt;span class="p p-Indicator"&gt;-&lt;/span&gt; &lt;span class="nt"&gt;uses&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="l l-Scalar l-Scalar-Plain"&gt;dschep/install-pipenv-action@v1&lt;/span&gt;
-    &lt;span class="p p-Indicator"&gt;-&lt;/span&gt; &lt;span class="nt"&gt;run&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="l l-Scalar l-Scalar-Plain"&gt;pipenv run pytest&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;and got some manner of response right away.  Thinking about that response,
-I quickly changed the last line to:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="p p-Indicator"&gt;-&lt;/span&gt; &lt;span class="nt"&gt;run&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="l l-Scalar l-Scalar-Plain"&gt;pipenv --help&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;allowing me to make some progress.  I then realized that I had tried to jump right to
-executing the tests instead of just verifying that &lt;code&gt;pipenv&lt;/code&gt; was working
-for the project.  By only executing &lt;code&gt;pipenv --help&lt;/code&gt;, I was able to make sure
-that Pipenv was working properly without worrying about any other component,
-which was the right call for that point in time.  And while it wasn’t exactly
-where I wanted to be, that simplified workflow worked right away.&lt;/p&gt;
-&lt;p&gt;Thinking things through with my use of &lt;code&gt;pipenv&lt;/code&gt;, I figured out that
-&lt;code&gt;pipenv run pytest&lt;/code&gt; by itself was never going to work.  I needed to ensure
-that &lt;code&gt;pipenv&lt;/code&gt; sycned itself with the project before running the tests.  Therefore,
-I changed those steps to reflect that, as follows:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nt"&gt;test-2&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-    &lt;span class="nt"&gt;runs-on&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="l l-Scalar l-Scalar-Plain"&gt;ubuntu-latest&lt;/span&gt;
-    &lt;span class="nt"&gt;steps&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-    &lt;span class="p p-Indicator"&gt;-&lt;/span&gt; &lt;span class="nt"&gt;name&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="l l-Scalar l-Scalar-Plain"&gt;Checkout Repository&lt;/span&gt;
-      &lt;span class="nt"&gt;uses&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="l l-Scalar l-Scalar-Plain"&gt;actions/checkout@master&lt;/span&gt;
-    &lt;span class="p p-Indicator"&gt;-&lt;/span&gt; &lt;span class="nt"&gt;name&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="l l-Scalar l-Scalar-Plain"&gt;Setup Python 3.8&lt;/span&gt;
-      &lt;span class="nt"&gt;uses&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="l l-Scalar l-Scalar-Plain"&gt;actions/setup-python@v1&lt;/span&gt;
-      &lt;span class="nt"&gt;with&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-        &lt;span class="nt"&gt;python-version&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="l l-Scalar l-Scalar-Plain"&gt;3.8&lt;/span&gt;
-    &lt;span class="p p-Indicator"&gt;-&lt;/span&gt; &lt;span class="nt"&gt;name&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="l l-Scalar l-Scalar-Plain"&gt;Install PipEnv&lt;/span&gt;
-      &lt;span class="nt"&gt;uses&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="l l-Scalar l-Scalar-Plain"&gt;dschep/install-pipenv-action@v1&lt;/span&gt;
-    &lt;span class="p p-Indicator"&gt;-&lt;/span&gt; &lt;span class="nt"&gt;name&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="l l-Scalar l-Scalar-Plain"&gt;Sync With Repository&lt;/span&gt;
-      &lt;span class="nt"&gt;run&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="l l-Scalar l-Scalar-Plain"&gt;pipenv sync&lt;/span&gt;
-    &lt;span class="p p-Indicator"&gt;-&lt;/span&gt; &lt;span class="nt"&gt;name&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="l l-Scalar l-Scalar-Plain"&gt;Execute Tests&lt;/span&gt;
-      &lt;span class="nt"&gt;run&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="l l-Scalar l-Scalar-Plain"&gt;pipenv run pytest&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;and it worked right away!  Before, I had tried to create a workflow
-that jumped right to the last step, and it failed.  But now I was taking the
-time to set &lt;code&gt;pipenv&lt;/code&gt; up properly using &lt;code&gt;run: pipenv sync&lt;/code&gt;.  I still took the
-steps to run the test as before, but by inserting the &lt;code&gt;run: pipenv sync&lt;/code&gt; line
-into the workflow, I ensured that Pipenv synced itself up with the repository
-and its &lt;code&gt;piplock&lt;/code&gt; file. That helped a lot!&lt;/p&gt;
-&lt;p&gt;Also, it helped me to give each step a distinct name.  While different things
-work for different people, having a good name for each step just helped me
-identify with each step properly.  And seeing as I maintain this project,
-that was important to me.&lt;/p&gt;
-&lt;h4 id="adding-platform-support"&gt;Adding Platform Support&lt;a class="headerlink" href="#adding-platform-support" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h4&gt;
-&lt;p&gt;I stated earlier in the article, my main goal for the pipeline was to run more
-extensive tests than I can locally.  While I do have an Ubuntu subsystem on my
-machine, I do not have any Apple subsystem that I can install for testing.
-As such, I did some research and quickly ran into the GitHub Actions &lt;code&gt;strategy&lt;/code&gt; item.
-Looking like this:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="nt"&gt;strategy&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-      &lt;span class="nt"&gt;matrix&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-        &lt;span class="c1"&gt;#python: [3.8, 3.9]&lt;/span&gt;
-        &lt;span class="c1"&gt;#platform: [ubuntu-latest, macos-latest, windows-latest]&lt;/span&gt;
-        &lt;span class="nt"&gt;python&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p p-Indicator"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;3.8&lt;/span&gt;&lt;span class="p p-Indicator"&gt;]&lt;/span&gt;
-        &lt;span class="nt"&gt;platform&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p p-Indicator"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;windows-latest&lt;/span&gt;&lt;span class="p p-Indicator"&gt;]&lt;/span&gt;
-    &lt;span class="nt"&gt;runs-on&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="l l-Scalar l-Scalar-Plain"&gt;${{ matrix.platform }}&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;the strategy section replaces the &lt;code&gt;runs-on: ubuntu-latest&lt;/code&gt; line in the
-previous examples.  The power of this construct is that it allows me to
-specify multiple platforms and Python versions to test on, which is
-exactly what I wanted to do: more extensive testing.&lt;/p&gt;
-&lt;h4 id="code-coverage"&gt;Code Coverage&lt;a class="headerlink" href="#code-coverage" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h4&gt;
-&lt;p&gt;I could have focused on more extensive testing at this stage, but I decided to
-focus on duplicating the existing tests on my local development environment.
-At that moment, I was more interested
-in demonstrating the code coverage for the project rather than the project
-running on multiple platforms.  After doing some research on
-&lt;a href="codecov.io"&gt;CodeCov&lt;/a&gt;, I created a new account on their site and added this
-code to the workflow file:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="p p-Indicator"&gt;-&lt;/span&gt; &lt;span class="nt"&gt;name&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="l l-Scalar l-Scalar-Plain"&gt;Report Coverage&lt;/span&gt;
-      &lt;span class="nt"&gt;uses&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="l l-Scalar l-Scalar-Plain"&gt;codecov/codecov-action@v1&lt;/span&gt;
-      &lt;span class="nt"&gt;if&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="l l-Scalar l-Scalar-Plain"&gt;github.event_name != 'schedule'&lt;/span&gt;
-      &lt;span class="nt"&gt;with&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-        &lt;span class="nt"&gt;file&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="l l-Scalar l-Scalar-Plain"&gt;./report/coverage.xml&lt;/span&gt;
-        &lt;span class="nt"&gt;name&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="l l-Scalar l-Scalar-Plain"&gt;${{ matrix.python }} - ${{ matrix.platform }}&lt;/span&gt;
-        &lt;span class="nt"&gt;fail_ci_if_error&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="l l-Scalar l-Scalar-Plain"&gt;true&lt;/span&gt; 
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;After adding an environment secret to the project, the coverage information
-was relayed to CodeCov when I ran the workflow.  It was then available for
-examinination on the project’s page at
-&lt;a href="https://codecov.io/gh/jackdewinter/pymarkdown"&gt;codecov.io&lt;/a&gt;, and soon after that
-information appeared in a new badge for code coverage that I added.
-While I got a lot of
-benefit for a relatively small amount of work, it was due to my ongoing measurement
-of code coverage that this was so easy.  But a win is a win, so I took it.&lt;/p&gt;
-&lt;h2 id="cleaning-up-documentation"&gt;Cleaning Up Documentation&lt;a class="headerlink" href="#cleaning-up-documentation" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Now that I was getting tangibly close to releasing, I wanted to start tracking
-changes properly.  As such, when I noticed that every example in the project
-documentation was using &lt;code&gt;python main.py&lt;/code&gt; instead of &lt;code&gt;pymarkdown&lt;/code&gt;, I knew it
-was a good time to start.  So, I created
-&lt;a href="https://github.com/jackdewinter/pymarkdown/issues/3"&gt;Issue 3&lt;/a&gt;
-to track that project work needed to make the change.  While the change
-was small, it was a habit that I needed to get in to.&lt;/p&gt;
-&lt;h2 id="adding-lint-support"&gt;Adding Lint Support&lt;a class="headerlink" href="#adding-lint-support" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Before circling back and adding extra platforms to the workflow, there was
-one last thing that I needed to add: Lint Support.  Literally cutting and
-pasting from the other job in the workflow and my &lt;code&gt;clean.cmd&lt;/code&gt; script, I
-quickly came up with this job:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;  &lt;span class="nt"&gt;lint&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-    &lt;span class="nt"&gt;strategy&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-      &lt;span class="nt"&gt;matrix&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-        &lt;span class="nt"&gt;python&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p p-Indicator"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;3.8&lt;/span&gt;&lt;span class="p p-Indicator"&gt;]&lt;/span&gt;
-        &lt;span class="nt"&gt;platform&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p p-Indicator"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;windows-latest&lt;/span&gt;&lt;span class="p p-Indicator"&gt;]&lt;/span&gt;
-    &lt;span class="nt"&gt;runs-on&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="l l-Scalar l-Scalar-Plain"&gt;${{ matrix.platform }}&lt;/span&gt;
-    &lt;span class="nt"&gt;steps&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-    &lt;span class="p p-Indicator"&gt;-&lt;/span&gt; &lt;span class="nt"&gt;name&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="l l-Scalar l-Scalar-Plain"&gt;Checkout Repository&lt;/span&gt;
-      &lt;span class="nt"&gt;uses&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="l l-Scalar l-Scalar-Plain"&gt;actions/checkout@master&lt;/span&gt;
-    &lt;span class="p p-Indicator"&gt;-&lt;/span&gt; &lt;span class="nt"&gt;name&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="l l-Scalar l-Scalar-Plain"&gt;Setup Python 3.8&lt;/span&gt;
-      &lt;span class="nt"&gt;uses&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="l l-Scalar l-Scalar-Plain"&gt;actions/setup-python@v1&lt;/span&gt;
-      &lt;span class="nt"&gt;with&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-        &lt;span class="nt"&gt;python-version&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="l l-Scalar l-Scalar-Plain"&gt;3.8&lt;/span&gt;
-    &lt;span class="p p-Indicator"&gt;-&lt;/span&gt; &lt;span class="nt"&gt;name&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="l l-Scalar l-Scalar-Plain"&gt;Install PipEnv&lt;/span&gt;
-      &lt;span class="nt"&gt;uses&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="l l-Scalar l-Scalar-Plain"&gt;dschep/install-pipenv-action@v1&lt;/span&gt;
-    &lt;span class="p p-Indicator"&gt;-&lt;/span&gt; &lt;span class="nt"&gt;name&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="l l-Scalar l-Scalar-Plain"&gt;Sync With Repository&lt;/span&gt;
-      &lt;span class="nt"&gt;run&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="l l-Scalar l-Scalar-Plain"&gt;pipenv sync&lt;/span&gt;
-    &lt;span class="p p-Indicator"&gt;-&lt;/span&gt; &lt;span class="nt"&gt;name&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="l l-Scalar l-Scalar-Plain"&gt;Execute Flake8&lt;/span&gt;
-      &lt;span class="nt"&gt;run&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="l l-Scalar l-Scalar-Plain"&gt;pipenv run flake8 --exclude dist,build&lt;/span&gt;
-    &lt;span class="p p-Indicator"&gt;-&lt;/span&gt; &lt;span class="nt"&gt;name&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="l l-Scalar l-Scalar-Plain"&gt;Execute PyLint on Source&lt;/span&gt;
-      &lt;span class="nt"&gt;run&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="l l-Scalar l-Scalar-Plain"&gt;pipenv run pylint --rcfile=setup.cfg ./pymarkdown ./pymarkdown/extensions ./pymarkdown/plugins&lt;/span&gt;
-    &lt;span class="p p-Indicator"&gt;-&lt;/span&gt; &lt;span class="nt"&gt;name&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="l l-Scalar l-Scalar-Plain"&gt;Execute PyLint on Tests&lt;/span&gt;
-      &lt;span class="nt"&gt;run&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="l l-Scalar l-Scalar-Plain"&gt;pipenv run pylint --rcfile=setup.cfg ./test&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Since linting should work equally well on any given platform, I simply picked
-the Windows platform to run this job on.  Then, using my &lt;code&gt;clean.cmd&lt;/code&gt; script as
-a guide, I created new steps after the &lt;code&gt;run: pipenv sync&lt;/code&gt; step to execute
-the lint commands the exact same way that I execute those commands in my script.&lt;/p&gt;
-&lt;p&gt;While it doesn’t happen that often, I was able to get that new job up and running
-with only one try.  I appreciate that it was due to previous debugging sessions,
-but I was still grateful.&lt;/p&gt;
-&lt;h2 id="figuring-out-the-linux-tests"&gt;Figuring Out The Linux Tests&lt;a class="headerlink" href="#figuring-out-the-linux-tests" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;After having left the Linux tests turned off from the night before, on Thursday night
-I was eager to get them those tests working.  Enabling the Linux tests was
-as simple as adding the &lt;code&gt;ubuntu-latest&lt;/code&gt; tag to the &lt;code&gt;platform&lt;/code&gt; configuration
-for the tests:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="nt"&gt;platform&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p p-Indicator"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;windows-latest&lt;/span&gt;&lt;span class="p p-Indicator"&gt;,&lt;/span&gt; &lt;span class="nv"&gt;ubuntu-latest&lt;/span&gt;&lt;span class="p p-Indicator"&gt;]&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;and committing it to the repository.  That is when the fun began!&lt;/p&gt;
-&lt;p&gt;I created &lt;a href="https://github.com/jackdewinter/pymarkdown/issues/4"&gt;Issue 4&lt;/a&gt;
-to track the Linux build issues and
-&lt;a href="https://github.com/jackdewinter/pymarkdown/issues/5"&gt;Issue 5&lt;/a&gt;
-to track the MacOs build issues.  These issues didn’t have to have
-tons of documentation, just some information that would help me figure
-out what to do.&lt;/p&gt;
-&lt;p&gt;Thinking that it would be an easy fix, I looked at the output and
-determined that it was a problem with the temporary files that I use
-in the tests.  To ensure that configuration options are tested properly,
-for any scenario tests that require it, I create
-a temporary file with the configuration dictionary serialized to the file and
-pass the path to that
-temporary file into PyMarkdown using the &lt;code&gt;--config&lt;/code&gt; command line setting.
-But for some reason it wasn’t working.&lt;/p&gt;
-&lt;p&gt;At first, it reported a problem with the &lt;code&gt;delete=False&lt;/code&gt; parameter that
-was passed into the &lt;code&gt;TemporaryFile&lt;/code&gt; function but removing that parameter
-didn’t fix the problem.  So then I added &lt;code&gt;--log-level DEBUG&lt;/code&gt; to the arguments for one
-of the tests, but I didn’t see any immediate difference.  After four
-more &lt;code&gt;debug&lt;/code&gt; commits, I still wasn’t any closer to getting any information
-that would help me figure things out.&lt;/p&gt;
-&lt;p&gt;I figured out that the only way I was going to figure out the issue properly
-was to install the Ubuntu subsystem on my machine.  Without that, I was going
-to be guessing and guessing, with not much progress.  After setting up
-the install for the Ubuntu subsystem, I decided it was time that I retired
-for the night.  I had no idea what I was in store for next.&lt;/p&gt;
-&lt;h3 id="serendipity-strikes"&gt;Serendipity Strikes&lt;a class="headerlink" href="#serendipity-strikes" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;Having some family commitments to attend to, I was out of the house for about
-24 hours from Friday to Saturday. When I got home, I was shocked.  My system
-had died.  It really died.  After three or four hours of doing updates and resets
-and such, I was very convinced that it had died to the extent that it would take a
-complete re-install of the operating system to get things back in working order.
-It was deflating.&lt;/p&gt;
-&lt;p&gt;But I had an option.  My son is very hardware oriented, and before this year’s
-computer chip scarcity started, he built himself a new system from scratch.  To
-help him on his journey and get a newer system in the process, I purchased his
-old system from him.  My current system was at least six years old and purchased from
-Fry’s, whereas his older system was around three years old and
-made from scratch for his gaming needs.  It was going to be a clear upgrade.&lt;/p&gt;
-&lt;p&gt;The issue?  Time.  Between my various hobbies, yardwork, professional work,
-and the PyMarkdown project, I had never found the required time to get his
-older system set up.  Now that my system died, I had a great forcing function
-for me to get it set up and fast.&lt;/p&gt;
-&lt;p&gt;Thankfully, I back most of what I need up to a backup server, and I was able
-to retain almost everything that I thought I might have lost.  Installing
-the new operating system on the older machine was a lot easier than I remembered
-it being, and it was quickly completed.  Going through a list of programs
-that I needed took a bit, but by focusing on it, I made quick progress of it.
-Once that was done, I started getting my GitHub repositories cloned to my
-new system, and I was back in business.&lt;/p&gt;
-&lt;p&gt;Painful, but worth it.  The new system is clean, uncluttered, and fast.&lt;/p&gt;
-&lt;h3 id="getting-back-to-work"&gt;Getting Back To Work&lt;a class="headerlink" href="#getting-back-to-work" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;After sleeping in Sunday morning (after setting up the system until sometime in
-the early morning), I started to work on the Linux test issue in my system’s
-Ubuntu subsystem.  I had
-installed Python, Git, and everything else the night before, so it was just
-a matter of working things out from my usual baseline.&lt;/p&gt;
-&lt;p&gt;With everything in place, I was able to quickly diagnose what the problem was.  In my
-haste to get things working, I had created temporary files on my Windows
-system using the &lt;code&gt;TemporaryFile&lt;/code&gt; Python function.  While it worked fine on
-my Windows machine, it was not working at all on my Ubuntu subsystem.  After
-a bit of research, I determined that I needed to change that function to the
-&lt;code&gt;NamedTemporaryFile&lt;/code&gt; function and add the &lt;code&gt;delete=False&lt;/code&gt; parameter back to
-the call to that function.  After removing the &lt;code&gt;print&lt;/code&gt; debug statements that
-I had previously added, that one change alone brough the number of failing
-tests from 70 down to 5 in a matter of minutes.  After more than three days
-of trying to figure it out, it was solved, and it felt good.&lt;/p&gt;
-&lt;p&gt;The next three issues were also easy to fix.  When I wrote the tests
-that handled the &lt;code&gt;entities.json&lt;/code&gt; file testing, I erroneously used simple
-string concatenation to determine the path names.  Now that I was dealing
-with more than one operating system, that practice fell apart.  Replacing those
-concatenations with calls to &lt;code&gt;os.path.join&lt;/code&gt; and doing some extra testing,
-I was able to put that issue to bed.  With a reminder to myself to not
-shortcut code that deals with operating systems and their artifacts, it
-was on to the next set of tests.&lt;/p&gt;
-&lt;p&gt;There were only two stubborn tests left.  Looking at the output, those test
-failures appeared to be simple ordering issues.  When the &lt;code&gt;pymarkdown plugins list&lt;/code&gt;
-command was submitted on the Linux systems, the order in which the plugins
-were reported back seemed arbitrary.  To fix that, I simply replaced:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;next_plugin_id&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;all_plugin_ids&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;with the code:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="n"&gt;ids&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;all_plugin_ids&lt;/span&gt;
-    &lt;span class="n"&gt;ids&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;sort&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
-    &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;next_plugin_id&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;ids&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;to sort the list before using it, and I was then down to zero failures.
-After ensuring that everything was working properly for both Windows and
-Ubuntu environments, I ran my script to clean up the code and committed
-those changes.  A few anxious minutes later, and all the GithubAction
-jobs completed successfully!&lt;/p&gt;
-&lt;h2 id="and-then-issue-5"&gt;And Then… Issue 5&lt;a class="headerlink" href="#and-then-issue-5" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;And after all that work to get tests running on Linux machines,
-&lt;a href="https://github.com/jackdewinter/pymarkdown/issues/5"&gt;Issue 5&lt;/a&gt;
-was addressed by simply including the &lt;code&gt;macos-latest&lt;/code&gt; platform:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="nt"&gt;platform&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p p-Indicator"&gt;[&lt;/span&gt;&lt;span class="nv"&gt;windows-latest&lt;/span&gt;&lt;span class="p p-Indicator"&gt;,&lt;/span&gt; &lt;span class="nv"&gt;ubuntu-latest&lt;/span&gt;&lt;span class="p p-Indicator"&gt;,&lt;/span&gt; &lt;span class="nv"&gt;macos-latest&lt;/span&gt;&lt;span class="p p-Indicator"&gt;]&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;I fully expected something to happen, but nothing did.  After
-everything it took to get to that point, it was a nice change.&lt;/p&gt;
-&lt;h2 id="and-finally-the-initial-release"&gt;And Finally… The Initial Release&lt;a class="headerlink" href="#and-finally-the-initial-release" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;And with as much fanfare as the release of PyMarkdown &lt;code&gt;0.5.0&lt;/code&gt;, the
-initial release of PyMarkdown &lt;code&gt;0.8.0&lt;/code&gt; was released.  All scenario
-tests are passing on all platforms.  The entire project is being
-linted and everything looks fine.  It just feels right.&lt;/p&gt;
-&lt;h2 id="what-was-my-experience-so-far"&gt;What Was My Experience So Far?&lt;a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;It was a long time getting to this point, but I was now here.  I
-have a project that I can be proud of that I believe has been architected,
-designed, and implemented properly.  It has a healthy set of scenario tests
-and unit tests, and it follows known coding practices.  More than that,
-I gave myself the time to do things properly instead of rushing ahead,
-even when my instinct was to do just that.&lt;/p&gt;
-&lt;p&gt;With the initial release taken care of, I know I have some issues to take
-care of before I start adding new features, but I feel okay about that.
-I have a good set of things that I know I must look at, and a great set
-of tests that will make sure that any changes I make don’t break anything else.
-Basically, because I took my time to do things “right”, I have the utmost
-confidence that I can quickly deal with most of the issues in the Issues List.&lt;/p&gt;
-&lt;p&gt;And because of what I have learned getting to this point, the experience has
-been priceless.&lt;/p&gt;
-&lt;h2 id="what-is-next"&gt;What is Next?&lt;a class="headerlink" href="#what-is-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;To be honest, I am not sure.  I still need to work on the project,
-but I am not sure if I should get some utility stuff dealt with or
-focus on the project before moving forward.  Stay tuned!&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry></feed>
+&lt;/div&gt;</content><category term="Software Quality"></category><category term="Python packages"></category></entry></feed>
