@@ -1,5 +1,190 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench - Software Quality</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/software-quality.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2022-01-17T00:00:00-08:00</updated><entry><title>Markdown Linter - Finding Something That Works</title><link href="https://jackdewinter.github.io/2022/01/17/markdown-linter-finding-something-that-works/" rel="alternate"></link><published>2022-01-17T00:00:00-08:00</published><updated>2022-01-17T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2022-01-17:/2022/01/17/markdown-linter-finding-something-that-works/</id><summary type="html">
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench - Software Quality</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/software-quality.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2022-01-24T00:00:00-08:00</updated><entry><title>Markdown Linter - Why Nested Containers Are So Difficult</title><link href="https://jackdewinter.github.io/2022/01/24/markdown-linter-why-nested-containers-are-so-difficult/" rel="alternate"></link><published>2022-01-24T00:00:00-08:00</published><updated>2022-01-24T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2022-01-24:/2022/01/24/markdown-linter-why-nested-containers-are-so-difficult/</id><summary type="html">
+&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In my
+&lt;a href="https://jackdewinter.github.io/2022/01/10/markdown-linter-know-when-to-break-the-rules/"&gt;last article&lt;/a&gt;, I talked
+about finding a process that works for yourself.  In this article, I talk about
+continuing to make progress on testing nested containers.&lt;/p&gt;
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;It took me a while to get this latest round of scenario tests added and passing,
+but it was worth …&lt;/p&gt;</summary><content type="html">
+&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In my
+&lt;a href="https://jackdewinter.github.io/2022/01/10/markdown-linter-know-when-to-break-the-rules/"&gt;last article&lt;/a&gt;, I talked
+about finding a process that works for yourself.  In this article, I talk about
+continuing to make progress on testing nested containers.&lt;/p&gt;
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;It took me a while to get this latest round of scenario tests added and passing,
+but it was worth getting them added into the &lt;a href="https://github.com/jackdewinter/pymarkdown"&gt;PyMarkdown project&lt;/a&gt;.
+I have known that nested
+container elements have been a concern of mine for a while, so it is nice to be
+able to finally start addressing it.  Even if it did take a couple of weeks.&lt;/p&gt;
+&lt;h2 id="what-is-the-audience-for-this-article"&gt;What Is the Audience for This Article?&lt;a class="headerlink" href="#what-is-the-audience-for-this-article" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;While detailed more eloquently in
+&lt;a href="https://jackdewinter.github.io/2020/04/05/what-is-the-audience-for-my-blog/#what-is-the-audience-for-my-blog"&gt;this article&lt;/a&gt;,
+my goal for this technical article is to focus on the reasoning behind my solutions,
+rather than the solutions themselves.  For a full record of the solutions presented in
+this article, please consult the commits that occurred between
+&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/956fbbd345e02440c9cde61c90495ac1f6b9f3c5"&gt;04 Jan 2022&lt;/a&gt;
+and
+&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/6d127143ccfccfc5bbfe86c12cf7bf206b8cb094"&gt;23 Jan 2022&lt;/a&gt;.&lt;/p&gt;
+&lt;h2 id="the-long-haul-issue-227"&gt;The Long Haul: &lt;a href="https://github.com/jackdewinter/pymarkdown/issues/227"&gt;Issue 227&lt;/a&gt;&lt;a class="headerlink" href="#the-long-haul-issue-227" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;The concept itself is simple, but the testing and debugging of the first set of
+scenarios for this are far from simple.  The concept of this issue is to take
+every combination of three-level deep Markdown containers, and make sure that they
+all parse properly at their maximum distances.&lt;/p&gt;
+&lt;p&gt;What does that mean?  Picked at random, the test function &lt;code&gt;test_nested_three_block_block_ordered&lt;/code&gt;
+contains the following Markdown document:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt; &lt;span class="n"&gt;list&lt;/span&gt;
+&lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;&lt;/span&gt;    &lt;span class="n"&gt;item&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;This example could be taken out of the &lt;a href="https://github.github.com/gfm/"&gt;GitHub Flavored Markdown&lt;/a&gt;
+specification for its simplicity.  It is simply an Ordered List element within a
+Block Quote element within another Block Quote element.  Each bit of spacing between
+each container element and the next element is done according to normal standards.&lt;/p&gt;
+&lt;p&gt;But in the real world, things are not always standard.  There is an optional space
+character that follows the Block Quote character (&lt;code&gt;&amp;gt;&lt;/code&gt;) and a required space character
+that follows the Ordered List sequence (&lt;code&gt;1.&lt;/code&gt;).  At that point, to allow for different
+expressions of the document, up to three space characters can be provided.&lt;/p&gt;
+&lt;p&gt;While I was not able to find any reason why three or less space characters are
+okay, but four or more space characters is an indented code block, my guess is because
+of the tab character.  Putting aside that the tab character is interpreted as a
+&lt;a href="https://github.github.com/gfm/#tabs"&gt;Tab Stop&lt;/a&gt; rather than four straight space
+characters, it looks like Indented Code Block elements were prefaced with four
+space characters, or a non-justified tab character, because it was easy.  The
+way I think about it is this.  If you want to create an Indented Code Block element
+outside of any container, simply use a tab character or its equivalent of four
+space characters.&lt;/p&gt;
+&lt;p&gt;But as I am about to show, that does add in some complexities to nested container
+elements.&lt;/p&gt;
+&lt;h3 id="indented-text-works-up-to-a-point"&gt;Indented Text Works… Up To A Point&lt;a class="headerlink" href="#indented-text-works-up-to-a-point" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;To see this indented behavior in action, run this Markdown document through any GitHub
+Flavored Markdown compliant
+Markdown parser, such as &lt;a href="https://johnmacfarlane.net/babelmark2/?text=1.+zero+spaces%0A1.++one+space%0A1.+++two+spaces%0A1.++++three+spaces%0A1.+++++four+spaces"&gt;BabelMark&lt;/a&gt;:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt; &lt;span class="n"&gt;zero&lt;/span&gt; &lt;span class="n"&gt;spaces&lt;/span&gt;
+&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;  &lt;span class="n"&gt;one&lt;/span&gt; &lt;span class="k"&gt;space&lt;/span&gt;
+&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;   &lt;span class="n"&gt;two&lt;/span&gt; &lt;span class="n"&gt;spaces&lt;/span&gt;
+&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;    &lt;span class="n"&gt;three&lt;/span&gt; &lt;span class="n"&gt;spaces&lt;/span&gt;
+&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;     &lt;span class="n"&gt;four&lt;/span&gt; &lt;span class="n"&gt;spaces&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Except for the English name for the number of spaces after the start
+of the List element, the first four lines each translate neatly into a simple text element
+within a List Item HTML element.  Once four spaces are used, as on the fifth
+line, the List Item text transfers from simple Markdown text to an Indented Code
+Block element.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;ol&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;li&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;zero spaces&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;li&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;li&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;one space&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;li&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;li&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;two spaces&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;li&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;li&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;three spaces&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;li&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;li&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;pre&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;code&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;four spaces
+&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;code&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;pre&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;li&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;ol&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;While this is simple when showing these indents and their behavior when starting
+from column 1, it easily gets more complicated when nested containers come into
+play.  That was one of the reasons that I introduced this series of scenario tests:
+the &lt;code&gt;max&lt;/code&gt; series.  Starting with the Markdown document for the &lt;code&gt;test_nested_three_block_block_ordered&lt;/code&gt;,
+test function, I then created the document for the &lt;code&gt;test_nested_three_block_max_block_max_ordered_max&lt;/code&gt;
+test function, injecting three spaces between elements instead of zero spaces.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;   &lt;span class="o"&gt;&amp;gt;&lt;/span&gt;    &lt;span class="o"&gt;&amp;gt;&lt;/span&gt;    &lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;list&lt;/span&gt;
+   &lt;span class="o"&gt;&amp;gt;&lt;/span&gt;    &lt;span class="o"&gt;&amp;gt;&lt;/span&gt;    &lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;list&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;From there, I pedantically added one extra space character to each level of that
+scenario for each container element, increasing the space between container elements
+from three spaces to four spaces. So, for the &lt;code&gt;test_nested_three_block_max_plus_one_block_max_block_max&lt;/code&gt;
+test function, I added &lt;code&gt;plus one&lt;/code&gt; space character after the first Block Quote element,
+resulting in a document of:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="o"&gt;&amp;gt;&lt;/span&gt;    &lt;span class="o"&gt;&amp;gt;&lt;/span&gt;    &lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;list&lt;/span&gt;
+    &lt;span class="o"&gt;&amp;gt;&lt;/span&gt;    &lt;span class="o"&gt;&amp;gt;&lt;/span&gt;    &lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;item&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Once that was finished, I also went through the combinations for the other two
+container elements at that level, producing the required tests for those scenarios.&lt;/p&gt;
+&lt;p&gt;It was not complicated, but it took a while to work through everything.  For each
+of the &lt;code&gt;test_nested_three_&lt;/code&gt; modules, twelve new scenarios were added to cover all
+the combinations.  With nine combinations of the base two container elements, which
+meant that I added ninety-six new scenario tests.  And that was just the beginning.&lt;/p&gt;
+&lt;p&gt;It was also interesting.  Plus-one indents at the first two levels were easy
+to get working correctly, but it was the second lines that gave me the most trouble.
+Making sure that the containers and indents worked together on that second line
+was the bulk of the issue that I needed to fix.  But it was worth it!&lt;/p&gt;
+&lt;h3 id="it-just-takes-time"&gt;It Just Takes Time&lt;a class="headerlink" href="#it-just-takes-time" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Adding all those scenario tests was a chore, taking a couple of days to work
+through them all.  It just took time to run through each of the ninety-six different
+scenarios, verify that I had entered everything in properly, and generate the HTML
+output using Babelmark.  From there, I ran each scenario test individually against
+PyMarkdown, noting which scenario tests passed and which scenario tests failed.&lt;/p&gt;
+&lt;p&gt;In the end, just over half of the scenario tests passed, and just under half of
+the scenario tests failed.  It was not the ratio that I was hoping for, but it
+was the one I needed to work with.  So, little bit by little bit, I started
+picking up groups of similar failures and dealing with them.&lt;/p&gt;
+&lt;p&gt;Two weeks after I started working on those failures, I finally had them all
+passing.  It was a real mixed bag of experiences.  Some of the failures that
+I looked at were resolved within a couple of hours of debugging and fixing.
+Other failures took a day or two for me to just figure out the debugging
+end of things, with the fixing of the issue taking just as long.  In some
+cases, I was moving code from deeper within the parser code to closer to
+the surface.  For others, it was adding net-new code for a situation that I did
+not have to cover before.&lt;/p&gt;
+&lt;p&gt;And the amount of code varied as much as the location of the code and the complexity
+met in figuring out what that code was.  In a couple of cases, I merely
+had to ensure that a calculated value was being added to another variable in
+the correct manner.  While those were nice to have, most of code fixes required
+between ten and fifteen lines of new code, usually to compute a value that was
+needed in another location.  And there was one case where the number of changed
+lines peaked at around fifty lines.&lt;/p&gt;
+&lt;p&gt;As I said above, it was a real mixed bag.  But as I have said in the last
+couple of articles I posted, having a good set of processes that work for
+me really helped.  Often, I ended up scribbling down the Markdown
+document for the scenario and working through it on paper as well as through
+the code.  There are may &lt;a href="https://ux.stackexchange.com/questions/91255/how-can-i-best-display-a-blank-space-character#:~:text=Visual%20representation%20of%20spaces%20in%20text%20are%20more,impact%20of%20the%20former%20representation%20in%20most%20fonts."&gt;Blank Characters&lt;/a&gt;
+scribbled on those pages, from a habit I picked up years ago when I started
+writing parsers.  From the above link:&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;The symbol ␢ has a long history of use for this purpose in early computer programming. It was handwritten on coding sheets by programmers to indicate a space character to punch-card machine operators (who were like a typing pool).&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;I am not sure how common they are outside of my use of them in parser design, but
+I find them to be invaluable for clearly writing down what is being parsed.&lt;/p&gt;
+&lt;p&gt;So, it was a long journey to get those scenario tests passing, but I knew
+it was just a matter of time before I got there.&lt;/p&gt;
+&lt;h3 id="still-a-bit-left-to-go"&gt;Still A Bit Left To Go&lt;a class="headerlink" href="#still-a-bit-left-to-go" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;So there interesting thing about adding a series of combinatorically generated
+scenario tests is that interesting patterns appear.  For this set of scenario
+tests, I know that there are some simple tests that I am going to have to add
+in the next series of scenario tests.  A good portion of them are for my own benefit,
+making sure that the project is already covering scenarios that I believe are
+covered.  With my solutions for a small group of third-level nesting scenario
+tests, I believe that my solutions might cause a problem if extended to a fourth-level
+nesting scenario.  And finally, there are a handful of scenario test variations
+that I missed with the current set of scenario tests.&lt;/p&gt;
+&lt;p&gt;None of these issues (or possible issues) were things that I could have spotted
+ahead of time.&lt;/p&gt;
+&lt;h2 id="what-was-my-experience-so-far"&gt;What Was My Experience So Far?&lt;a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;With other things going on in life in the last couple of weeks, it sometimes was
+a struggle to get some “me” time to work on the PyMarkdown project.  But with
+few exceptions, it was useful time that helped me center myself.  There were a
+couple of issues that I thought I would never solve.  In each case, I trusted
+in my development process, took the breaks that I needed, and used a lot of paper
+to scribble out possible parsing paths.  Because of my confidence in my process,
+while I knew I might have difficulty figuring out how to solve the current issue,
+I knew that I would get there.&lt;/p&gt;
+&lt;p&gt;And it was this week that led me to an interesting conclusion: this is not the
+last Container Block Processor module that I am going to write.  While the last
+rewrite helped me get closer to a clean implementation, this recent set of issues
+has led me to believe that I still have some learning left to do.  Only once I
+finish that learning will I properly be able to implement a clean parser.&lt;/p&gt;
+&lt;p&gt;I am okay with that.  It is probably not going to happen for at least a year,
+and there is no timetable associated with it, but it will happen.  And when
+I get to that point, I believe I will feel that it is the right thing to do.&lt;/p&gt;
+&lt;p&gt;But right now, it is all about finishing these nested container tests.  And I still
+have work to do!&lt;/p&gt;
+&lt;h2 id="what-is-next"&gt;What is Next?&lt;a class="headerlink" href="#what-is-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;As one of the sections above noted, I have a handful of extra scenarios that
+I need to take care of before moving on.  Once those are done, I will probably
+release a new version of PyMarkdown, just to make sure it is current.
+Stay tuned!&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry><entry><title>Markdown Linter - Finding Something That Works</title><link href="https://jackdewinter.github.io/2022/01/17/markdown-linter-finding-something-that-works/" rel="alternate"></link><published>2022-01-17T00:00:00-08:00</published><updated>2022-01-17T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2022-01-17:/2022/01/17/markdown-linter-finding-something-that-works/</id><summary type="html">
 &lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;In my
 &lt;a href="https://jackdewinter.github.io/2022/01/10/markdown-linter-know-when-to-break-the-rules/"&gt;last article&lt;/a&gt;, I talked
@@ -8805,431 +8990,6 @@ Stay tuned!&lt;/p&gt;
 &lt;ol&gt;
 &lt;li id="fn:tabstop"&gt;
 &lt;p&gt;A tabstop of 4 means that when the tab character is encountered, it moves the current position to the next multiplier of 4. &lt;a class="footnote-backref" href="#fnref:tabstop" title="Jump back to footnote 1 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
-&lt;/li&gt;
-&lt;/ol&gt;
-&lt;/div&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry><entry><title>Markdown Linter - Getting Back To New Rules</title><link href="https://jackdewinter.github.io/2021/07/26/markdown-linter-getting-back-to-new-rules/" rel="alternate"></link><published>2021-07-26T00:00:00-07:00</published><updated>2021-07-26T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2021-07-26:/2021/07/26/markdown-linter-getting-back-to-new-rules/</id><summary type="html">
-&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;In my
-&lt;a href="https://jackdewinter.github.io/2021/07/12/markdown-linter-full-of-sound-and-fury/"&gt;last article&lt;/a&gt;, I talked
-about continuing that work and dealing with the remaining nested block scenario tests.
-In this article, I talk about starting to tackle the long list of rules that
-are not yet implemented.&lt;/p&gt;
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;It feels like forever since I have done any development …&lt;/p&gt;</summary><content type="html">
-&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;In my
-&lt;a href="https://jackdewinter.github.io/2021/07/12/markdown-linter-full-of-sound-and-fury/"&gt;last article&lt;/a&gt;, I talked
-about continuing that work and dealing with the remaining nested block scenario tests.
-In this article, I talk about starting to tackle the long list of rules that
-are not yet implemented.&lt;/p&gt;
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;It feels like forever since I have done any development work on
-&lt;a href="https://github.com/jackdewinter/pymarkdown"&gt;the PyMarkdown project&lt;/a&gt;.
-And I must say, it really does feel good to be back.  It is involving a lot
-of hard work and a lot of pushing through cobwebs, but it still feels good.
-It also helps that during that time, I was able
-to document what I was feeling and work some more through those issues.  While
-it was not coding, it did help me work through things, and that was good.&lt;/p&gt;
-&lt;p&gt;Below, I start off the main part of the article talking about how I decided where
-to start working on the project. I will spoil the surprise and say that it is
-expanding the number of implemented rules.  Going into more detail below, I quickly
-found it obvious that in a linter
-that is essentially a rule engine, I need to get more rules implemented to
-verify that everything is working properly.  And with 31 rules slated to be
-implemented before the version 1.0 release, I had some work to do.  And with me
-looking for something fresh to work on, it was the obvious choice!&lt;/p&gt;
-&lt;h2 id="what-is-the-audience-for-this-article"&gt;What Is the Audience for This Article?&lt;a class="headerlink" href="#what-is-the-audience-for-this-article" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;While detailed more eloquently in
-&lt;a href="https://jackdewinter.github.io/2020/04/05/what-is-the-audience-for-my-blog/#what-is-the-audience-for-my-blog"&gt;this article&lt;/a&gt;,
-my goal for this technical article is to focus on the reasoning behind my solutions,
-rather that the solutions themselves.  For a full record of the solutions presented in
-this article, please consult the commits that occurred between
-&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/90b813dad766885536f796ce3ad324b797c4b283"&gt;17 Jul 2021&lt;/a&gt;
-and
-&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/5713bfaa1abb99802823ce44912c05af452e500b"&gt;25 Jul 2021&lt;/a&gt;.&lt;/p&gt;
-&lt;h2 id="where-to-begin"&gt;Where To Begin?&lt;a class="headerlink" href="#where-to-begin" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;As I mentioned in my articles
-&lt;a href="https://jackdewinter.github.io/2020/11/11/autism-stress-and-anxiety/"&gt;Autism, Stress, and Anxiety&lt;/a&gt; and
-&lt;a href="https://jackdewinter.github.io/2021/07/19/developers-give-yourself-permission/"&gt;Developers, Give Yourself Permission&lt;/a&gt;,
-I been out of it for a couple of weeks, recovering from something I caught
-while doing some normal work around my house.  It really knocked my down for
-a while, and I am still partially recovering to this day.  Mix into that the
-usual stuff I deal with at work and around my house, and I just have not had
-a lot of time to focus on
-&lt;a href="https://github.com/jackdewinter/pymarkdown"&gt;the project&lt;/a&gt;
-lately.  It took me a bit of time to build up momentum, but I am now at the
-point where I feel that I can devote some time to project while in the right mindset.&lt;/p&gt;
-&lt;p&gt;But where to begin?  Looking at the various items in the
-&lt;a href="https://github.com/jackdewinter/pymarkdown/issues.md"&gt;Issues List&lt;/a&gt;,
-I am glad that I have kept them together in a single list.  Why? Because
-of the way I analyze things, I find that it gives me a more complete
-picture when I can see everything in a simple overview mode.  And
-it is there that I started looking.&lt;/p&gt;
-&lt;p&gt;Looking at that list, I quickly noticed that there were three main
-categories of issues that I need to eventually tackle.  The first section of
-the list contains features that need to be added to the project.
-Without these features in the project, I do not feel that the project
-should ship a full 1.0 release, so they are very important.
-The second section contains issues that need to be examined and
-dealt with to make sure that things are working properly.  If
-I had to sum up this section, these were typically added from tests
-that were &lt;em&gt;mostly&lt;/em&gt; passing, with me punting the extra work until a
-later time.  Finally, the remaining items are “nice to haves”, issues
-that I would like to see completed and dealt with but have a lower
-chance of being hit by users.  I hope.&lt;/p&gt;
-&lt;p&gt;When I was taking a high-level look at the issues list like that, the big
-thing that hit me was that a lot of missing features have to deal
-with rules.  Basically, I see developer documentation, one item
-for pragmas, one item for front matter as YAML, then the rest are
-about rules. That made the decision obvious to me.  I needed to make
-some good headway into implementing those missing rules.  And what
-better place to start than at the start of the list.  Away I went.&lt;/p&gt;
-&lt;h2 id="unordered-list-elements-and-styles"&gt;Unordered List Elements And Styles&lt;a class="headerlink" href="#unordered-list-elements-and-styles" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;As soon as I started to look at this rule, I knew I was rusty.  It probably
-did not help that I was still recovering, or at least that is what I told myself.
-Whether that was true or not, I cannot tell at this point.  I can only say that
-it is what I felt at the time that I started working on this rule.&lt;/p&gt;
-&lt;h3 id="design"&gt;Design&lt;a class="headerlink" href="#design" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;Due to me taking some time off, coming up with the design for this rule took
-me a fair bit longer that I had hoped.  I tried a couple of times to do
-something very clever, but those iterations of the design quickly found their
-way to my trashcan.  In the end, the easy solution won out.  I guess with
-some patterns like that, I have a bit more progress to go on keeping things
-simple from the start.&lt;/p&gt;
-&lt;p&gt;The easy part of the design that that part of the configuration enabled a static
-mode, and the other part enabled a dynamic mode.  For the static mode, the Unordered
-List element start character was set for the entire document, no exceptions.  The
-two dynamic modes allowed for a different starting character to be specified.
-For the default mode, &lt;code&gt;consistent&lt;/code&gt;, once any Unordered List element is started, that
-starting character must be used for all Unordered List elements in the document.
-A slight variation, &lt;code&gt;sublist&lt;/code&gt;, differs in behavior in that once any Unordered List
-element is started at that sublist level, that starting character must be used
-for all Unordered List elements at that sublist level.&lt;/p&gt;
-&lt;p&gt;To that extent, the design ended up being very simple.  I first needed an array
-to capture the starting character to use for that level, and an index to specify
-what level of sublists the rule was currently at.  If the entry does not exist,
-it needs to be initialed with either the current starting character if in dynamic
-mode or the configured character if in static mode.  Once that was all set up,
-the rest of the design is simply to compare the current start List Item character
-against that array and if they do not match, report an error.&lt;/p&gt;
-&lt;h3 id="coding"&gt;Coding&lt;a class="headerlink" href="#coding" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;I knew I was still trying to build momentum, so I was probably more cautious than
-I needed to be, checking everything three or four times.  In the end, I implemented
-the rule almost exactly as I had designed it:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;starting_new_file&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
-    &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__actual_style_type&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;{}&lt;/span&gt;
-    &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__current_list_level&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;
-    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__style_type&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
-        &lt;span class="n"&gt;RuleMd004&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__consistent_style&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-        &lt;span class="n"&gt;RuleMd004&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__sublist_style&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-    &lt;span class="p"&gt;):&lt;/span&gt;
-        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__actual_style_type&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__style_type&lt;/span&gt;
-
-&lt;span class="nd"&gt;@classmethod&lt;/span&gt;
-&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;__get_sequence_type&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;cls&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
-    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;list_start_sequence&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="s2"&gt;"*"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;RuleMd004&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__asterisk_style&lt;/span&gt;
-    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;list_start_sequence&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="s2"&gt;"+"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;RuleMd004&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__plus_style&lt;/span&gt;
-    &lt;span class="k"&gt;assert&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;list_start_sequence&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="s2"&gt;"-"&lt;/span&gt;
-    &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;RuleMd004&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__dash_style&lt;/span&gt;
-
-&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;next_token&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;context&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
-    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_unordered_list_start&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__current_list_level&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__actual_style_type&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-            &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__actual_style_type&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;
-                &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__current_list_level&lt;/span&gt;
-            &lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__get_sequence_type&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-
-        &lt;span class="n"&gt;this_start_style&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__get_sequence_type&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__actual_style_type&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__current_list_level&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="n"&gt;this_start_style&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-            &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;report_next_token_error&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;context&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__current_list_level&lt;/span&gt; &lt;span class="o"&gt;+=&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
-    &lt;span class="k"&gt;elif&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_unordered_list_end&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__current_list_level&lt;/span&gt; &lt;span class="o"&gt;-=&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Instead of using an array to hold the start characters, I decided to use a
-dictionary to see if it made the implementation any more redable.&lt;sup id="fnref:readable"&gt;&lt;a class="footnote-ref" href="#fn:readable"&gt;1&lt;/a&gt;&lt;/sup&gt;
-In the &lt;code&gt;starting_new_file&lt;/code&gt; function, I made sure that the &lt;code&gt;__actual_style_type&lt;/code&gt;
-and &lt;code&gt;__current_list_level&lt;/code&gt; member variables were properly set to ensure that
-the static cases were taken care of without any extra code.&lt;/p&gt;
-&lt;p&gt;Leaving the heavy lifting to the &lt;code&gt;next_token&lt;/code&gt; function, the biggest part of its
-algorithm is to ensure that the correct list level is tracked in the
-&lt;code&gt;__current_list_level&lt;/code&gt; member variable.  If the &lt;code&gt;__actual_style_type&lt;/code&gt; dictionary
-does not contain an entry for the current list level, one is created.  Then the
-current start character for the current List Item element is compared against the
-entry for the current list level.  If those two objects do not match, a rule
-error is reported.&lt;/p&gt;
-&lt;p&gt;The hard part here was not trying to get ahead of myself with test scenarios and
-rule implementation.  I started with the simple static scenarios and the &lt;code&gt;consistent&lt;/code&gt;
-setting before moving on to the &lt;code&gt;sublist&lt;/code&gt; setting.  Instead of taking the time
-to do things in the proper order, I wanted to jump ahead.  For me, that was not
-a good idea.  I had to take the time to relearn the patience that I have with
-my development process, making sure I practiced using the process until I was
-more comfortable with it.&lt;/p&gt;
-&lt;h3 id="testing"&gt;Testing&lt;a class="headerlink" href="#testing" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;As I have mentioned many times in my articles, I have often found that one of the
-most powerful tools in my testing arsenal is documentation.  This was no exception.&lt;/p&gt;
-&lt;p&gt;As I was documenting this rule, I walked through the different scenarios in my head,
-and I discovered that I had missed something during my design phase.  Basicaly, the
-first part of the &lt;code&gt;next_token&lt;/code&gt; function is this:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__current_list_level&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__actual_style_type&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__actual_style_type&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;
-            &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__current_list_level&lt;/span&gt;
-        &lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__get_sequence_type&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;This code is meant to initialize the current list level’s type if it was not
-already set.  The problem was it was not doing that.&lt;/p&gt;
-&lt;p&gt;Working through my design, I found that I had missed a set of scenarios that
-only came into play without sublists.  In other words, I was so focused on
-getting sublists correct, I did not pay enough attention to getting the other
-scenarios worked out properly.  It was time to fix that!&lt;/p&gt;
-&lt;p&gt;Reworking those scenarios, I started to see what the problem was.
-In the above code snippet, if the style was not set, the function sets it to
-the sequence type of the current token.  For the &lt;code&gt;sublist&lt;/code&gt; setting this worked
-fine and for the very first invocation with the &lt;code&gt;consistent&lt;/code&gt; setting this worked
-fine, but only in those scenarios.  In every other case, the &lt;code&gt;self.__actual_style_type[0]&lt;/code&gt;
-variable held the value to compare to.&lt;/p&gt;
-&lt;p&gt;With that knowledge, I adjusted my design, followed through with the scenarios,
-and came up with the following code change:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__style_type&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
-        &lt;span class="n"&gt;RuleMd004&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__sublist_style&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-    &lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="ow"&gt;or&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__style_type&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt; &lt;span class="n"&gt;RuleMd004&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__consistent_style&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__actual_style_type&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
-        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__actual_style_type&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;
-            &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__current_list_level&lt;/span&gt;
-        &lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__get_sequence_type&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-    &lt;span class="k"&gt;else&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__actual_style_type&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;
-            &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__current_list_level&lt;/span&gt;
-        &lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__actual_style_type&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Paying extra attention to scenarios, I walked through them all individually, taking
-my time to make sure I did not miss another scenario.  As far as I can tell, this
-time I did not.  But I know that I am going to have that feeling that I missed
-something else go through my mind for a while.&lt;/p&gt;
-&lt;h2 id="consistent-list-element-indentation"&gt;Consistent List Element Indentation&lt;a class="headerlink" href="#consistent-list-element-indentation" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;The last rule took a lot longer to design and get coded than I had hoped it would.
-So my big goal for this rule was to get back into a better cadence of designing
-the rule and implementing it.  And as far as I know, the only way to do that is
-to start designing, start testing, and start coding.&lt;/p&gt;
-&lt;h3 id="design_1"&gt;Design&lt;a class="headerlink" href="#design_1" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;The design for this rule rapidly emerged in my mind without much effort.
-The fundamental principle for this rule is that the indentation required for
-each level of a list, ordered or unordered, must be the same.  At that
-point, I knew I needed to maintain a stack of the current indentation for
-that level.  Reading a bit more and experimenting with the original rule,
-it became obvious that each top-level list resets the information for itself
-and any contained list.  That meant that a new top-level list should clear the
-stack of any indentation measurements from a previous list.&lt;/p&gt;
-&lt;p&gt;From there, the design got a bit tricky.  If the list is an Unordered List
-element, then the indentation must be maintained for this rule not to fire.
-That was the easy one.  For an Ordered List element, there are two options:
-align to the left or align to the right.  The difference is that if you
-align the Ordered Lists to the left, the list looks like:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="p"&gt;...&lt;/span&gt;
-&lt;span class="mi"&gt;8&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt; &lt;span class="n"&gt;Item&lt;/span&gt;
-&lt;span class="mi"&gt;9&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt; &lt;span class="n"&gt;Item&lt;/span&gt;
-&lt;span class="mi"&gt;10&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt; &lt;span class="n"&gt;Item&lt;/span&gt;
-&lt;span class="p"&gt;...&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;But, if you align that same list to the right, the list looks like:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="p"&gt;...&lt;/span&gt;
- &lt;span class="mi"&gt;8&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt; &lt;span class="n"&gt;Item&lt;/span&gt;
- &lt;span class="mi"&gt;9&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt; &lt;span class="n"&gt;Item&lt;/span&gt;
-&lt;span class="mi"&gt;10&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt; &lt;span class="n"&gt;Item&lt;/span&gt;
-&lt;span class="p"&gt;...&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;That was a bit tricky to design around, but after some debugging,
-I had it ironed out.  The left aligned list is easy, with the &lt;code&gt;column_number&lt;/code&gt;
-member of the token matching up if the list is left aligned.  If the list is
-right aligned, then any extracted whitespace plus the list item content should
-be the same size.  It took a bit to verify that, but everything seemed good,
-so I started working on coding the rule.&lt;/p&gt;
-&lt;h3 id="coding_1"&gt;Coding&lt;a class="headerlink" href="#coding_1" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;Using Test Driven Development, I started at the beginning with tests such
-as &lt;code&gt;test_md005_good_unordered_list_single_level&lt;/code&gt; and
-&lt;code&gt;test_md005_bad_unordered_list_single_level&lt;/code&gt;.  From there I was able to
-get a simple implementation of the design in place which satisfied those
-two tests.  Once those were passing, I added tests that contained two levels
-of lists, once again providing both good and bad examples of each.  Taking
-the same approach, I implemented the design into code and worked through
-some issues.&lt;/p&gt;
-&lt;p&gt;The rest of the implementation followed the same pattern without any
-issues.  While the implementation was a bit more verbose than the design
-itself, I was able to iterate and get it to work cleanly in short order:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;next_token&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;context&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
-    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_unordered_list_start&lt;/span&gt; &lt;span class="ow"&gt;or&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_ordered_list_start&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__list_stack&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;append&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-    &lt;span class="k"&gt;elif&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_unordered_list_end&lt;/span&gt; &lt;span class="ow"&gt;or&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_ordered_list_end&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-        &lt;span class="k"&gt;del&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__list_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
-    &lt;span class="k"&gt;elif&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_new_list_item&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__list_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_unordered_list_start&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-            &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__list_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;indent_level&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;indent_level&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-                &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;report_next_token_error&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;context&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-        &lt;span class="k"&gt;elif&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__list_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;column_number&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;column_number&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-            &lt;span class="n"&gt;original_text&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__list_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;list_start_content&lt;/span&gt;
-            &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__list_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;extracted_whitespace&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-                &lt;span class="n"&gt;original_text&lt;/span&gt; &lt;span class="o"&gt;+=&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__list_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;extracted_whitespace&lt;/span&gt;
-            &lt;span class="n"&gt;original_text_length&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;original_text&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-            &lt;span class="n"&gt;current_prefix_length&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
-                &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;list_start_content&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;extracted_whitespace&lt;/span&gt;
-            &lt;span class="p"&gt;)&lt;/span&gt;
-            &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;original_text_length&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="n"&gt;current_prefix_length&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-                &lt;span class="k"&gt;assert&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;indent_level&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__list_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;indent_level&lt;/span&gt;
-            &lt;span class="k"&gt;else&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-                &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;report_next_token_error&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;context&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Because this rule handles both Ordered and Unordered List elements, the first two
-parts of the &lt;code&gt;if&lt;/code&gt; statement make sure to manage the stack properly.  As the first
-List Item for each list sets the indentation level, there is no need to do any
-processing with those start List elements, just recording them.&lt;/p&gt;
-&lt;p&gt;From there, the easiest thing to do was to get the easy case, Unordered List elements
-out of the way, as it was a trivial check.  Similarly, the left aligned case of
-Ordered List elements is just as trivial, so I used the inverted condition (the column
-numbers are NOT equal) to check for a right alignment issue.  Following the debugging
-and the design, the &lt;code&gt;original_text_length&lt;/code&gt; is computed from the start List element
-and the &lt;code&gt;current_prefix_length&lt;/code&gt; is computed from the current List Item element.&lt;/p&gt;
-&lt;h3 id="testing_1"&gt;Testing&lt;a class="headerlink" href="#testing_1" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;While there were a couple of typing errors on my part that caused errors, the
-design for this rule was correct from the start, with no changes required.  As
-such, the big part for this rule was coming up with different data combinations
-and comparing their results against the original rule.&lt;/p&gt;
-&lt;p&gt;And it was good that I took that step to try and find more scenarios for this,
-as I found an issue with the parser.  Specifically, while this Markdown is a valid
-list containing a valid sublist with two items, the parser does not believe so:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt; &lt;span class="n"&gt;Item&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
-    &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt; &lt;span class="n"&gt;Item&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="n"&gt;a&lt;/span&gt;
-   &lt;span class="mi"&gt;100&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt; &lt;span class="n"&gt;Item&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="n"&gt;b&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Verifying this against
-&lt;a href="https://johnmacfarlane.net/babelmark2/?text=1.+Item+1%0A++++1.+Item+1a%0A+++100.+Item+1b"&gt;Babelmark2&lt;/a&gt;,
-it confirmed my analysis that the sublist should contain two items.  But when I looked
-at the parser output, it was wrong.  What happened?
-In this case, while the parser is flexible on where the list item does start, it is not
-as flexible on where the list item can start.  As a result, starting the second list
-item with more indentation than the first item works:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt; &lt;span class="n"&gt;Item&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
-   &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt; &lt;span class="n"&gt;Item&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="n"&gt;a&lt;/span&gt;
-    &lt;span class="mi"&gt;10&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt; &lt;span class="n"&gt;Item&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="n"&gt;b&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;but starting it with less indentation does not work.  I needed to figure out what
-the issue was.&lt;/p&gt;
-&lt;p&gt;But after taking a good hour looking at the debug output, I was not able to see what
-the issue was.  At that point, I did not want to stop my momentum, so I added a new
-item to the Issues List and started to keep notes on other test scenarios to try
-and moved on.&lt;/p&gt;
-&lt;h2 id="starting-top-level-unordered-lists-at-the-start-of-the-line"&gt;Starting Top-Level Unordered Lists At The Start Of The Line&lt;a class="headerlink" href="#starting-top-level-unordered-lists-at-the-start-of-the-line" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Knowing that I was starting to get back “in the groove”, I decided to tackle another
-rule and get it completed before writing this week’s article.  Having completed the
-rule for the previous section, I was pretty sure that a similar approach would be
-useful in designing a solution.&lt;/p&gt;
-&lt;p&gt;Initially disabled, I was not sure why this is the case in
-&lt;a href="https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md"&gt;MarkdownLint&lt;/a&gt;,
-the description of which I am using as the inspiration for the rule.  Taking a
-solid look at both rules
-&lt;a href="https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md#md006---consider-starting-bulleted-lists-at-the-beginning-of-the-line"&gt;MD006&lt;/a&gt;
-and
-&lt;a href="https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md#md007---unordered-list-indentation"&gt;MD007&lt;/a&gt;,
-I found that there was overlap, but not a duplication of function.  Taking a closer
-look at the description, I then noticed that there were two parameters for this
-rule: &lt;code&gt;indent&lt;/code&gt; and &lt;code&gt;start_indented&lt;/code&gt;.  With the default values, &lt;code&gt;start_indented&lt;/code&gt;
-would be assigned a value of &lt;code&gt;False&lt;/code&gt;, requiring that the top-level list did not
-start with any indentation.&lt;/p&gt;
-&lt;p&gt;With that taken care of, everything was good in the world, and I proceeded to
-plan out a design for this rule.&lt;/p&gt;
-&lt;h3 id="design_2"&gt;Design&lt;a class="headerlink" href="#design_2" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;Having just completed the design, coding, and testing for MD005, the design
-for this rule was easy.  I needed to keep a stack for most of the same reasons
-as with the previous rule.  The only difference was that I only needed to be
-concerned with Unordered List elements that were at the top-level.  From a
-design point of view, I still needed to know what kind of list the List Item
-element was in, so that part of the design remained the same.&lt;/p&gt;
-&lt;p&gt;The part that really changed is the trigger condition.  Instead of a complicated
-calculation, this calculation was simple.  When processing either a
-start element or a List Item element, if it was the first element on the stack
-and it was a part of an Unordered List element, further checking was required.
-That further checking was also simple: did the token for the element start
-in the first column.  If not, the rule was violated.&lt;/p&gt;
-&lt;p&gt;I worked this out on paper a couple of times, just to make sure, but it was
-sound.  It seemed too simple, so I just double checked that I did not
-take any shortcuts that would hurt the algorithm in the end.  After that
-extra checking, I proceeded on to the next phase.&lt;/p&gt;
-&lt;h3 id="coding_2"&gt;Coding&lt;a class="headerlink" href="#coding_2" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;Sometimes in Test Driven Development, I find myself iterating between generating
-new tests, coding to meet those new tests, and then generating more tests and
-starting over again.  In this case the rule was simple enough that I was able
-to derive five different tests before I started coding.  Between that and my
-design phase, the coding once again went off without any major issues.&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;next_token&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;context&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
-    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_unordered_list_start&lt;/span&gt; &lt;span class="ow"&gt;or&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_ordered_list_start&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-        &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__list_stack&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;append&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
-            &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__list_stack&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
-            &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__list_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_unordered_list_start&lt;/span&gt;
-            &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__list_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;column_number&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
-        &lt;span class="p"&gt;):&lt;/span&gt;
-            &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;report_next_token_error&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;context&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-    &lt;span class="k"&gt;elif&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_unordered_list_end&lt;/span&gt; &lt;span class="ow"&gt;or&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_ordered_list_end&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-        &lt;span class="k"&gt;del&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__list_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
-    &lt;span class="k"&gt;elif&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_new_list_item&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
-            &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__list_stack&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
-            &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__list_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_unordered_list_start&lt;/span&gt;
-            &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;column_number&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
-        &lt;span class="p"&gt;):&lt;/span&gt;
-            &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;report_next_token_error&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;context&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;h2 id="why-am-i-stressing-designing-testing-and-coding-together"&gt;Why Am I Stressing Designing, Testing, and Coding Together?&lt;a class="headerlink" href="#why-am-i-stressing-designing-testing-and-coding-together" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;To be honest, part of my stressing of that process is for myself, and part of it
-is for the readers out there.  Having benched myself while I got better, I felt
-a bit of an urge to jump into the coding process without doing any design.
-Think about it from my point of view.  I have been working on this project for over
-a year, I was at a standstill for a week, and I want to make progress.  Who would not
-want to go fast?&lt;/p&gt;
-&lt;p&gt;But even so, I talked myself out of it and wanted to be very pedantic about following
-these steps, even with simple rules like these three rules.  And to be honest,
-in these cases, I could have probably skipped the design step and winged it,
-as I would consider these three rules to be either medium-level or low-level
-difficulty.  From my experience, it is exactly in those scenarios that you want
-to keep to the process.  You want to get that muscle memory for the process set,
-so that when you get to the harder problems, it is just second nature.&lt;/p&gt;
-&lt;p&gt;Now, Test Driven Development may not be everybody’s best way to develop, but it
-is for me.  I strongly urge any readers out there to figure out a small number
-of development strategies, one if possible, and follow that strategy no matter
-what.  For me, I have seen that it just helps me know what is coming next, and
-my mind has that muscle memory in place, ready to go when I need it.&lt;/p&gt;
-&lt;p&gt;Basically, to each reader, find some process that works, and follow that every
-single time if possible.  If your results are anything like mine, you will
-see improvements.&lt;/p&gt;
-&lt;h2 id="what-was-my-experience-so-far"&gt;What Was My Experience So Far?&lt;a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Out of 31 rules, I got 3 tested and implemented.  Seeing as I just came back
-from dealing with being sick, that is not too bad.  I was hoping to get four
-or five rules designed, implemented, and tested, but three is a good start.&lt;/p&gt;
-&lt;p&gt;And yes, I had to deal with a bit of… well… is it ego or pride or work ethic?
-I wanted to do more work on the project, but my body did not have enough drive or
-momentum to get me there.  So, I do not think it is ego.  And I am not feeling hurt
-that someone told on me that I did not do enough work.  Therefore, I am guessing that it
-is not pride.  So hopefully it is my work ethic.  Who really knows sometimes?&lt;/p&gt;
-&lt;p&gt;But I know that I need to gain more momentum.  Unless I want to take nine weeks
-to finish all the rules&lt;sup id="fnref:calc"&gt;&lt;a class="footnote-ref" href="#fn:calc"&gt;2&lt;/a&gt;&lt;/sup&gt;, I need to get through the different phases more
-efficiently and get more rules done. To do this, hopefully I will notice different
-patterns that I can reuse and cut that time down.  With that and a solid work
-ethic, I am hoping to cut down an estimated nine-week time frame to complete
-all the rules into a block of about five weeks.  To be honest, five weeks would
-be nice, anything under seven weeks and I will be happy.  I really want to
-make this project shine and get it out there!&lt;/p&gt;
-&lt;p&gt;But three rules done on my week back?  That is not too bad… for now.&lt;/p&gt;
-&lt;h2 id="what-is-next"&gt;What is Next?&lt;a class="headerlink" href="#what-is-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;What else?  More rules.  Though hopefully, after getting some momentum going,
-I can get more than three done in the next week.  Stay tuned!&lt;/p&gt;
-&lt;div class="footnote"&gt;
-&lt;hr/&gt;
-&lt;ol&gt;
-&lt;li id="fn:readable"&gt;
-&lt;p&gt;As of the writing of this article, I am still undecided.  At the very least, it is as readable. &lt;a class="footnote-backref" href="#fnref:readable" title="Jump back to footnote 1 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
-&lt;/li&gt;
-&lt;li id="fn:calc"&gt;
-&lt;p&gt;31 rules, 3 rules per week = 10.333 week, with one week already completed. &lt;a class="footnote-backref" href="#fnref:calc" title="Jump back to footnote 2 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
 &lt;/li&gt;
 &lt;/ol&gt;
 &lt;/div&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry></feed>
