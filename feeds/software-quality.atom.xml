@@ -1,5 +1,170 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench - Software Quality</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/software-quality.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2022-02-21T00:00:00-08:00</updated><entry><title>Project Summarizer - Why Was It Needed?</title><link href="https://jackdewinter.github.io/2022/02/21/project-summarizer-why-was-it-needed/" rel="alternate"></link><published>2022-02-21T00:00:00-08:00</published><updated>2022-02-21T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2022-02-21:/2022/02/21/project-summarizer-why-was-it-needed/</id><summary type="html">
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench - Software Quality</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/software-quality.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2022-02-28T00:00:00-08:00</updated><entry><title>Project Summarizer - Designing and Implementing the Summarizer</title><link href="https://jackdewinter.github.io/2022/02/28/project-summarizer-designing-and-implementing-the-summarizer/" rel="alternate"></link><published>2022-02-28T00:00:00-08:00</published><updated>2022-02-28T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2022-02-28:/2022/02/28/project-summarizer-designing-and-implementing-the-summarizer/</id><summary type="html">
+&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In my
+&lt;a href="https://jackdewinter.github.io/2022/02/21/project-summarizer-why-was-it-needed/"&gt;last article&lt;/a&gt;, I
+talked about the reasoning behind one of the tools I use:
+&lt;a href="https://github.com/jackdewinter/pyscan"&gt;Project Summarizer&lt;/a&gt;.
+In this article, I talk more about the reasoning and designs behind the tool, and
+the recent improvements I have made to it.&lt;/p&gt;
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Sometimes you can use a screwdriver when …&lt;/p&gt;</summary><content type="html">
+&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In my
+&lt;a href="https://jackdewinter.github.io/2022/02/21/project-summarizer-why-was-it-needed/"&gt;last article&lt;/a&gt;, I
+talked about the reasoning behind one of the tools I use:
+&lt;a href="https://github.com/jackdewinter/pyscan"&gt;Project Summarizer&lt;/a&gt;.
+In this article, I talk more about the reasoning and designs behind the tool, and
+the recent improvements I have made to it.&lt;/p&gt;
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Sometimes you can use a screwdriver when you need a hammer, and sometimes you can
+use a hammer when you need a screwdriver.  But more often than not, you really
+need to have the right tool for the job you are doing.  If nothing else, you want
+to make sure that you know you did things right and did not take any short cuts.&lt;/p&gt;
+&lt;p&gt;Once I had identified a set of requirements and could not find
+a tool that was meeting those requirements, I knew I needed to do something. The
+result of meeting those requirements was the Project Summarizer tool.&lt;/p&gt;
+&lt;h2 id="what-is-the-audience-for-this-article"&gt;What Is the Audience for This Article?&lt;a class="headerlink" href="#what-is-the-audience-for-this-article" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;While detailed more eloquently in
+&lt;a href="https://jackdewinter.github.io/2020/04/05/what-is-the-audience-for-my-blog/#what-is-the-audience-for-my-blog"&gt;this article&lt;/a&gt;,
+my goal for this technical article is to focus on the reasoning behind my solutions,
+rather than the solutions themselves.  For a full record of the solutions presented in
+this article, please consult the commits that occurred between
+&lt;a href="https://github.com/jackdewinter/pyscan/commit/379b519ffe0652cebbdc9a94d7a84023f925d46f"&gt;15 Feb 2022&lt;/a&gt;
+and
+&lt;a href="https://github.com/jackdewinter/pyscan/commit/f09dac83bdd0dcc2f8895c0f91b68bc04a8d5923"&gt;20 Feb 2022&lt;/a&gt;.&lt;/p&gt;
+&lt;h2 id="some-quick-design-work"&gt;Some Quick Design Work&lt;a class="headerlink" href="#some-quick-design-work" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;As I mentioned in my &lt;a href="https://jackdewinter.github.io/2022/02/21/project-summarizer-why-was-it-needed/"&gt;last article&lt;/a&gt;,
+I had a set of requirements that were not being fulfilled by other tools.  Namely,
+those requirements were:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;to summarize the analyses of other tools&lt;/li&gt;
+&lt;li&gt;to give me immediate feedback on how my changes affect code metrics&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;While these were not very extensive requirements, they were the guiding principles
+that drove the initial development of the Project Summarizer tool.&lt;/p&gt;
+&lt;p&gt;From the beginning, the way I envisioned this tool as something that was fast and took
+information from other tools to summarize.  The first use case was for my own
+Python projects, so meeting those requirements for my Python projects was of course my
+first goal.  To carry out that goal,
+the new tool needed to fit into the scripts that I use to run tests on my projects.
+Added as part of the test scripts, I knew that I had two output files at my disposal:
+the XML coverage file from &lt;code&gt;coverage.py&lt;/code&gt; and the XML tests file from &lt;code&gt;pytest&lt;/code&gt;.
+Using those files, I knew I could provide a summary of any changes in tests or test
+status, and I could provide a summary of high-level coverage numbers.&lt;/p&gt;
+&lt;h2 id="is-it-enough-to-help-me"&gt;Is It Enough To Help Me?&lt;a class="headerlink" href="#is-it-enough-to-help-me" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Would that buy me enough benefit to make it worth the cost?  Yes!  At the time,
+once I finished making changes, the four questions that I always found myself
+asking were:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;did I make the right fix?&lt;/li&gt;
+&lt;li&gt;how did it affect the tests that I already had in place?&lt;/li&gt;
+&lt;li&gt;did the fix require the addition of new tests to cover the new code in the fix?&lt;/li&gt;
+&lt;li&gt;did the fix create code that is no longer needed, and is safe to be deleted?&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;The first question is one that I seriously believe can only be answered by thorough
+testing, experience with the code, and time.  The best answer that I can usually
+hope for to that question is “yes, for now”.  As time goes on, that answer will
+either lean towards or away from that “yes”.  It is often hard to tell in isolation.&lt;/p&gt;
+&lt;p&gt;However, I felt that the remaining three questions could easily be answered by
+data.  How did I know that?  Because I had manual tasks that I performed to answer
+those questions.  For the first question, I looked at the PyTest output to see
+if anything failed.  If something failed, I look at the PyTest HTML files to see
+what tests failed and why.  For the second and third questions, I went right to
+the HTML coverage output, and followed a similar procedure.  And I figured that
+if I could do it manually, I could automate it.&lt;/p&gt;
+&lt;p&gt;If I could automate that process, it would be good enough for me.&lt;/p&gt;
+&lt;h2 id="getting-off-the-ground"&gt;Getting Off The Ground&lt;a class="headerlink" href="#getting-off-the-ground" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;The initial version of Project Summarizer (originally called PyScan) was quickly
+put together, meeting these
+requirements head on.  Using the XML files as input, I quickly dug the
+required statistics out of those files.  For the test output files, I only needed
+to know if a test was added, removed, or changed status.  For the coverage output
+files, I only needed to know if the various coverage metrics changed.&lt;/p&gt;
+&lt;p&gt;At that point, I realized that I needed to introduce a third requirement:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;to create a “checkpoint” that could be used to compare current values against.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;As I looked at the raw summary numbers from the file, the one thing that they were
+missing was context.  To be blunt, I found it difficult to remember if I had 128
+tests or 129 tests before I made the change to add a new test.  I did not care
+most of the time. What I cared about was whether the number of tests increased
+by one to match the one test that I added.  This pattern carried over into the
+coverage requirements.  I only cared about the change in coverage, not the current
+coverage number.&lt;/p&gt;
+&lt;p&gt;But to generate a difference value, you need to have a value to compare the current
+value against.  That was missing at that point, so I created it.  Thus, the &lt;code&gt;publish&lt;/code&gt;
+directory was created and the &lt;code&gt;--publish&lt;/code&gt; flag added to the Project Summarizer.
+By publishing the existing summary to the &lt;code&gt;publish&lt;/code&gt; directory, any current change
+was able to be measured against that checkpoint.  I did have to establish a habit
+of running my &lt;code&gt;clean&lt;/code&gt; test script with the &lt;code&gt;-p&lt;/code&gt; option to publish the results when
+I closed out a fix, but that habit was not too bad to form.&lt;/p&gt;
+&lt;p&gt;And things were coming together nicely.  I was able to update either source code
+or test code, and a summary of those changes was being reported
+to the command line.  After a couple of weeks, I invested some time into learning
+about the &lt;a href="https://pypi.org/project/columnar"&gt;Columnar&lt;/a&gt; package and used it to better organize the output.
+And it was not fancy, but it worked and worked well:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;Test Results Summary
+--------------------
+
+
+  CLASS NAME                               TOTAL TESTS  FAILED TESTS  SKIPPED TESTS
+
+  test.nested_three.test_markdown_nested_     133             1 (+1)         8 (-1)
+  three_block_ordered
+  test.test_markdown_extra                     87 (+7)        2 (+2)         1
+  ---                                        ----             -            ---
+  TOTALS                                     4528 (+7)        3 (+3)       171 (-1)
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;Taken from some work that I did during the past week, this clearly showed me what
+was going on with my changes.
+As this was a focused execution of tests, I had the coverage summary disabled.  But
+the information provided by the test results was particularly useful.  I had added seven
+tests and removed the &lt;code&gt;@pytest.mark.skip&lt;/code&gt; from one test, which is reflected in
+the output.  And as I was working on resolving issues, I had five of the tests
+taken care of, with three failed tests remaining.  That was exactly the information
+that I needed to know I was going in the right direction.&lt;/p&gt;
+&lt;h2 id="time-passes-and-the-tool-matures"&gt;Time Passes… And The Tool Matures&lt;a class="headerlink" href="#time-passes-and-the-tool-matures" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;I continued to use the Project Summarizer tool for about a year before I started
+to think about making changes to it.  And even then, it took me having a couple of
+issues calling it from another script to get me to realize that I needed to make
+a couple of changes.  And those changes were not substantial changes, but simple usability
+changes.&lt;/p&gt;
+&lt;p&gt;I had one issue when calling Project Summarizer from a script, where it had a
+challenging time figuring out a consistent answer to the question “what is the width of
+the screen”.  As &lt;a href="https://pypi.org/project/columnar"&gt;Columnar&lt;/a&gt; bases its organization of the columns on the
+number of character columns on the display, it raised an interesting question of
+what to do if there was no actual terminal.  There are defaults built into Columnar,
+but they did not seem to be consistent.  And if I wanted predictable behavior, I
+needed consistency.&lt;/p&gt;
+&lt;p&gt;Therefore, the &lt;code&gt;--columns&lt;/code&gt; argument was added.  This would override any calculated
+values and force the Columnar package to a specific size.  At the same time, I
+figured that there were cases where that output was not important.  As such, I
+also added a &lt;code&gt;--quiet&lt;/code&gt; argument to suppress the columnized output.&lt;/p&gt;
+&lt;p&gt;The second issue that I had was that the reporting and publishing directories were
+both hardcoded.  That was easily fixed with the &lt;code&gt;--report-dir&lt;/code&gt; and &lt;code&gt;--publish-dir&lt;/code&gt;
+arguments.  While I do not predict changing these directories in my own setup,
+it did sound like a solid addition to the tool.&lt;/p&gt;
+&lt;h2 id="why-now"&gt;Why Now?&lt;a class="headerlink" href="#why-now" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;I guess the question that I left unanswered was: why did I feel that I needed to
+work on this now?&lt;/p&gt;
+&lt;p&gt;The simple answer was that I found other things to measure.  One of the things that I
+currently measure is the number of PyLint warnings in the current project.  But
+that information is hard to see, and I would like to have better visibility into
+how those values have changed on an ongoing basis.  But when I thought about how
+to design that tool to include summary information, I decided instead that it would
+be better for the Project Summarizer to do that reporting for me.&lt;/p&gt;
+&lt;p&gt;But that meant I needed to update the Project Summarizer to manage more information.
+As I started to do that design, it just seemed like the right thing to get those
+changes I had in mind out of my head and into the project. The good news is
+that even after I got those changes out of the way, it still felt like a good idea
+to upgrade the Project Summarizer tool to be extendible.&lt;/p&gt;
+&lt;p&gt;In fact, I seriously think it is a great idea!&lt;/p&gt;
+&lt;h2 id="what-is-next"&gt;What is Next?&lt;a class="headerlink" href="#what-is-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;This week, I plan to do more research and design into making the Project Summarizer
+tool more extensible.  Hopefully, that means I will have something interesting
+to report next week.
+Stay tuned!&lt;/p&gt;</content><category term="Software Quality"></category><category term="project summarizer"></category></entry><entry><title>Project Summarizer - Why Was It Needed?</title><link href="https://jackdewinter.github.io/2022/02/21/project-summarizer-why-was-it-needed/" rel="alternate"></link><published>2022-02-21T00:00:00-08:00</published><updated>2022-02-21T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2022-02-21:/2022/02/21/project-summarizer-why-was-it-needed/</id><summary type="html">
 &lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;In my
 &lt;a href="https://jackdewinter.github.io/2022/02/14/markdown-linter-grinding-away-at-issues/"&gt;last article&lt;/a&gt;, I talked
@@ -6958,411 +7123,4 @@ Stay tuned!&lt;/p&gt;
 &lt;p&gt;That may sound like a weird statement to some.  For example, I make it a practice to name functions after the action they take.  Hence, the function &lt;code&gt;__handle_list_end&lt;/code&gt; performs the handling for the end of the list.  But I have also seen function names like &lt;code&gt;handle&lt;/code&gt;, &lt;code&gt;done&lt;/code&gt;, and other names that do not imply that context.  Reading those functions is not fun. &lt;a class="footnote-backref" href="#fnref:duh" title="Jump back to footnote 1 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
 &lt;/li&gt;
 &lt;/ol&gt;
-&lt;/div&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry><entry><title>Markdown Linter - Another Three Done!</title><link href="https://jackdewinter.github.io/2021/08/30/markdown-linter-another-three-done/" rel="alternate"></link><published>2021-08-30T00:00:00-07:00</published><updated>2021-08-30T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2021-08-30:/2021/08/30/markdown-linter-another-three-done/</id><summary type="html">
-&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;In my
-&lt;a href="https://jackdewinter.github.io/2021/08/23/markdown-linter-three-more-rules/"&gt;last article&lt;/a&gt;, I talked
-about the work I put into getting that weeks’ three rules completed. In this article, I
-talk about the next three rules I worked on.&lt;/p&gt;
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;I know I am getting close to being finished with this phase of implementing rules when
-I …&lt;/p&gt;</summary><content type="html">
-&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;In my
-&lt;a href="https://jackdewinter.github.io/2021/08/23/markdown-linter-three-more-rules/"&gt;last article&lt;/a&gt;, I talked
-about the work I put into getting that weeks’ three rules completed. In this article, I
-talk about the next three rules I worked on.&lt;/p&gt;
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;I know I am getting close to being finished with this phase of implementing rules when
-I can represent the number of rules left with two hands!  It was exciting.  I could add
-a lot more, but what I really want to do is talk about the things I did this week, so
-here I go!&lt;/p&gt;
-&lt;h2 id="what-is-the-audience-for-this-article"&gt;What Is the Audience for This Article?&lt;a class="headerlink" href="#what-is-the-audience-for-this-article" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;While detailed more eloquently in
-&lt;a href="https://jackdewinter.github.io/2020/04/05/what-is-the-audience-for-my-blog/#what-is-the-audience-for-my-blog"&gt;this article&lt;/a&gt;,
-my goal for this technical article is to focus on the reasoning behind my solutions,
-rather that the solutions themselves.  For a full record of the solutions presented in
-this article, please consult the commits that occurred between
-&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/7ecdd796b0ee610b0398a788e2286d96ba924473"&gt;25 Aug 2021&lt;/a&gt;
-and
-&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/a417b4635a9df5d76fbf99bb5503839517d8e7e6"&gt;29 Aug 2021&lt;/a&gt;.&lt;/p&gt;
-&lt;h2 id="multiple-top-level-headings"&gt;Multiple Top-Level Headings&lt;a class="headerlink" href="#multiple-top-level-headings" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;The implementation of Rule Md025 was a long time coming, but I was finally getting around
-to it.  The basis of the rule is very simple:  top-level headings are often used by parsers as
-a document title.  Because of that, having multiple titles in the same document just doesn’t
-make sense.  Well, it did not make sense to me at least.&lt;/p&gt;
-&lt;h3 id="design"&gt;Design&lt;a class="headerlink" href="#design" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;While I felt that this rule was simple enough to start implementing without any
-design, I wanted to stick to my goals and design this out… even if it only took
-five minutes.  That five minute estimate was derived at because the design parts were
-easy for me to grasp together in my head with room to spare.  From experience,
-if you can think about a design as a complete puzzle in your head, the design is generally
-going to be simple.&lt;/p&gt;
-&lt;p&gt;The first part of the design was easy.  I needed a variable to keep track of whether the
-first top-level heading was observed.  Once set, any other top-level heading was a
-multiple and needed to trigger the rule.  Since both the Atx Heading tokens and the SetExt
-Heading tokens share the &lt;code&gt;hash_count&lt;/code&gt; property, it would mean a simple check to see if
-that property was set to 1.&lt;/p&gt;
-&lt;p&gt;That was it.  Nothing complex.
-Even with the configuration parts added in, those new parts were still manageable
-and simple.  If the &lt;code&gt;level&lt;/code&gt; configuration value is set, that &lt;code&gt;1&lt;/code&gt; would be replaced with the
-variable containing the &lt;code&gt;level&lt;/code&gt; configuration value.  The &lt;code&gt;front_matter_title&lt;/code&gt; configuration
-required a check for the front-matter token, and then a check to see if property map for
-the Front Matter token contained the specified configuration value.  If so, set the
-indicator that the first top-level heading was observed.&lt;/p&gt;
-&lt;p&gt;For me, it was easy going through that design, with no issues involved.  I did not even
-see any warning signs.  But still, was it worth it?  It did feel good going through the
-process and having that confidence verified, thinking some more about it and confirming
-that there were no apparent issues.&lt;/p&gt;
-&lt;h2 id="testing-and-implementation"&gt;Testing and Implementation&lt;a class="headerlink" href="#testing-and-implementation" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;After coming up with nine scenario tests, I felt I had given the rule enough good test
-coverage to move on to the implementation phase.  Like the simplicity of the design phase,
-these scenarios were not particularly difficult.  Three good scenarios to make sure
-the rule does not trigger for safe scenarios, and six scenarios testing the failure
-combinations.&lt;/p&gt;
-&lt;p&gt;Just like some of the rules from last week, the implementation was a reflection
-of the design that I specified above.  The rule started with:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;starting_new_file&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
-    &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__have_top_level&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;False&lt;/span&gt;
-
-&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;next_token&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;context&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
-    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_atx_heading&lt;/span&gt; &lt;span class="ow"&gt;or&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_setext_heading&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;hash_count&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-            &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__have_top_level&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-                &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;report_next_token_error&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;context&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-            &lt;span class="k"&gt;else&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-                &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__have_top_level&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;True&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Then, when the &lt;code&gt;self.__level&lt;/code&gt; configuration value was introduced, the hash count
-comparison was changed to:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;hash_count&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__level&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Finally, when the &lt;code&gt;self.__front_matter_title&lt;/code&gt; configuration value was added,
-a new comparison was added at the end of the main &lt;code&gt;if&lt;/code&gt; statement:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;elif&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_front_matter&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__front_matter_title&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;matter_map&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-            &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__have_top_level&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;True&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Just like the design indicated, it was a simple implementation.   But I am
-not always so lucky that things match up.  With extra confidence, but
-still a firm believe that I am taking the right path, I went on to the next
-rule.&lt;/p&gt;
-&lt;h2 id="all-files-must-have-top-level-headings"&gt;All Files Must Have Top-Level Headings&lt;a class="headerlink" href="#all-files-must-have-top-level-headings" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;This rule, Rule Md041, was another rule that I had been delaying for
-a long time.  Part of the reason for that delay is the scope of this rule.
-I had confidence that when I completed this rule that it was probably
-going to be triggered on around 60% of the test scenarios for rules.  That
-was an easy estimate to come up with.  A good group of those test scenarios
-were not focused on Atx Heading elements or SetExt Heading element; therefore
-they were probably going to trigger this rule.&lt;/p&gt;
-&lt;p&gt;So, taking a slight detour from the usual design first approach, I decided
-that I needed to upgrade the &lt;code&gt;invoke_main&lt;/code&gt; function to handle this issue.
-The &lt;code&gt;invoke_main&lt;/code&gt; function is part of the test framework and is used by
-approximately 75% of the scenario tests.  The function’s one and only job is to allow
-the scenario tests to execute the linter with as much parity as possible
-with the command line.&lt;/p&gt;
-&lt;p&gt;It was here that I needed to address the issue of Rule Md041 triggering
-during the scenario tests.  Changing each test was out of the question…
-that would be a mess.  Instead, I added a &lt;code&gt;suppress_first_line_heading_rule&lt;/code&gt;
-parameter, defaulted it to &lt;code&gt;True&lt;/code&gt;, and implemented the following:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;invoke_main&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
-    &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;arguments&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="bp"&gt;None&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;cwd&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="bp"&gt;None&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;suppress_first_line_heading_rule&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="bp"&gt;True&lt;/span&gt;
-&lt;span class="p"&gt;):&lt;/span&gt;
-    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;suppress_first_line_heading_rule&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-        &lt;span class="n"&gt;new_arguments&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;arguments&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;copy&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt; &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;arguments&lt;/span&gt; &lt;span class="k"&gt;else&lt;/span&gt; &lt;span class="p"&gt;[]&lt;/span&gt;
-        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="s2"&gt;"--disable-rules"&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;new_arguments&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-            &lt;span class="n"&gt;new_arguments&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;insert&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;"--disable-rules"&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-            &lt;span class="n"&gt;new_arguments&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;insert&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;"md041"&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-        &lt;span class="k"&gt;else&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-            &lt;span class="n"&gt;disable_index&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;new_arguments&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;index&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"--disable-rules"&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-            &lt;span class="n"&gt;disable_value&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;new_arguments&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;disable_index&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
-            &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="n"&gt;disable_value&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;endswith&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;","&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
-                &lt;span class="n"&gt;disable_value&lt;/span&gt; &lt;span class="o"&gt;+=&lt;/span&gt; &lt;span class="s2"&gt;","&lt;/span&gt;
-            &lt;span class="n"&gt;disable_value&lt;/span&gt; &lt;span class="o"&gt;+=&lt;/span&gt; &lt;span class="s2"&gt;"md041"&lt;/span&gt;
-            &lt;span class="n"&gt;new_arguments&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;disable_index&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;disable_value&lt;/span&gt;
-        &lt;span class="n"&gt;arguments&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;new_arguments&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;The changes were simple, yet efficient.  If there is no parameter named
-&lt;code&gt;--disable-rules&lt;/code&gt;, then the parameter and the value &lt;code&gt;md041&lt;/code&gt; are inserted
-at the front of the parameter list.  Otherwise, the value for that
-parameter has the value &lt;code&gt;md041&lt;/code&gt; appended to the end of the existing
-value.&lt;/p&gt;
-&lt;p&gt;If was not rocket science, but it was efficient.  Instead of spending
-hours making changes and validating them, I had this change up and
-running within two hours, testing included.  It was a bargain.&lt;/p&gt;
-&lt;h3 id="design_1"&gt;Design&lt;a class="headerlink" href="#design_1" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;I felt that this design was a bit more complex than the previous rule,
-but not by that much.  The basis for this rule is all about the
-first “real” token in the document.  I knew there was going to be
-a bit of a twist regarding the Front Matter token, so I left that to the
-end.  Every other token was fair game though.&lt;/p&gt;
-&lt;p&gt;Since this rule is specifically about the first token in the document,
-I knew that I was going to need a variable just to provide that context
-to the rule.  Once inside an &lt;code&gt;if&lt;/code&gt; condition on that variable, unless there
-was a good reason not to, that variable would be set each time.
-Quick, easy, done.&lt;/p&gt;
-&lt;p&gt;From there it was just working through the allowable start cases one
-by one.  If a Atx Heading element or a SetExt Heading element without the
-right level was found, it needed to trigger the rule.  For a HTML Block,
-I would have to do a bit more work as the allowable &lt;code&gt;&amp;lt;h1&lt;/code&gt; sequence was
-inside a separate Text element.  That meant I would have to set a separate
-capture variable, and not set the “done” variable until the rule analyzed
-the following Text element.  But other than that, the general idea of how
-the block was handled was the same as with the Heading elements.
-I also figured out that Blank Lines would probably not count, so I made
-a note to test what effect those Blank Lines had.&lt;/p&gt;
-&lt;p&gt;For the Front Matter element, I thought there would have been more
-work needed, but in the end, I figured that it was a simple check.  If
-the title is in the Front Matter element’s property map, then a title
-is present, and the requirements for having a title were met.  I checked
-this a couple of times to make sense, and it passed each time.  I think
-the original name of the rule could have been better worded, but it
-was working properly.&lt;/p&gt;
-&lt;h3 id="testing-and-implementation_1"&gt;Testing and Implementation&lt;a class="headerlink" href="#testing-and-implementation_1" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;The thirteen scenario tests that I came up with for this rule were simple
-to construct.  Four of those scenario tests were the good cases where each
-of the four allowable elements start the document with good data.  Basically,
-tests for things like a Level 1 (top-level) Atx Heading element.  I was
-concerned about Blank Lines causing issues, so I throw an extra good scenario
-test in there just to be sure.  The negative tests?  Just one scenario test
-for every leaf element, and it was taken care of.&lt;/p&gt;
-&lt;p&gt;The implementation was also uneventful, following the design of the rule
-without any issues.  Starting with this code to handle the Heading elements:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;starting_new_file&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
-    &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__have_seen_first_token&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;False&lt;/span&gt;
-
-&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;next_token&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;context&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
-    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__have_seen_first_token&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_atx_heading&lt;/span&gt; &lt;span class="ow"&gt;or&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_setext_heading&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-            &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__have_seen_first_token&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;True&lt;/span&gt;
-            &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;hash_count&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__start_level&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-                &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;report_next_token_error&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;context&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-        &lt;span class="k"&gt;elif&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_blank_line&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-            &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;report_next_token_error&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;context&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-            &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__have_seen_first_token&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;True&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;the function was grown to handle Front Matter elements and HTML Block elements
-as described in the design.  Except for a couple of typing mistakes here
-and there, everything went very smoothly.&lt;/p&gt;
-&lt;p&gt;It was as I was wrapping up the work for this rule and looking forward
-to Rule Md043 that I realized that I was going to have my hands full with
-that rule.&lt;/p&gt;
-&lt;h2 id="required-heading-structure"&gt;Required Heading Structure&lt;a class="headerlink" href="#required-heading-structure" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;The first time I looked at Rule Md043, I did not think it would be
-too difficult to implement.  It is a very simple text comparison between
-a list of Heading elements and a list of required heading levels and
-heading text.&lt;/p&gt;
-&lt;p&gt;But then I looked further in the description and saw that it supports
-the &lt;code&gt;*&lt;/code&gt; character.  My heart dropped.  That meant I was going to have
-to implement a glob-based comparison.  I was not happy.&lt;/p&gt;
-&lt;h3 id="glob"&gt;Glob&lt;a class="headerlink" href="#glob" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;While the &lt;a href="https://www.merriam-webster.com/dictionary/glob"&gt;dictionary definition&lt;/a&gt;
-is “a small drop” or “a usually large and rounded mass”, if you mention
-Globs to most computer people, they immediately think of &lt;code&gt;*&lt;/code&gt; and &lt;code&gt;?&lt;/code&gt;.
-From a
-&lt;a href="https://docs.python.org/3/library/glob.html"&gt;Linux point of view&lt;/a&gt;, a glob
-is a string of text that can contain the characters &lt;code&gt;*&lt;/code&gt; and &lt;code&gt;?&lt;/code&gt; which serve
-as placeholders for one or more other characters.  The phrase is so
-commonly used that GitHub has a project &lt;a href="https://github.com/begin/globbing"&gt;just for glob&lt;/a&gt;.&lt;/p&gt;
-&lt;p&gt;How does it work?  The &lt;code&gt;?&lt;/code&gt; character is a placeholder for any single character.
-Therefore the glob &lt;code&gt;me?on&lt;/code&gt; will match the strings &lt;code&gt;melon&lt;/code&gt; and &lt;code&gt;menon&lt;/code&gt;.
-The string &lt;code&gt;mennon&lt;/code&gt; will not match the glob as it only has one &lt;code&gt;?&lt;/code&gt;
-character, not two.&lt;/p&gt;
-&lt;p&gt;The &lt;code&gt;*&lt;/code&gt; character is similar but is a placeholder for any number of any
-characters. Keep things simple, the glob &lt;code&gt;me*on&lt;/code&gt; will match &lt;code&gt;meon&lt;/code&gt;,
-both positve matches above, and the string &lt;code&gt;mennon&lt;/code&gt;.  As a matter
-of fact, it will also match a string starting with &lt;code&gt;me&lt;/code&gt;, ending with
-&lt;code&gt;on&lt;/code&gt;, and having an insanely large number of characters between them.&lt;/p&gt;
-&lt;p&gt;So why was I worried about glob-based comparisons?  They look easy, do not
-they?  Well, how do you deal with a glob like &lt;code&gt;me*e*on&lt;/code&gt;?  The algorithm
-to handle one &lt;code&gt;*&lt;/code&gt; character is relatively simple.  Adding in support for
-multiple &lt;code&gt;*&lt;/code&gt; characters gets messy really quickly.  I’ll get into that
-a bit more later, but it was that support that I was dreading.&lt;/p&gt;
-&lt;h3 id="design_2"&gt;Design&lt;a class="headerlink" href="#design_2" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;Making sure that I was thinking about the rest of the design clearly, I
-sat back and just let
-my mind wander and think about this rule.  One thing that was immediately
-obvious was that any “fancy” headings that were not 100% text were
-going to be a problem.  If an author adds the text &lt;code&gt;# Heading *Me* One&lt;/code&gt;,
-the parser will translate it into three Text elements with two Emphasis
-element in the middle.  Should I then match the plaintext or the resolved
-text?  That was ambiguous enough that I decided to not support any Heading
-elements that were not 100% plain-text.  One issue down.&lt;/p&gt;
-&lt;p&gt;The next issue was on how to process the entire set of Heading elements.
-I could try and process as I went, but I felt that it would be too complex
-to accomplish with little gain.  As such, I decided that at the end of
-the document, the rule needed to example a list of all Heading elements
-and their associated text.  With that complete picture in hand, it would
-be a relatively simple matter of writing the Glob algorithm.  Two issues
-down.&lt;/p&gt;
-&lt;h4 id="glob_1"&gt;Glob&lt;a class="headerlink" href="#glob_1" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h4&gt;
-&lt;p&gt;Ah, yes… a relatively simple matter… Glob algorithm.  There were
-options there as well. I just had to decide which approach worked the
-best in this situation.  One option that I had was to try and represent
-each line as a given character, then using Python’s built in
-&lt;a href="https://docs.python.org/3/library/glob.html"&gt;Glob Library&lt;/a&gt; to resolve it.
-But after checking with the library, it only works on files and directories,
-so I would have to write it myself anyways.  So little benefit of doing
-a transform to an easier format and then another transforms back if there
-was an error.&lt;/p&gt;
-&lt;p&gt;So given that I was going to need to write this myself, I decided to use
-the compile option for the
-&lt;a href="https://docs.python.org/3/howto/regex.html"&gt;Python RegEx library&lt;/a&gt;
-as inspiration.  For this rule, I would take each part of the provided
-configuration and determine if it was either a valid, plain-text Atx
-Heading element or the &lt;code&gt;*&lt;/code&gt; character.  In this way, I could handle any
-configuration errors during the configuration phase, and not later. This
-was going to be a simple loop with some extra checks for Atx Heading element
-parts, but nothing too bad.&lt;/p&gt;
-&lt;p&gt;Given a compiled Glob to work with, the first thing I needed the algorithm
-to do is to avoid any Glob code unless there is a wildcard character
-present.  For a non-wildcard scenario, a simple check through the
-entire compiled list against the actual Heading elements would be easy.
-For the wildcard scenarios, I would need to handle any constant headers
-and footers to get to the point where the algorithm could deal with
-the wildcards themselves.  I was not sure where to go at that point,
-but I decided I would do more design when I got there.&lt;/p&gt;
-&lt;h3 id="testing-and-implementation_2"&gt;Testing and Implementation&lt;a class="headerlink" href="#testing-and-implementation_2" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;In all, I created just four scenario test documents to test this rule.
-I did not need any more.  As one of the variables in these scenarios
-was the configuration, those four documents provided a solid enough
-base for me to create all the scenario test functions.&lt;/p&gt;
-&lt;h4 id="compiling-the-requirements"&gt;Compiling The Requirements&lt;a class="headerlink" href="#compiling-the-requirements" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h4&gt;
-&lt;p&gt;Because of the nature of the design, I decided to allocate a block of time
-specifically to the compiling and storing of the requirements.  The way
-I look at it, if I did not get the internal form of the requirements correct,
-I would be lucky if the actual comparisons worked.  It was better to be
-sure the foundation was correct, so I invested the time there.&lt;/p&gt;
-&lt;p&gt;The actual compilation function was spot on what the requirements asked for,
-allowing for a simple element structure:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="nd"&gt;@classmethod&lt;/span&gt;
-&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;__compile&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;cls&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;found_value&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
-    &lt;span class="n"&gt;found_parts&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;found_value&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;split&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;","&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-    &lt;span class="n"&gt;compiled_lines&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[]&lt;/span&gt;
-    &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;next_part&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;found_parts&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;next_part&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="s2"&gt;"*"&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-            &lt;span class="n"&gt;compiled_lines&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;append&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;next_part&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-        &lt;span class="k"&gt;else&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-            &lt;span class="n"&gt;count&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;new_index&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;ParserHelper&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;collect_while_character&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
-                &lt;span class="n"&gt;next_part&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;"#"&lt;/span&gt;
-            &lt;span class="p"&gt;)&lt;/span&gt;
-            &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="n"&gt;count&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-                &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s2"&gt;"Element must start with hash characters (#)."&lt;/span&gt;
-            &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;count&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="mi"&gt;6&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-                &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;None&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-                    &lt;span class="s2"&gt;"Element must start with between 1 and 6 hash characters (#)."&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-                &lt;span class="p"&gt;)&lt;/span&gt;
-            &lt;span class="n"&gt;new_index&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;extracted_whitespace&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;ParserHelper&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;extract_any_whitespace&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
-                &lt;span class="n"&gt;next_part&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;new_index&lt;/span&gt;
-            &lt;span class="p"&gt;)&lt;/span&gt;
-            &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="n"&gt;extracted_whitespace&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-                &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;None&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-                    &lt;span class="s2"&gt;"Element must have at least one space character after any hash characters (#)."&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-                &lt;span class="p"&gt;)&lt;/span&gt;
-            &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;next_part&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="n"&gt;new_index&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-                &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;None&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-                    &lt;span class="s2"&gt;"Element must have at least one non-space character after any space characters."&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-                &lt;span class="p"&gt;)&lt;/span&gt;
-            &lt;span class="n"&gt;compiled_lines&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;append&lt;/span&gt;&lt;span class="p"&gt;((&lt;/span&gt;&lt;span class="n"&gt;count&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;next_part&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;new_index&lt;/span&gt;&lt;span class="p"&gt;:]))&lt;/span&gt;
-    &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;compiled_lines&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Basically, go through the elements, looking for either a line with the
-&lt;code&gt;*&lt;/code&gt; character, or look for a valid plain-text Atx Heading element.  As one
-of my frequent complaints about software are error messages that do not
-help the user, I tried to add useful error messages detailing what the
-error is.&lt;/p&gt;
-&lt;p&gt;This kept the list to compare against simple.  The entry was either a single
-&lt;code&gt;*&lt;/code&gt; character or a tuple with the hash count and the heading text.&lt;/p&gt;
-&lt;h4 id="collecting-the-headings-and-associated-text"&gt;Collecting the Headings and Associated Text&lt;a class="headerlink" href="#collecting-the-headings-and-associated-text" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h4&gt;
-&lt;p&gt;With the requirements compiling, it was then on to the collecting of
-the Heading tokens and their Text data.  This proved to be relatively
-easy:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;completed_file&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;context&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
-    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__compiled_headings&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-        &lt;span class="k"&gt;return&lt;/span&gt;
-
-&lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;next_token&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;context&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
-    &lt;span class="n"&gt;_&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;context&lt;/span&gt;
-    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__collected_tokens&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_atx_heading_end&lt;/span&gt; &lt;span class="ow"&gt;or&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_setext_heading_end&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-            &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__all_tokens&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;append&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__collected_tokens&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-            &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__collected_tokens&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;
-        &lt;span class="k"&gt;else&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-            &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__collected_tokens&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;append&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-    &lt;span class="k"&gt;elif&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__compiled_headings&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_atx_heading&lt;/span&gt; &lt;span class="ow"&gt;or&lt;/span&gt; &lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_setext_heading&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-            &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__collected_tokens&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;token&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;This form actually took me a tiny bit of effort to get to as I struggled
-with how to determine whether a Heading token was plain-text only.  In
-the end, I just decided to collect all the tokens for the Heading, store
-them in the list, and then decide later how to deal with them.  While it
-may not be the most elegant way to deal with this problem, it was the
-easiest.&lt;/p&gt;
-&lt;h4 id="a-globbing-we-will-go"&gt;A Globbing We Will Go&lt;a class="headerlink" href="#a-globbing-we-will-go" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h4&gt;
-&lt;p&gt;Rather than walking through the Glob code line by line, I thought it
-would be more beneficial to walk through the design I did.  Globbing
-a string is something that has weird cases in it.  To that extent, I
-hope I did a good enough job in laying down the foundation for glob
-comparisons in the above &lt;a href="#glob"&gt;Glob section&lt;/a&gt;.&lt;/p&gt;
-&lt;p&gt;Starting from that point, while whatever is being globbed is up to the
-implementation, the most common way to think about it is with characters.
-I believe this is due to the use of Glob for files and directories in Linux,
-and that it easier to keep one character in your head than an entire
-string.&lt;/p&gt;
-&lt;p&gt;As I detailed above, the algorithm for dealing with zero &lt;code&gt;*&lt;/code&gt; characters
-in a glob pattern is easy.  With no special characters, the comparison
-becomes a simple comparison with no changes.  If the glob pattern is
-&lt;code&gt;abc&lt;/code&gt;, then those characters must appear in that order.  To make
-sure that I had a good starting point, I implemented that code first.
-I made sure to get all the simple scenario tests passing, and everything
-was good.&lt;/p&gt;
-&lt;p&gt;I then went on to work out how to deal with one &lt;code&gt;*&lt;/code&gt; character.  As dealing
-with any number of any character is a harder issue to deal with, I focused
-on finding out if there are any characters at the start of the glob or
-the end of the glob that are not wildcards.  If that is that case, then
-I can use my comparison function for zero &lt;code&gt;*&lt;/code&gt; characters and deal with
-both of those sections.  If the glob pattern only has one wildcard,
-the start of the glob and the end of the glob will meet at the glob.&lt;/p&gt;
-&lt;p&gt;This was a bit more interesting to work through.  I had the scenario tests
-mostly passing, but I had to focus on the algorithm.  It deals
-a lot with a start index and an end index of each section.  It was really
-easy to get the different values mixed up.  But I persevered and got
-all the scenario tests passing.  And then on to the hardest part: multiple
-wildcard characters!&lt;/p&gt;
-&lt;p&gt;Or so I thought.&lt;/p&gt;
-&lt;h3 id="life-often-shows-up-when-you-least-expect-it"&gt;Life Often Shows Up When You Least Expect It&lt;a class="headerlink" href="#life-often-shows-up-when-you-least-expect-it" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;I was hoping to get more done this week. However, due to
-unrelated issues with both cars in our family, it became obvious
-that life had other plans for me this week.  As I have mentioned
-before, working on this project is a hobby for me, and I must
-ensure that I keep the other parts of my life in balance.&lt;/p&gt;
-&lt;p&gt;Well, these car-related issues worked together this week to remove the
-better part of a day from my personal schedule.  And I believe I made
-the right choice by focusing on those issues.  However, by removing
-those hours from my schedule, I was not able to finish
-the work on Rule Md043.  Specifically, I was not able to handle
-instances of multiple wildcard characters in the required
-configuration value list.&lt;/p&gt;
-&lt;p&gt;Going over how to handle this in my head, I determined that I had
-made significant progress on the rule itself to warrant it being
-checked in. I added a custom warning and a new item to my Issues
-List, just to make sure I had everything covered.  Hopefully I
-will be able to get to it soon, but I feel that this was the
-right decision to make.  Time will tell though.&lt;/p&gt;
-&lt;h2 id="what-was-my-experience-so-far"&gt;What Was My Experience So Far?&lt;a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;From a pure numerical standpoint, the number of completed rules
-is now 26 and the number of rules remaining is now 5.  As my
-expected benchmark was 3 completed rules per week, I was
-successful in meeting that goal.  While I wanted to get more
-rules done this week, I did not feel it was worthwhile shortchanging
-Rule Md043 to achieve that.&lt;/p&gt;
-&lt;p&gt;And with five rules left to go, I have a real good shot at getting
-the rules completed in the next week or two.  That was something
-worth celebrating!  I felt good that I have made all this progress
-and will know that I have something solid that people can use.&lt;/p&gt;
-&lt;p&gt;It is all coming together, and I like it!  I wish it would move
-faster, but I know I will get there and soon.&lt;/p&gt;
-&lt;h2 id="what-is-next"&gt;What is Next?&lt;a class="headerlink" href="#what-is-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;I am almost so close to finishing off the rules that it is hard
-for me to bear.  Will I reach it next week? Stay tuned!&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry></feed>
+&lt;/div&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry></feed>
