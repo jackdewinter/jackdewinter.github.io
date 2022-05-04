@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="author" content="Jack De Winter" />
+
+        <meta name="description" content="Summary¶ In my last article, I talked about the first Project Summarizer plugin that I created as part of my PyLint Utilities project. In this article, I talk about the changes that I incorporated into both projects to get their code coverage percentages up to 100%. Introduction¶ From past articles …
+" />
+        <meta property="og:type" content="article" />
+        <meta name="twitter:card" content="summary">
+
+<meta name="keywords" content="pylint_utils, Software Quality, " />
+
+<meta property="og:title" content="PyLint Utilities - Reaching For High Code Coverage "/>
+<meta property="og:url" content="https://jackdewinter.github.io/2022/05/02/pylint-utilities-reaching-for-high-code-coverage/" />
+<meta property="og:description" content="Summary¶ In my last article, I talked about the first Project Summarizer plugin that I created as part of my PyLint Utilities project. In this article, I talk about the changes that I incorporated into both projects to get their code coverage percentages up to 100%. Introduction¶ From past articles …" />
+<meta property="og:site_name" content="Jack&#39;s Digital Workbench" />
+<meta property="og:article:author" content="Jack De Winter" />
+<meta property="og:article:published_time" content="2022-05-02T00:00:00-07:00" />
+<meta name="twitter:title" content="PyLint Utilities - Reaching For High Code Coverage ">
+<meta name="twitter:description" content="Summary¶ In my last article, I talked about the first Project Summarizer plugin that I created as part of my PyLint Utilities project. In this article, I talk about the changes that I incorporated into both projects to get their code coverage percentages up to 100%. Introduction¶ From past articles …">
+
+        <title>PyLint Utilities - Reaching For High Code Coverage  · Jack&#39;s Digital Workbench
+</title>
+        <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://jackdewinter.github.io/theme/css/style.min.css?bec7d543">
+
+        <link href="https://jackdewinter.github.io/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Jack&#39;s Digital Workbench - Full Atom Feed" />
+
+
+    </head>
+    <body>
+        <div id="content">
+            <div class="navbar navbar-static-top">
+                <div class="navbar-inner">
+                    <div class="container-fluid">
+                        <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                        </a>
+                        <a class="brand" href="https://jackdewinter.github.io/"><span class=site-name>Jack's Digital Workbench</span></a>
+                        <div class="nav-collapse collapse">
+                            <ul class="nav pull-right top-menu">
+                                <li >
+                                    <a href=
+                                       https://jackdewinter.github.io
+                                    >Home</a>
+                                </li>
+                                <li ><a href="https://jackdewinter.github.io/categories">Categories</a></li>
+                                <li ><a href="https://jackdewinter.github.io/tags">Tags</a></li>
+                                <li ><a href="https://jackdewinter.github.io/archives">Archives</a></li>
+                                <li><form class="navbar-search" action="https://jackdewinter.github.io/search.html" onsubmit="return validateForm(this.elements['q'].value);"> <input type="text" class="search-query" placeholder="Search" name="q" id="tipue_search_input"></form></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="container-fluid">
+                <div class="row-fluid">
+                    <div class="span1"></div>
+                    <div class="span10">
+<article itemscope>
+<div class="row-fluid">
+    <header class="page-header span10 offset2">
+        <h1>
+            <a href="https://jackdewinter.github.io/2022/05/02/pylint-utilities-reaching-for-high-code-coverage/">
+                PyLint Utilities - Reaching For High Code Coverage
+            </a>
+        </h1>
+    </header>
+</div>
+
+<div class="row-fluid">
+    <div class="span2 table-of-content">
+        <nav>
+        <h4>Contents</h4>
+        <div class="toc">
+<ul>
+<li><a href="#summary">Summary</a></li>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#slight-adjustments-to-project-summarizer">Slight Adjustments to Project Summarizer</a><ul>
+<li><a href="#nice-side-effect-finding-a-setup-issue">Nice Side Effect - Finding A Setup Issue</a></li>
+<li><a href="#debugging-the-dictionary-issue">Debugging The Dictionary Issue</a></li>
+<li><a href="#easy-is-not-always-easy">Easy Is Not Always Easy</a></li>
+</ul>
+</li>
+<li><a href="#switching-to-pylint_utilities">Switching To PyLint_Utilities</a><ul>
+<li><a href="#there-is-only-so-much-you-can-cover-normally">There Is Only So Much You Can Cover Normally</a></li>
+<li><a href="#hiding-things-in-plain-sight">Hiding Things In Plain Sight</a></li>
+<li><a href="#what-about-mocks">What About Mocks?</a></li>
+<li><a href="#but-sometimes-there-are-no-other-options">But Sometimes There Are No Other Options</a></li>
+</ul>
+</li>
+<li><a href="#what-is-next">What Is Next?</a></li>
+</ul>
+</div>
+        </nav>
+    </div>
+    <div class="span8 article-content">
+            
+            
+<h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">¶</a></h2>
+<p>In my
+<a href="https://jackdewinter.github.io/2022/04/25/pylint-utilities-a-long-time-coming/">last article</a>, I
+talked about the first
+<a href="https://github.com/jackdewinter/pyscan">Project Summarizer</a> plugin that I created
+as part of my
+<a href="https://github.com/jackdewinter/pylint_utils">PyLint Utilities</a> project.
+In this article, I talk about the changes that I incorporated into both projects
+to get their code coverage percentages up to 100%.</p>
+<h2 id="introduction">Introduction<a class="headerlink" href="#introduction" title="Permanent link">¶</a></h2>
+<p>From past articles, longtime readers will understand that I view quality and
+the metrics that help me understand that quality on a sliding scale.  One of the most
+basic and useful metrics that use is tracking the code coverage of tests that are in place
+for the components being tested.  To be clear, I agree with  people that argue that
+code coverage is not the be all and end all of quality.  But I also argue
+very confidently that it is not a metric to be easily dismissed.</p>
+<p>Code coverage does not measure if a project is working properly. It
+measures whether each line of code has been executed at least once.  A project can
+have 100% code coverage and still fail to meet its criteria for a project that
+meets its intended goal.
+From my point of view, which is where scenario tests come in.  And whether those
+tests are a complete picture of how the team envisions the project being used is
+a trickier thing to measure.  That is why many teams, for each piece of work,
+construct individual
+<a href="https://www.leadingagile.com/2014/09/acceptance-criteria/">acceptance criteria</a>
+or maintain collections of rules called
+<a href="https://www.leadingagile.com/2017/02/definition-of-done/">Definition of Done</a>.</p>
+<p>To be honest, I have not seen any automated way to review either of these.  As a
+professional, I can create scenario tests that exercise these two concepts with
+respect to what I am testing.  But those scenario tests need human review
+to determine if they are doing what they are supposed to.  But by combining the
+exactness of code coverage with the observable scenario tests, I believe it is
+possible to get a product that is well-tested and that does what it is supposed
+to do.</p>
+<p>And most of the time, getting there is half the fun.</p>
+<h2 id="slight-adjustments-to-project-summarizer">Slight Adjustments to Project Summarizer<a class="headerlink" href="#slight-adjustments-to-project-summarizer" title="Permanent link">¶</a></h2>
+<p>To start off, before I made these adjustments to deal with this new plugin, I had
+confidence that the scenario tests were testing the right things and I knew that
+the code coverage was at one hundred percent.  From my viewpoint, it was a well tested
+project that was doing what I needed it to do.  And it meant that I wanted to
+keep those confidence levels where they were going forward.</p>
+<p>Cue the hard work!</p>
+<h3 id="nice-side-effect-finding-a-setup-issue">Nice Side Effect - Finding A Setup Issue<a class="headerlink" href="#nice-side-effect-finding-a-setup-issue" title="Permanent link">¶</a></h3>
+<p>At the start of testing the new plugin, I ran into an issue right away: I
+could not execute the Project Summarizer from its package.  I tried executing it
+locally, and there were no problems, but when I looked in the local package that
+I was using, some of the files were missing.</p>
+<p>After a bit of work, I found myself looking at these lines in the <code>setup.py</code> module:</p>
+<div class="highlight"><pre><span></span><span class="n">PACKAGE_MODULES</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">"project_summarizer"</span><span class="p">,</span>
+<span class="p">]</span>
+</pre></div>
+<p>Looking at the uploaded package, everything was fine.  I knew something changed.
+Examining the contents of the new package more closely, I noticed that only the
+files that I refactored into their own directories were missing.  Given that observation,
+I tried this change:</p>
+<div class="highlight"><pre><span></span><span class="n">PACKAGE_MODULES</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">"project_summarizer"</span><span class="p">,</span>
+    <span class="s2">"project_summarizer.plugin_manager"</span><span class="p">,</span>
+    <span class="s2">"project_summarizer.plugins"</span><span class="p">,</span>
+<span class="p">]</span>
+</pre></div>
+<p>And was greeted with success!  I was able to execute the Project Summarizer project
+without any issues.  Talk about a bit of a testing hole that I need to address in
+the future!</p>
+<h3 id="debugging-the-dictionary-issue">Debugging The Dictionary Issue<a class="headerlink" href="#debugging-the-dictionary-issue" title="Permanent link">¶</a></h3>
+<p>One command line argument that I have in other projects that I had not added to this
+project was the <code>--stack-trace</code> argument.  It is a simple argument that instructs
+the error handling to also print out a stack trace.  It is not useful in everyday
+use, but when I need a stack trace of a failure, it is invaluable.</p>
+<p>And this was the case with the new plugin and the <code>save_summary_file</code> function.
+When the exception occurred, it was reporting that it was having issues dealing
+with generating a report, but nothing more specific.  That was by intentional and by design.
+When things fail, I do not want any users getting cryptic error
+messages that confuse them.  As such, I keep the error messages as generic and
+easy to read as possible.</p>
+<p>But in this case, I needed to debug the issue and I just wanted something simple.
+Remembering that I have the <code>--stack-trace</code> argument in other projects, I quickly
+added it to the Project Summarizer project, where it immediately pointed out that
+the issue was with the <code>save_summary_file</code> and that it was passed a dictionary
+object to save.  As the object to save was already a dictionary, calling <code>to_dict</code>
+on it was causing the error.  A quick fix and some added tests, and that issue was
+cleared up.</p>
+<p>While I hope to not need that argument again, I now know it is there in case
+I need it for future debugging sessions.</p>
+<h3 id="easy-is-not-always-easy">Easy Is Not Always Easy<a class="headerlink" href="#easy-is-not-always-easy" title="Permanent link">¶</a></h3>
+<p>When I designed the plugin architecture, I wanted something that was simple and
+easy to use.  I did not anticipate any large manipulation of
+data within the plugins: they were supposed to summarize data that was already
+present.</p>
+<p>But then when I started testing the PyLint_Utils plugin, I
+hit a snag.  The current design allowed each plugin to format the data
+and print it out in its own format.  Since I want to keep things simple, I coded
+all three implemented plugins to use the <code>columnar</code> package to format the data.
+I did not have any issues with this approach for the first two plugins, so I
+did not anticipate any issues using it again for the PyLint_Utils plugin. Until it
+failed.  It was able to load
+the plugin module but failed to load the <code>columnar</code> package.</p>
+<p>I researched this for two nights before determining that it was likely
+not possible to do.  What I mean by that is that it may be possible, but after two
+nights and five hours of research and experimentation, I was not able to find it.
+I needed a Plan B.  Seeing as I figured out that every plugin was going to be
+using some manner of package for outputting the summary… I cheated.  While
+there are other columnizers out there, I already have <code>columnar</code> installed for
+the base package.  As such, I just changed the interface to the <code>generate_report</code>
+function.  If a tuple is returned, it is used as the three primary parameters
+for <code>columnar</code>: justification, title, and rows.  Problem solved.  Not pretty,
+but problem solved.</p>
+<h2 id="switching-to-pylint_utilities">Switching To PyLint_Utilities<a class="headerlink" href="#switching-to-pylint_utilities" title="Permanent link">¶</a></h2>
+<p>With those issues dealt with, the Project Summarizer project was back at
+100% code coverage and all relevant scenario tests were in place.  So, it was time to
+get back to the thing that initiated those changed, the PyLint_Utils project.
+It turns out that more then half of the changes I needed to execute the PyLint_Utils
+project were in the Project Summarizer, so I thought I was home free.</p>
+<p>And then I got down to improving the code coverage.</p>
+<h3 id="there-is-only-so-much-you-can-cover-normally">There Is Only So Much You Can Cover Normally<a class="headerlink" href="#there-is-only-so-much-you-can-cover-normally" title="Permanent link">¶</a></h3>
+<p>First off, I want to stress that I am a bit of a fanatic about scenario test coverage
+and code coverage.  If it is a normal application, I have a general rule that it
+should have at least 75% code coverage, scenario tests for all “good” paths, and
+scenario tests for any “bad” paths that a team feels will be hit a fair amount.
+And yes, “a fair amount” is a judgement call.</p>
+<p>The good paths are an easy goal for me to
+justify. If everything goes properly, you know that users will hit those paths.  The bad
+paths are a bit more nuanced.  From my viewpoint, I start with this question: what
+are the things that I would mess up or have messed up when using the application?
+Things like missing parameters and bad or wrong file names are easy targets.  I mess
+those up all the time.  That is usually a good starting point for error-related or
+“bad” pieces of the project to include.</p>
+<p>From there, the cost of covering the paths start going uphill very quickly. And for
+each path, it comes down to the question of whether the cost of covering that “bad”
+path is enough of a benefit to warrant the cost involved.  And the cost can be
+varied.</p>
+<h3 id="hiding-things-in-plain-sight">Hiding Things In Plain Sight<a class="headerlink" href="#hiding-things-in-plain-sight" title="Permanent link">¶</a></h3>
+<p>The first thing that I do to determine cost is to try and see if I can do something
+simple to write
+a new scenario test without too many changes.  Can I change the file from a JSON file to a
+non-JSON file or a directory to set off error handling?  Can I use two parameters
+together and make sure they do not conflict?  Is there an existing path that I
+can leverage?</p>
+<p>But sometimes, I must be sneaky.  Take this “hidden” parameter that I
+have in the PyLint_Utils project:</p>
+<div class="highlight"><pre><span></span><span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+    <span class="s2">"--x-display"</span><span class="p">,</span>
+    <span class="n">dest</span><span class="o">=</span><span class="s2">"x_test_display"</span><span class="p">,</span>
+    <span class="n">action</span><span class="o">=</span><span class="s2">"store_true"</span><span class="p">,</span>
+    <span class="n">default</span><span class="o">=</span><span class="s2">""</span><span class="p">,</span>
+    <span class="n">help</span><span class="o">=</span><span class="n">argparse</span><span class="o">.</span><span class="n">SUPPRESS</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+<p>That parameter is not visible using <code>-h</code> or <code>--help</code>, but if you use it in a normal
+command line, the application will not complain.  How is that? The <code>argparse.SUPPRESS</code>
+suppresses that argument from being shown.</p>
+<p>So why take this approach?  In this case, that flag sets off this logic:</p>
+<div class="highlight"><pre><span></span><span class="bp">self</span><span class="o">.</span><span class="n">__display_progress</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">isatty</span><span class="p">()</span> <span class="ow">or</span> <span class="n">args</span><span class="o">.</span><span class="n">x_test_display</span>
+<span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">__verbose_mode</span>
+</pre></div>
+<p>I have no control over what <code>sys.stdout.isatty()</code> returns, at least not yet.  As
+such, this is a simple and easy to read way to alter the results of that function.</p>
+<h3 id="what-about-mocks">What About Mocks?<a class="headerlink" href="#what-about-mocks" title="Permanent link">¶</a></h3>
+<p>This is where the <code>not yet</code> from the previous paragraph kick in.</p>
+<p>From my experience, mocks are most useful when you want to test something that has
+many moving pieces to it.  To use the equation, I postulated a couple of sections
+ago, is the cost of making the change worth the benefit of that change?</p>
+<p>For me, the answer to that question is heavily based on experience.  The benefit
+of that equation is the easy part to define.  Either using some other method or
+completing the block will properly test part of the code.  The cost is much
+more difficult to define.</p>
+<p>A good example of this difficulty is the <code>PatchBuiltinOpen</code> class that I use for mocking file
+open calls, located <a href="https://github.com/jackdewinter/pyscan/blob/master/test/patch_builtin_open.py">here</a>.
+I have used this for testing various smaller Python projects for almost as long as I have
+been working in Python, and I find this object really good at getting into tight
+places for code coverage.  This mock class patches the built-in <code>open</code> call for
+files and provides the <code>register_text_content</code> function and the <code>register_exception</code>
+function to control what gets controlled.  If the filename passed to those functions
+matches the argument for the <code>open</code> function, one of those two behaviors is returned.
+If not, the mock object needs to carefully un-patch itself, call the original function,
+and then patch itself again.</p>
+<p>Even without looking at the source code for the <code>PatchBuiltinOpen</code> class, it is obvious
+that the function has a significant amount of code to accomplish those tasks.  Why?
+Because it takes a sizeable number of sentences to describe what it does.  And then
+there is the invocation of this behavior.  To mock an <code>open</code> function call that is
+buried within the code called from the line:</p>
+<div class="highlight"><pre><span></span><span class="n">execute_results</span> <span class="o">=</span> <span class="n">scanner</span><span class="o">.</span><span class="n">invoke_main</span><span class="p">(</span><span class="n">arguments</span><span class="o">=</span><span class="n">supplied_arguments</span><span class="p">)</span>
+</pre></div>
+<p>this is the code required:</p>
+<div class="highlight"><pre><span></span><span class="k">try</span><span class="p">:</span>
+    <span class="n">pbo</span> <span class="o">=</span> <span class="n">PatchBuiltinOpen</span><span class="p">()</span>
+    <span class="n">pbo</span><span class="o">.</span><span class="n">register_exception</span><span class="p">(</span>
+        <span class="n">test_file_to_scan_path</span><span class="p">,</span> <span class="s2">"wt"</span><span class="p">,</span> <span class="n">exception_message</span><span class="o">=</span><span class="n">mock_exception_message</span>
+    <span class="p">)</span>
+    <span class="n">pbo</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+
+    <span class="n">execute_results</span> <span class="o">=</span> <span class="n">scanner</span><span class="o">.</span><span class="n">invoke_main</span><span class="p">(</span><span class="n">arguments</span><span class="o">=</span><span class="n">supplied_arguments</span><span class="p">)</span>
+<span class="k">finally</span><span class="p">:</span>
+    <span class="n">pbo</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+</pre></div>
+<p>This is not simple.  This is a sledgehammer.  Granted, a nice sledgehammer that
+has been well used, well-polished, and carefully taken care of, but it is a
+sledgehammer.  And in my experience, code sledgehammers increase cost.</p>
+<h3 id="but-sometimes-there-are-no-other-options">But Sometimes There Are No Other Options<a class="headerlink" href="#but-sometimes-there-are-no-other-options" title="Permanent link">¶</a></h3>
+<p>Having taken care of the majority of the code coverage for the project, I was left with
+a small amount of code to cover.  This code was code that was enacted after the
+<code>subprocess.Popen</code> function is called when PyLint_Utils calls PyLint itself.
+In terms of benefit, it was the only handful of lines that were not covered.
+In terms of cost, the only option was to mock out the function call.</p>
+<p>The <code>PatchSubprocessPopen</code> was the result.  Copying the bulk of the functionality
+from the <code>PatchBuiltinOpen</code> class, I was able to save a lot of time.  Another
+thing that kept the cost down was that as of right now, I only needed the mock
+object to be specifically for this one scenario test.  As such, I was able to
+tailor it very specifically for the tests in which it was used.</p>
+<p>But even then, it was a headache to get right.  I had to make sure I read each
+variable from the <code>args</code> and <code>kwargs</code> parameters properly, translating them
+into values I could use.  As <code>POpen</code> can be called multiple times, I had to
+make sure I had a passthrough in there.  And debugging it was not the best
+experience I had.</p>
+<p>But in the end, to get from over 99.5% to 100% was worth it to me.  I was
+able to get more experience with mock objects in Python, and I was able to
+close the gap in code coverage.</p>
+<p>For me, it was worth it.  But it was costly.</p>
+<h2 id="what-is-next">What Is Next?<a class="headerlink" href="#what-is-next" title="Permanent link">¶</a></h2>
+<p>With that bulk of work wrapped up, I am hoping to get some time back on
+the PyMarkdown project in the next week.  Here is hoping for that!
+Stay tuned!</p>
+
+
+             
+ 
+                <p id="post-share-links">
+    Like this post? Share on:
+    <a href="https://twitter.com/intent/tweet?text=PyLint%20Utilities%20-%20Reaching%20For%20High%20Code%20Coverage&url=https%3A//jackdewinter.github.io/2022/05/02/pylint-utilities-reaching-for-high-code-coverage/&hashtags=pylint_utils" target="_blank" rel="nofollow noopener noreferrer" title="Share on Twitter">Twitter</a>
+    ❄
+    <a href="https://www.facebook.com/sharer/sharer.php?u=https%3A//jackdewinter.github.io/2022/05/02/pylint-utilities-reaching-for-high-code-coverage/" target="_blank" rel="nofollow noopener noreferrer" title="Share on Facebook">Facebook</a>
+    ❄
+    <a href="mailto:?subject=PyLint%20Utilities%20-%20Reaching%20For%20High%20Code%20Coverage&amp;body=https%3A//jackdewinter.github.io/2022/05/02/pylint-utilities-reaching-for-high-code-coverage/" target="_blank" rel="nofollow noopener noreferrer" title="Share via Email">Email</a>
+    </p>
+
+            
+            
+
+
+
+
+
+
+<section>
+    <h6 style="display:none;">Comments</h6>
+    <p id="comment-message">So what do you think? Did I miss something? Is any part unclear? Leave your comments below. </p>
+
+    <div class="accordion" id="accordion2">
+        <div class="accordion-group">
+            <div class="accordion-heading">
+                <a class="accordion-toggle disqus-comment-count comment-count"
+                   data-toggle="collapse"
+                   data-parent="#accordion2"
+                   href="https://jackdewinter.github.io/2022/05/02/pylint-utilities-reaching-for-high-code-coverage/#comment_thread"
+                   id="comment-accordion-toggle">
+                    Comments
+                </a>
+            </div>
+            <div id="comment_thread" class="accordion-body collapse">
+                <div class="accordion-inner">
+                    <div class="comments">
+
+                        <script src="https://utteranc.es/client.js"
+        data-repo="jackdewinter/jackdewinter.github.io"
+        data-issue-term="pylint-utilities_b"
+        data-label="Comments"
+        data-theme="github-light"
+        crossorigin="anonymous"
+        async>
+</script>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+            <hr/>
+            <aside>
+            <nav>
+            <ul class="articles-timeline">
+                <li class="previous-article">« <a href="https://jackdewinter.github.io/2022/04/25/pylint-utilities-a-long-time-coming/" title="Previous: PyLint Utilities - A Long Time Coming">PyLint Utilities - A Long Time Coming</a></li>
+            </ul>
+            </nav>
+            </aside>
+        </div>
+        <section id="article-sidebar" class="span2">
+    <h4>Reading Time</h4>
+    <p>~9 min read</p>
+            <h4>Published</h4>
+            <time itemprop="dateCreated" datetime="2022-05-02T00:00:00-07:00">May 2, 2022</time>
+        <h4>PyLint Utilities</h4>
+    <ul class="multi-parts-list">
+            <li >
+            <a href="https://jackdewinter.github.io/2022/04/25/pylint-utilities-a-long-time-coming/" title="PyLint Utilities - A Long Time Coming">Part 1: PyLint Utilities - A Long Time Coming</a>
+            </li>
+            <li  class="active-part">
+            Part 2: PyLint Utilities - Reaching For High Code Coverage
+            </li>
+    </ul>
+            <h4>Category</h4>
+            <a class="category-link" href="https://jackdewinter.github.io/categories#software-quality-ref">Software Quality</a>
+            <h4>Tags</h4>
+            <ul class="list-of-tags tags-in-article">
+                <li><a href="https://jackdewinter.github.io/tags#pylint_utils-ref">pylint_utils
+                    <span>2</span>
+</a></li>
+            </ul>
+<h4>Stay in Touch</h4>
+<div id="sidebar-social-link">
+    <a href="https://github.com/jackdewinter" title="github-alt" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="GitHub" role="img" viewBox="0 0 512 512"><rect width="512" height="512" rx="15%" fill="#1B1817"/><path fill="#fff" d="M335 499c14 0 12 17 12 17H165s-2-17 12-17c13 0 16-6 16-12l-1-50c-71 16-86-28-86-28-12-30-28-37-28-37-24-16 1-16 1-16 26 2 40 26 40 26 22 39 59 28 74 22 2-17 9-28 16-35-57-6-116-28-116-126 0-28 10-51 26-69-3-6-11-32 3-67 0 0 21-7 70 26 42-12 86-12 128 0 49-33 70-26 70-26 14 35 6 61 3 67 16 18 26 41 26 69 0 98-60 120-117 126 10 8 18 24 18 48l-1 70c0 6 3 12 16 12z"/></svg>
+    </a>
+    <a href="https://www.linkedin.com/in/jackdewinter/" title="linkedin" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="LinkedIn" role="img" viewBox="0 0 512 512" fill="#fff"><rect width="512" height="512" rx="15%" fill="#0077b5"/><circle cx="142" cy="138" r="37"/><path stroke="#fff" stroke-width="66" d="M244 194v198M142 194v198"/><path d="M276 282c0-20 13-40 36-40 24 0 33 18 33 45v105h66V279c0-61-32-89-76-89-34 0-51 19-59 32"/></svg>
+    </a>
+    <a href="https://jackdewinter.github.io/feeds/all.atom.xml" title="" target="_blank" rel="nofollow noopener noreferrer">
+        <svg xmlns="http://www.w3.org/2000/svg" aria-label="RSS" role="img" viewBox="0 0 512 512"><rect width="512" height="512" rx="15%" fill="#f80"/><circle cx="145" cy="367" r="35" fill="#fff"/><path fill="none" stroke="#fff" stroke-width="60" d="M109 241c89 0 162 73 162 162M109 127c152 0 276 124 276 276"/></svg>
+    </a>
+</div>
+            
+
+
+
+
+
+            
+
+
+
+
+
+        </section>
+</div>
+</article>
+                    </div>
+                    <div class="span1"></div>
+                </div>
+            </div>
+        </div>
+<footer>
+    <div>
+        
+&copy; Copyright 2021 by Jack De Winter and licensed under a <a rel="license"
+  href="http://creativecommons.org/licenses/by/4.0/">
+  <img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/80x15.png" />
+  Creative Commons Attribution 4.0 International License</a>.
+
+    </div>
+
+
+
+
+    <div id="fpowered">
+        Powered by: <a href="http://getpelican.com/" title="Pelican Home Page" target="_blank" rel="nofollow noopener noreferrer">Pelican</a>
+        Theme: <a href="https://elegant.oncrashreboot.com/" title="Theme Elegant Home Page" target="_blank" rel="nofollow noopener noreferrer">Elegant</a>
+    </div>
+</footer>            <script src="//code.jquery.com/jquery.min.js"></script>
+        <script src="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>
+        <script>
+            function validateForm(query)
+            {
+                return (query.length > 0);
+            }
+        </script>
+
+    <script>
+    (function () {
+        if (window.location.hash.match(/^#comment-\d+$/)) {
+            $('#comment_thread').collapse('show');
+        }
+    })();
+    window.onhashchange=function(){
+        if (window.location.hash.match(/^#comment-\d+$/))
+            window.location.reload(true);
+    }
+    $('#comment_thread').on('shown', function () {
+        var link = document.getElementById('comment-accordion-toggle');
+        var old_innerHTML = link.innerHTML;
+        $(link).fadeOut(200, function() {
+            $(this).text('Click here to hide comments').fadeIn(200);
+        });
+        $('#comment_thread').on('hidden', function () {
+            $(link).fadeOut(200, function() {
+                $(this).text(old_innerHTML).fadeIn(200);
+            });
+        })
+    })
+</script>
+
+    </body>
+    <!-- Theme: Elegant built for Pelican
+        License : MIT -->
+</html>
