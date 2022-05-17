@@ -1,5 +1,190 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench - Software Quality</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/software-quality.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2022-05-02T00:00:00-07:00</updated><entry><title>PyLint Utilities - Reaching For High Code Coverage</title><link href="https://jackdewinter.github.io/2022/05/02/pylint-utilities-reaching-for-high-code-coverage/" rel="alternate"></link><published>2022-05-02T00:00:00-07:00</published><updated>2022-05-02T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2022-05-02:/2022/05/02/pylint-utilities-reaching-for-high-code-coverage/</id><summary type="html">
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench - Software Quality</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/software-quality.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2022-05-17T00:00:00-07:00</updated><entry><title>Markdown Linter - Shifting Left</title><link href="https://jackdewinter.github.io/2022/05/17/markdown-linter-shifting-left/" rel="alternate"></link><published>2022-05-17T00:00:00-07:00</published><updated>2022-05-17T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2022-05-17:/2022/05/17/markdown-linter-shifting-left/</id><summary type="html">
+&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In my
+&lt;a href="https://jackdewinter.github.io/2022/04/25/pylint-utilities-a-long-time-coming/"&gt;last article&lt;/a&gt;, I
+talked about working on some of my projects to get their code coverage up to
+100% and why I felt that the effort was important.  In this article, I focus
+more on the work I have been doing in the background on the
+&lt;a href="https://github.com/jackdewinter/pymarkdown"&gt;PyMarkdown …&lt;/a&gt;&lt;/p&gt;</summary><content type="html">
+&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In my
+&lt;a href="https://jackdewinter.github.io/2022/04/25/pylint-utilities-a-long-time-coming/"&gt;last article&lt;/a&gt;, I
+talked about working on some of my projects to get their code coverage up to
+100% and why I felt that the effort was important.  In this article, I focus
+more on the work I have been doing in the background on the
+&lt;a href="https://github.com/jackdewinter/pymarkdown"&gt;PyMarkdown&lt;/a&gt; project.&lt;/p&gt;
+&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Yes, I have been doing work on the &lt;a href="https://github.com/jackdewinter/pymarkdown"&gt;PyMarkdown&lt;/a&gt;
+project in the background.  I may not be visible, but it is going on.  It was not
+until this week that I have something concrete to show for that work.  And since
+not having something to talk about on my flagship project caused me concern,
+I thought I would devote an article to the reason for that delay: debugging.&lt;/p&gt;
+&lt;h2 id="shift-left"&gt;Shift Left&lt;a class="headerlink" href="#shift-left" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;During my recent round of interviews, one of the concepts that I talked about was
+shifting the debugging process left as much as possible using automated
+testing.  As an SDET (Software Development Engineer in Test), a large part of my
+job is to provide solid automated tests that can be executed within a continuous
+integration pipeline.  Shortened to “shift left”, this form of thinking strives
+to get any kind of test failure as close to the development of the code being tested
+as possible.  And yes, that does include trying to find things at the architecture
+and design phases if possible.&lt;/p&gt;
+&lt;h3 id="what-do-you-mean-left"&gt;What Do You Mean “Left”?&lt;a class="headerlink" href="#what-do-you-mean-left" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Let me start with the “left” part of that phrase.  In most development processes,
+whether it is explicit or not, there is a workflow that happens from ideation to
+release.  In more formal environments, these steps are usually something like
+ideation/requirements, architecture, design, vetting the design prior to implementation,
+implementation, unit and functional testing, peer review, integration and end-to-end
+testing, and
+release.  In less formal environments, these steps are still there, just compressed
+into fewer steps with some steps “missing” or “implied.  While each of those individual
+steps is deserving of an article of its own,
+the important thing that I want to communicate is that flow from “an idea” to
+“a released thing”.&lt;/p&gt;
+&lt;p&gt;Technically speaking, once the bug fix or feature has been released, there may
+be added iterations of that workflow.  These iterations can be done to tighten
+up misunderstood requirements but are most often performed to address bugs in the
+design or implementation.  It might be tempting to think of that new workflow
+as part of the original workflow, I believe there are clear reasons that the workflow
+is separate.  As that is probably enough content for a separate article, please
+take my word on that belief for now.&lt;/p&gt;
+&lt;p&gt;Given those foundations, it should be easy to see that the further left in the workflow
+that a team gets, the more cost accumulates from the previous steps.  Before the
+implementation step, most likely everything has been done with some form of project
+lifecycle management system, be it something like the popular &lt;a href="https://www.atlassian.com/software/jira"&gt;Jira&lt;/a&gt;,
+using a whiteboard, or writing things down on paper. The implementation and first
+testing step introduce code provided by a developer, increasing the cost by a
+sizable amount.  Peer review adds to that by bringing the cost of having multiple
+developers spend time looking at the changed code, as well as any requested changes
+that they ask for to be implemented.  The second level of testing, integration and
+end-to-end testing, adds another cost multiplier as those types of tests are
+more fragile automated tests because of their distance from the implemented code.
+Finally, the release step
+adds another multiplier of cost as any issues that are reported once a change is
+released must go through yet another team of people to report any issues with
+those changes, prioritize those issues, and create new workflows to address any
+prioritized issues.&lt;/p&gt;
+&lt;p&gt;As someone who has done a lot over thirty years of development in his career, please believe me.
+The further an issue makes it into that workflow, the more costly it is.
+When I say “costly”, those multipliers are usually between three times multipliers and
+10 times multipliers.  And that is if the team is lucky.&lt;/p&gt;
+&lt;h3 id="so-where-does-the-left-come-in"&gt;So Where Does the Left Come In?&lt;a class="headerlink" href="#so-where-does-the-left-come-in" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;Given that information about the traditional development workflow, there is a simple
+directionality to it.  Writing that information on a whiteboard, I would simply
+create a simple line with dots on the line representing the various points in the
+workflow.  At each point, I would annotate the point with one of the names
+associated with the workflow.  Given that perspective, the workflow has a simplified
+flow from the left of the line to the right of the line.&lt;/p&gt;
+&lt;p&gt;Therefore, when I am talking about “Shift Left”, I am talking about trying to detect
+issues in a project as early on in the project as possible.  While this may seem like
+a “duh” moment to some people, having issues creep to the left is a quite common
+occurrence on development teams.
+As a developer, I want my code to get out there and be used.  As a developer, I want
+to do something interesting, not the same old thing repeatedly.  And as a
+developer, I have felt pressure from above to get one thing done and to more on to
+the next thing on my plate.&lt;/p&gt;
+&lt;p&gt;However, about 12 years ago when I was a developer, I realized I was more concerned
+about the quality of what my team was producing than the velocity with which my
+team was producing.
+I was more concerned with taking extra time to ensure that the requirements were
+correct before moving forward with implementing them.  And automated testing? Back
+then I faced a lot of pushbacks for adding too many tests to a project, as those
+tests were believed to be unwieldy and hard to support.&lt;/p&gt;
+&lt;p&gt;But my justifications for wanting to do those tests were solid.  Based on my experience
+and my reading of peer articles, others in the industry had started to see things
+in a similar light.  More importantly, they were starting to talk about it in more
+clear terms than I could manage at the time.  For those of us who “saw the light”,
+it came down to a simple bit of calculus. Either a team can impose a small overheard to
+take care of those issues before they escape OR that team can pay a cost for
+those issues later.  A team can call those issues “tech debt” or anything
+else they want to, but they are misses for the team just the same.&lt;/p&gt;
+&lt;p&gt;And those misses are costly and can be demoralizing.  The cost part of any miss is easy
+one to calculate.  Instead of incurring a small cost to find and solve the issue
+before it escapes the team’s view, one or more distinct workflows must be spun up to
+address that issue.  In terms of human cost, one workflow is that people were needed
+to report the issue and people were needed to confirm that it is an issue.  Another
+workflow was then needed to triage the issue to figure out if it has a high enough
+priority to fix.  And those two workflows are needed before the team needs to create
+a new workflow to fix the issue.  In financial costs, each person in those workflows
+has a salary.  Paying a team to fix issues means that the team cannot be working on
+improvements to the project. There is the cost for them contributing to one or more
+workflows, and there is the cost of not having those people working on new work.
+Simple math.&lt;/p&gt;
+&lt;p&gt;As to the demoralizing aspect, that aspect is one that I have seen quite often.
+I have been in meetings where teams have been told of the issues related to their
+project. Most teams try not to assign blame, but it does happen. There are often
+questions raised as to
+how the team missed finding that issue.  If I had a dollar for each time in my
+career that I have heard “How did we miss that?” in a meeting, I would be able to
+buy my wife a fancy seafood dinner with an expensive bottle of wine.  And
+when the team gets such a backlog of issues that they must dedicate an entire
+block of work to dealing with those issues?  Let me just say that I can usually
+sense a drop in the energy level in the room without much effort when the manager
+says, “we are going to need a bug fixing sprint.”&lt;/p&gt;
+&lt;h3 id="shift-left-is-about-paying-the-right-cost-at-the-earliest-time"&gt;Shift Left Is About Paying The Right Cost At The Earliest Time&lt;a class="headerlink" href="#shift-left-is-about-paying-the-right-cost-at-the-earliest-time" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
+&lt;p&gt;“Shifting Left” is about dealing with these issues as efficiently as possible.
+To get a project to be better,
+the proper investments need to be made as far to the left in the workflow as possible.
+Problems with architecture and design?  Make sure the requirements are solid and
+the architects and designers understand those requirements, with a solid understanding
+of the tools and choices at their disposal.  Problems with poor implementations?
+Make sure the developers understand the requirements and designs and supply guidelines
+for them to follow to prove that they have met those goals.  Problems with changes
+to implementations creating new issues?  Make sure that there are solid integration
+tests that are independent from the developer-created tests.&lt;/p&gt;
+&lt;p&gt;Will these catch everything?  Not even a chance.  However, when I have seen practices
+like this implemented, it has always made a sizable impact in the quality of the
+project.  And truthfully, any decent reduction in the cost of a change is usually
+worth it.  It is just about paying the right cost as the earliest
+time possible.  Noticing a requirement seems off before coding starts?  It can
+be a five-minute conversation, or it may evolve into a meeting with a small group.
+But avoiding the act of properly reading that requirement until one or more integration
+tests expose that issue?  That cost will definitely exceed the cost of that small
+group meeting.&lt;/p&gt;
+&lt;p&gt;And the other part of that is simple. As a developer, I always wanted to write decent
+quality code, because the person maintaining that code was most likely going to be
+me.&lt;/p&gt;
+&lt;h2 id="shift-left-on-pymarkdown"&gt;Shift Left on PyMarkdown&lt;a class="headerlink" href="#shift-left-on-pymarkdown" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;How does this all apply to the &lt;a href="https://github.com/jackdewinter/pymarkdown"&gt;PyMarkdown&lt;/a&gt;
+project?&lt;/p&gt;
+&lt;p&gt;While I try as hard as possible to catch everything up front during the implementation
+phase, things do slip through.  As of this Sunday morning, I have 4530 scenario tests
+that are executed for each change.  Of those tests, 36 are skipped with 12 of those
+skips being for placeholder implementations of extensions.  That leaves 24 scenario
+tests for issues that slipped through the cracks. According to my math, which means
+that over 99.4% of the scenario tests are passing.  Not a bad number, but I still
+would like it to be better.&lt;/p&gt;
+&lt;p&gt;And to be clear, that count of 4530 scenario tests are not just the test scenarios
+provided by the &lt;a href="https://github.github.com/gfm/"&gt;Github Flavored Markdown&lt;/a&gt; specification,
+but every scenario test I have been able to create.  That includes the 673 scenarios
+presented in the GFM specification, but also stresses the complications that arise
+from container elements.  If I had to guess, I would say that at least half of the
+current scenario tests are tests specifically for the handling of container elements.&lt;/p&gt;
+&lt;p&gt;But that percentage of passing tests is a deliberate focus of mine to “Shift Left”
+on this and other projects.  While it can often lead me to be frustrated with a new
+feature or change not working properly in all cases, I sincerely believe that this
+is the right approach.  As I find a single issue at any point in the process, I
+look and see if it is an isolated issue or part of a bigger issue.  If it is part
+of a bigger issue, I try and identify related scenarios in the “area” of that issue
+and add more scenario tests.&lt;/p&gt;
+&lt;p&gt;If possible, I do this when I am adding something new, but I am not always
+that lucky.  But from where I sit, I am still trying to push it to the left.  I am
+not waiting around for a user to complain that it is not working properly, I am
+actively investing my time to prove to myself that the project is working properly.
+Sure, some of the scenario tests are probably never going to get hit by users,
+but those tests are still important. Each one of those tests is a path that may
+not have been covered before.&lt;/p&gt;
+&lt;p&gt;What it comes down to me is the answer to a simple question: What amount of confidence
+do I have that the project is working properly?  My simple answer is: yes! I have
+thrown everything I can think of against it and can prove that.  And if I miss
+something, I am graceful in that I know I cannot think of everything and use that
+new information to build better tests.&lt;/p&gt;
+&lt;p&gt;For me, shifting left just helps me get that confidence as efficiently as possible.&lt;/p&gt;
+&lt;h2 id="what-is-next"&gt;What is Next?&lt;a class="headerlink" href="#what-is-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Having recently been able to squash an issue that impacted three scenario tests,
+I compiled a brief list of other tests to revisit.  I am not sure if I will be able
+to find their solutions, but at least I feel momentum in that direction.
+Stay tuned!&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry><entry><title>PyLint Utilities - Reaching For High Code Coverage</title><link href="https://jackdewinter.github.io/2022/05/02/pylint-utilities-reaching-for-high-code-coverage/" rel="alternate"></link><published>2022-05-02T00:00:00-07:00</published><updated>2022-05-02T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2022-05-02:/2022/05/02/pylint-utilities-reaching-for-high-code-coverage/</id><summary type="html">
 &lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;In my
 &lt;a href="https://jackdewinter.github.io/2022/04/25/pylint-utilities-a-long-time-coming/"&gt;last article&lt;/a&gt;, I
@@ -4998,503 +5183,4 @@ working hard to get things working together properly.&lt;/p&gt;
 &lt;p&gt;Having been highly creative in the last few weeks, I need to take at least a week
 off any do a tiny bit of brainless stuff.  As such, I am going to start looking at a few
 products that are available to analyze open-source projects.
-Stay tuned!&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry><entry><title>Markdown Linter - Double Checking My Double Checks</title><link href="https://jackdewinter.github.io/2021/11/01/markdown-linter-double-checking-my-double-checks/" rel="alternate"></link><published>2021-11-01T00:00:00-07:00</published><updated>2021-11-01T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2021-11-01:/2021/11/01/markdown-linter-double-checking-my-double-checks/</id><summary type="html">
-&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;In my
-&lt;a href="{filename}/articles/SoftwareQuality/beta-bugs-e.md"&gt;last article&lt;/a&gt;, I talked
-about my continuing efforts to clean up the scenario tests and the existing parser
-issues. In this article, I talk about my efforts to bolster the consistency
-checks I have built into the project.&lt;/p&gt;
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;By now, all the low hanging fruit from …&lt;/p&gt;</summary><content type="html">
-&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;In my
-&lt;a href="{filename}/articles/SoftwareQuality/beta-bugs-e.md"&gt;last article&lt;/a&gt;, I talked
-about my continuing efforts to clean up the scenario tests and the existing parser
-issues. In this article, I talk about my efforts to bolster the consistency
-checks I have built into the project.&lt;/p&gt;
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;By now, all the low hanging fruit from the Issues List have been picked, preserved,
-and stored away. What are left are the more difficult to deal with issues.  Depending
-on how one feels about challenges, this is either a good thing or a bad thing.
-I choose to interpret it as a good thing.  But I also know that a challenge usually
-means more work.
-And in the case of getting the PyMarkdown project’s consistency checks working
-at full strength, it was going to take a lot of intense debugging work.&lt;/p&gt;
-&lt;h2 id="what-is-the-audience-for-this-article"&gt;What Is the Audience for This Article?&lt;a class="headerlink" href="#what-is-the-audience-for-this-article" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;While detailed more eloquently in
-&lt;a href="https://jackdewinter.github.io/2020/04/05/what-is-the-audience-for-my-blog/#what-is-the-audience-for-my-blog"&gt;this article&lt;/a&gt;,
-my goal for this technical article is to focus on the reasoning behind my solutions,
-rather than the solutions themselves.  For a full record of the solutions presented in
-this article, please consult the commits that occurred between
-&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/521b5ab61e38f30472562804f63797174a2c5ba9"&gt;26 Oct 2021&lt;/a&gt;
-and
-&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/479ace2d2d9dd5def81c72ef3b58bce6fb76f594"&gt;31 Oct 2021&lt;/a&gt;.&lt;/p&gt;
-&lt;h2 id="why-do-i-care-about-consistency-checks"&gt;Why Do I Care About Consistency Checks?&lt;a class="headerlink" href="#why-do-i-care-about-consistency-checks" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;As I started to implement the parser part of the PyMarkdown project, I quickly
-came to one unshakeable conclusion: I was undertaking something that would be huge
-in scope.  I knew that the 673 examples that came with the
-&lt;a href="https://github.github.com/gfm/"&gt;GitHub Flavored Markdown&lt;/a&gt;
-specification were only the start of the testing. I figured that those cases would
-be most useful in verifying that the correct HTML was being generated, and that verification
-would lend some confidence to the parser processing the documents properly.  But
-as those examples only include HTML output, I would need to verify the tokenized output
-independently of those examples.  And my guess was that the other verification would explode
-the number of scenario tests to somewhere over 2500, which is what I thought was a decent
-estimate at the time.&lt;/p&gt;
-&lt;p&gt;To overcome this perceived testing deficiency, I added two levels of checks to
-verify the consistency of the parsed Markdown tokens.   The first level of checks,
-the Markdown generator, tests the ability to parse from Markdown into a token stream
-and back again.  While the presence of container blocks requires extra code to
-manage the complexity, this is meant to check prove that that parsing is a relatively
-simple bi-directional
-process without any loss of information.  The second level check, the position
-checker, is a more intense look at the information provided with each token.  Basically,
-it specifically focused
-on the size of each token and whether the position of the token plus the size
-of the token equals the position of the next token.&lt;/p&gt;
-&lt;p&gt;These two types of checks account for around 95% of the discovered and reported
-issues that I have found so far.  And as the easy-to-find issues are mostly gone, it is the
-difficult-to-find issues that are now showing up.  Knowing this, I can easily guess
-that if any new scenario tests uncover issues, they will probably uncover issues with either nested
-List elements or Link Reference Definition elements.  And in the last couple of
-months, I believe that only a handful of parser errors have been found, a slightly
-larger number of Markdown generation errors, with the position checked having
-the most issues.  Put together, there are two problem areas that are well tested
-in the parser, but the consistency checks are still finding issues, though mostly
-within their own code.  Not perfect, that that knowledge helps.&lt;/p&gt;
-&lt;p&gt;So why do I care about these consistency checks?  Because they are thorough
-in finding issues.  That is, when I do not disable them.&lt;/p&gt;
-&lt;h2 id="so-why-do-you-disable-them"&gt;So… Why Do You Disable Them?&lt;a class="headerlink" href="#so-why-do-you-disable-them" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;The truth is that the parser and the Markdown generator are the most stable
-components of the project.  Because of its very nature, the position checker is
-very precise on where it expects tokens to be positioned.  As such, I have often
-disabled the checks with &lt;code&gt;disable_consistency_checks=True&lt;/code&gt; when adding a
-new feature or fixing an existing issue.  I usually try for between one hour
-and three hours to get the checks working, but after the two-hour mark, I go
-increasingly with disabling the check.
-I honestly admit that this is a bad habit, and one that I am trying to stop following.
-But that process does help me from getting stuck, so as with anything, it is not
-all bad.&lt;/p&gt;
-&lt;p&gt;In looking at what I wanted to do this week, I decided to focus on
-examining the existing tests with consistency checks disabled&lt;sup id="fnref:pragma"&gt;&lt;a class="footnote-ref" href="#fn:pragma"&gt;1&lt;/a&gt;&lt;/sup&gt;, with a
-goal to enable those checks.  Following a search-and-remove of that text from
-the scenario tests, I had eighteen tests that I needed to get passing.  And as
-I was removing that code, I did notice that the tests were in at least six groups:&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;2 dealing with HTML Blocks&lt;/li&gt;
-&lt;li&gt;1 dealing with Paragraphs&lt;/li&gt;
-&lt;li&gt;1 dealing with Link Reference Definitions&lt;/li&gt;
-&lt;li&gt;8 dealing with List Blocks&lt;/li&gt;
-&lt;li&gt;1 dealing with Block Quotes&lt;/li&gt;
-&lt;li&gt;5 from the “extra” scenario tests&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;Even with this limited information, I knew that this work would likely take me
-the rest of the week to complete.  With at least six distinct groups, it was
-highly likely that I was going to look at six or more different areas of the
-position checker code and address those issues.  That was going to be time
-consuming, as that meant I was going to be looking all over the position checker
-code.&lt;/p&gt;
-&lt;p&gt;As I started fixing issues with the position checker, I was not surprised when
-fixing those issues uncovered other errors with the Markdown generator and even
-the Markdown parser.  It just made sense to me.  If there was an issue with one
-of the two checkers, there was a decent chance that the issue would affect the
-other checked.  And with both consistency checks disabled, there was also a decent
-chance that a boundary condition failure was being missed.  From my experience,
-I had a feeling that once I was able to clear up any issues with the consistency
-checkers, I had a high degree of confidence that it would uncover at least two to
-three issues in the other components.  After all, that is what those consistency
-checks are designed to do.&lt;/p&gt;
-&lt;p&gt;Finishing the work for
-&lt;a href="https://github.com/jackdewinter/pymarkdown/issues/87"&gt;Issue 87&lt;/a&gt;,
-the issue I created to contain this work, it took me until right around noon on
-Sunday to get everything completed.  I am not in the least bit surprised that it
-took that long to complete.  The amount of debugging I did this week was just
-immense.  If I had to guess, I probably added as much debug code as non-debug
-code, just to be able to follow what was going on in the code.  But the goal was
-reached: all eighteen scenario tests are now fully enabled.&lt;/p&gt;
-&lt;h2 id="the-journey"&gt;The Journey&lt;a class="headerlink" href="#the-journey" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;The journey to get there was not an easy one, but it was one that paid off in
-the end.  While these are in order of where they were found, the order in
-which they were found was all over the place.  In one case, I found three issues
-at the same time and had to focus on one before getting to the others.  In my mind,
-it was more important to fix things and note how long they took to fix, not the order
-in which they were fixed. That, and I arranged my notes by where they were found
-and not the order in which they were fixed.&lt;/p&gt;
-&lt;h3 id="it-just-so-happened-that-this-was-first"&gt;It Just So Happened That This Was First&lt;a class="headerlink" href="#it-just-so-happened-that-this-was-first" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;Picking one of the tests at random, I settled on test function &lt;code&gt;test_list_blocks_237g&lt;/code&gt;.
-While I was there for problems with the position checked, I noticed something
-almost at once upon looking at the tokenized output for the test: the
-Blank Line token was repeated when there was only one Blank Line present in the
-Markdown document.  Enabling debug and rerunning the test, it was obvious to see
-why.  As far as I could tell, the Blank Line element was being properly processed
-within the Block Quote element.  But once that was complete, that same Blank Line
-was also being handed off to the Leaf Block Processor where it was processed again,
-yielding another Blank Line token.  It was a parser issue!&lt;/p&gt;
-&lt;p&gt;Fortunately for me, I was able to figure out a quick way to resolve this issue.
-The following code was already in place to handle the Blank Line within the
-Block Quote element:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;did_blank&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-    &lt;span class="n"&gt;POGGER&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;debug&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"&amp;gt;&amp;gt;already handled blank line. returning."&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-    &lt;span class="n"&gt;container_level_tokens&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;extend&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;leaf_tokens&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-    &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;container_level_tokens&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;line_to_parse&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;this_bq_count&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;I just made one minor change to that code:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;container_level_tokens&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;line_to_parse&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;this_bq_count&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="bp"&gt;True&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;as well as other changes to the returns in that function and the functions that
-call that function. While it was correctly parsing the Blank Line the first time,
-that function was not passing back any information that would allow the second
-parsing of the Blank
-line to be avoided.  By returning that &lt;code&gt;True&lt;/code&gt; from that code, downstream code
-was notified that the Blank Line had already been processed, and that it did
-not need to continue.&lt;/p&gt;
-&lt;p&gt;That was one of the easier issues to debug.&lt;/p&gt;
-&lt;h3 id="double-check-your-output-twice"&gt;Double Check Your Output… Twice&lt;a class="headerlink" href="#double-check-your-output-twice" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;Another test that looked weird when I looked at it was test function
-&lt;code&gt;test_extra_007cx&lt;/code&gt;.  When I look at a scenario test that is failing, the first
-thing that I do is go over the Markdown and the tokens to make sure that I
-have familiarity with the content that is being parsed.  As I did that for
-this test function, I noticed that trailing whitespace was missing.
-After I double checked my initial findings, I did indeed have another parser
-issue.  In this case, any whitespace within Text elements within Link elements
-was being omitted from the Link token.  Not an easy find, but a good one.&lt;/p&gt;
-&lt;p&gt;Tracking through the code with the debugger, I came to the &lt;code&gt;__complete_inline_loop&lt;/code&gt;
-function, where I was firmly convinced the issue was.  Looking through the logs,
-the Link token and the encompassed Text token agreed up to this point,
-and they diverged after it.  And while it was not much, the space at the end of
-the line was present in the Link’s Text element, but not in the Link element
-itself.&lt;/p&gt;
-&lt;p&gt;Doing a bit of experimentation, I added the following code to correct this behavior.&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;new_string&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt; &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="n"&gt;end_string&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-    &lt;span class="n"&gt;split_end_string&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;end_string&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;split&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;ParserHelper&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;newline_character&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-    &lt;span class="n"&gt;POGGER&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;debug&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
-        &lt;span class="s2"&gt;"split_end_string&amp;gt;&amp;gt;$&amp;gt;&amp;gt;"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="n"&gt;split_end_string&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-    &lt;span class="p"&gt;)&lt;/span&gt;
-    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;split_end_string&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;=&lt;/span&gt; &lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-        &lt;span class="n"&gt;new_string&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;split_end_string&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;split_end_string&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;new_string&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;As the trailing space was present in text block, but not in link element, I knew
-that I should not touch the &lt;code&gt;new_string&lt;/code&gt; variable, only the &lt;code&gt;new_string_unresolved&lt;/code&gt;
-variable.  It took a while to get the second &lt;code&gt;if&lt;/code&gt; conditional right, adding an
-extra scenario test to help tune the code properly.&lt;/p&gt;
-&lt;p&gt;The interesting part of trying to solve this issue was not the challenge in
-fixing the issue itself, that was the easy part.  The interesting part was that
-the definition of the issue was tricky and often nuanced.  As I said above:&lt;/p&gt;
-&lt;blockquote&gt;
-&lt;p&gt;any whitespace within Text elements within Link elements was being omitted from
-the Link token&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;p&gt;This was easily a boundary case, and a good find.  But not all the solutions were
-as easy as these two.&lt;/p&gt;
-&lt;h2 id="transforming-into-markdown"&gt;Transforming Into Markdown&lt;a class="headerlink" href="#transforming-into-markdown" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;When I was looking for a next scenario test to clean, function &lt;code&gt;test_block_quotes_extra_02ae&lt;/code&gt;
-and its related scenario tests looked like they were an excellent choice.  At some point
-in the resolution work, I noticed that there were four scenario
-tests that were failing their consistency checks due to Markdown generation. Before
-I spent more time digging deeper into the position check, I felt that my time would
-be best spent getting these four functions working properly.&lt;/p&gt;
-&lt;p&gt;As I examined each of the failing scenario tests, I noticed that they all focused
-on one single are: extra whitespace at the start of a Block Quote element line.
-There were slightly different variations on this issue, but underneath they all
-had the same cause.  Digging into the cause, it was a simple matter to overlapping
-data due to nested container elements.  Specifically, in the case of test function
-&lt;code&gt;test_block_quotes_extra_02ae&lt;/code&gt;, it was the overlapping data of the List element
-and the Paragraph element.&lt;/p&gt;
-&lt;p&gt;During the development of the List elements and the Block Quote elements, I made
-some decisions that have affected later work.  The easy decision to explain is the
-decision about the Block Quote element.  Looking across all the examples in the
-&lt;a href="https://github.github.com/gfm/"&gt;GitHub Flavored Markdown&lt;/a&gt;
-specification, there are a good collection of properly spaced Block Quote characters
-and improperly spaced Block Quote characters.  Given that information, I made the
-hard choice to include those starting characters in the field &lt;code&gt;leading_spaces&lt;/code&gt;
-for the Block Quote token that owns that line.  Managing that field and tracking
-along with it will parsing and checking has been frustrating, but it still makes
-sense to me.  However, because of the more rigorous spacing requirements and a reduced
-quantity of improperly indented List element examples, for List tokens I
-decided to record their indentation levels in the &lt;code&gt;indent_level&lt;/code&gt; and dealing
-with any outliers as they surfaced.&lt;/p&gt;
-&lt;p&gt;Based on the data that I had at the time, I sincerely believe that was the correct
-choice to make.  Adding that same &lt;code&gt;leading_spaces&lt;/code&gt;  field to the List tokens
-would have been too ambitious given the requirements for it.  And whether I liked
-it or not, this situation was a direct result of that decision.  But because of
-those decisions when this Markdown is parsed:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="nv"&gt;start&lt;/span&gt;
-&lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="nv"&gt;quote&lt;/span&gt;
-&lt;span class="o"&gt;&amp;gt;&lt;/span&gt;
-&lt;span class="o"&gt;&amp;gt;&lt;/span&gt;   &lt;span class="k"&gt;end&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;the last line gets parsed into a Paragraph token starting with two spaces inside
-of a List token with an indent of &lt;code&gt;4&lt;/code&gt;.&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;extracted_whitespace&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-    &lt;span class="n"&gt;found_block_token&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;
-    &lt;span class="n"&gt;was_list_found&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;False&lt;/span&gt;
-    &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="nb"&gt;range&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;container_token_stack&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
-        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;container_token_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_block_quote_start&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-            &lt;span class="n"&gt;found_block_token&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;self&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;container_token_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
-            &lt;span class="k"&gt;break&lt;/span&gt;
-        &lt;span class="n"&gt;was_list_found&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;True&lt;/span&gt;
-    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;found_block_token&lt;/span&gt; &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="n"&gt;was_list_found&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-        &lt;span class="n"&gt;split_leading_spaces&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;found_block_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;leading_spaces&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;split&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
-            &lt;span class="n"&gt;ParserHelper&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;newline_character&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-        &lt;span class="n"&gt;specific_start&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;split_leading_spaces&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;
-            &lt;span class="n"&gt;found_block_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;leading_text_index&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
-        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;specific_start&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;=&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;extracted_whitespace&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
-            &lt;span class="n"&gt;extracted_whitespace&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;extracted_whitespace&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;specific_start&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;:]&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;It took a bit of time to get there, but finally I arrived at the above code
-to mitigate this issue.  Because of the overlap the whitespace in the Paragraph
-token and the List indent, this code detects that very circumstance with an existing
-Block Quote element and changes the &lt;code&gt;extracted_whitespace&lt;/code&gt; variable to reduce
-the amount of whitespace.  With a decent amount of testing, this was able to knock
-a couple of issues off the list all by itself!&lt;/p&gt;
-&lt;h2 id="position-checker-woes"&gt;Position Checker Woes&lt;a class="headerlink" href="#position-checker-woes" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;At this point in the debugging process, I was keenly aware of two things.
-The first was that I probably had any existing parser issues and Markdown generator issues
-resolved.  While that meant that I needed to be vigilant about my work in getting
-the position checker issues resolved, it gave me the confidence to know that I
-probably would get most of the serious issues resolved.  At the time and while I was
-writing this, I was incredibly careful to think “most” and not “all”.  Issues are tricky
-things, and my experience makes me believe that you never get all.&lt;/p&gt;
-&lt;p&gt;The second thing was that this work was taking a lot of time.  Just for the analysis,
-debugging, fixing, and testing of the three prior issues, I was up over twelve hours
-in total.  While that included one or two of the issues in this section, the
-point was clear.  This was taking a lot of time to get right.  But I still felt
-strongly that it needed to get done, so I continued to push forward.&lt;/p&gt;
-&lt;h3 id="providing-foundational-support"&gt;Providing Foundational Support&lt;a class="headerlink" href="#providing-foundational-support" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;The most obvious thing that I needed to add was a sense of whether a Block Quote
-element was in effect when validating a given set of tokens.  While the actual code
-to use it would come later, this code was added in a couple of places, such as in
-the &lt;code&gt;__validate_block_token_height&lt;/code&gt; function, to calculate that token:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;container_token_index&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;actual_tokens&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;index&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;last_token&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-&lt;span class="n"&gt;block_container_token&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;
-&lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;container_token_index&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt; &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="n"&gt;actual_tokens&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;container_token_index&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_block_quote_start&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-    &lt;span class="n"&gt;block_container_token&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;actual_tokens&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;container_token_index&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;While I would normally be more carefully about copy-and-paste code, I already
-have plans to revisit the consistency check modules to see about improving them.
-As such, this was both quicker and would give me a chance to evaluate some refactoring
-tools in the new future.&lt;/p&gt;
-&lt;p&gt;Along the same path, I added proper support for Block Quotes elements within List
-elements in the &lt;code&gt;__maintain_block_stack&lt;/code&gt; function. It was not much, but I knew that
-I needed to have that value calculated in multiple places. This was providing that support
-while adding the necessary code only in a single place.&lt;/p&gt;
-&lt;h3 id="list-elements-and-block-quote-elements-redux"&gt;List Elements and Block Quote Elements - Redux&lt;a class="headerlink" href="#list-elements-and-block-quote-elements-redux" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;Like the work detailed in the
-&lt;a href="#transforming-into-markdown"&gt;Transforming Into Markdown&lt;/a&gt; section,
-this change to the &lt;code&gt;__validate_new_line&lt;/code&gt; function needed to account for Block Quote
-tokens and List tokens being used at the same time.  Although the code looks slightly
-different, both changes are accomplishing the same goals, just in different ways.
-In this function, because of the position checks that go on, the code was a lot
-more convoluted and nuanced.  But with a solid group of five scenario tests that
-all looked similar:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;FAILED test/test_markdown_block_quotes.py::test_block_quotes_extra_02ae - AssertionError: Line:4:[para(4,5):  ]
-FAILED test/test_markdown_list_blocks.py::test_list_blocks_237x - AssertionError: Line:3:[para(3,8):]
-FAILED test/test_markdown_list_blocks.py::test_list_blocks_237f - AssertionError: Line:4:[para(4,8):]
-FAILED test/test_markdown_list_blocks.py::test_list_blocks_237g - AssertionError: Line:4:[para(4,8):]
-FAILED test/test_markdown_list_blocks.py::test_list_blocks_238a - AssertionError: Line:3:[para(3,10):]
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;it was easy to go through and look for commonalities. It did take a fair amount
-of time to get the solution dialed in properly, but it was worth it.&lt;/p&gt;
-&lt;h3 id="block-quotes-and-blank-lines"&gt;Block Quotes and Blank Lines&lt;a class="headerlink" href="#block-quotes-and-blank-lines" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;Not yet finished with those tests, I resolved the issue in the previous section,
-only for me to be greeted by another issue with those same five scenario tests:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;FAILED test/test_markdown_block_quotes.py::test_block_quotes_extra_02ae - AssertionError: Line:3:[BLANK(3,2):]
-FAILED test/test_markdown_list_blocks.py::test_list_blocks_237x - AssertionError: Line:2:[BLANK(2,3):]
-FAILED test/test_markdown_list_blocks.py::test_list_blocks_237f - AssertionError: Line:3:[BLANK(3,3):]
-FAILED test/test_markdown_list_blocks.py::test_list_blocks_237g - AssertionError: Line:3:[BLANK(3,3):]
-FAILED test/test_markdown_list_blocks.py::test_list_blocks_238a - AssertionError: Line:2:[BLANK(2,3):]
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;I had taken care of one issue, only to have another one replace it. I cannot say
-that I was surprised because I was not.  This entire week was about things getting
-uncovered that also needed fixing.  And like the other issues, this one was
-obvious when I looked at it.  When computing the estimated column number for a
-Blank Line element, the estimated was sometimes off by two within Block Quote elements.&lt;/p&gt;
-&lt;p&gt;While this was obviously the problem, the issue with this issue was in defining the
-circumstances in which this was the problem.  This code:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;elif&lt;/span&gt; &lt;span class="n"&gt;container_block_stack&lt;/span&gt; &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="n"&gt;current_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_blank_line&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;container_block_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_block_quote_start&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-        &lt;span class="n"&gt;leading_text&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;did_x&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
-            &lt;span class="n"&gt;container_block_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;calculate_next_leading_space_part&lt;/span&gt;&lt;span class="p"&gt;(),&lt;/span&gt;
-            &lt;span class="bp"&gt;True&lt;/span&gt;&lt;span class="p"&gt;,)&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;was obviously being used in all cases, and there was at least one case where it
-was being used improperly.  After performing handful of experiments, it turned out that
-there were three cases.  The first was if the Blank Line token was followed by
-end tokens.  If it was only followed by end tokens, then that recalculation
-needs to be applied.  The second was if the “block” of end tokens after the
-Blank Line did not include an end List token.  Finally, the block part of
-the logic depended on whether the last block token was a Block Quote token
-or if the first block token was a Block Quote token.&lt;/p&gt;
-&lt;p&gt;After about four hours of experimentation and debugging, I arrived at this code:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;elif&lt;/span&gt; &lt;span class="n"&gt;container_block_stack&lt;/span&gt; &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="n"&gt;current_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_blank_line&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-    &lt;span class="n"&gt;top_block&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;None&lt;/span&gt;
-    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;container_block_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_block_quote_start&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-        &lt;span class="n"&gt;top_block&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;container_block_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
-    &lt;span class="k"&gt;elif&lt;/span&gt; &lt;span class="n"&gt;top_block_token&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-        &lt;span class="n"&gt;top_block&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;top_block_token&lt;/span&gt;
-
-    &lt;span class="n"&gt;needs_recalculation&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;False&lt;/span&gt;
-    &lt;span class="n"&gt;was_end_list_end&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;False&lt;/span&gt;
-    &lt;span class="n"&gt;next_token_index&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;actual_tokens&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;index&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;current_token&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
-    &lt;span class="k"&gt;while&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
-        &lt;span class="n"&gt;next_token_index&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;actual_tokens&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-        &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="n"&gt;actual_tokens&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;next_token_index&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_end_token&lt;/span&gt;
-    &lt;span class="p"&gt;):&lt;/span&gt;
-        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;actual_tokens&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;next_token_index&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_list_end&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-            &lt;span class="n"&gt;was_end_list_end&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;True&lt;/span&gt;
-        &lt;span class="n"&gt;next_token_index&lt;/span&gt; &lt;span class="o"&gt;+=&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
-    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;next_token_index&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;actual_tokens&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
-        &lt;span class="n"&gt;needs_recalculation&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;True&lt;/span&gt;
-    &lt;span class="k"&gt;else&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-        &lt;span class="n"&gt;needs_recalculation&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="n"&gt;was_end_list_end&lt;/span&gt;
-
-    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;top_block&lt;/span&gt; &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="n"&gt;needs_recalculation&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-        &lt;span class="n"&gt;leading_text&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;did_x&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
-            &lt;span class="n"&gt;container_block_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;calculate_next_leading_space_part&lt;/span&gt;&lt;span class="p"&gt;(),&lt;/span&gt;
-            &lt;span class="n"&gt;top_block&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;calculate_next_leading_space_part&lt;/span&gt;&lt;span class="p"&gt;(),&lt;/span&gt;
-            &lt;span class="bp"&gt;True&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-        &lt;span class="p"&gt;)&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;It backed up my earlier suspicion that the code was right, just not being used
-properly.  It did take a while to nail down the nuances of this code, but it
-all made sense then I got there!&lt;/p&gt;
-&lt;h3 id="second-verse-same-as-the-first"&gt;Second Verse, Same as The First&lt;a class="headerlink" href="#second-verse-same-as-the-first" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;And it seems like a continuing theme, having to adjust for Block Quote idents
-in various pieces of code, and the changes to the &lt;code&gt;__process_previous_token&lt;/code&gt; function
-and the &lt;code&gt;__verify_next_inline_handle_previous_end&lt;/code&gt; were no different. The change
-for the &lt;code&gt;__process_previous_token&lt;/code&gt; function was to add this code:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;block_container_token&lt;/span&gt; &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="n"&gt;old_line_number&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="n"&gt;estimated_line_number&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-    &lt;span class="n"&gt;delta&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;estimated_line_number&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="n"&gt;old_line_number&lt;/span&gt;
-    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="ow"&gt;not&lt;/span&gt; &lt;span class="n"&gt;current_inline_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_inline_link_end&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-        &lt;span class="n"&gt;block_container_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;leading_text_index&lt;/span&gt; &lt;span class="o"&gt;+=&lt;/span&gt; &lt;span class="n"&gt;delta&lt;/span&gt;
-    &lt;span class="n"&gt;split_leading_spaces&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;block_container_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;leading_spaces&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;split&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
-        &lt;span class="n"&gt;ParserHelper&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;newline_character&lt;/span&gt;
-    &lt;span class="p"&gt;)&lt;/span&gt;
-    &lt;span class="n"&gt;estimated_column_number&lt;/span&gt; &lt;span class="o"&gt;+=&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
-        &lt;span class="n"&gt;split_leading_spaces&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;block_container_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;leading_text_index&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
-    &lt;span class="p"&gt;)&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;and the change to the &lt;code&gt;__verify_next_inline_handle_previous_end&lt;/code&gt; function was
-to add this code:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;block_container_token&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-    &lt;span class="n"&gt;block_container_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;leading_text_index&lt;/span&gt; &lt;span class="o"&gt;+=&lt;/span&gt; &lt;span class="n"&gt;new_lines&lt;/span&gt;
-    &lt;span class="n"&gt;split_leading_spaces&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;block_container_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;leading_spaces&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;split&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
-        &lt;span class="n"&gt;ParserHelper&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;newline_character&lt;/span&gt;
-    &lt;span class="p"&gt;)&lt;/span&gt;
-    &lt;span class="n"&gt;new_estimated_column_number&lt;/span&gt; &lt;span class="o"&gt;+=&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
-        &lt;span class="n"&gt;split_leading_spaces&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;block_container_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;leading_text_index&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
-    &lt;span class="p"&gt;)&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Both sets of changes are almost identical, except for a couple of slight changes.
-But that was always expected, so it was comforting in a way to find these last
-two sets of changes to be so alike.  If the triggering condition was met, update
-the &lt;code&gt;leading_text_index&lt;/code&gt; field, grab the part of the &lt;code&gt;leading_spaces&lt;/code&gt; field
-relating to the index, and add the length of that value to the current column
-number.&lt;/p&gt;
-&lt;p&gt;And with that, things were clean.  Well, almost.  As I mentioned at least once
-in this article, nested container blocks are nuanced.  As such, when I tried to
-test something against alternating container blocks that were four levels deep,
-I ran into an issue.  While I do want to tackle that as time allows, this work
-was about cleaning up disabled consistency checks, not nested blocks.  As such,
-left those two tests in the code and disabled them for now.&lt;/p&gt;
-&lt;p&gt;I must admit that I wanted to deal with them right away, but I knew that I had
-enough to do as it was.  Taking that on would just delay things.  I believe
-I made the right move in delaying that work, but sometimes it does not feel that
-way.&lt;/p&gt;
-&lt;h2 id="doing-my-usual-cleanup"&gt;Doing My Usual Cleanup&lt;a class="headerlink" href="#doing-my-usual-cleanup" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;When I was going through that work, I did notice that there were unusual
-cases where I was still using string concatenation instead of f-strings.  While
-gearing up for the actual check of the reported issues, I thought it would be
-good to go through and clean those up.  While it does not show us as increased
-code coverage or increased scenario coverage, it just felt good to get it done
-and have everything using f-strings.&lt;/p&gt;
-&lt;h2 id="the-main-event"&gt;The Main Event&lt;a class="headerlink" href="#the-main-event" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Yes, after all this work, there was one more thing to do: The Main Event.
-With a solid set of passing tests, with all consistency checks working properly,
-I could now start verifying that the Paragraph token’s &lt;code&gt;rehydrate_index&lt;/code&gt; field
-and the Block Quote token’s &lt;code&gt;leading_text_index&lt;/code&gt; field were
-working as intended. This was the plan all along, but I had to be sure everything
-else was in place before I could start on this.&lt;/p&gt;
-&lt;p&gt;Working through all the scenario tests listed in the issue, I was able to verify
-that any paragraph hydration concerns with those scenario tests had been fixed as
-I was unable to reproduce even one failure.  There were now multiple checks to verify
-that the &lt;code&gt;rehydrate_index&lt;/code&gt; field was being used properly, and all those checks were passing properly.
-That was the focus, and after a solid week of work to get there,
-I was able to resolve those issues from the Issues List. That was the good news.&lt;/p&gt;
-&lt;p&gt;The bad news was that the same could not be said for the checks for the &lt;code&gt;leading_text_index&lt;/code&gt;
-field.  At the end of the &lt;code&gt;__rehydrate_block_quote_end&lt;/code&gt; function
-was an assert that was commented out:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="c1"&gt;# assert (&lt;/span&gt;
-&lt;span class="c1"&gt;#     leading_text_index == expected_leading_text_index&lt;/span&gt;
-&lt;span class="c1"&gt;# ), f"leading_text_index={str(leading_text_index)};expected_leading_text_index={str(expected_leading_text_index)}"&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;After two hours of trying to resolve all the issues, I added an issue to the
-project’s Issues List and cleaned things up.  What I was able to do however, was
-to get it closer to the final state:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;assert&lt;/span&gt; &lt;span class="n"&gt;leading_text_index&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;
-    &lt;span class="n"&gt;expected_leading_text_index&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-    &lt;span class="n"&gt;expected_leading_text_index&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-&lt;span class="p"&gt;],&lt;/span&gt; &lt;span class="n"&gt;f&lt;/span&gt;&lt;span class="s2"&gt;"leading_text_index={leading_text_index};expected_leading_text_index={expected_leading_text_index}"&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;This uncovered an unnoticed issue in the &lt;code&gt;parse_paragraph&lt;/code&gt; function that caused
-the parser to emit an extra newline character.  This issue is a weird
-boundary condition, and without the above assert, the likelihood of me finding
-it was remote at best.  Things must align properly for this to happen,
-as the code to detect this condition shows:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;apply_paragraph_adjustment&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;True&lt;/span&gt;
-&lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
-    &lt;span class="n"&gt;container_index&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;parser_state&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_stack&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-    &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="n"&gt;position_marker&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;line_number&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="n"&gt;top_block_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;matching_markdown_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;line_number&lt;/span&gt;
-    &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="n"&gt;container_index&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;
-    &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="n"&gt;parser_state&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;container_index&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_list&lt;/span&gt;
-&lt;span class="p"&gt;):&lt;/span&gt;
-    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
-        &lt;span class="n"&gt;position_marker&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;line_number&lt;/span&gt;
-        &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="n"&gt;parser_state&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;
-            &lt;span class="n"&gt;container_index&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
-        &lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;matching_markdown_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;line_number&lt;/span&gt;
-    &lt;span class="p"&gt;):&lt;/span&gt;
-        &lt;span class="n"&gt;apply_paragraph_adjustment&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;False&lt;/span&gt;
-
-&lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;apply_paragraph_adjustment&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;And, once again, it took a while to figure it out, but I got there.&lt;/p&gt;
-&lt;h2 id="what-was-my-experience-so-far"&gt;What Was My Experience So Far?&lt;a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Sometimes the solution hits you right away, and sometimes you must fight for
-every part of that solution. This week, there was a lot of fighting.  While some
-of the time it was about the problem and not the solution, most of the time it
-was around discovering the nuances of the problem.  And that was challenging, but
-the work was exceedingly difficult to focus on.  It required me to keep a level head and to clearly write things
-out for myself, so that I could look at the problem from different angles.&lt;/p&gt;
-&lt;p&gt;And that is what ultimately saved me.  Writing things out.  Yes, lots of scribbles
-and pages of weird drawings with arrows and boxes, but it worked.  What I found
-useful about my usual practice of using paper to design was that in trying to
-figure out the actual problem, I was not establishing a clean visualization of the
-problem.  Only when I was able to get enough test data represented in a cohesive
-form on those pieces of paper, all visible at the same time, was I able to properly
-view the problems and make my breakthroughs.&lt;/p&gt;
-&lt;p&gt;Now, am I saying that everyone should use paper? Nope.  But for me, the pivotal thing
-is that it helps me to visualize things.  It does not matter if it works
-for anyone else, but that helps me to visualized.  And the more difficult things
-get, the more important it is to find a way to visualize things in a cohesive
-manner that is digestible.  For me, that formula is a decent amount of paper scribbles
-mixed in with good logging.  That just allows me to keep state and assumptions
-on paper while testing them as I go through the log files and recording the actual
-changes. As I said at the start of the paragraph, it just must work for me.&lt;/p&gt;
-&lt;p&gt;So, was it hard? Yes… it was hard.  But I also moved the project forward while
-starting to refine another skill to add to my toolbox.  That was unexpected, but
-cool!&lt;/p&gt;
-&lt;h2 id="what-is-next"&gt;What is Next?&lt;a class="headerlink" href="#what-is-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Looking ahead in the Issues List, I would like to make more progress on getting
-things cleared out.  And with me removing the disabled consistency checks
-this past week, I at least want to try and tackle the pragma issues.
-Stay tuned!&lt;/p&gt;
-&lt;div class="footnote"&gt;
-&lt;hr/&gt;
-&lt;ol&gt;
-&lt;li id="fn:pragma"&gt;
-&lt;p&gt;Except for pragmas, that hopefully will be next week. &lt;a class="footnote-backref" href="#fnref:pragma" title="Jump back to footnote 1 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
-&lt;/li&gt;
-&lt;/ol&gt;
-&lt;/div&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry></feed>
+Stay tuned!&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry></feed>
