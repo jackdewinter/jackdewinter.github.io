@@ -1,5 +1,162 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/all.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2022-08-08T00:00:00-07:00</updated><entry><title>Dealing With The Ups and Downs</title><link href="https://jackdewinter.github.io/2022/08/08/dealing-with-the-ups-and-downs/" rel="alternate"></link><published>2022-08-08T00:00:00-07:00</published><updated>2022-08-08T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2022-08-08:/2022/08/08/dealing-with-the-ups-and-downs/</id><summary type="html">&lt;p&gt;Upfront, I want to add this disclaimer for any relatives that may decide
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/all.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2022-08-15T00:00:00-07:00</updated><entry><title>Dealing With Long Standing Issues</title><link href="https://jackdewinter.github.io/2022/08/15/dealing-with-long-standing-issues/" rel="alternate"></link><published>2022-08-15T00:00:00-07:00</published><updated>2022-08-15T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2022-08-15:/2022/08/15/dealing-with-long-standing-issues/</id><summary type="html">
+&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In my
+&lt;a href="https://jackdewinter.github.io/2022/08/08/dealing-with-the-ups-and-downs/"&gt;last article&lt;/a&gt;, I talked
+about how my personal life is encountering issues that I need to take
+extra time to deal with. This week, I am talk about the continuing work on
+the &lt;a href="https://github.com/jackdewinter/pymarkdown"&gt;PyMarkdown&lt;/a&gt; project to get it
+closer to a solid release.&lt;/p&gt;
+&lt;h2 id="things-just-take-longer"&gt;Things Just Take Longer …&lt;/h2&gt;</summary><content type="html">
+&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In my
+&lt;a href="https://jackdewinter.github.io/2022/08/08/dealing-with-the-ups-and-downs/"&gt;last article&lt;/a&gt;, I talked
+about how my personal life is encountering issues that I need to take
+extra time to deal with. This week, I am talk about the continuing work on
+the &lt;a href="https://github.com/jackdewinter/pymarkdown"&gt;PyMarkdown&lt;/a&gt; project to get it
+closer to a solid release.&lt;/p&gt;
+&lt;h2 id="things-just-take-longer"&gt;Things Just Take Longer&lt;a class="headerlink" href="#things-just-take-longer" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;With all the easy items out of the way, the items that I do pick up seem to take
+more time.  But when I think about that, it does make sense.  There is more
+experimentation needed, more debugging needed, and often a lot more
+thinking about the problem is needed.  And while I wish I could get through to
+the finished stage without as much “experimental failure”, I know that it is part
+of the process, and just comes with the territory.&lt;/p&gt;
+&lt;h2 id="issue-419-empty-space-causes-failure"&gt;&lt;a href="https://github.com/jackdewinter/pymarkdown/issues/419"&gt;Issue 419&lt;/a&gt; - Empty Space Causes Failure&lt;a class="headerlink" href="#issue-419-empty-space-causes-failure" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Okay, maybe a better title would be helpful.  But honestly, it was hard to try and
+summarize it into four words or less.  This was an issue that I found when I was doing
+experimentation with the last batch of nested container tests.  Just for laughs,
+I added an extra space after an empty list start (&lt;code&gt;1.&lt;/code&gt; or &lt;code&gt;-&lt;/code&gt; on its own line) expecting
+everything to be fine.  It was not, hence, the issue.&lt;/p&gt;
+&lt;p&gt;To start with, I was having a bit of an issue visualizing the code for handling leaf
+nodes, which is what I originally thought the problem was.  To help myself, I decided
+to split the paragraph handling functions out into their own module, since I have been
+thinking about doing that for a while.  Did not help me solve the issue, but it was
+another small thing off the list.&lt;/p&gt;
+&lt;p&gt;After that I went back and forth between the list processor and the leaf processor,
+trying to figure out where the issue was.  I spent a couple of hours
+on one, document for myself what I found during those hours, and revert the changes for the next
+day.  A couple of iterations into this, I found something interesting.  I had been
+convinced that it was not the leaf processing of the paragraphs, but I was starting
+to doubt that.  It was just the way the variables were changing that lead me to
+double check my assumptions.  And behold, it was one slight change to the calling
+of the &lt;code&gt;parser_state.close_open_blocks_fn&lt;/code&gt; function within the &lt;code&gt;__handle_paragraph_prep&lt;/code&gt;
+function to set the &lt;code&gt;include_block_quotes&lt;/code&gt; parameter to &lt;code&gt;True&lt;/code&gt;.  And it worked.&lt;/p&gt;
+&lt;p&gt;Hrm.  For those who may not be aware, when I do something I consider stupid, I say
+something like “hrm” which is effectively me saying the word “hum” with my mouth
+closed.  It is my way of asking myself “why did I not see that before?”
+In this case, when I moved the paragraph code over, I did some checks to see if it
+could be that code, and determined the answer was no.  Instead of including it
+in the code paths that I reverified, I assumed it was good and left it out.
+As I said at the start of the paragraph, hrm.&lt;/p&gt;
+&lt;h2 id="issue-412-double-check-your-results"&gt;&lt;a href="https://github.com/jackdewinter/pymarkdown/issues/412"&gt;Issue 412&lt;/a&gt; - Double Check Your Results&lt;a class="headerlink" href="#issue-412-double-check-your-results" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Having logged this issue while doing the previous work on the nested containers,
+I had just filed this issue because I thought there may be a problem.  To be blunt,
+during that work, I was happy to log issues that may be a problem after only
+doing a small amount of work to prove them as probably broken.&lt;/p&gt;
+&lt;p&gt;Specifically, this issue dealt with pairs of the nested container scenarios that
+included dropping of container blocks for the next line.  During the debugging
+phase, it looked like the tokens produced after dropping the outermost container
+block on the next line were the same as for keeping the block in the Markdown.
+It just looked weird, so I decided to save it for later when I could give it the
+time that I thought it needed.&lt;/p&gt;
+&lt;p&gt;I was probably deep in thought when I logged this issue, as the token streams
+mentioned in the issue were in fact different.  The normal case had three
+space characters in the paragraph token, and the drop case did not have those
+characters, as I would have expected all along.  But, in fairness, I did log
+this issue thinking that there may be an issue, and I wanted to check it.
+Just to be sure, I spent time looking
+at the code, verifying that result.  After I made assumptions with the last
+issue, I did not want to repeat that!&lt;/p&gt;
+&lt;h2 id="issue-301-clarifying-rule-for-md007"&gt;&lt;a href="https://github.com/jackdewinter/pymarkdown/issues/301"&gt;Issue 301&lt;/a&gt; - Clarifying Rule for MD007&lt;a class="headerlink" href="#issue-301-clarifying-rule-for-md007" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;This issue was an interesting one in that I had to really dig into some areas of
+the rule to make sure that I had made the right decision.  As the comments for this
+issue show, the submitter thought that the Markdown:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt; &lt;span class="n"&gt;Ordered&lt;/span&gt; &lt;span class="n"&gt;item&lt;/span&gt;
+    &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="n"&gt;Sub&lt;/span&gt; &lt;span class="n"&gt;unordered&lt;/span&gt; &lt;span class="n"&gt;item&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;with a command line of &lt;code&gt;--set=plugins.md007.indent='$#4'&lt;/code&gt; should not trigger the rule
+as it did:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;test.md:7:5: MD007: Unordered list indentation [Expected: 4, Actual=5] (ul-indent)
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;To save readers the trouble of looking up the documentation for the rule, the indent
+configuration informs rule Md007 that indents for unordered lists should occur every
+4 characters.  And with an apparent indent of 5, it did not look right.  So,
+to be honest, I agreed with him.  I have been looking at this issue on and off
+since it was logged in February, but never really dedicated time to figuring it
+out.  But I was never sure if it was correct or not.&lt;/p&gt;
+&lt;p&gt;In taking a concentrated look at this issue, the first thing that I noticed was
+that the tokens looked off.  Upon further examination, the parsing of the Markdown text
+that exists before the above sample was not closing both lists, only the outermost
+list.  As a result, the two lists started with the above sample were considered to
+be a second and third level list, not a first and second level list.  Making some
+changes to the &lt;code&gt;__close_next_level_of_lists&lt;/code&gt; function to properly close the lists
+solved that issue, but did not solve the main question: was the triggered
+error correct?&lt;/p&gt;
+&lt;p&gt;After going outside and doing some yardwork, I came back inside with a nice cool
+glass of water and started to look at the problem again.  Keeping in mind that
+assumptions got me in trouble before, I decided to throw them all out and start
+fresh.  It was then that I re-read the documentation for the rule and came across
+the following text near the end:&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;The original rule did not work for Unordered List elements within Ordered List elements. For example, the original rule does not fire
+on the following sample:&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;along with a sample that includes a pair of unordered list elements within an
+ordered list.  Perfect for this case!&lt;/p&gt;
+&lt;p&gt;Digging into the code for the rule a bit more, the changes I made to support this
+rule firing within an ordered list item became clear. If the new ordered
+list item was contained in anything other than an ordered list, it reset the depth
+to &lt;code&gt;0&lt;/code&gt;.  In the case of the above example, the rule considered the depth of
+the unordered list item to be &lt;code&gt;0&lt;/code&gt;.  It took me a while to get there, but I agreed
+that the rule was correct.  But how to change the documentation?&lt;/p&gt;
+&lt;p&gt;To properly document this issue, I added that information to the documentation in
+a new section named &lt;a href="https://github.com/jackdewinter/pymarkdown/blob/main/docs/rules/rule_md007.md#notes"&gt;Notes&lt;/a&gt;.
+I am probably going to go back and see if I can write a better description in a
+while, but I think it is good enough for now.&lt;/p&gt;
+&lt;h2 id="issue-441-support-for-stdin"&gt;&lt;a href="https://github.com/jackdewinter/pymarkdown/issues/441"&gt;Issue 441&lt;/a&gt; - Support For StdIn&lt;a class="headerlink" href="#issue-441-support-for-stdin" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;One of the users reached out with &lt;a href="https://github.com/jackdewinter/pymarkdown/issues/382"&gt;Issue 382&lt;/a&gt;,
+asking if it would be possible to use the PyMarkdown linter on Markdown within a
+Jupyter notebook.  Working with him, I was able to get the context that one of the
+types of information within the notebook are simple Markdown cells that usually
+contain notes or instructions for the reader of the notebook.&lt;/p&gt;
+&lt;p&gt;To make a move in the direction of making that possible, I knew that the first thing
+that I needed to do was to uncouple the linting engine from the file system.  At that
+point, the PyMarkdown project only worked on existing text files with the correct
+extension.  While I am not sure yet what the best way to support Jupyter notebooks
+is, I do know that it will probably involve passing the cells into the linter
+without writing a file.  Or at the very least, I want to have that option available.&lt;/p&gt;
+&lt;p&gt;I started work on this on Sunday morning, and after working on that around other
+things I needed to do, I came to startling conclusion: I loved the argparse library,
+but I also hated it.  I had spent over four hours trying to get my way with the
+library, with so many Google and Bing searches that I lost count.  It was frustrating
+because I had the actual standard in handling written, I just needed to finish
+the work on the command line.&lt;/p&gt;
+&lt;p&gt;All I wanted to do was to have groups of options that were mutually exclusive from
+each other.  Ideally, I wanted an &lt;code&gt;-s&lt;/code&gt; option to trigger the reading from standard
+input, raising an error if any of the file-based options were specified.  From a
+concept point of view, it was clear: if I was using &lt;code&gt;-s&lt;/code&gt; to read from standard input,
+I did not need options like &lt;code&gt;-r&lt;/code&gt; to specify recursion through the directories.&lt;/p&gt;
+&lt;p&gt;The implementation was another story.  I would like to think that I came close to
+the answer a few times, but that is probably just my ego talking.  Using the
+&lt;code&gt;argparse&lt;/code&gt; library, it is possible to specify that single options are mutually
+exclusive, such as &lt;code&gt;-s&lt;/code&gt; and &lt;code&gt;-r&lt;/code&gt;.  However, that is as far as it goes.  I found,
+through trial, error, and Google, that any kind of arguments groups do not nest.
+As such, I could not tell it that &lt;code&gt;-s&lt;/code&gt; was mutually exclusive with a specified
+group of arguments.&lt;/p&gt;
+&lt;p&gt;While it was not my first pick, I decided to go with a subcommand for the argument
+parsing implementation.  I do not think it is as elegant as my proposed solution,
+but it works.  Instead of using the &lt;code&gt;scan&lt;/code&gt; command and its arguments, I created
+a new subcommand &lt;code&gt;scan-stdin&lt;/code&gt; that had no arguments.  It seems a bit awkward from
+my point of view, but it accomplishes the goals, which is the important part.&lt;/p&gt;
+&lt;h2 id="thinking-about-the-notebook"&gt;Thinking About the Notebook&lt;a class="headerlink" href="#thinking-about-the-notebook" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;I am still thinking about how to do the notebook.  I am sure that I am going to
+find a solution for the user, I am just not sure what it is yet.  I know that I
+now have more options since I have added standard input support, but I will
+be taking time this week to think through it properly and talk with the
+user.&lt;/p&gt;
+&lt;p&gt;It was frustrating at times, and I feel like I could have gotten more done, but
+it is still a good feeling to knock some items off the list!&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry><entry><title>Dealing With The Ups and Downs</title><link href="https://jackdewinter.github.io/2022/08/08/dealing-with-the-ups-and-downs/" rel="alternate"></link><published>2022-08-08T00:00:00-07:00</published><updated>2022-08-08T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2022-08-08:/2022/08/08/dealing-with-the-ups-and-downs/</id><summary type="html">&lt;p&gt;Upfront, I want to add this disclaimer for any relatives that may decide
 to read this article.  I am going to be honest about how I felt and
 what we talked about on my trip.  You may not agree with what I say or what we
 decided, but our parents …&lt;/p&gt;</summary><content type="html">&lt;p&gt;Upfront, I want to add this disclaimer for any relatives that may decide
@@ -4203,229 +4360,4 @@ have work to do!&lt;/p&gt;
 &lt;p&gt;As one of the sections above noted, I have a handful of extra scenarios that
 I need to take care of before moving on.  Once those are done, I will probably
 release a new version of PyMarkdown, just to make sure it is current.
-Stay tuned!&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry><entry><title>Markdown Linter - Finding Something That Works</title><link href="https://jackdewinter.github.io/2022/01/17/markdown-linter-finding-something-that-works/" rel="alternate"></link><published>2022-01-17T00:00:00-08:00</published><updated>2022-01-17T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2022-01-17:/2022/01/17/markdown-linter-finding-something-that-works/</id><summary type="html">
-&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;In my
-&lt;a href="https://jackdewinter.github.io/2022/01/10/markdown-linter-know-when-to-break-the-rules/"&gt;last article&lt;/a&gt;, I talked
-about how I had to bend or break my own rules last week.  This week, I talk about
-finding a process that works for yourself.&lt;/p&gt;
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;It was a grueling week at work and at home.  Nothing specific, just a lot of small …&lt;/p&gt;</summary><content type="html">
-&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;In my
-&lt;a href="https://jackdewinter.github.io/2022/01/10/markdown-linter-know-when-to-break-the-rules/"&gt;last article&lt;/a&gt;, I talked
-about how I had to bend or break my own rules last week.  This week, I talk about
-finding a process that works for yourself.&lt;/p&gt;
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;It was a grueling week at work and at home.  Nothing specific, just a lot of small
-stuff that had to be done and I just felt like I was hitting walls getting it done.
-But amidst that
-turmoil, I found comfort in being able to get deep into the occasional bit of work.
-Even if it was
-only for a half hour here and there, losing my mind in my own work for a while helped me relax.
-And that relaxing helped me get through the week.&lt;/p&gt;
-&lt;p&gt;So, this week, I decided to talk about what I have found that helps me get into
-that mindset, in the hope of helping others with their own journey.&lt;/p&gt;
-&lt;h2 id="finding-your-own-groove"&gt;Finding Your Own Groove&lt;a class="headerlink" href="#finding-your-own-groove" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Due to a lot of things happening in my personal life and professional life in the
-past week, I did not get a lot done on the &lt;a href="https://github.com/jackdewinter/pymarkdown"&gt;PyMarkdown&lt;/a&gt; project.
-As I have mentioned before, I need to take of my entire life, not just focus on
-the one project.  And it is not like I did not get any work done this past week.
-It was just the quantity of work done was a lot lower than I hoped for. And
-while before that might have bothered me at one point in my life, I now realize
-the fallacy of focusing too much of my life on one thing.&lt;/p&gt;
-&lt;p&gt;Two thing that helped me accomplish the little work that I did this week was understanding
-myself and having a good groove to my coding.  I will probably do multiple articles
-in the future on understanding myself, but this week I want to focus on finding
-that groove.
-And while I do listen to music while coding, that is not the groove I am talking
-about.  Groove itself is an interesting word.  According to &lt;a href="https://www.merriam-webster.com/dictionary/groove"&gt;Merriam-Webster&lt;/a&gt;,
-there are six separate definitions attributed to the word.  The two definitions
-that I think are most applicable are:&lt;/p&gt;
-&lt;blockquote&gt;
-&lt;p&gt;top form&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;p&gt;and&lt;/p&gt;
-&lt;blockquote&gt;
-&lt;p&gt;the middle of the strike zone in baseball where a pitch is most easily hit&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;p&gt;To me, both definitions indicate a place where something is more easily
-accomplished.  When I work, be it professionally or personally, that is the
-mindset I aim for: keeping my efficiency maxed out.&lt;/p&gt;
-&lt;p&gt;That is what a groove is about for me. Finding a groove is being able to get into
-that mindset where I
-can be as efficient as possible on the task that I am doing.  Maybe it is mowing
-the lawn with headphones on, maybe it is loading the dishwasher with no music on,
-but some tasks just work better when you get an environment set up that helps you
-get the job done in what seems like no time.  It helps me get the task done, and
-sometimes it also makes the time taken to perform the task seem like nothing at
-all.&lt;/p&gt;
-&lt;p&gt;And for software development, I really have two different grooves.&lt;/p&gt;
-&lt;h2 id="my-debugging-groove"&gt;My Debugging Groove&lt;a class="headerlink" href="#my-debugging-groove" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;I believe I have a solid groove for my debugging.  As I have mentioned in previous
-articles, I prefer logging to interactive debuggers as I feel that I can see the
-entire picture more clearly that way.  I will often turn on debug logging and execute
-the test I am debugging to print out a very verbose log of what happened.  I typically
-do so with a specific area of the Markdown translation that needs addressing, so I
-quickly try and get to that area of the output.  From there, I make sure that the
-logs show the relevant states that I need to see and go from there.&lt;/p&gt;
-&lt;p&gt;It might seem boring, but it is what my debugging grove is all about.  I start with
-an okay-ish picture of what I think is going on.  My goal is to improve the resolution
-of that picture to the point where I can spot the problem.  Sometimes it is obvious
-and sometimes it takes a couple of hours, but it seldom fails for me.  That process
-is so ingrained into my tasks that I can easily get into a groove with me, my music,
-and one terminal output window laid on top of one VSCode window with source code.
-I get to a place where I do not think about what I am doing, I just think and do.&lt;/p&gt;
-&lt;p&gt;For me, that is what works: having the data in front of me to help fill in the
-gaps of the picture that I have in my head.  If I had to put some descriptions
-to the style of debugging, I would probably use words like fluid and dense.  I
-like a lot of organized information and the ability to move as freely as possible
-through the data.  That balance of information just allows me to properly visualize
-the specific debug tasks that I am undertaking.&lt;/p&gt;
-&lt;p&gt;Or as Jimmy Fallon might say: “That’s My Jam!”&lt;/p&gt;
-&lt;h2 id="my-coding-groove"&gt;My Coding Groove&lt;a class="headerlink" href="#my-coding-groove" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Once I follow that path and I get to a probable reason that my code is not working the
-way I want it to, that is where my coding groove comes in.  Knowing I was drafting
-this article on Sunday, I saved some “groove code” that I wrote on Saturday:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;xyz&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;False&lt;/span&gt;
-&lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;container_depth&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;parser_state&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_stack&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt; &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="n"&gt;position_marker&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;index_number&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-    &lt;span class="n"&gt;xx&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;
-    &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="nb"&gt;range&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;parser_state&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_stack&lt;/span&gt;&lt;span class="p"&gt;)):&lt;/span&gt;
-        &lt;span class="n"&gt;POGGER&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;debug&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"$&amp;gt;stack:$:"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;parser_state&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
-        &lt;span class="n"&gt;POGGER&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;debug&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"$&amp;gt;token:$:"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;parser_state&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;matching_markdown_token&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;parser_state&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;matching_markdown_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_block_quote_start&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-            &lt;span class="n"&gt;y&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;parser_state&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;matching_markdown_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;leading_spaces&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;split&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-            &lt;span class="n"&gt;xx&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;y&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
-        &lt;span class="k"&gt;elif&lt;/span&gt; &lt;span class="n"&gt;parser_state&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;matching_markdown_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_list_start&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-            &lt;span class="n"&gt;xx&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;
-    &lt;span class="n"&gt;delta&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;extracted_whitespace&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="n"&gt;xx&lt;/span&gt;
-    &lt;span class="n"&gt;POGGER&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;debug&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"len(ws)=$"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;extracted_whitespace&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
-    &lt;span class="n"&gt;POGGER&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;debug&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"len(containers)=$"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;xx&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-    &lt;span class="n"&gt;xyz&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;xx&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt; &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="n"&gt;delta&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;=&lt;/span&gt; &lt;span class="mi"&gt;4&lt;/span&gt;
-    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;xyz&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-        &lt;span class="n"&gt;container_level_tokens&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[]&lt;/span&gt; 
-        &lt;span class="n"&gt;abc&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="bp"&gt;True&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Just for the record, the first sample that I pasted in this article was about four times the size of the
-above text, but I trimmed it for readability.  I was okay in trimming it down
-because the patterns in the removed code were just repeated patterns from the
-above code.&lt;/p&gt;
-&lt;p&gt;And yes, I totally admit the code is ugly.  It does not describe what it is doing,
-it is not nicely organized, and contains a certain amount of cut-and-paste code.
-But for me, looking at that code when I am in my own groove, it makes total sense
-to me.  With the current context being the task that I am working on, I focus on
-what changes I need to make to the code to bring it closer to the desired end goal.&lt;/p&gt;
-&lt;p&gt;Would I ever check in code like this?  Nope.  But in terms of allowing me to stay
-in my groove and focus on the problem at hand, it works wonders for me.  I do care
-about code quality and readable code.  But none of that really matters until I can
-get the code working properly.  Pretty code that is wonderfully organized just does
-not matter if it does not work as intended.  Therefore, my coding process temporarily cuts
-that requirement out of the picture to allow me to be more efficient.&lt;/p&gt;
-&lt;p&gt;If I had to try and related it to a process that most people would recognize,
-I would associate my process with writing an essay the way I was taught in high
-school.  The debugging phase in the last section is doing the research for the
-essay.  The “groove code” above is me writing out a preface, a body, and a conclusion,
-keeping things loose until I find a combination of paragraphs that echo the
-research and connect properly.  Once that is done, the rest is just window dressing
-to make things look good, which is what the next section is about.&lt;/p&gt;
-&lt;h2 id="after-the-groove-is-over"&gt;After The Groove Is Over&lt;a class="headerlink" href="#after-the-groove-is-over" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Besides sounding like a great name for a rock song, that process does leave me
-with cleanup to do once I solve the problem.  I do not want to take away
-the importance of this section by calling it “cleanup” or anything like that.
-While the hard part is coming up with a working solution, it can also be difficult
-to express that solution in a way that I will understand when I look at it
-again two weeks from now.  I need to remove the code that is related into its
-own function, give the function a good name, give the variables a good name,
-and make sure that I will not look at it later and go “what was I thinking?”&lt;/p&gt;
-&lt;p&gt;As an example, the first step in cleaning up that code was to move most of it
-to its own function, &lt;code&gt;__handle_trailing_indent_with_block_quote&lt;/code&gt;:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
-        &lt;span class="n"&gt;container_depth&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;=&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;parser_state&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_stack&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
-        &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="n"&gt;position_marker&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;index_number&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;
-    &lt;span class="p"&gt;):&lt;/span&gt;
-        &lt;span class="p"&gt;(&lt;/span&gt;
-            &lt;span class="n"&gt;have_pre_processed_indent&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-            &lt;span class="n"&gt;container_level_tokens&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-            &lt;span class="n"&gt;skip_containers_before_leaf_blocks&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-            &lt;span class="n"&gt;used_indent&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-        &lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;ContainerBlockProcessor&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;__handle_trailing_indent_with_block_quote&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
-            &lt;span class="n"&gt;parser_state&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;extracted_whitespace&lt;/span&gt;
-        &lt;span class="p"&gt;)&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Looking at the &lt;code&gt;__handle_pre_processed_indent&lt;/code&gt; function that held the earlier version of the
-code, it was obvious that the new code should have its own function.  However, when
-I was fixing the code, it was also obvious that keeping everything in one place
-made the most sense.  But now that I went from a fixing stage to a quality stage,
-the priorities shifted.  Now it was more about making sure that the change that
-I made was readable and maintainable.&lt;/p&gt;
-&lt;p&gt;To that extent, I took some more time to provide each of the variables with a
-more descriptive name of what it was doing:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="nd"&gt;@staticmethod&lt;/span&gt;
-    &lt;span class="k"&gt;def&lt;/span&gt; &lt;span class="nf"&gt;__handle_trailing_indent_with_block_quote&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;parser_state&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;extracted_whitespace&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
-        &lt;span class="n"&gt;used_indent&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;
-        &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;stack_index&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="nb"&gt;range&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;parser_state&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_stack&lt;/span&gt;&lt;span class="p"&gt;)):&lt;/span&gt;
-            &lt;span class="n"&gt;POGGER&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;debug&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
-                &lt;span class="s2"&gt;"$&amp;gt;stack:$:"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;stack_index&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;parser_state&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;stack_index&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
-            &lt;span class="p"&gt;)&lt;/span&gt;
-            &lt;span class="n"&gt;POGGER&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;debug&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
-                &lt;span class="s2"&gt;"$&amp;gt;token:$:"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-                &lt;span class="n"&gt;stack_index&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-                &lt;span class="n"&gt;parser_state&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;stack_index&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;matching_markdown_token&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-            &lt;span class="p"&gt;)&lt;/span&gt;
-            &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;parser_state&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;
-                &lt;span class="n"&gt;stack_index&lt;/span&gt;
-            &lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;matching_markdown_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_block_quote_start&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-                &lt;span class="n"&gt;split_spaces&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;parser_state&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;
-                    &lt;span class="n"&gt;stack_index&lt;/span&gt;
-                &lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;matching_markdown_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;leading_spaces&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;split&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-                &lt;span class="n"&gt;used_indent&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;split_spaces&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
-            &lt;span class="k"&gt;else&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-                &lt;span class="k"&gt;assert&lt;/span&gt; &lt;span class="n"&gt;parser_state&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;
-                    &lt;span class="n"&gt;stack_index&lt;/span&gt;
-                &lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;matching_markdown_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;is_list_start&lt;/span&gt;
-                &lt;span class="n"&gt;used_indent&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;parser_state&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;token_stack&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;
-                    &lt;span class="n"&gt;stack_index&lt;/span&gt;
-                &lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;matching_markdown_token&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;indent_level&lt;/span&gt;
-        &lt;span class="n"&gt;delta&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;extracted_whitespace&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="n"&gt;used_indent&lt;/span&gt;
-        &lt;span class="n"&gt;POGGER&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;debug&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"len(ws)=$"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;extracted_whitespace&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
-        &lt;span class="n"&gt;POGGER&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;debug&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"len(containers)=$"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;used_indent&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
-        &lt;span class="n"&gt;have_pre_processed_indent&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;used_indent&lt;/span&gt; &lt;span class="o"&gt;!=&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt; &lt;span class="ow"&gt;and&lt;/span&gt; &lt;span class="n"&gt;delta&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;=&lt;/span&gt; &lt;span class="mi"&gt;4&lt;/span&gt;
-        &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;have_pre_processed_indent&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="p"&gt;[],&lt;/span&gt; &lt;span class="n"&gt;have_pre_processed_indent&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;used_indent&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;The variable &lt;code&gt;xx&lt;/code&gt; became &lt;code&gt;used_indent&lt;/code&gt;, the variable &lt;code&gt;i&lt;/code&gt; became &lt;code&gt;stack_token&lt;/code&gt; and
-so forth.  I also ran my standard tools &lt;code&gt;black&lt;/code&gt;, &lt;code&gt;flake8&lt;/code&gt;, and &lt;code&gt;pylint&lt;/code&gt; on the
-code to make sure I was not missing anything.&lt;/p&gt;
-&lt;p&gt;Doing this step any earlier in the change process would have just slowed me down.
-But with the changes finished and the “groove context” vanishing from my mind, it
-was the right time to capture that information and reorganize.  Capture that
-context in the naming of the objects as best as I can, and make it look neat.&lt;/p&gt;
-&lt;p&gt;As a friend of mine once said:&lt;/p&gt;
-&lt;blockquote&gt;
-&lt;p&gt;Leave it cleaner that you found it for the next developer.  Because remember, that next developer will probably be you.&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;h2 id="what-does-this-mean-for-readers"&gt;What Does This Mean For Readers?&lt;a class="headerlink" href="#what-does-this-mean-for-readers" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;As I have said in other articles about process, this is the process that works for
-me and make me produce the best work.  There really is not guide that says, “if your
-name is Jack, then this is the way you developer software”.  I have found that I
-get little bit of insights from here and there, with more experimentation than
-success.  But even little insights and experiments, whether the outcome is positive
-or negative, helps me tune my process that much more.&lt;/p&gt;
-&lt;p&gt;So, for any readers that are looking to improve their process, while I would like
-to give each reader their own guide to developing at their most efficient: it is
-up to you.  Read articles and see if something that another developer describes
-in their process speaks to you.  Look at other aspects of your life and see if
-you can transplant things that work in those aspects into your development
-process.&lt;/p&gt;
-&lt;p&gt;And please, if nothing else, experiment.  Experiment knowing that you can learn
-from an experiment failing as well as from an experiment succeeding.  There is
-no right answer that works for everyone.  Just a patchwork worth of process that
-is tuned to how you work.&lt;/p&gt;
-&lt;h2 id="what-was-my-experience-so-far"&gt;What Was My Experience So Far?&lt;a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Lots of external stuff, but I am glad I took the time to describe how I work
-through a change problem.  Finding that set of processes that work for me took
-years, and even then, I tweak and change them as I grow and learn.  Regardless,
-it is good to share and perhaps helps others.&lt;/p&gt;
-&lt;h2 id="what-is-next"&gt;What is Next?&lt;a class="headerlink" href="#what-is-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;I am making progress on the last batch of scenario tests that were added, but it
-is slow process.  Hoping to get further on that this week.
 Stay tuned!&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry></feed>

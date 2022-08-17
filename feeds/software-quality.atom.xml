@@ -1,5 +1,162 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench - Software Quality</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/software-quality.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2022-07-25T00:00:00-07:00</updated><entry><title>Plugging Away At The Issues</title><link href="https://jackdewinter.github.io/2022/07/25/plugging-away-at-the-issues/" rel="alternate"></link><published>2022-07-25T00:00:00-07:00</published><updated>2022-07-25T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2022-07-25:/2022/07/25/plugging-away-at-the-issues/</id><summary type="html">
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench - Software Quality</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/software-quality.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2022-08-15T00:00:00-07:00</updated><entry><title>Dealing With Long Standing Issues</title><link href="https://jackdewinter.github.io/2022/08/15/dealing-with-long-standing-issues/" rel="alternate"></link><published>2022-08-15T00:00:00-07:00</published><updated>2022-08-15T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2022-08-15:/2022/08/15/dealing-with-long-standing-issues/</id><summary type="html">
+&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In my
+&lt;a href="https://jackdewinter.github.io/2022/08/08/dealing-with-the-ups-and-downs/"&gt;last article&lt;/a&gt;, I talked
+about how my personal life is encountering issues that I need to take
+extra time to deal with. This week, I am talk about the continuing work on
+the &lt;a href="https://github.com/jackdewinter/pymarkdown"&gt;PyMarkdown&lt;/a&gt; project to get it
+closer to a solid release.&lt;/p&gt;
+&lt;h2 id="things-just-take-longer"&gt;Things Just Take Longer …&lt;/h2&gt;</summary><content type="html">
+&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In my
+&lt;a href="https://jackdewinter.github.io/2022/08/08/dealing-with-the-ups-and-downs/"&gt;last article&lt;/a&gt;, I talked
+about how my personal life is encountering issues that I need to take
+extra time to deal with. This week, I am talk about the continuing work on
+the &lt;a href="https://github.com/jackdewinter/pymarkdown"&gt;PyMarkdown&lt;/a&gt; project to get it
+closer to a solid release.&lt;/p&gt;
+&lt;h2 id="things-just-take-longer"&gt;Things Just Take Longer&lt;a class="headerlink" href="#things-just-take-longer" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;With all the easy items out of the way, the items that I do pick up seem to take
+more time.  But when I think about that, it does make sense.  There is more
+experimentation needed, more debugging needed, and often a lot more
+thinking about the problem is needed.  And while I wish I could get through to
+the finished stage without as much “experimental failure”, I know that it is part
+of the process, and just comes with the territory.&lt;/p&gt;
+&lt;h2 id="issue-419-empty-space-causes-failure"&gt;&lt;a href="https://github.com/jackdewinter/pymarkdown/issues/419"&gt;Issue 419&lt;/a&gt; - Empty Space Causes Failure&lt;a class="headerlink" href="#issue-419-empty-space-causes-failure" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Okay, maybe a better title would be helpful.  But honestly, it was hard to try and
+summarize it into four words or less.  This was an issue that I found when I was doing
+experimentation with the last batch of nested container tests.  Just for laughs,
+I added an extra space after an empty list start (&lt;code&gt;1.&lt;/code&gt; or &lt;code&gt;-&lt;/code&gt; on its own line) expecting
+everything to be fine.  It was not, hence, the issue.&lt;/p&gt;
+&lt;p&gt;To start with, I was having a bit of an issue visualizing the code for handling leaf
+nodes, which is what I originally thought the problem was.  To help myself, I decided
+to split the paragraph handling functions out into their own module, since I have been
+thinking about doing that for a while.  Did not help me solve the issue, but it was
+another small thing off the list.&lt;/p&gt;
+&lt;p&gt;After that I went back and forth between the list processor and the leaf processor,
+trying to figure out where the issue was.  I spent a couple of hours
+on one, document for myself what I found during those hours, and revert the changes for the next
+day.  A couple of iterations into this, I found something interesting.  I had been
+convinced that it was not the leaf processing of the paragraphs, but I was starting
+to doubt that.  It was just the way the variables were changing that lead me to
+double check my assumptions.  And behold, it was one slight change to the calling
+of the &lt;code&gt;parser_state.close_open_blocks_fn&lt;/code&gt; function within the &lt;code&gt;__handle_paragraph_prep&lt;/code&gt;
+function to set the &lt;code&gt;include_block_quotes&lt;/code&gt; parameter to &lt;code&gt;True&lt;/code&gt;.  And it worked.&lt;/p&gt;
+&lt;p&gt;Hrm.  For those who may not be aware, when I do something I consider stupid, I say
+something like “hrm” which is effectively me saying the word “hum” with my mouth
+closed.  It is my way of asking myself “why did I not see that before?”
+In this case, when I moved the paragraph code over, I did some checks to see if it
+could be that code, and determined the answer was no.  Instead of including it
+in the code paths that I reverified, I assumed it was good and left it out.
+As I said at the start of the paragraph, hrm.&lt;/p&gt;
+&lt;h2 id="issue-412-double-check-your-results"&gt;&lt;a href="https://github.com/jackdewinter/pymarkdown/issues/412"&gt;Issue 412&lt;/a&gt; - Double Check Your Results&lt;a class="headerlink" href="#issue-412-double-check-your-results" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Having logged this issue while doing the previous work on the nested containers,
+I had just filed this issue because I thought there may be a problem.  To be blunt,
+during that work, I was happy to log issues that may be a problem after only
+doing a small amount of work to prove them as probably broken.&lt;/p&gt;
+&lt;p&gt;Specifically, this issue dealt with pairs of the nested container scenarios that
+included dropping of container blocks for the next line.  During the debugging
+phase, it looked like the tokens produced after dropping the outermost container
+block on the next line were the same as for keeping the block in the Markdown.
+It just looked weird, so I decided to save it for later when I could give it the
+time that I thought it needed.&lt;/p&gt;
+&lt;p&gt;I was probably deep in thought when I logged this issue, as the token streams
+mentioned in the issue were in fact different.  The normal case had three
+space characters in the paragraph token, and the drop case did not have those
+characters, as I would have expected all along.  But, in fairness, I did log
+this issue thinking that there may be an issue, and I wanted to check it.
+Just to be sure, I spent time looking
+at the code, verifying that result.  After I made assumptions with the last
+issue, I did not want to repeat that!&lt;/p&gt;
+&lt;h2 id="issue-301-clarifying-rule-for-md007"&gt;&lt;a href="https://github.com/jackdewinter/pymarkdown/issues/301"&gt;Issue 301&lt;/a&gt; - Clarifying Rule for MD007&lt;a class="headerlink" href="#issue-301-clarifying-rule-for-md007" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;This issue was an interesting one in that I had to really dig into some areas of
+the rule to make sure that I had made the right decision.  As the comments for this
+issue show, the submitter thought that the Markdown:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt; &lt;span class="n"&gt;Ordered&lt;/span&gt; &lt;span class="n"&gt;item&lt;/span&gt;
+    &lt;span class="o"&gt;-&lt;/span&gt; &lt;span class="n"&gt;Sub&lt;/span&gt; &lt;span class="n"&gt;unordered&lt;/span&gt; &lt;span class="n"&gt;item&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;with a command line of &lt;code&gt;--set=plugins.md007.indent='$#4'&lt;/code&gt; should not trigger the rule
+as it did:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;test.md:7:5: MD007: Unordered list indentation [Expected: 4, Actual=5] (ul-indent)
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;To save readers the trouble of looking up the documentation for the rule, the indent
+configuration informs rule Md007 that indents for unordered lists should occur every
+4 characters.  And with an apparent indent of 5, it did not look right.  So,
+to be honest, I agreed with him.  I have been looking at this issue on and off
+since it was logged in February, but never really dedicated time to figuring it
+out.  But I was never sure if it was correct or not.&lt;/p&gt;
+&lt;p&gt;In taking a concentrated look at this issue, the first thing that I noticed was
+that the tokens looked off.  Upon further examination, the parsing of the Markdown text
+that exists before the above sample was not closing both lists, only the outermost
+list.  As a result, the two lists started with the above sample were considered to
+be a second and third level list, not a first and second level list.  Making some
+changes to the &lt;code&gt;__close_next_level_of_lists&lt;/code&gt; function to properly close the lists
+solved that issue, but did not solve the main question: was the triggered
+error correct?&lt;/p&gt;
+&lt;p&gt;After going outside and doing some yardwork, I came back inside with a nice cool
+glass of water and started to look at the problem again.  Keeping in mind that
+assumptions got me in trouble before, I decided to throw them all out and start
+fresh.  It was then that I re-read the documentation for the rule and came across
+the following text near the end:&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;The original rule did not work for Unordered List elements within Ordered List elements. For example, the original rule does not fire
+on the following sample:&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;along with a sample that includes a pair of unordered list elements within an
+ordered list.  Perfect for this case!&lt;/p&gt;
+&lt;p&gt;Digging into the code for the rule a bit more, the changes I made to support this
+rule firing within an ordered list item became clear. If the new ordered
+list item was contained in anything other than an ordered list, it reset the depth
+to &lt;code&gt;0&lt;/code&gt;.  In the case of the above example, the rule considered the depth of
+the unordered list item to be &lt;code&gt;0&lt;/code&gt;.  It took me a while to get there, but I agreed
+that the rule was correct.  But how to change the documentation?&lt;/p&gt;
+&lt;p&gt;To properly document this issue, I added that information to the documentation in
+a new section named &lt;a href="https://github.com/jackdewinter/pymarkdown/blob/main/docs/rules/rule_md007.md#notes"&gt;Notes&lt;/a&gt;.
+I am probably going to go back and see if I can write a better description in a
+while, but I think it is good enough for now.&lt;/p&gt;
+&lt;h2 id="issue-441-support-for-stdin"&gt;&lt;a href="https://github.com/jackdewinter/pymarkdown/issues/441"&gt;Issue 441&lt;/a&gt; - Support For StdIn&lt;a class="headerlink" href="#issue-441-support-for-stdin" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;One of the users reached out with &lt;a href="https://github.com/jackdewinter/pymarkdown/issues/382"&gt;Issue 382&lt;/a&gt;,
+asking if it would be possible to use the PyMarkdown linter on Markdown within a
+Jupyter notebook.  Working with him, I was able to get the context that one of the
+types of information within the notebook are simple Markdown cells that usually
+contain notes or instructions for the reader of the notebook.&lt;/p&gt;
+&lt;p&gt;To make a move in the direction of making that possible, I knew that the first thing
+that I needed to do was to uncouple the linting engine from the file system.  At that
+point, the PyMarkdown project only worked on existing text files with the correct
+extension.  While I am not sure yet what the best way to support Jupyter notebooks
+is, I do know that it will probably involve passing the cells into the linter
+without writing a file.  Or at the very least, I want to have that option available.&lt;/p&gt;
+&lt;p&gt;I started work on this on Sunday morning, and after working on that around other
+things I needed to do, I came to startling conclusion: I loved the argparse library,
+but I also hated it.  I had spent over four hours trying to get my way with the
+library, with so many Google and Bing searches that I lost count.  It was frustrating
+because I had the actual standard in handling written, I just needed to finish
+the work on the command line.&lt;/p&gt;
+&lt;p&gt;All I wanted to do was to have groups of options that were mutually exclusive from
+each other.  Ideally, I wanted an &lt;code&gt;-s&lt;/code&gt; option to trigger the reading from standard
+input, raising an error if any of the file-based options were specified.  From a
+concept point of view, it was clear: if I was using &lt;code&gt;-s&lt;/code&gt; to read from standard input,
+I did not need options like &lt;code&gt;-r&lt;/code&gt; to specify recursion through the directories.&lt;/p&gt;
+&lt;p&gt;The implementation was another story.  I would like to think that I came close to
+the answer a few times, but that is probably just my ego talking.  Using the
+&lt;code&gt;argparse&lt;/code&gt; library, it is possible to specify that single options are mutually
+exclusive, such as &lt;code&gt;-s&lt;/code&gt; and &lt;code&gt;-r&lt;/code&gt;.  However, that is as far as it goes.  I found,
+through trial, error, and Google, that any kind of arguments groups do not nest.
+As such, I could not tell it that &lt;code&gt;-s&lt;/code&gt; was mutually exclusive with a specified
+group of arguments.&lt;/p&gt;
+&lt;p&gt;While it was not my first pick, I decided to go with a subcommand for the argument
+parsing implementation.  I do not think it is as elegant as my proposed solution,
+but it works.  Instead of using the &lt;code&gt;scan&lt;/code&gt; command and its arguments, I created
+a new subcommand &lt;code&gt;scan-stdin&lt;/code&gt; that had no arguments.  It seems a bit awkward from
+my point of view, but it accomplishes the goals, which is the important part.&lt;/p&gt;
+&lt;h2 id="thinking-about-the-notebook"&gt;Thinking About the Notebook&lt;a class="headerlink" href="#thinking-about-the-notebook" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;I am still thinking about how to do the notebook.  I am sure that I am going to
+find a solution for the user, I am just not sure what it is yet.  I know that I
+now have more options since I have added standard input support, but I will
+be taking time this week to think through it properly and talk with the
+user.&lt;/p&gt;
+&lt;p&gt;It was frustrating at times, and I feel like I could have gotten more done, but
+it is still a good feeling to knock some items off the list!&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry><entry><title>Plugging Away At The Issues</title><link href="https://jackdewinter.github.io/2022/07/25/plugging-away-at-the-issues/" rel="alternate"></link><published>2022-07-25T00:00:00-07:00</published><updated>2022-07-25T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2022-07-25:/2022/07/25/plugging-away-at-the-issues/</id><summary type="html">
 &lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;In my
 &lt;a href="https://jackdewinter.github.io/2022/07/18/confidence-one-bad-apple/"&gt;last article&lt;/a&gt;, I talked
@@ -4672,293 +4829,4 @@ Stay tuned!&lt;/p&gt;
 &lt;p&gt;This is a fancy way of saying “what is the remainder after dividing by the other number?” &lt;a class="footnote-backref" href="#fnref:modulo" title="Jump back to footnote 1 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
 &lt;/li&gt;
 &lt;/ol&gt;
-&lt;/div&gt;</content><category term="Software Quality"></category><category term="extract method"></category></entry><entry><title>Markdown Linter - The Bug That Almost Knocked Me Down</title><link href="https://jackdewinter.github.io/2021/11/29/markdown-linter-the-bug-that-almost-knocked-me-down/" rel="alternate"></link><published>2021-11-29T00:00:00-08:00</published><updated>2021-11-29T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2021-11-29:/2021/11/29/markdown-linter-the-bug-that-almost-knocked-me-down/</id><summary type="html">
-&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;In my
-&lt;a href="https://jackdewinter.github.io/2021/11/22/improving-quality-finding-better-tooling-extact-method/"&gt;last article&lt;/a&gt;, I talked
-about my progress in refactoring and my experience with the three added tools. In
-this article, I talk about the work I did this week, including the bug that almost
-knocked me down for the count!&lt;/p&gt;
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;What a long two weeks of …&lt;/p&gt;</summary><content type="html">
-&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;In my
-&lt;a href="https://jackdewinter.github.io/2021/11/22/improving-quality-finding-better-tooling-extact-method/"&gt;last article&lt;/a&gt;, I talked
-about my progress in refactoring and my experience with the three added tools. In
-this article, I talk about the work I did this week, including the bug that almost
-knocked me down for the count!&lt;/p&gt;
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;What a long two weeks of work I just had on the &lt;a href="https://github.com/jackdewinter/pymarkdown"&gt;PyMarkdown&lt;/a&gt;
-project!  I took those two weeks and
-invested them wisely in doing some major refactoring on the project.  The project itself was
-in decent shape, but I had let some of the functions grow to large and with too many
-responsibilities.  For my own sanity and for the project’s own good, I needed to
-take some time and get it closer to what I would consider to be a good, healthy
-code base.&lt;/p&gt;
-&lt;p&gt;But that did not mean the work was over.  Not by far.  There were still a couple
-of cleanup items that I needed to attend to, plus a list of issues that I found
-while doing the refactoring. And while it was nice to take a bit of a break, I
-needed to get back to focusing on getting things progressing forward to a non-beta
-release soon.&lt;/p&gt;
-&lt;h2 id="what-is-the-audience-for-this-article"&gt;What Is the Audience for This Article?&lt;a class="headerlink" href="#what-is-the-audience-for-this-article" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;While detailed more eloquently in
-&lt;a href="https://jackdewinter.github.io/2020/04/05/what-is-the-audience-for-my-blog/#what-is-the-audience-for-my-blog"&gt;this article&lt;/a&gt;,
-my goal for this technical article is to focus on the reasoning behind my solutions,
-rather than the solutions themselves.  For a full record of the solutions presented in
-this article, please consult the commits that occurred between
-&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/e842435752235675cfca5ed17e62122608042e85"&gt;22 Nov 2021&lt;/a&gt;
-and
-&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/5ab751db859c92bd25f3edcc253d71b0b889659f"&gt;28 Nov 2021&lt;/a&gt;.&lt;/p&gt;
-&lt;h2 id="issue-151-doing-some-cleanup"&gt;&lt;a href="https://github.com/jackdewinter/pymarkdown/issues/151"&gt;Issue 151&lt;/a&gt; - Doing Some Cleanup&lt;a class="headerlink" href="#issue-151-doing-some-cleanup" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;It will probably not surprise any long-time readers that I decided to take
-a small amount of additional time to tidy up some loose ends left after the
-work I did in the last two weeks.  Having touched a substantial part of the files
-in the project’s core, I wanted
-to at least go over the code once and look for anything that I could easily
-simplify to make it more maintainable.&lt;/p&gt;
-&lt;p&gt;There were no tremendous changes, just a lot of little ones.  Things like simplifying:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;coalesced_list&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[]&lt;/span&gt;
-&lt;span class="n"&gt;coalesced_list&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;extend&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;first_pass_results&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;])&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;into:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;coalesced_list&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;first_pass_results&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;]]&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;and moving small classes such as the &lt;code&gt;ContainerIndices&lt;/code&gt; class into their own modules.
-I also double checked the use of return codes from functions to make sure that
-they were still being used and removed them if they were not being used.&lt;/p&gt;
-&lt;p&gt;Other than that, there were cases where I took multiple variable initializations,
-such as:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;start_index&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;
-&lt;span class="n"&gt;processed_parts&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[]&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;and condensed them down into:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;start_index&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;processed_parts&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="p"&gt;[]&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Even with &lt;a href="https://pypi.org/project/black/"&gt;Black&lt;/a&gt; reformatting such assignments
-across multiple lines, I have gradually been moving towards grouping all my
-variable initializations together in that manner. I
-am not sure if every Python developer feels that it is a good style, but I do.
-For me, it clearly states that these variables are being set together and eases
-my ability to read the functions.  Basically, it works for me.&lt;/p&gt;
-&lt;p&gt;But after an evening of going through the source code and cleaning it up,
-I knew I had to start making progress on the other issues.&lt;/p&gt;
-&lt;h2 id="issue-155-refactoring-common-structures"&gt;&lt;a href="https://github.com/jackdewinter/pymarkdown/issues/155"&gt;Issue 155&lt;/a&gt; - Refactoring Common Structures&lt;a class="headerlink" href="#issue-155-refactoring-common-structures" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Looking at the code base over the last few weeks, I really wanted to be able to
-harmonize a few of the
-variables that get passed repeatedly into functions.  While there are more examples
-of that in the code base than I would like, the ones that I picked to work on for
-this ticket were the &lt;code&gt;this_bq_count&lt;/code&gt; and &lt;code&gt;stack_bq_count&lt;/code&gt; variables.  These are
-just one example of variable tuples where two or more variables are usually seen
-together.&lt;/p&gt;
-&lt;p&gt;While not used outside of the Container Block Processor, these two variables are
-heavily used inside of the Container Block Processor to capture the current count of
-block quotes.  As their names suggest, the &lt;code&gt;this_bq_count&lt;/code&gt; variable tracks the
-“observed” count of block quote characters and the &lt;code&gt;stack_bq_count&lt;/code&gt; variable tracks
-the current number of block quote tokens on the stack.  As a Block Quote element
-can start and stop on any line, these variables are passed together to ensure
-the current state is well known.&lt;/p&gt;
-&lt;p&gt;At least they were passed together until this work was completed.  When I looked
-at the source code for the Container Block Processor, the Block Quote Processor,
-and the List Block Processor, there were only five places where these values were
-not passed together.  As such, it made sense to add a new class, BlockQuoteData,
-and encapsulate those values inside an instance of that class.  It was a bit of
-work to move the code to use the new variables, but it did make the code cleaner.
-And that means lower maintenance, so that was good!&lt;/p&gt;
-&lt;h2 id="issue-157-upgrading-test-scripts"&gt;&lt;a href="https://github.com/jackdewinter/pymarkdown/issues/157"&gt;Issue 157&lt;/a&gt; - Upgrading Test Scripts&lt;a class="headerlink" href="#issue-157-upgrading-test-scripts" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;From experience, depending on how software developers work, they typically either
-love typing things out manually on the command line or they love to use scripts.
-With my propensity for mistyping
-things, otherwise known as “fat-fingering”, I fall into the “love scripts” category.
-The PyMarkdown project is a fitting example of how I use scripts to make the simple
-development tasks into scripts.&lt;/p&gt;
-&lt;p&gt;My ability to run Python tests using a script is a example of this practice.
-As I do my PyMarkdown work on Windows,
-I have a &lt;code&gt;ptest.cmd&lt;/code&gt; script that has evolved to have a fair amount of usability,
-some of which is the re-used by my &lt;code&gt;clean.cmd&lt;/code&gt; script.  But even with the functionality
-that it has,
-there were times where I could literally go to my kitchen, make a simple sandwich,
-eat it, and be back in front of my computer before the script completed.  Granted,
-that was running the &lt;code&gt;clean.cmd&lt;/code&gt; script with a slowdown for measuring code coverage,
-but it was still a long time to wait for a script to complete.&lt;/p&gt;
-&lt;p&gt;I had looked around and found a couple of PyTest addons that could possibly let
-me run the tests on multiple cores, something that would hopefully reduce those
-long testing times.  As the upside to finding a workable addon was huge, I took
-an evening and experimented with two candidates.  While the first candidate failed
-right away, the second candidates looked promising.  After a bit of research on
-the issues that I was seeing, I was able to resolve those issues and I added support
-for the &lt;code&gt;pytest-xdist&lt;/code&gt; package into the project.&lt;/p&gt;
-&lt;p&gt;I think the reasons that this package works is that it seems to keep things simple,
-and it has been around for a while.  By adding the &lt;code&gt;-n !CORES_TO_USE!&lt;/code&gt; argument to
-where I invoke PyTest in the script, I was able to control how many cores were
-used by PyTest on my machine.  Deciding to take a cautious approach, I added the following
-code to the script to only use one-half of the available cores for testing:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="k"&gt;defined&lt;/span&gt; &lt;span class="nv"&gt;PTEST_MULTI_CORE_ARGS&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;
-    &lt;span class="k"&gt;set&lt;/span&gt; &lt;span class="k"&gt;/a&lt;/span&gt; &lt;span class="nv"&gt;CORES_TO_USE&lt;/span&gt;&lt;span class="o"&gt;=%&lt;/span&gt;&lt;span class="nv"&gt;NUMBER_OF_PROCESSORS&lt;/span&gt;&lt;span class="o"&gt;%/&lt;/span&gt;&lt;span class="mi"&gt;2&lt;/span&gt;
-    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="nv"&gt;!CORES_TO_USE!&lt;/span&gt; &lt;span class="ow"&gt;LSS&lt;/span&gt; 1 &lt;span class="p"&gt;(&lt;/span&gt;
-        &lt;span class="k"&gt;set&lt;/span&gt; &lt;span class="nv"&gt;CORES_TO_USE&lt;/span&gt;&lt;span class="p"&gt;=&lt;/span&gt;1
-    &lt;span class="p"&gt;)&lt;/span&gt;
-    &lt;span class="k"&gt;set&lt;/span&gt; &lt;span class="nv"&gt;PTEST_MULTI_CORE_ARGS&lt;/span&gt;&lt;span class="p"&gt;=&lt;/span&gt;-n &lt;span class="nv"&gt;!CORES_TO_USE!&lt;/span&gt;
-&lt;span class="p"&gt;)&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Digging into the occasional failures I was getting, I added the &lt;code&gt;--dist loadscope&lt;/code&gt;
-flag as per a suggestion from a reply to a similar question on Stack Exchange. With
-the occasional failure not showing up since then, I knew I had a viable solution.&lt;/p&gt;
-&lt;p&gt;To be open about the entire process, the bulk of the work for these changes was done while I was working
-on the previous two issues, so I had a lot of time to experiment with what settings
-work best with the way that I work.  That one-half of the available cores was arrived
-at because it seemed to be a good balancing point between making my system crawl
-and getting a good speed boost for the tests.  Similarly, I added an optional
-&lt;code&gt;--maxfail=5&lt;/code&gt; to the PyTest command line to better manage the failure cases.  However, as there
-is a greater chance that failures will happen in large batches, such as when I
-am refactoring, the limit is enabled by default and disabled by using the &lt;code&gt;-a&lt;/code&gt; flag.&lt;/p&gt;
-&lt;p&gt;Based on the refactoring work I did during this last week, this work has been
-extremely useful in cutting down test run times.  The time for a full test run with
-coverage on my machine went from 7 minutes 32 seconds to 1 minute 35 seconds.
-For a nomrmal full run, the duration went from 1 minute 44 seconds to 36 seconds.
-Between that and similar tweaks to the other linters, I was happy
-with this progress.&lt;/p&gt;
-&lt;h2 id="issue-93-this-is-that-bug"&gt;&lt;a href="https://github.com/jackdewinter/pymarkdown/issues/93"&gt;Issue 93&lt;/a&gt; - This Is That Bug&lt;a class="headerlink" href="#issue-93-this-is-that-bug" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Yes, this is the bug that almost knocked me down.  In all honesty, it probably knocked
-me down more than a couple of times, I just go back up right away and got back to work.
-I do know that at least once
-I needed to walk away and collect my cool before getting back to solving the problem.
-Basically, resolving this issue was a test of my will to properly fix this issue instead
-of doing a partial job.  And it was not always pretty.&lt;/p&gt;
-&lt;p&gt;Due to commitments at home, I spent the American Thanksgiving holiday at home with my
-son.  While we had loose plans to chill out during the holiday weekend, we both had
-a lot on our plates and just decided to watch a Champions League game together and
-recharge our batteries.  This ended up being useful because of some research that I
-had started to do earlier on in the week on
-&lt;a href="https://github.com/jackdewinter/pymarkdown/issues/93"&gt;Issue 93&lt;/a&gt;.&lt;/p&gt;
-&lt;p&gt;In doing my research and playing around with finding a quick solution for this issue,
-there was one thing that became at once clear.  Depending on how you look at the
-tokens, I either did not have the correct information or I had conflicting information
-in the tokens.  Specifically, I was noticing that the whitespace in and around List
-elements and Block Quote elements was not being stored in the tokens properly.&lt;/p&gt;
-&lt;p&gt;The issue was around how this document was parsed:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt; &lt;span class="n"&gt;list&lt;/span&gt;
-&lt;span class="o"&gt;&amp;gt;&lt;/span&gt;    &lt;span class="n"&gt;this&lt;/span&gt;
-&lt;span class="o"&gt;&amp;gt;&lt;/span&gt;    &lt;span class="o"&gt;*****&lt;/span&gt;
-&lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt; &lt;span class="n"&gt;that&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;When parsed, the Block Quote token and the List token were both recording the
-whitespace associated with the first line.  In particular, the Block Quote token
-was storing &lt;code&gt;&amp;gt;{space}&lt;/code&gt; and the List token was storing &lt;code&gt;{space}{space}&lt;/code&gt;.&lt;sup id="fnref:curlies"&gt;&lt;a class="footnote-ref" href="#fn:curlies"&gt;1&lt;/a&gt;&lt;/sup&gt;
-My original thought was that this decision would be convenient in that the inner
-List token would simply “know” that its two space characters were the
-greater-than character and the space character from the Block Quote token. When
-I was working through that part of the parser, it made sense.&lt;/p&gt;
-&lt;p&gt;Given time to work on other features, that decision was looking less and less
-correct.  There were competing parts of the algorithms that needed their data in
-one of two formats, and it was not always clear which format was correct.  On top
-of that, the extra work to convert between the two formats was not done consistently
-and needed more maintenance than I hoped for.&lt;/p&gt;
-&lt;p&gt;So, before I did anything else, I needed to make a choice on how to
-approach this: pay now or pay later.&lt;/p&gt;
-&lt;h3 id="the-decision"&gt;The Decision&lt;a class="headerlink" href="#the-decision" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;Looking at a couple of relatively open days ahead of me, I needed to decide how
-to most effectively apply that time to the PyMarkdown project. The one
-option was to clear out multiple issues, but only touch the code that I
-needed to.  This would incur extra costs in the future, but I could budget those
-costs over a couple of weeks.  The other option was to buckle down with the current
-time I had and make major progress to getting that work done. That would incur an
-immediate expense but would involve less rewriting of code later.&lt;/p&gt;
-&lt;p&gt;It was not any easy decision for me to make.  I knew that at the very least, I was
-talking about eight hours of work.  On the other end of the range, the duration for
-that same work could be in the three-to-four-day range.  At that point, it was in
-the middle of the day on Thursday, and the prospect  of my entire holiday being
-swallowed up was not a good one.&lt;/p&gt;
-&lt;p&gt;But as I thought about it over the next couple of hours, my mind kept coming back
-to two points.  The first point was that this cost was something I was going to
-have to pay in the future.  That was not up for debate.  To make the whitespace in
-the container tokens more usable, I would need to make changes.  The second point
-was about whether I wanted to pay that cost in one large chunk and get it over
-with, or incur that cost in smaller chunks, but with interest added on.  The logic
-there was that if I chose smaller chunks, not only would I have to pay the main cost
-for the changes, but I would have to pay interest on those changes until the main
-changes were completed.&lt;/p&gt;
-&lt;p&gt;With those two points crystalizing as the main differentiators in my decision, the
-decision almost made itself.  If I had the time to spend, it would be easier to
-do the work in one chunk and avoid the extra work incurred by the spreading that
-work out.&lt;/p&gt;
-&lt;p&gt;And with that… the work started.&lt;/p&gt;
-&lt;h3 id="just-get-on-with-it"&gt;Just Get On With It&lt;a class="headerlink" href="#just-get-on-with-it" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;For my own sanity, I broke the work out into three chunks: getting the scenario tests
-passing, getting the Markdown checks passing, and getting the other consistency checks
-passing.  It was 11 am Pacific time on Friday morning when I started to make the
-changes, and it was after 2pm Pacific time on Sunday when I finished making the changes.
-I will not go into all the changes that I had to do, as I would prefer not to try and
-relive all that effort.  Do not get me wrong, it was the right thing to do, but it was
-just excessively precise work.&lt;/p&gt;
-&lt;p&gt;The good points were as follows.&lt;/p&gt;
-&lt;p&gt;The updated tooling effort from earlier in the
-week paid off handsomely during this effort.  Most the changes looked good when
-I sketched them out in my head, but when I implemented them about half of them,
-things changed.  Either
-that design did not work as well as I had hoped, or there were nasty side effects
-to consider.  By having a quickened “change-test-observed” loop, I could get to
-the observed part of the loop that much quicker.  &lt;/p&gt;
-&lt;p&gt;Having a good set of scenario tests helped me make those changes with confidence.
-While I cannot account for tests that I have not added yet, the “test” part of the
-“change-test-observed” loop meant that these changes were about going forward and
-not introducing more problems. And as I debug best by looking at the overall
-picture, having good logging throughout the code base helped me diagnose the
-issues and verify the results of the changes.  A good set of tests and 100 percent
-code coverage gives me confidence.  But being able to follow the flow
-of data through the newly changed portions of the code raises that confidence
-even higher.&lt;/p&gt;
-&lt;p&gt;I was also happy to see that one of the design points of the project, the keeping
-the container processing separate from the leaf processing, was still in place.
-While fixing this issue properly required substantial work in the Container Block
-Processor, only a couple of lines on the boundary between the Container Block
-Processor and the Leaf Block Processor needed to be changed.  And I believe most
-of those changes were just with logging input values.&lt;/p&gt;
-&lt;p&gt;And now for the bad points.&lt;/p&gt;
-&lt;p&gt;Changing the method with which I save whitespaces in container tokens would have
-been better made when I was designing the parser.  Doing it at this point was
-a nightmare like trying to talk on the phone on the tarmac at a busy airport.
-I had to try and keep my focus on what I specifically trying to target.  And
-that was not always easy. But while I think I may have been able to design
-that part of the system better, I am more convinced that I needed to see the
-old design and its flaws to arrive at this improved design.  Sometimes, we need
-to take one step backwards to take two steps forward.&lt;/p&gt;
-&lt;p&gt;The other bad point that I saw is that I think I still have a way to
-go in simplifying
-the container handling.  These changes were obviously a huge step in the
-right direction, but I am sure I can simplify them even more.  It could be
-the nature of preserving the whitespace, but I found myself writing code that
-was “if in a list block that is in a block quote block”.  In one or two
-cases, I believe I had to write something even more devious than that code.&lt;/p&gt;
-&lt;p&gt;While there may have been other points that I could include here, most were
-too minor to mention or on a list of things to look for
-when I get free time.  Things like more minor refactorings and patterns to
-look out for when writing any new Python code.&lt;/p&gt;
-&lt;h2 id="what-was-my-experience-so-far"&gt;What Was My Experience So Far?&lt;a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Given the arduous work that I put in, I found it useful to find my balance
-between the work I was doing and not letting the weekend slip away
-without taking advantage of it.  Similarly, I had to balance those previously
-mentioned good points and bad points with what I have carried out with the project.&lt;/p&gt;
-&lt;p&gt;Yes, there were a couple of times that I yelled “why did I want to write a
-linter?” to my computer screen.  If I had chosen to write a Markdown-to-HTML
-parser, like &lt;a href="https://commonmark.org/"&gt;CommonMark&lt;/a&gt;, then I would be done.
-As HTML throws almost all the whitespace away, the parser just needed to
-understand the whitespace, not properly store it in a token.  If not for
-the fact that I have written a linter and that I wanted to be able to verify
-that I had parsed the Markdown properly, I would not need to get the extracted
-whitespace &lt;em&gt;exactly&lt;/em&gt; correct.&lt;/p&gt;
-&lt;p&gt;And to me… knowing that I made a hard call, but it was for what I consider
-to be the right reasons… that is good enough for me.&lt;/p&gt;
-&lt;h2 id="what-is-next"&gt;What is Next?&lt;a class="headerlink" href="#what-is-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Having made good inroads to fixing the spacing issues in the parser, I know
-I want to find other related issues and see if I can resolve them or easily
-resolve them.  But I also would not mind getting some more small refactors
-done.  Not sure which is going to win out yet.
-Stay tuned!&lt;/p&gt;
-&lt;div class="footnote"&gt;
-&lt;hr/&gt;
-&lt;ol&gt;
-&lt;li id="fn:curlies"&gt;
-&lt;p&gt;As Markdown does not like space characters inside of code spans, I have replaced any such spaces with the text &lt;code&gt;{space}&lt;/code&gt;. &lt;a class="footnote-backref" href="#fnref:curlies" title="Jump back to footnote 1 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
-&lt;/li&gt;
-&lt;/ol&gt;
-&lt;/div&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry></feed>
+&lt;/div&gt;</content><category term="Software Quality"></category><category term="extract method"></category></entry></feed>
