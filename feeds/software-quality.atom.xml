@@ -1,5 +1,113 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench - Software Quality</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/software-quality.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2022-08-15T00:00:00-07:00</updated><entry><title>Dealing With Long Standing Issues</title><link href="https://jackdewinter.github.io/2022/08/15/dealing-with-long-standing-issues/" rel="alternate"></link><published>2022-08-15T00:00:00-07:00</published><updated>2022-08-15T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2022-08-15:/2022/08/15/dealing-with-long-standing-issues/</id><summary type="html">
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench - Software Quality</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/software-quality.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2022-08-22T00:00:00-07:00</updated><entry><title>Figuring Out The Best Course of Action</title><link href="https://jackdewinter.github.io/2022/08/22/figuring-out-the-best-course-of-action/" rel="alternate"></link><published>2022-08-22T00:00:00-07:00</published><updated>2022-08-22T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2022-08-22:/2022/08/22/figuring-out-the-best-course-of-action/</id><summary type="html">
+&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In my
+&lt;a href="https://jackdewinter.github.io/2022/08/15/dealing-with-long-standing-issues/"&gt;last article&lt;/a&gt;, I talked
+my continuing work on the &lt;a href="https://github.com/jackdewinter/pymarkdown"&gt;PyMarkdown&lt;/a&gt; project,
+aiming to get it closer to a solid release.  In this article,
+I talk about my thoughts around adding new features to the project.&lt;/p&gt;
+&lt;h2 id="adding-features-that-make-sense"&gt;Adding Features That Make Sense&lt;a class="headerlink" href="#adding-features-that-make-sense" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Usually, most new features make sense.  Adding …&lt;/p&gt;</summary><content type="html">
+&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In my
+&lt;a href="https://jackdewinter.github.io/2022/08/15/dealing-with-long-standing-issues/"&gt;last article&lt;/a&gt;, I talked
+my continuing work on the &lt;a href="https://github.com/jackdewinter/pymarkdown"&gt;PyMarkdown&lt;/a&gt; project,
+aiming to get it closer to a solid release.  In this article,
+I talk about my thoughts around adding new features to the project.&lt;/p&gt;
+&lt;h2 id="adding-features-that-make-sense"&gt;Adding Features That Make Sense&lt;a class="headerlink" href="#adding-features-that-make-sense" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Usually, most new features make sense.  Adding support to the
+&lt;a href="https://github.com/jackdewinter/pymarkdown"&gt;PyMarkdown&lt;/a&gt; project to scan for other
+extensions besides &lt;code&gt;.md&lt;/code&gt;, that was an easy decision to make.  Adding support for
+reading from standard input, a bit more of a nuanced decision, but still a relatively
+easy decision to make.&lt;/p&gt;
+&lt;p&gt;Then there was the decision to fix a long-standing issue, &lt;a href="https://github.com/jackdewinter/pymarkdown/issues/330"&gt;issue 330&lt;/a&gt;.
+That I wanted to fix this was obvious to me, but until recently, the cost of fixing
+that issue always outweighed the cost.  To make things easier in the initial stages of
+development, I added a couple of &lt;code&gt;replace("\\", "/")&lt;/code&gt; statements in the file scanning
+code to allow for Windows backslash separators to be treated as the Posix slash
+separator.  Why?  Because then the output always dealt with slashes, regardless of the
+operating system involved.  Therefore, the test output always used slashes.&lt;/p&gt;
+&lt;p&gt;But after adding the support for standard input, it just felt wrong to leave those
+replacement statements in the code.  But paying the cost of fixing that issue was not going to be easy.
+Properly fixing the source code for that issue took thirty minutes including
+rudimentary testing.  After a quick run of all tests, the impact of fixing the tests was clear: over
+450 scenario tests were failing because of that change.  Digging in a bit more, that
+was only the failure impact.  If I wanted to do things properly, any of the tests for
+rules plugins needed to be changed to use proper pathing instead of the
+Posix pathing.  I believe when I sketched things out, I took a guess that over
+700 scenario tests would need to change.&lt;/p&gt;
+&lt;p&gt;That is not a small number, it is roughly fifteen percent of the scenario tests.
+In each test, I would need to change the path of the file to scan from something
+like:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;source_path&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;"test/resources/rules/md007/some_file_to_scan.md"&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;to:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;source_path&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;os&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;path&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;join&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"test"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="s2"&gt;"resources"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="s2"&gt;"rules"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="s2"&gt;"md007"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="s2"&gt;"some_file_to_scan.md"&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;adding that at the top of the scenario test if it was not already there.
+With that change done, I then needed to look for any instances of the first
+string in the rest of the scenario tests, replacing it with either &lt;code&gt;source_path&lt;/code&gt;
+or &lt;code&gt;{source_path}&lt;/code&gt;, depending on if it was already in a string or not.&lt;/p&gt;
+&lt;p&gt;But, when I weighed everything out, it was worth it.  This was something that
+I had put off for long enough, and the increase in quality was worth the cost
+to me. Granted, I thought I could make the transformation in ten hours, but it
+was still worth the cost after eighteen hours of changes.  Each change
+manual.  It was not fun, but it was a good change.&lt;/p&gt;
+&lt;p&gt;The next change was going to be different.  It was going to require deep
+thinking on my part.&lt;/p&gt;
+&lt;h2 id="sometimes-the-decision-is-not-an-easy-one"&gt;Sometimes, The Decision Is Not An Easy One&lt;a class="headerlink" href="#sometimes-the-decision-is-not-an-easy-one" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;As I mentioned in the last article, one of the users reached out with
+&lt;a href="https://github.com/jackdewinter/pymarkdown/issues/382"&gt;Issue 382&lt;/a&gt; and asked if
+can add support for scanning Markdown in Jupyter notebooks.  Needing to
+think things over a bit, I added the support for processing standard input
+as it was a good feature and I thought I might need it for this new feature.&lt;/p&gt;
+&lt;p&gt;But the big question in my mind was: was this actually a new feature?  Not that
+someone could not use this functionality, but was it a feature of PyMarkdown?
+Or was it a separate utility? This was not an easy question for me to answer.  I
+could see both side of this solution, and in mind, they were balanced almost
+equally.&lt;/p&gt;
+&lt;p&gt;On the side of adding this support as a PyMarkdown feature, there were two
+good points to support it.  The first of those points was that it fit in with the main goal
+of the project: to provide a solid Markdown scanner.  It just so happened that
+every Markdown sample that I have seen up to this point was either the entire
+contents of a file or the entire contents of the standard input.  In my line
+of work, which is what we call an implementation detail.  The second of these
+points was the ease of use of the scanner.  Programmatically, I could see connecting
+the various file types to “input filters”, selecting the correct filter based
+on the provide input.  I had done variations on that for extensions and rules
+plugins, so would one more plugin type hurt?&lt;/p&gt;
+&lt;p&gt;The opposing side was a bit more nuanced.  Depending on how I read the main
+goals of the PyMarkdown project, the target could be seen in one of two ways.&lt;br/&gt;
+Going all the way back to an article I wrote on &lt;a href="https://jackdewinter.github.io/2019/12/08/markdown-linter-collecting-requirements/"&gt;2019 Dec 08&lt;/a&gt;,
+there is one line that summarizes this intent:&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;ul&gt;
+&lt;li&gt;must be able to provide a consistent lexical scan of the Markdown document from the command line&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;If I take that statement literally, then the scan should be dealing with documents, not
+smaller units of text.  Of course, an argument could be made that any text “blob” is a
+document, but I feel that it is just bending words to fit a scenario, and not
+honoring the intent.  Throughout the PyMarkdown project, files are referenced
+as a proxy for documents, instead of using terms like file fragments.&lt;/p&gt;
+&lt;p&gt;Less nuanced and more pronounced is my sense that including this kind of
+support into the PyMarkdown project will make the project too big.  More precisely,
+I feel that expanding the scope of the project to include the concept of
+“input filters” is not called for.  From a cost-benefit analysis, the cost of
+supporting another plugin interface, or even a hard-wired interface, does not
+match the perceived benefit.  At least not to me.&lt;/p&gt;
+&lt;h2 id="and-the-decision-is"&gt;And The Decision Is…&lt;a class="headerlink" href="#and-the-decision-is" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;So, after thinking about it and weighing the pros and cons of this support, I
+decided to support these features, but in their own project.  That new project will
+take care of doing the necessary management to convert the Jupyter notebook
+Markdown fragments into a scannable form for PyMarkdown to handle.  To that end,
+I will need to enhance the main PyMarkdown module, but I believe those enhancements
+will be minor.&lt;/p&gt;
+&lt;p&gt;And after worrying about a satisfactory solution for this issue for a couple of weeks, I
+am pleased with my decision.  I feel that this will provide a template for any other
+such features in the future, allowing me to keep a steady handle on the PyMarkdown
+project.  But at the same time, it will allow me to grow the project family while
+meeting the needs of the users.&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry><entry><title>Dealing With Long Standing Issues</title><link href="https://jackdewinter.github.io/2022/08/15/dealing-with-long-standing-issues/" rel="alternate"></link><published>2022-08-15T00:00:00-07:00</published><updated>2022-08-15T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2022-08-15:/2022/08/15/dealing-with-long-standing-issues/</id><summary type="html">
 &lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;In my
 &lt;a href="https://jackdewinter.github.io/2022/08/08/dealing-with-the-ups-and-downs/"&gt;last article&lt;/a&gt;, I talked
@@ -4603,230 +4711,4 @@ me hope that I can clean things up nicely within a couple of weeks.&lt;/p&gt;
 &lt;p&gt;Having finished the changes to address whitespace issues, I am eager to get back
 to a mixture of refactoring code and fixing issues.  Not sure what mix of those
 two is going to happen yet, but I am fairly sure I want a good balance of both.
-Stay tuned!&lt;/p&gt;</content><category term="Software Quality"></category><category term="extract method"></category></entry><entry><title>Improving Quality - Sometimes, There Is No Easy Way</title><link href="https://jackdewinter.github.io/2021/12/06/improving-quality-sometimes-there-is-no-easy-way/" rel="alternate"></link><published>2021-12-06T00:00:00-08:00</published><updated>2021-12-06T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2021-12-06:/2021/12/06/improving-quality-sometimes-there-is-no-easy-way/</id><summary type="html">
-&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;In my
-&lt;a href="https://jackdewinter.github.io/2021/11/29/markdown-linter-the-bug-that-almost-knocked-me-down/"&gt;last article&lt;/a&gt;, I talked
-about my progress in reducing the &lt;a href="https://github.com/jackdewinter/pymarkdown"&gt;PyMarkdown&lt;/a&gt; project issue count, including the
-bug that almost knocked me down for the count!  In this article, I talk about
-making hard choices when it comes to projects.&lt;/p&gt;
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Having fixed some issues in the prior …&lt;/p&gt;</summary><content type="html">
-&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;In my
-&lt;a href="https://jackdewinter.github.io/2021/11/29/markdown-linter-the-bug-that-almost-knocked-me-down/"&gt;last article&lt;/a&gt;, I talked
-about my progress in reducing the &lt;a href="https://github.com/jackdewinter/pymarkdown"&gt;PyMarkdown&lt;/a&gt; project issue count, including the
-bug that almost knocked me down for the count!  In this article, I talk about
-making hard choices when it comes to projects.&lt;/p&gt;
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Having fixed some issues in the prior week, I decided to tackle another issue
-from the outstanding issues list.  What I thought at first was a minor snag
-turned out to be a major issue.  More than a major issue.  More of a story.&lt;/p&gt;
-&lt;h2 id="what-is-the-audience-for-this-article"&gt;What Is the Audience for This Article?&lt;a class="headerlink" href="#what-is-the-audience-for-this-article" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;While detailed more eloquently in
-&lt;a href="https://jackdewinter.github.io/2020/04/05/what-is-the-audience-for-my-blog/#what-is-the-audience-for-my-blog"&gt;this article&lt;/a&gt;,
-my goal for this technical article is to focus on the reasoning behind my solutions,
-rather than the solutions themselves.&lt;/p&gt;
-&lt;h2 id="the-good"&gt;The Good&lt;a class="headerlink" href="#the-good" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;After taking a well-deserved night off, I started to work on one of the logged
-issues, &lt;a href="https://github.com/jackdewinter/pymarkdown/issues/99"&gt;Issue 99&lt;/a&gt;. There
-was no specific reason that I picked this issue, except for a feeling that it was
-a good starting issue for the week.  It looked like a simple issue.  When a HTML
-Block element was encountered in a List element, the List element was being closed
-prematurely.&lt;/p&gt;
-&lt;p&gt;Digging into the debug for the failing tests, I was able to quickly spot what
-the issue was, and subsequently fixed it.  I manually verified the tokens, and
-everything looked good with each token.  Then I did a mental conversion from tokens
-into HTML, and everything was also good with the conversion.  The only things left
-were to verify the translation back into Markdown and to verify that the other consistency
-checks were passing.&lt;/p&gt;
-&lt;p&gt;Looking at the code in the &lt;code&gt;transform_to_markdown.py&lt;/code&gt; module, I tried to
-add some simple code to adapt to the new condition, but it did not work on
-that first try.  Come to think of it, it did not work on my second try either.
-Having had a long day, I chalked that experience up to tiredness,
-deciding to try again the next day.&lt;/p&gt;
-&lt;h2 id="the-bad"&gt;The Bad&lt;a class="headerlink" href="#the-bad" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Before sitting down at my computer for work that next evening, I made sure I had
-a healthy meal beforehand, I was all nice and showered, and that I was nice and
-relaxed for the most part.  If nothing else, I wanted to start that evening’s
-work in a good mood to address the issue from the night before.  I mean…
-how hard could it be?&lt;/p&gt;
-&lt;p&gt;After three hours of trying to get it working and failing, I had my answer.
-It was a tough problem to solve.  And it had to do a lot with history and
-requirements.&lt;/p&gt;
-&lt;p&gt;Because of the way that Markdown is processed, there are only two real solutions
-to deal with containers and their impact on a given line.  The first solution
-is to deal with containers after the leaf elements and inline elements have
-been dealt with.  This is a lot less work in the end, but the setting up of
-each element must be precise.  In addition to that, tabs within a Markdown
-document are a problem.&lt;/p&gt;
-&lt;p&gt;For reference purposes, Markdown parsers interpret tabs as tab stops of 4.  Tab
-stops means that the tab-to-space conversion ratio depends on where in the line
-the tab is.  The value 4 signifies that at best, a single tab character can be
-interpreted as 4 space characters. The way to think about it is this. If the
-index in the line is equal to 0 with a modulo of 4&lt;sup id="fnref:modulo"&gt;&lt;a class="footnote-ref" href="#fn:modulo"&gt;1&lt;/a&gt;&lt;/sup&gt;, 4 spaces are added.
-If the index modulo 4 is 1, then 3 spaces are added.  Similarly, if at index 2,
-then 2 spaces are added, and if at 3, then 1 space is added. This allows things
-to be aligned on tab stops that occur in the middle of lines.  But these calculations
-assume that you know that index on the line before calculating its impact.  As
-any container indents have not been applied, that is not possible.&lt;/p&gt;
-&lt;p&gt;The other option is to handle the container elements and the other elements on
-a line-by-line basis.  Because of the above issues with tab stops, which is the
-way I decided to do things.  I knew that it was going to be a bit more work to
-keep track of both things at the same time.  I needed to juggle
-distinct parts of the same line at the same time, ensuring that I knew what
-the effects of the container elements were before parsing the line.  But to
-be blunt, it evolved in a bad way.&lt;/p&gt;
-&lt;p&gt;As I sat there that night, looking at the source code, I could not believe how
-convoluted it had become.  There were more than three distinct types of merge
-functions, each for a specific case.  And because I developed those functions
-as I progressed, these were organic, with exceptions to rules throughout those
-functions. It was just a mess to try and figure out.  &lt;/p&gt;
-&lt;p&gt;I knew I needed to figure it out to move on, so I decided to take the next
-evening to focus on understanding the algorithms.  Because I needed to ensure
-that I verified any recent changes before going on, I really needed to understand
-those functions and how to properly change them for the new data.  In my mind,
-it was necessary.&lt;/p&gt;
-&lt;h2 id="the-ugly"&gt;The Ugly&lt;a class="headerlink" href="#the-ugly" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;While my optimism was a bit more deflated than the night before, I gave myself
-a similar starting position the next night.  But even with that good starting
-point, I spent the next two hours figuring things out and hurling at least a half
-dozen “WTF?” insults at my monitor before I was done.  I had scribbles down over
-a good five sheets of paper strewn all over my desk.  And those were just the ones
-that I did not scribble on top of and then threw out because I got it wrong.  I
-stopped counting those sheets after the first ten.&lt;/p&gt;
-&lt;p&gt;It had taken me two hours, but I had a good concept of what was going on.  I just
-did not have any ideas on how to change the code to do what I needed it to do
-for the issue that I just fixed.  Frankly, I was amazed that what I had figured
-out worked.  I did not intentionally mean for the code to get like that, but
-the complex tangle of code was captured on those five sheets of paper.  And
-they did not look neat and tidy either.&lt;/p&gt;
-&lt;p&gt;It was on a bit of a whim that I started sketching out a similar algorithm
-for managing the container text after the other elements had been processed.  This
-was more in line with my design decision to keep container processing separate
-from the leaf processing, so that was one good sign.  The other good sign was
-that within fifteen minutes, I had a solid design for the base algorithm.  Twenty
-minutes later, I had a list of the changes I would need to make to the whitespace
-in the tokens to present the needed information required by the algorithm.&lt;/p&gt;
-&lt;p&gt;I knew that the new sketch would not be that easy to implement, as things rarely
-are as easy as they seem.  But even with a bit of extra work, the new sketch
-design was simple to understand, and the changes to the tokens to support those
-changes were also easy to understand.  There was only the one algorithm, with
-a couple of small algorithms on the side to calculate lists for the main algorithm.
-And I did not take care of translating tabs into spaces either.  That was something
-else I would have to do.&lt;/p&gt;
-&lt;p&gt;That is where I got to the hard part.&lt;/p&gt;
-&lt;h2 id="the-hard"&gt;The Hard&lt;a class="headerlink" href="#the-hard" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;It was now the start of Friday evening, and I had an exceedingly difficult choice to
-make.  If I stuck with the current algorithm, it would take me at least
-another day or two to make my current change.  I did not have
-any good estimate to base a guess on due to state of the algorithms.  I had a
-good feeling that if I had to make similar changes, as I expected to have to do
-for at least half of the remaining issues, I would have to take a similar
-length of time to make those changes.&lt;/p&gt;
-&lt;p&gt;On the other hand, I could change that algorithm to the proposed design, but there were
-no guarantees that
-it would fix things.  At the very least, the new algorithm would be more understandable,
-and thus more maintainable.  But that just meant that the focus for addressing
-issues like these would focus more on making sure that the right whitespace is
-encapsulated in the tokens for the container algorithm to use.  And I would still
-have to find a way to deal with tab characters.&lt;/p&gt;
-&lt;p&gt;That is when I realized: there just was no straightforward way to deal with this problem.
-Regardless of which option I chose, there would be a decent amount of work.  So,
-any short-term considerations were out, as they were even.  I had to start
-thinking about the long term, and how my choice would
-reflect on the future of the project.&lt;/p&gt;
-&lt;p&gt;Working things out in my head,
-I knew that I had made my decision when I started to try and convince myself that
-the current solution was good enough.  I was not doing my usual process of evaluating
-multiple choices on their merit, I was arguing to myself that what I had met some
-minimum bar that was hard to define.  To me, that meant that I had a clear winner
-in the other choice, I was just worried about the cost.&lt;/p&gt;
-&lt;p&gt;That is when I had an objective talk with myself about the merit of the new
-approach versus the old approach.  If I had a tough time thinking about how to
-modify the old algorithm now, how much would it cost to change it in another week
-or two?  Would I have
-to go through the same process again?  The more I asked myself questions like
-that, the more the cost of the new algorithm did not seem to be that expensive.&lt;/p&gt;
-&lt;p&gt;The more I thought about it, it was a hard decision, but I needed to rewrite that
-part of the code.  A simpler algorithm costing more now would easily safe effort
-in the future.  It sucked, but I knew I needed to make the hard decision.&lt;/p&gt;
-&lt;p&gt;I was going to rewrite the project’s Markdown generator.&lt;/p&gt;
-&lt;h2 id="the-work"&gt;The Work&lt;a class="headerlink" href="#the-work" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;With everyone else out of the house for most of the day, I had a rare Saturday to
-myself.  Because I expected to throw even more “WTF?” comments at my monitor,
-it was a good thing I was alone in the house.&lt;/p&gt;
-&lt;p&gt;The first thing that I noticed is that while I needed to rewrite the Markdown
-generator, I did not have to rewrite most of it.  With one or two exceptions, the
-handling of the non-container tokens was good.  As for those small exceptions, I
-was sure that only the whitespace handling would need to change, and that I could
-manage those changes.&lt;/p&gt;
-&lt;p&gt;With that knowledge in hand, I turned off all existing checks, picked a simple
-scenario test with multiple lines and no container elements, and started to work
-on it.  I was not trying to solve the entire problem, just get
-a good head start on rewriting the code.&lt;/p&gt;
-&lt;p&gt;It was not too long before I had a promising idea of what I needed to do, and I committed
-that code to my local repository.  Then I enabled the Markdown generator check
-for only those scenario tests that did not container any container elements.
-Working through those issues, I then added checking for scenario tests including
-only Block Quote elements and worked through those issues.  Finally, I repeated
-that process with List elements, to get to where I am now.&lt;/p&gt;
-&lt;h2 id="looking-ahead"&gt;Looking Ahead&lt;a class="headerlink" href="#looking-ahead" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;As of the writing of this article, I have 25 scenario tests that I need to get
-working without enabling the remaining tests with both Block Quote elements and
-List elements.  Turning those on, the total jumped to 53 scenario tests, which
-is still a manageable number.  Some of those tests are going to be easy to resolve,
-and there are other tests that are going to tax me.  But having the simplified design
-means that it is easy to defend and that change makes it worthwhile&lt;/p&gt;
-&lt;p&gt;It is worthwhile because I can easily maintain a picture in my head about what
-needs to happen.  Every single whitespace character needs to be preserved in a
-token somewhere.  Most of the time, which means that I need to ensure that the
-whitespace emitted in container tokens is correct.  That is simply a fact because
-the new algorithm is simple, and I mean to keep it that way.  Sure, it is shifting
-the effort to the tokens, but I feel good about that.&lt;/p&gt;
-&lt;h2 id="what-was-my-experience-so-far"&gt;What Was My Experience So Far?&lt;a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;During the middle of the week, I was at a bit of a low point, mentally speaking.
-While I realize
-that I am not perfect, I do hope that I make good development choices that do not
-result in too much wasted effort.  I do acknowledge that there are parts of the PyMarkdown
-code base that look busy, but usually I keep things grouped by
-functionality.  But in those cases, there are a small group of functions that
-provide support for each other and their common responsibility.  In each of those
-cases, I can usually pick up a function and understand its purpose within
-five minutes, and what to change in fifteen minutes.&lt;/p&gt;
-&lt;p&gt;Not being able to do that is exactly what I had to come to terms with during
-this week.  I had spent time maintaining code that became overly complex and spun
-out of control.  It was enough out of control, that I did not think that there
-was an option other than to rewrite that functionality using a different algorithm.
-That hurt.&lt;/p&gt;
-&lt;p&gt;But as I author this article, I think my viewpoint has changed.  With around fifty
-scenario tests left to convert and get working, I find myself having a renewed
-sense of optimism.  The new code is cleaner and more direct on what it is trying
-to accomplish.  The new code is independent of the processing for the other
-Markdown elements, so it just focuses on what it needs to do.  And more importantly
-to me, the new code is easily more maintainable.&lt;/p&gt;
-&lt;p&gt;Did I throw away a Saturday on getting the new code to work? Yes.
-However, if I am honest, this new code just feels better.  It is a bit more work
-right now to get back to a “stopping point” where I can start fixing issues
-again.  But I am more confident that any later changes can be incorporated into
-the generation of the tokens themselves, not requiring any changes to the new
-functions for handling container elements.&lt;/p&gt;
-&lt;p&gt;And when it all comes down to it, that is what is important.  I sometimes forget
-that every line of code that I write is an experiment.  I make good guesses
-as to what I need, so my coding accuracy is decent, but it is still just a guess.
-In this case, an experiment failed, and I needed to try and find a better way to
-accomplish the same task.&lt;/p&gt;
-&lt;p&gt;So, yes. it sucks that I had to do a rewrite. But honestly, sometimes, there
-is no uncomplicated way, just difficult paths to follow.  And I am okay with that… now.&lt;/p&gt;
-&lt;h2 id="what-is-next"&gt;What is Next?&lt;a class="headerlink" href="#what-is-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Since I have started on the first part of this changeover, it makes sense
-that I keep on going until it is finished.
-Stay tuned!&lt;/p&gt;
-&lt;div class="footnote"&gt;
-&lt;hr/&gt;
-&lt;ol&gt;
-&lt;li id="fn:modulo"&gt;
-&lt;p&gt;This is a fancy way of saying “what is the remainder after dividing by the other number?” &lt;a class="footnote-backref" href="#fnref:modulo" title="Jump back to footnote 1 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
-&lt;/li&gt;
-&lt;/ol&gt;
-&lt;/div&gt;</content><category term="Software Quality"></category><category term="extract method"></category></entry></feed>
+Stay tuned!&lt;/p&gt;</content><category term="Software Quality"></category><category term="extract method"></category></entry></feed>

@@ -1,5 +1,113 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/all.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2022-08-15T00:00:00-07:00</updated><entry><title>Dealing With Long Standing Issues</title><link href="https://jackdewinter.github.io/2022/08/15/dealing-with-long-standing-issues/" rel="alternate"></link><published>2022-08-15T00:00:00-07:00</published><updated>2022-08-15T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2022-08-15:/2022/08/15/dealing-with-long-standing-issues/</id><summary type="html">
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/all.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2022-08-22T00:00:00-07:00</updated><entry><title>Figuring Out The Best Course of Action</title><link href="https://jackdewinter.github.io/2022/08/22/figuring-out-the-best-course-of-action/" rel="alternate"></link><published>2022-08-22T00:00:00-07:00</published><updated>2022-08-22T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2022-08-22:/2022/08/22/figuring-out-the-best-course-of-action/</id><summary type="html">
+&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In my
+&lt;a href="https://jackdewinter.github.io/2022/08/15/dealing-with-long-standing-issues/"&gt;last article&lt;/a&gt;, I talked
+my continuing work on the &lt;a href="https://github.com/jackdewinter/pymarkdown"&gt;PyMarkdown&lt;/a&gt; project,
+aiming to get it closer to a solid release.  In this article,
+I talk about my thoughts around adding new features to the project.&lt;/p&gt;
+&lt;h2 id="adding-features-that-make-sense"&gt;Adding Features That Make Sense&lt;a class="headerlink" href="#adding-features-that-make-sense" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Usually, most new features make sense.  Adding …&lt;/p&gt;</summary><content type="html">
+&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In my
+&lt;a href="https://jackdewinter.github.io/2022/08/15/dealing-with-long-standing-issues/"&gt;last article&lt;/a&gt;, I talked
+my continuing work on the &lt;a href="https://github.com/jackdewinter/pymarkdown"&gt;PyMarkdown&lt;/a&gt; project,
+aiming to get it closer to a solid release.  In this article,
+I talk about my thoughts around adding new features to the project.&lt;/p&gt;
+&lt;h2 id="adding-features-that-make-sense"&gt;Adding Features That Make Sense&lt;a class="headerlink" href="#adding-features-that-make-sense" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;Usually, most new features make sense.  Adding support to the
+&lt;a href="https://github.com/jackdewinter/pymarkdown"&gt;PyMarkdown&lt;/a&gt; project to scan for other
+extensions besides &lt;code&gt;.md&lt;/code&gt;, that was an easy decision to make.  Adding support for
+reading from standard input, a bit more of a nuanced decision, but still a relatively
+easy decision to make.&lt;/p&gt;
+&lt;p&gt;Then there was the decision to fix a long-standing issue, &lt;a href="https://github.com/jackdewinter/pymarkdown/issues/330"&gt;issue 330&lt;/a&gt;.
+That I wanted to fix this was obvious to me, but until recently, the cost of fixing
+that issue always outweighed the cost.  To make things easier in the initial stages of
+development, I added a couple of &lt;code&gt;replace("\\", "/")&lt;/code&gt; statements in the file scanning
+code to allow for Windows backslash separators to be treated as the Posix slash
+separator.  Why?  Because then the output always dealt with slashes, regardless of the
+operating system involved.  Therefore, the test output always used slashes.&lt;/p&gt;
+&lt;p&gt;But after adding the support for standard input, it just felt wrong to leave those
+replacement statements in the code.  But paying the cost of fixing that issue was not going to be easy.
+Properly fixing the source code for that issue took thirty minutes including
+rudimentary testing.  After a quick run of all tests, the impact of fixing the tests was clear: over
+450 scenario tests were failing because of that change.  Digging in a bit more, that
+was only the failure impact.  If I wanted to do things properly, any of the tests for
+rules plugins needed to be changed to use proper pathing instead of the
+Posix pathing.  I believe when I sketched things out, I took a guess that over
+700 scenario tests would need to change.&lt;/p&gt;
+&lt;p&gt;That is not a small number, it is roughly fifteen percent of the scenario tests.
+In each test, I would need to change the path of the file to scan from something
+like:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;source_path&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;"test/resources/rules/md007/some_file_to_scan.md"&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;to:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="n"&gt;source_path&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;os&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;path&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;join&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;"test"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="s2"&gt;"resources"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="s2"&gt;"rules"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="s2"&gt;"md007"&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="s2"&gt;"some_file_to_scan.md"&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;adding that at the top of the scenario test if it was not already there.
+With that change done, I then needed to look for any instances of the first
+string in the rest of the scenario tests, replacing it with either &lt;code&gt;source_path&lt;/code&gt;
+or &lt;code&gt;{source_path}&lt;/code&gt;, depending on if it was already in a string or not.&lt;/p&gt;
+&lt;p&gt;But, when I weighed everything out, it was worth it.  This was something that
+I had put off for long enough, and the increase in quality was worth the cost
+to me. Granted, I thought I could make the transformation in ten hours, but it
+was still worth the cost after eighteen hours of changes.  Each change
+manual.  It was not fun, but it was a good change.&lt;/p&gt;
+&lt;p&gt;The next change was going to be different.  It was going to require deep
+thinking on my part.&lt;/p&gt;
+&lt;h2 id="sometimes-the-decision-is-not-an-easy-one"&gt;Sometimes, The Decision Is Not An Easy One&lt;a class="headerlink" href="#sometimes-the-decision-is-not-an-easy-one" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;As I mentioned in the last article, one of the users reached out with
+&lt;a href="https://github.com/jackdewinter/pymarkdown/issues/382"&gt;Issue 382&lt;/a&gt; and asked if
+can add support for scanning Markdown in Jupyter notebooks.  Needing to
+think things over a bit, I added the support for processing standard input
+as it was a good feature and I thought I might need it for this new feature.&lt;/p&gt;
+&lt;p&gt;But the big question in my mind was: was this actually a new feature?  Not that
+someone could not use this functionality, but was it a feature of PyMarkdown?
+Or was it a separate utility? This was not an easy question for me to answer.  I
+could see both side of this solution, and in mind, they were balanced almost
+equally.&lt;/p&gt;
+&lt;p&gt;On the side of adding this support as a PyMarkdown feature, there were two
+good points to support it.  The first of those points was that it fit in with the main goal
+of the project: to provide a solid Markdown scanner.  It just so happened that
+every Markdown sample that I have seen up to this point was either the entire
+contents of a file or the entire contents of the standard input.  In my line
+of work, which is what we call an implementation detail.  The second of these
+points was the ease of use of the scanner.  Programmatically, I could see connecting
+the various file types to “input filters”, selecting the correct filter based
+on the provide input.  I had done variations on that for extensions and rules
+plugins, so would one more plugin type hurt?&lt;/p&gt;
+&lt;p&gt;The opposing side was a bit more nuanced.  Depending on how I read the main
+goals of the PyMarkdown project, the target could be seen in one of two ways.&lt;br/&gt;
+Going all the way back to an article I wrote on &lt;a href="https://jackdewinter.github.io/2019/12/08/markdown-linter-collecting-requirements/"&gt;2019 Dec 08&lt;/a&gt;,
+there is one line that summarizes this intent:&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;ul&gt;
+&lt;li&gt;must be able to provide a consistent lexical scan of the Markdown document from the command line&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;If I take that statement literally, then the scan should be dealing with documents, not
+smaller units of text.  Of course, an argument could be made that any text “blob” is a
+document, but I feel that it is just bending words to fit a scenario, and not
+honoring the intent.  Throughout the PyMarkdown project, files are referenced
+as a proxy for documents, instead of using terms like file fragments.&lt;/p&gt;
+&lt;p&gt;Less nuanced and more pronounced is my sense that including this kind of
+support into the PyMarkdown project will make the project too big.  More precisely,
+I feel that expanding the scope of the project to include the concept of
+“input filters” is not called for.  From a cost-benefit analysis, the cost of
+supporting another plugin interface, or even a hard-wired interface, does not
+match the perceived benefit.  At least not to me.&lt;/p&gt;
+&lt;h2 id="and-the-decision-is"&gt;And The Decision Is…&lt;a class="headerlink" href="#and-the-decision-is" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;So, after thinking about it and weighing the pros and cons of this support, I
+decided to support these features, but in their own project.  That new project will
+take care of doing the necessary management to convert the Jupyter notebook
+Markdown fragments into a scannable form for PyMarkdown to handle.  To that end,
+I will need to enhance the main PyMarkdown module, but I believe those enhancements
+will be minor.&lt;/p&gt;
+&lt;p&gt;And after worrying about a satisfactory solution for this issue for a couple of weeks, I
+am pleased with my decision.  I feel that this will provide a template for any other
+such features in the future, allowing me to keep a steady handle on the PyMarkdown
+project.  But at the same time, it will allow me to grow the project family while
+meeting the needs of the users.&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry><entry><title>Dealing With Long Standing Issues</title><link href="https://jackdewinter.github.io/2022/08/15/dealing-with-long-standing-issues/" rel="alternate"></link><published>2022-08-15T00:00:00-07:00</published><updated>2022-08-15T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2022-08-15:/2022/08/15/dealing-with-long-standing-issues/</id><summary type="html">
 &lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;In my
 &lt;a href="https://jackdewinter.github.io/2022/08/08/dealing-with-the-ups-and-downs/"&gt;last article&lt;/a&gt;, I talked
@@ -4175,189 +4283,4 @@ for it will help me find part of what my current balance is missing.&lt;/p&gt;
 &lt;p&gt;While I got a lot of scenario tests added, there is one more set that I want to
 add before the next release.  And hopefully I will get through them this next
 week.
-Stay tuned!&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry><entry><title>Markdown Linter - Why Nested Containers Are So Difficult</title><link href="https://jackdewinter.github.io/2022/01/24/markdown-linter-why-nested-containers-are-so-difficult/" rel="alternate"></link><published>2022-01-24T00:00:00-08:00</published><updated>2022-01-24T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2022-01-24:/2022/01/24/markdown-linter-why-nested-containers-are-so-difficult/</id><summary type="html">
-&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;In my
-&lt;a href="https://jackdewinter.github.io/2022/01/10/markdown-linter-know-when-to-break-the-rules/"&gt;last article&lt;/a&gt;, I talked
-about finding a process that works for yourself.  In this article, I talk about
-continuing to make progress on testing nested containers.&lt;/p&gt;
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;It took me a while to get this latest round of scenario tests added and passing,
-but it was worth …&lt;/p&gt;</summary><content type="html">
-&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;In my
-&lt;a href="https://jackdewinter.github.io/2022/01/10/markdown-linter-know-when-to-break-the-rules/"&gt;last article&lt;/a&gt;, I talked
-about finding a process that works for yourself.  In this article, I talk about
-continuing to make progress on testing nested containers.&lt;/p&gt;
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;It took me a while to get this latest round of scenario tests added and passing,
-but it was worth getting them added into the &lt;a href="https://github.com/jackdewinter/pymarkdown"&gt;PyMarkdown project&lt;/a&gt;.
-I have known that nested
-container elements have been a concern of mine for a while, so it is nice to be
-able to finally start addressing it.  Even if it did take a couple of weeks.&lt;/p&gt;
-&lt;h2 id="what-is-the-audience-for-this-article"&gt;What Is the Audience for This Article?&lt;a class="headerlink" href="#what-is-the-audience-for-this-article" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;While detailed more eloquently in
-&lt;a href="https://jackdewinter.github.io/2020/04/05/what-is-the-audience-for-my-blog/#what-is-the-audience-for-my-blog"&gt;this article&lt;/a&gt;,
-my goal for this technical article is to focus on the reasoning behind my solutions,
-rather than the solutions themselves.  For a full record of the solutions presented in
-this article, please consult the commits that occurred between
-&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/956fbbd345e02440c9cde61c90495ac1f6b9f3c5"&gt;04 Jan 2022&lt;/a&gt;
-and
-&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/6d127143ccfccfc5bbfe86c12cf7bf206b8cb094"&gt;23 Jan 2022&lt;/a&gt;.&lt;/p&gt;
-&lt;h2 id="the-long-haul-issue-227"&gt;The Long Haul: &lt;a href="https://github.com/jackdewinter/pymarkdown/issues/227"&gt;Issue 227&lt;/a&gt;&lt;a class="headerlink" href="#the-long-haul-issue-227" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;The concept itself is simple, but the testing and debugging of the first set of
-scenarios for this are far from simple.  The concept of this issue is to take
-every combination of three-level deep Markdown containers, and make sure that they
-all parse properly at their maximum distances.&lt;/p&gt;
-&lt;p&gt;What does that mean?  Picked at random, the test function &lt;code&gt;test_nested_three_block_block_ordered&lt;/code&gt;
-contains the following Markdown document:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt; &lt;span class="n"&gt;list&lt;/span&gt;
-&lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="o"&gt;&amp;gt;&lt;/span&gt;    &lt;span class="n"&gt;item&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;This example could be taken out of the &lt;a href="https://github.github.com/gfm/"&gt;GitHub Flavored Markdown&lt;/a&gt;
-specification for its simplicity.  It is simply an Ordered List element within a
-Block Quote element within another Block Quote element.  Each bit of spacing between
-each container element and the next element is done according to normal standards.&lt;/p&gt;
-&lt;p&gt;But in the real world, things are not always standard.  There is an optional space
-character that follows the Block Quote character (&lt;code&gt;&amp;gt;&lt;/code&gt;) and a required space character
-that follows the Ordered List sequence (&lt;code&gt;1.&lt;/code&gt;).  At that point, to allow for different
-expressions of the document, up to three space characters can be provided.&lt;/p&gt;
-&lt;p&gt;While I was not able to find any reason why three or less space characters are
-okay, but four or more space characters is an indented code block, my guess is because
-of the tab character.  Putting aside that the tab character is interpreted as a
-&lt;a href="https://github.github.com/gfm/#tabs"&gt;Tab Stop&lt;/a&gt; rather than four straight space
-characters, it looks like Indented Code Block elements were prefaced with four
-space characters, or a non-justified tab character, because it was easy.  The
-way I think about it is this.  If you want to create an Indented Code Block element
-outside of any container, simply use a tab character or its equivalent of four
-space characters.&lt;/p&gt;
-&lt;p&gt;But as I am about to show, that does add in some complexities to nested container
-elements.&lt;/p&gt;
-&lt;h3 id="indented-text-works-up-to-a-point"&gt;Indented Text Works… Up To A Point&lt;a class="headerlink" href="#indented-text-works-up-to-a-point" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;To see this indented behavior in action, run this Markdown document through any GitHub
-Flavored Markdown compliant
-Markdown parser, such as &lt;a href="https://johnmacfarlane.net/babelmark2/?text=1.+zero+spaces%0A1.++one+space%0A1.+++two+spaces%0A1.++++three+spaces%0A1.+++++four+spaces"&gt;BabelMark&lt;/a&gt;:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt; &lt;span class="n"&gt;zero&lt;/span&gt; &lt;span class="n"&gt;spaces&lt;/span&gt;
-&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;  &lt;span class="n"&gt;one&lt;/span&gt; &lt;span class="k"&gt;space&lt;/span&gt;
-&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;   &lt;span class="n"&gt;two&lt;/span&gt; &lt;span class="n"&gt;spaces&lt;/span&gt;
-&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;    &lt;span class="n"&gt;three&lt;/span&gt; &lt;span class="n"&gt;spaces&lt;/span&gt;
-&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;     &lt;span class="n"&gt;four&lt;/span&gt; &lt;span class="n"&gt;spaces&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Except for the English name for the number of spaces after the start
-of the List element, the first four lines each translate neatly into a simple text element
-within a List Item HTML element.  Once four spaces are used, as on the fifth
-line, the List Item text transfers from simple Markdown text to an Indented Code
-Block element.&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;ol&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
-&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;li&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;zero spaces&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;li&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
-&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;li&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;one space&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;li&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
-&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;li&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;two spaces&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;li&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
-&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;li&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;three spaces&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;li&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
-&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;li&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
-&lt;span class="p"&gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;pre&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&amp;lt;&lt;/span&gt;&lt;span class="nt"&gt;code&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;four spaces
-&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;code&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;pre&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
-&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;li&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
-&lt;span class="p"&gt;&amp;lt;/&lt;/span&gt;&lt;span class="nt"&gt;ol&lt;/span&gt;&lt;span class="p"&gt;&amp;gt;&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;While this is simple when showing these indents and their behavior when starting
-from column 1, it easily gets more complicated when nested containers come into
-play.  That was one of the reasons that I introduced this series of scenario tests:
-the &lt;code&gt;max&lt;/code&gt; series.  Starting with the Markdown document for the &lt;code&gt;test_nested_three_block_block_ordered&lt;/code&gt;,
-test function, I then created the document for the &lt;code&gt;test_nested_three_block_max_block_max_ordered_max&lt;/code&gt;
-test function, injecting three spaces between elements instead of zero spaces.&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;   &lt;span class="o"&gt;&amp;gt;&lt;/span&gt;    &lt;span class="o"&gt;&amp;gt;&lt;/span&gt;    &lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;list&lt;/span&gt;
-   &lt;span class="o"&gt;&amp;gt;&lt;/span&gt;    &lt;span class="o"&gt;&amp;gt;&lt;/span&gt;    &lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;list&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;From there, I pedantically added one extra space character to each level of that
-scenario for each container element, increasing the space between container elements
-from three spaces to four spaces. So, for the &lt;code&gt;test_nested_three_block_max_plus_one_block_max_block_max&lt;/code&gt;
-test function, I added &lt;code&gt;plus one&lt;/code&gt; space character after the first Block Quote element,
-resulting in a document of:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;    &lt;span class="o"&gt;&amp;gt;&lt;/span&gt;    &lt;span class="o"&gt;&amp;gt;&lt;/span&gt;    &lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;list&lt;/span&gt;
-    &lt;span class="o"&gt;&amp;gt;&lt;/span&gt;    &lt;span class="o"&gt;&amp;gt;&lt;/span&gt;    &lt;span class="o"&gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;item&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Once that was finished, I also went through the combinations for the other two
-container elements at that level, producing the required tests for those scenarios.&lt;/p&gt;
-&lt;p&gt;It was not complicated, but it took a while to work through everything.  For each
-of the &lt;code&gt;test_nested_three_&lt;/code&gt; modules, twelve new scenarios were added to cover all
-the combinations.  With nine combinations of the base two container elements, which
-meant that I added ninety-six new scenario tests.  And that was just the beginning.&lt;/p&gt;
-&lt;p&gt;It was also interesting.  Plus-one indents at the first two levels were easy
-to get working correctly, but it was the second lines that gave me the most trouble.
-Making sure that the containers and indents worked together on that second line
-was the bulk of the issue that I needed to fix.  But it was worth it!&lt;/p&gt;
-&lt;h3 id="it-just-takes-time"&gt;It Just Takes Time&lt;a class="headerlink" href="#it-just-takes-time" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;Adding all those scenario tests was a chore, taking a couple of days to work
-through them all.  It just took time to run through each of the ninety-six different
-scenarios, verify that I had entered everything in properly, and generate the HTML
-output using Babelmark.  From there, I ran each scenario test individually against
-PyMarkdown, noting which scenario tests passed and which scenario tests failed.&lt;/p&gt;
-&lt;p&gt;In the end, just over half of the scenario tests passed, and just under half of
-the scenario tests failed.  It was not the ratio that I was hoping for, but it
-was the one I needed to work with.  So, little bit by little bit, I started
-picking up groups of similar failures and dealing with them.&lt;/p&gt;
-&lt;p&gt;Two weeks after I started working on those failures, I finally had them all
-passing.  It was a real mixed bag of experiences.  Some of the failures that
-I looked at were resolved within a couple of hours of debugging and fixing.
-Other failures took a day or two for me to just figure out the debugging
-end of things, with the fixing of the issue taking just as long.  In some
-cases, I was moving code from deeper within the parser code to closer to
-the surface.  For others, it was adding net-new code for a situation that I did
-not have to cover before.&lt;/p&gt;
-&lt;p&gt;And the amount of code varied as much as the location of the code and the complexity
-met in figuring out what that code was.  In a couple of cases, I merely
-had to ensure that a calculated value was being added to another variable in
-the correct manner.  While those were nice to have, most of code fixes required
-between ten and fifteen lines of new code, usually to compute a value that was
-needed in another location.  And there was one case where the number of changed
-lines peaked at around fifty lines.&lt;/p&gt;
-&lt;p&gt;As I said above, it was a real mixed bag.  But as I have said in the last
-couple of articles I posted, having a good set of processes that work for
-me really helped.  Often, I ended up scribbling down the Markdown
-document for the scenario and working through it on paper as well as through
-the code.  There are may &lt;a href="https://ux.stackexchange.com/questions/91255/how-can-i-best-display-a-blank-space-character#:~:text=Visual%20representation%20of%20spaces%20in%20text%20are%20more,impact%20of%20the%20former%20representation%20in%20most%20fonts."&gt;Blank Characters&lt;/a&gt;
-scribbled on those pages, from a habit I picked up years ago when I started
-writing parsers.  From the above link:&lt;/p&gt;
-&lt;blockquote&gt;
-&lt;p&gt;The symbol ␢ has a long history of use for this purpose in early computer programming. It was handwritten on coding sheets by programmers to indicate a space character to punch-card machine operators (who were like a typing pool).&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;p&gt;I am not sure how common they are outside of my use of them in parser design, but
-I find them to be invaluable for clearly writing down what is being parsed.&lt;/p&gt;
-&lt;p&gt;So, it was a long journey to get those scenario tests passing, but I knew
-it was just a matter of time before I got there.&lt;/p&gt;
-&lt;h3 id="still-a-bit-left-to-go"&gt;Still A Bit Left To Go&lt;a class="headerlink" href="#still-a-bit-left-to-go" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;So there interesting thing about adding a series of combinatorically generated
-scenario tests is that interesting patterns appear.  For this set of scenario
-tests, I know that there are some simple tests that I am going to have to add
-in the next series of scenario tests.  A good portion of them are for my own benefit,
-making sure that the project is already covering scenarios that I believe are
-covered.  With my solutions for a small group of third-level nesting scenario
-tests, I believe that my solutions might cause a problem if extended to a fourth-level
-nesting scenario.  And finally, there are a handful of scenario test variations
-that I missed with the current set of scenario tests.&lt;/p&gt;
-&lt;p&gt;None of these issues (or possible issues) were things that I could have spotted
-ahead of time.&lt;/p&gt;
-&lt;h2 id="what-was-my-experience-so-far"&gt;What Was My Experience So Far?&lt;a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;With other things going on in life in the last couple of weeks, it sometimes was
-a struggle to get some “me” time to work on the PyMarkdown project.  But with
-few exceptions, it was useful time that helped me center myself.  There were a
-couple of issues that I thought I would never solve.  In each case, I trusted
-in my development process, took the breaks that I needed, and used a lot of paper
-to scribble out possible parsing paths.  Because of my confidence in my process,
-while I knew I might have difficulty figuring out how to solve the current issue,
-I knew that I would get there.&lt;/p&gt;
-&lt;p&gt;And it was this week that led me to an interesting conclusion: this is not the
-last Container Block Processor module that I am going to write.  While the last
-rewrite helped me get closer to a clean implementation, this recent set of issues
-has led me to believe that I still have some learning left to do.  Only once I
-finish that learning will I properly be able to implement a clean parser.&lt;/p&gt;
-&lt;p&gt;I am okay with that.  It is probably not going to happen for at least a year,
-and there is no timetable associated with it, but it will happen.  And when
-I get to that point, I believe I will feel that it is the right thing to do.&lt;/p&gt;
-&lt;p&gt;But right now, it is all about finishing these nested container tests.  And I still
-have work to do!&lt;/p&gt;
-&lt;h2 id="what-is-next"&gt;What is Next?&lt;a class="headerlink" href="#what-is-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;As one of the sections above noted, I have a handful of extra scenarios that
-I need to take care of before moving on.  Once those are done, I will probably
-release a new version of PyMarkdown, just to make sure it is current.
 Stay tuned!&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry></feed>
