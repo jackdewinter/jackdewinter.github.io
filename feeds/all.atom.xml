@@ -1,5 +1,138 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/all.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2022-08-22T00:00:00-07:00</updated><entry><title>Figuring Out The Best Course of Action</title><link href="https://jackdewinter.github.io/2022/08/22/figuring-out-the-best-course-of-action/" rel="alternate"></link><published>2022-08-22T00:00:00-07:00</published><updated>2022-08-22T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2022-08-22:/2022/08/22/figuring-out-the-best-course-of-action/</id><summary type="html">
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/all.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2022-08-29T00:00:00-07:00</updated><entry><title>Tackling Whitespace</title><link href="https://jackdewinter.github.io/2022/08/29/tackling-whitespace/" rel="alternate"></link><published>2022-08-29T00:00:00-07:00</published><updated>2022-08-29T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2022-08-29:/2022/08/29/tackling-whitespace/</id><summary type="html">
+&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In my
+&lt;a href="https://jackdewinter.github.io/2022/08/22/figuring-out-the-best-course-of-action/"&gt;last article&lt;/a&gt;, I talked about
+my continuing work on the &lt;a href="https://github.com/jackdewinter/pymarkdown"&gt;PyMarkdown&lt;/a&gt; project,
+and how I evaluated the adding of new features to the project. In this article,
+I talk about going back and ensuring that one of the foundations of any word-based parser
+is solid: whitespace handling …&lt;/p&gt;</summary><content type="html">
+&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In my
+&lt;a href="https://jackdewinter.github.io/2022/08/22/figuring-out-the-best-course-of-action/"&gt;last article&lt;/a&gt;, I talked about
+my continuing work on the &lt;a href="https://github.com/jackdewinter/pymarkdown"&gt;PyMarkdown&lt;/a&gt; project,
+and how I evaluated the adding of new features to the project. In this article,
+I talk about going back and ensuring that one of the foundations of any word-based parser
+is solid: whitespace handling.&lt;/p&gt;
+&lt;h2 id="it-all-starts-with-whitespace"&gt;It All Starts With Whitespace&lt;a class="headerlink" href="#it-all-starts-with-whitespace" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In my experience writing over ten different parsing engines over the years, the
+one aspect that does not get enough attention is the definition of whitespace
+and how it applies to the parser.  For code parsers, whitespace is often seen as
+unimportant and is seen as space-filler between the “real” focus of the language:
+the keywords.  Even Python, with its indent-based semantics, is not far from that
+appraisal.&lt;/p&gt;
+&lt;p&gt;But when translating from one language or format to another, whitespace can play
+a key role in deciding how something is interpreted.  That is how things are
+structured with Markdown, specifically &lt;a href="https://github.github.com/gfm/"&gt;GitHub Flavoured Markdown&lt;/a&gt;
+or GFM.  As one of the main goals of Markdown is to allow people to author documents
+in a near-authentic format, adding any unnecessary verbiage or formatting was frowned
+up.  Specifically, the &lt;a href="https://github.github.com/gfm/#what-is-markdown-"&gt;GFM states&lt;/a&gt;:&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;The overriding design goal for Markdown’s formatting syntax is to make it as readable
+as possible. The idea is that a Markdown-formatted document should be publishable as-is,
+as plain text, without looking like it’s been marked up with tags or formatting instructions.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;To preserve that readability, whitespace is used creatively in Markdown.  A good
+example of this is the Indented Code Block.  This is a section of the document,
+often computer related code, which needs to be passed unaltered to the reader. As the
+name suggests, each line in this code block is preceded by an indent of at least
+four spaces.  While it does not have the language naming capability of its sibling
+the Fenced Code Block, the Indented Code Block supplies the same code block
+experience without negatively affecting the readability.&lt;/p&gt;
+&lt;p&gt;But support different experiences in different situations, the use of whitespace
+must be broken down a bit.&lt;/p&gt;
+&lt;h2 id="whitespace-and-markdown"&gt;Whitespace and Markdown&lt;a class="headerlink" href="#whitespace-and-markdown" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;To keep things simple, Markdown provides for three types of whitespace.&lt;/p&gt;
+&lt;p&gt;The &lt;a href="https://github.github.com/gfm/#space"&gt;space character&lt;/a&gt; is written as &lt;code&gt;U+0020&lt;/code&gt;
+or &lt;code&gt;\u0020&lt;/code&gt; depending on the format.  In many of the cases where
+a space is allowed, a &lt;a href="https://github.github.com/gfm/#tabs"&gt;tab character&lt;/a&gt; (&lt;code&gt;\t&lt;/code&gt; or &lt;code&gt;\u0009&lt;/code&gt;)
+is allowed and is treated as up to four spaces as if the tab character was a tab stop.  The
+fun part there is that most developers think that the tab character is unilaterally
+expanded to four spaces, instead of interpreting it as a tab stop.  Therefore,
+when reading the specification, any reference to &lt;code&gt;spaces&lt;/code&gt; means a specified number
+of space characters or tab characters.&lt;/p&gt;
+&lt;p&gt;Expanding from that simple definition of spaces is the definition for
+&lt;a href="https://github.github.com/gfm/#whitespace-character"&gt;whitespace characters&lt;/a&gt;.  This
+definition includes both the space character and the tab character but adds the
+newline character (&lt;code&gt;\n&lt;/code&gt; or &lt;code&gt;\u000a&lt;/code&gt;), line tabulation character (&lt;code&gt;\u000b&lt;/code&gt;),
+form feed character (&lt;code&gt;\f&lt;/code&gt; or &lt;code&gt;\u000c&lt;/code&gt;), and carriage return character (&lt;code&gt;\r&lt;/code&gt; or &lt;code&gt;\u000d&lt;/code&gt;).
+Basically, what this does is to allow for a whitespace construct that includes any
+character that is typically used to separate words, lines or paragraphs.&lt;/p&gt;
+&lt;p&gt;Finally, there is the &lt;a href="https://github.github.com/gfm/#unicode-whitespace-character"&gt;Unicode whitespace character&lt;/a&gt;.
+This is a more expansive version of the whitespace character, adding all the
+characters from the Unicode &lt;code&gt;Zs&lt;/code&gt; and subtracting the line tabulation character.
+While I am clear on &lt;a href="https://stackoverflow.com/questions/58421027/what-is-the-use-for-control-characters-in-string-printable#"&gt;the prior use&lt;/a&gt;
+of the line tabulation character, I am less clear on why it has fallen out of
+use.  My best guess is that with modern systems, the concept of scrolling down
+to a given line is outdated, and hence its inclusion into whitespace is less
+important than it once was.  But as it is in the specification, I follow it!&lt;/p&gt;
+&lt;p&gt;Getting these definitions clear in my head was important to me.  If I am going
+to increase my confidence that I have the right type of whitespace selected for
+a given element, I need to know what those whitespace types are.&lt;/p&gt;
+&lt;p&gt;And before anyone asks… no, this is not glorious work.  But this is necessary work.
+The items in the whitespace section have been on the issues list for almost as long
+as the project has been around.  I need to make sure that I have a clear
+implementation of the whitespace handling for the project.  Not for any sense of ego
+or anything like that, but to make sure it is right for the users.  I want that
+confidence that I implemented the whitespace handling correctly.&lt;/p&gt;
+&lt;h2 id="issue-456-cleaning-up-whitespace"&gt;&lt;a href="https://github.com/jackdewinter/pymarkdown/issues/456"&gt;Issue 456&lt;/a&gt; - Cleaning Up Whitespace&lt;a class="headerlink" href="#issue-456-cleaning-up-whitespace" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;When I was originally coding the parser behind PyMarkdown, I did not understand
+these distinct types of whitespace as I do now.  To bring my understanding more
+in line with the specification, I have made minor changes to the way the parser
+handles whitespace over the last two years.  But in the back of my mind, I was always
+concerned that I missed something.  Hence, there was a section in the original
+&lt;code&gt;issues.md&lt;/code&gt; file that dealt with whitespace and correctness.  Having taken a quick
+look at that section again, I thought it was an opportune time to finally resolve any confidence
+issues I had with whitespace.&lt;/p&gt;
+&lt;p&gt;Opening a new issue, I decided to take a muti-task approach to solving any
+outstanding issues.  The first part of that was making sure that I had a clear
+understanding of what the three distinct types of whitespace were.  Once that
+was taken care of, I carefully went through the specification and created a list
+in the issue’s ticket, detailing each element and the types of whitespaces contained
+within that element.&lt;/p&gt;
+&lt;p&gt;The results of that list were interesting: there were four types of whitespace
+involved.  The most prevalent whitespace type was the &lt;em&gt;spaces&lt;/em&gt; type, which seems
+to be the default whitespace type, appearing in ten elements.  From there, the
+&lt;em&gt;whitespaces&lt;/em&gt; type was the next most popular, appearing in six of the elements.
+In a tie for last are the whitespace type used in link labels and the whitespace
+type used in emphasis.  The emphasis type is the &lt;em&gt;Unicode whitespace&lt;/em&gt; type and
+is very expansive on what it includes.&lt;/p&gt;
+&lt;p&gt;The new type is the &lt;em&gt;Unicode case fold&lt;/em&gt; used to compare link labels with a matching
+Link Reference Definition element.  The best description that I found is
+&lt;a href="https://github.com/arodland/Unicode-CaseFold#what-is-case-folding"&gt;in this project&lt;/a&gt;
+and basically walks through the answer to the question: how to do a case insensitive
+match with a full Unicode codeset.  While I could try and describe the folding
+process more, I believe the article does a much better job of explaining it and
+would suggest any readers check that article out if they want more information.&lt;/p&gt;
+&lt;h2 id="creating-the-scenario-tests"&gt;Creating The Scenario Tests&lt;a class="headerlink" href="#creating-the-scenario-tests" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;With the list compiled, I started the process of adding a new set of scenario test
+cases to the project.  As I am a big proponent of Test-Driven Development, it was
+imperative that I implemented the tests first so I could understand the scope
+of what I needed to deal with. As I have detailed in earlier articles, this is not a fun
+process, but a necessary one.  Over three days, I added 166 new scenario tests to
+the project, all dealing with testing how whitespace is handled for each of
+the elements in the list.  As emphasis is the only element to use the Unicode
+whitespace type, and I want to test Unicode punctuation support at the same time,
+I left emphasis scenario tests out of that list for now.&lt;/p&gt;
+&lt;p&gt;It was a brutal process, but I was used to it (somewhat) by now.  Working through the list,
+I copied a series of tests from the series before it, changed the function name and
+the function description, and changed the internals.  Then the process was a
+simple one: change the Markdown sample to demonstrate the scenario, verify with
+Babelmark that &lt;a href="https://commonmark.org/"&gt;CommonMark&lt;/a&gt; produces the same HTML results
+that I calculated, and then run the tests themselves.  With the test output, I then
+verified that the HTML output matched CommonMark and that the generated PyMarkdown
+tokens looked correct.  Lather rinse repeat.  Many times.&lt;/p&gt;
+&lt;h2 id="more-work-yet-to-come"&gt;More Work Yet To Come&lt;a class="headerlink" href="#more-work-yet-to-come" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;I am done generating the 166 new scenario tests.  Along the way, I noticed that
+33 of those scenario tests were not functioning properly, so I marked them as
+skipped.  My plan for this week is to start attacking that list and see how many
+of the scenario tests I can get working by the end of the weekend.  Since it
+is the Labor Day holiday weekend, I am going to take it somewhat easy, but I
+still want to make significant progress on this task.&lt;/p&gt;
+&lt;p&gt;On one hand, the items have lasted almost two years without any progress, so
+what is another week.  But that is not good enough for me!  Now that I have an
+idea of the work involved,  I want to solve any issues and finally put whitespace issues to
+rest.  Stay tuned for the progress!&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry><entry><title>Figuring Out The Best Course of Action</title><link href="https://jackdewinter.github.io/2022/08/22/figuring-out-the-best-course-of-action/" rel="alternate"></link><published>2022-08-22T00:00:00-07:00</published><updated>2022-08-22T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2022-08-22:/2022/08/22/figuring-out-the-best-course-of-action/</id><summary type="html">
 &lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;In my
 &lt;a href="https://jackdewinter.github.io/2022/08/15/dealing-with-long-standing-issues/"&gt;last article&lt;/a&gt;, I talked
@@ -4144,143 +4277,4 @@ if I expect it from others, I need to hold myself to the same standard.&lt;/p&gt
 &lt;h2 id="what-is-next"&gt;What is Next?&lt;a class="headerlink" href="#what-is-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;Having hit the limit I wanted to for the next number release, I plan to do that
 in the next two days.  Then on to more scenarios.
-Stay tuned!&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry><entry><title>Markdown Linter - There Is No Such Thing As Professional Life</title><link href="https://jackdewinter.github.io/2022/01/31/markdown-linter-there-is-no-such-thing-as-professional-life/" rel="alternate"></link><published>2022-01-31T00:00:00-08:00</published><updated>2022-01-31T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2022-01-31:/2022/01/31/markdown-linter-there-is-no-such-thing-as-professional-life/</id><summary type="html">
-&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;In my
-&lt;a href="https://jackdewinter.github.io/2022/01/24/markdown-linter-why-nested-containers-are-so-difficult/"&gt;last article&lt;/a&gt;, I talked
-about continuing to make progress on testing nested containers.  In this article
-I talk about finding middle ground with yourself.&lt;/p&gt;
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;I thought about putting this article down in my personal section, but I believe
-that it has relevance to anyone who is …&lt;/p&gt;</summary><content type="html">
-&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;In my
-&lt;a href="https://jackdewinter.github.io/2022/01/24/markdown-linter-why-nested-containers-are-so-difficult/"&gt;last article&lt;/a&gt;, I talked
-about continuing to make progress on testing nested containers.  In this article
-I talk about finding middle ground with yourself.&lt;/p&gt;
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;I thought about putting this article down in my personal section, but I believe
-that it has relevance to anyone who is in the software development field.  By our
-nature, we try and analyzing and sort things into distinct categories.  And while
-that ability helped me get to a certain point, I feel that I needed to change
-direction to make further progress.&lt;/p&gt;
-&lt;p&gt;Hopefully, it does not come off in these articles that I know it all.  Just like
-everyone reading my articles, I take things one step at a time.  This last step
-that I took was noticing something that I should have noticed before.  But at least
-I noticed it: There Is No Such Thing As Professional Life.&lt;/p&gt;
-&lt;h2 id="why-do-i-say-that"&gt;Why Do I Say That?&lt;a class="headerlink" href="#why-do-i-say-that" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;I think I have been building up to this point for a while now.  For the longest of
-times, I have said things “you have to find balance between your personal life and
-your professional life”.  And while it is true that there are usually at least two
-aspects to your life, I now believe them to be aspects, not different entities.
-But to understand that statement, I believe I need to help any readers understand
-how I got there.&lt;/p&gt;
-&lt;h2 id="the-journey"&gt;The Journey&lt;a class="headerlink" href="#the-journey" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;For any longtime readers of these articles, it should not be a surprise that I have
-Autism.  Since the moment when I was clinically diagnosed with Autism, it was the
-start of another journey to understanding myself better.  From my interactions
-with people before and after college to my first marriage, knowing where I stood
-with respect to Autism helped me to understand how it shaped my life. And although
-there were many painful interactions with my peers growing up, I was able to find
-peace in accepting that they were largely acting out of fear and ignorance.  I was
-different, and that can be scary.&lt;/p&gt;
-&lt;p&gt;As my life navigated past my first marriage into my forties, I was able to find
-my second wife.  She accepts me for who I am, while at the same time giving me
-the personal desire to be better.  Just to be clear, unless it something like remembering
-to do certain tasks (which I seriously am horrible at), she does not ask me to
-change.  Instead, just by her love and support she inspires me to change.&lt;/p&gt;
-&lt;p&gt;And with that momentum present in my life, I was able to move past a lot of negatives
-associated with a disability like Autism.  Do not get me wrong.  My Autism presents
-me with gifts, but it balances out those gifts with things that can sometimes be
-crippling.  But instead of hiding who I am, I started to talk more openly about my
-Autism and how it affected me.  On the personal side, I talked to people and helped
-them to understand how I viewed interactions from my point of view.  From a professional
-side, I helped managers and colleagues understand the benefits and challenges of
-working with me.&lt;/p&gt;
-&lt;p&gt;Along the way, there were a number of people whose comments I still cherish to this
-day.  There was this one lady at an Autism hackathon who was inspired by me being
-open about my Autism to try and talk to her family about her mental issues.  There
-was the manager who commented on how introspective and understanding I was, and how
-he thought I was more human than most of the people he knew professionally. And
-finally, there were the people who said it was nice to hear someone talk openly
-about their disabilities, instead of hiding them away in a closet.&lt;/p&gt;
-&lt;p&gt;But even through all that, I still maintained that there were two distinct
-parts to my life: a professional one and a personal one. I think I believed that
-I could maintain a dam-like structure between the two sides of my life, and not
-let stuff bleed from one side to the other. It was a nice dream, but not reality.&lt;/p&gt;
-&lt;h2 id="everything-has-a-cost"&gt;Everything Has A Cost&lt;a class="headerlink" href="#everything-has-a-cost" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;For anyone reading this who does not believe the same way as I do, I ask that
-you keep on reading to understand my point of view.  I try as much as possible to
-understand the points of view of others, especially if I disagree with them.  It
-is part of how I was raised and who I am.&lt;/p&gt;
-&lt;p&gt;I believe in the science around the pandemic that is going on.  Did the various
-governments get it right from the get-go?  No.  But that is why they stuck the
-label “novel” in front of it.  When faced with a new situation or experience,
-how many of us can say that we are going to correctly respond every time?  If
-we are honest, very few (if any) of us could realistically answer yes.  The best
-we could do is hope that negative consequences of the times we were wrong did not
-hurt people.&lt;/p&gt;
-&lt;p&gt;So, yes.  I believe that social distancing, mask mandates, and vaccinations are
-needed.  That is what my doctor and the people around him say.  That is what
-the majority of the governments around the world say.  But with those evolving measures,
-they also pointed out that there was going to be an emotional toll that we were
-going to have to look for signs of among signs and friends.&lt;/p&gt;
-&lt;p&gt;Nearing the two-year mark of the start of the pandemic, I did not realize that
-the emotional toll was wearing on me until last week.  With my wife attending
-an event and my son at work, I had a few hours to myself on Saturday.  Instead
-of being happy that I got some of my own time, I felt dread.  As one of the
-guys who is known for being silly and cracking jokes, dread is not a word that
-I have typically used to describe myself or my feelings.  But it was what I
-was feeling.&lt;/p&gt;
-&lt;p&gt;But where was it coming from? Why was I feeling that?&lt;/p&gt;
-&lt;h2 id="it-was-not-immediately-obvious"&gt;It Was Not Immediately Obvious&lt;a class="headerlink" href="#it-was-not-immediately-obvious" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Having that free time, I decided to try and figure out where all this darkness
-in my life was coming from.  Looking back at all my interactions over the past
-month or two, I realized that I was quicker to get upset at people now than I
-have been in years.  While I would take the time to strive to understand people
-in years past, I was now quickly leaping to conclusions.  Thankfully, I have
-people in my life that help me reorient myself, for without them I probably
-would have made a fool of myself on multiple occasions.  But why?&lt;/p&gt;
-&lt;p&gt;That is when I caught myself wondering why my personal life was bleeding into
-my professional life and vice versa.  I spent a good hour or so
-writing stuff down and exploring that using a technique that works for me.
-It was only by chance that instead of scratching something else out that
-I scratched out my basic premise, the wall between my personal life and professional
-life.&lt;/p&gt;
-&lt;p&gt;When exploring stuff in such an experimental manner, be it computer code or trying
-to work through something like this, I do not believe in accidents.  That exploration
-may result in “wasted” time being spent exploring an avenue, but it is not until that
-avenue is explored that you understand what its real nature is.  Simple road you
-need to travel down? Parking lot of issues for later? Throughfare to take you past
-non-relevant issues? Dead end for what you are trying to find?  My experience tells
-me that I must explore it to find out.&lt;/p&gt;
-&lt;p&gt;So that is what I did.  And the result was interesting.&lt;/p&gt;
-&lt;h2 id="where-did-i-end-up"&gt;Where Did I End Up?&lt;a class="headerlink" href="#where-did-i-end-up" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;There is no such thing as professional life. There is no such thing as personal
-life.  At least for me there is not. It is all connected in one big pool of things
-that make me Jack.  Be it the emotional toll of the pandemic, the emotional toll
-of having a mother with dementia, or the emotional effort needed to positively
-talk to colleagues at work.  It all comes from the same source.  My life’s battery
-for lack of a better term.  And before anyone asks, yes, it is rechargeable, but
-no, I cannot swap out batteries when mine get low.  Keeping that analogy going,
-solar energy does seem to recharge me somewhat thou.&lt;/p&gt;
-&lt;p&gt;At fifty-three, I am not sure if I should have seen this earlier in my life,
-or if this is early in life to be discovering this.  I think I had notions of
-this in different forms over the last ten to twenty years, but never have I been
-able to more fully comprehend what it means to me.&lt;/p&gt;
-&lt;p&gt;What does it mean to me?  I love helping people, I love learning, and I love
-being creative.  But each of those things, and the tasks needed to conduct
-those things, take up energy that I have to budget to renew.  And as I now see
-everything more clearly as one big bucket and not two smaller buckets, I realize
-that borrowing from the other small bucket never made sense.  I might have been
-fooled by for a while, but that was all.&lt;/p&gt;
-&lt;p&gt;A large part of what helps me stay healthy is finding a good sense of balance.
-But for some unknown reason, I always felt a bit of kilter from time to time, with nothing
-in my then mindset that explained it.  While I am confident that this is not the
-only thing preventing me from finding this balance, knowing that I need to account
-for it will help me find part of what my current balance is missing.&lt;/p&gt;
-&lt;h2 id="what-is-next"&gt;What is Next?&lt;a class="headerlink" href="#what-is-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;While I got a lot of scenario tests added, there is one more set that I want to
-add before the next release.  And hopefully I will get through them this next
-week.
 Stay tuned!&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry></feed>

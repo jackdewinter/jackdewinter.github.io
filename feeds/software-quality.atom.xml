@@ -1,5 +1,138 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench - Software Quality</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/software-quality.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2022-08-22T00:00:00-07:00</updated><entry><title>Figuring Out The Best Course of Action</title><link href="https://jackdewinter.github.io/2022/08/22/figuring-out-the-best-course-of-action/" rel="alternate"></link><published>2022-08-22T00:00:00-07:00</published><updated>2022-08-22T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2022-08-22:/2022/08/22/figuring-out-the-best-course-of-action/</id><summary type="html">
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Jack's Digital Workbench - Software Quality</title><link href="https://jackdewinter.github.io/" rel="alternate"></link><link href="https://jackdewinter.github.io/feeds/software-quality.atom.xml" rel="self"></link><id>https://jackdewinter.github.io/</id><updated>2022-08-29T00:00:00-07:00</updated><entry><title>Tackling Whitespace</title><link href="https://jackdewinter.github.io/2022/08/29/tackling-whitespace/" rel="alternate"></link><published>2022-08-29T00:00:00-07:00</published><updated>2022-08-29T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2022-08-29:/2022/08/29/tackling-whitespace/</id><summary type="html">
+&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In my
+&lt;a href="https://jackdewinter.github.io/2022/08/22/figuring-out-the-best-course-of-action/"&gt;last article&lt;/a&gt;, I talked about
+my continuing work on the &lt;a href="https://github.com/jackdewinter/pymarkdown"&gt;PyMarkdown&lt;/a&gt; project,
+and how I evaluated the adding of new features to the project. In this article,
+I talk about going back and ensuring that one of the foundations of any word-based parser
+is solid: whitespace handling …&lt;/p&gt;</summary><content type="html">
+&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In my
+&lt;a href="https://jackdewinter.github.io/2022/08/22/figuring-out-the-best-course-of-action/"&gt;last article&lt;/a&gt;, I talked about
+my continuing work on the &lt;a href="https://github.com/jackdewinter/pymarkdown"&gt;PyMarkdown&lt;/a&gt; project,
+and how I evaluated the adding of new features to the project. In this article,
+I talk about going back and ensuring that one of the foundations of any word-based parser
+is solid: whitespace handling.&lt;/p&gt;
+&lt;h2 id="it-all-starts-with-whitespace"&gt;It All Starts With Whitespace&lt;a class="headerlink" href="#it-all-starts-with-whitespace" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;In my experience writing over ten different parsing engines over the years, the
+one aspect that does not get enough attention is the definition of whitespace
+and how it applies to the parser.  For code parsers, whitespace is often seen as
+unimportant and is seen as space-filler between the “real” focus of the language:
+the keywords.  Even Python, with its indent-based semantics, is not far from that
+appraisal.&lt;/p&gt;
+&lt;p&gt;But when translating from one language or format to another, whitespace can play
+a key role in deciding how something is interpreted.  That is how things are
+structured with Markdown, specifically &lt;a href="https://github.github.com/gfm/"&gt;GitHub Flavoured Markdown&lt;/a&gt;
+or GFM.  As one of the main goals of Markdown is to allow people to author documents
+in a near-authentic format, adding any unnecessary verbiage or formatting was frowned
+up.  Specifically, the &lt;a href="https://github.github.com/gfm/#what-is-markdown-"&gt;GFM states&lt;/a&gt;:&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;The overriding design goal for Markdown’s formatting syntax is to make it as readable
+as possible. The idea is that a Markdown-formatted document should be publishable as-is,
+as plain text, without looking like it’s been marked up with tags or formatting instructions.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;To preserve that readability, whitespace is used creatively in Markdown.  A good
+example of this is the Indented Code Block.  This is a section of the document,
+often computer related code, which needs to be passed unaltered to the reader. As the
+name suggests, each line in this code block is preceded by an indent of at least
+four spaces.  While it does not have the language naming capability of its sibling
+the Fenced Code Block, the Indented Code Block supplies the same code block
+experience without negatively affecting the readability.&lt;/p&gt;
+&lt;p&gt;But support different experiences in different situations, the use of whitespace
+must be broken down a bit.&lt;/p&gt;
+&lt;h2 id="whitespace-and-markdown"&gt;Whitespace and Markdown&lt;a class="headerlink" href="#whitespace-and-markdown" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;To keep things simple, Markdown provides for three types of whitespace.&lt;/p&gt;
+&lt;p&gt;The &lt;a href="https://github.github.com/gfm/#space"&gt;space character&lt;/a&gt; is written as &lt;code&gt;U+0020&lt;/code&gt;
+or &lt;code&gt;\u0020&lt;/code&gt; depending on the format.  In many of the cases where
+a space is allowed, a &lt;a href="https://github.github.com/gfm/#tabs"&gt;tab character&lt;/a&gt; (&lt;code&gt;\t&lt;/code&gt; or &lt;code&gt;\u0009&lt;/code&gt;)
+is allowed and is treated as up to four spaces as if the tab character was a tab stop.  The
+fun part there is that most developers think that the tab character is unilaterally
+expanded to four spaces, instead of interpreting it as a tab stop.  Therefore,
+when reading the specification, any reference to &lt;code&gt;spaces&lt;/code&gt; means a specified number
+of space characters or tab characters.&lt;/p&gt;
+&lt;p&gt;Expanding from that simple definition of spaces is the definition for
+&lt;a href="https://github.github.com/gfm/#whitespace-character"&gt;whitespace characters&lt;/a&gt;.  This
+definition includes both the space character and the tab character but adds the
+newline character (&lt;code&gt;\n&lt;/code&gt; or &lt;code&gt;\u000a&lt;/code&gt;), line tabulation character (&lt;code&gt;\u000b&lt;/code&gt;),
+form feed character (&lt;code&gt;\f&lt;/code&gt; or &lt;code&gt;\u000c&lt;/code&gt;), and carriage return character (&lt;code&gt;\r&lt;/code&gt; or &lt;code&gt;\u000d&lt;/code&gt;).
+Basically, what this does is to allow for a whitespace construct that includes any
+character that is typically used to separate words, lines or paragraphs.&lt;/p&gt;
+&lt;p&gt;Finally, there is the &lt;a href="https://github.github.com/gfm/#unicode-whitespace-character"&gt;Unicode whitespace character&lt;/a&gt;.
+This is a more expansive version of the whitespace character, adding all the
+characters from the Unicode &lt;code&gt;Zs&lt;/code&gt; and subtracting the line tabulation character.
+While I am clear on &lt;a href="https://stackoverflow.com/questions/58421027/what-is-the-use-for-control-characters-in-string-printable#"&gt;the prior use&lt;/a&gt;
+of the line tabulation character, I am less clear on why it has fallen out of
+use.  My best guess is that with modern systems, the concept of scrolling down
+to a given line is outdated, and hence its inclusion into whitespace is less
+important than it once was.  But as it is in the specification, I follow it!&lt;/p&gt;
+&lt;p&gt;Getting these definitions clear in my head was important to me.  If I am going
+to increase my confidence that I have the right type of whitespace selected for
+a given element, I need to know what those whitespace types are.&lt;/p&gt;
+&lt;p&gt;And before anyone asks… no, this is not glorious work.  But this is necessary work.
+The items in the whitespace section have been on the issues list for almost as long
+as the project has been around.  I need to make sure that I have a clear
+implementation of the whitespace handling for the project.  Not for any sense of ego
+or anything like that, but to make sure it is right for the users.  I want that
+confidence that I implemented the whitespace handling correctly.&lt;/p&gt;
+&lt;h2 id="issue-456-cleaning-up-whitespace"&gt;&lt;a href="https://github.com/jackdewinter/pymarkdown/issues/456"&gt;Issue 456&lt;/a&gt; - Cleaning Up Whitespace&lt;a class="headerlink" href="#issue-456-cleaning-up-whitespace" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;When I was originally coding the parser behind PyMarkdown, I did not understand
+these distinct types of whitespace as I do now.  To bring my understanding more
+in line with the specification, I have made minor changes to the way the parser
+handles whitespace over the last two years.  But in the back of my mind, I was always
+concerned that I missed something.  Hence, there was a section in the original
+&lt;code&gt;issues.md&lt;/code&gt; file that dealt with whitespace and correctness.  Having taken a quick
+look at that section again, I thought it was an opportune time to finally resolve any confidence
+issues I had with whitespace.&lt;/p&gt;
+&lt;p&gt;Opening a new issue, I decided to take a muti-task approach to solving any
+outstanding issues.  The first part of that was making sure that I had a clear
+understanding of what the three distinct types of whitespace were.  Once that
+was taken care of, I carefully went through the specification and created a list
+in the issue’s ticket, detailing each element and the types of whitespaces contained
+within that element.&lt;/p&gt;
+&lt;p&gt;The results of that list were interesting: there were four types of whitespace
+involved.  The most prevalent whitespace type was the &lt;em&gt;spaces&lt;/em&gt; type, which seems
+to be the default whitespace type, appearing in ten elements.  From there, the
+&lt;em&gt;whitespaces&lt;/em&gt; type was the next most popular, appearing in six of the elements.
+In a tie for last are the whitespace type used in link labels and the whitespace
+type used in emphasis.  The emphasis type is the &lt;em&gt;Unicode whitespace&lt;/em&gt; type and
+is very expansive on what it includes.&lt;/p&gt;
+&lt;p&gt;The new type is the &lt;em&gt;Unicode case fold&lt;/em&gt; used to compare link labels with a matching
+Link Reference Definition element.  The best description that I found is
+&lt;a href="https://github.com/arodland/Unicode-CaseFold#what-is-case-folding"&gt;in this project&lt;/a&gt;
+and basically walks through the answer to the question: how to do a case insensitive
+match with a full Unicode codeset.  While I could try and describe the folding
+process more, I believe the article does a much better job of explaining it and
+would suggest any readers check that article out if they want more information.&lt;/p&gt;
+&lt;h2 id="creating-the-scenario-tests"&gt;Creating The Scenario Tests&lt;a class="headerlink" href="#creating-the-scenario-tests" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;With the list compiled, I started the process of adding a new set of scenario test
+cases to the project.  As I am a big proponent of Test-Driven Development, it was
+imperative that I implemented the tests first so I could understand the scope
+of what I needed to deal with. As I have detailed in earlier articles, this is not a fun
+process, but a necessary one.  Over three days, I added 166 new scenario tests to
+the project, all dealing with testing how whitespace is handled for each of
+the elements in the list.  As emphasis is the only element to use the Unicode
+whitespace type, and I want to test Unicode punctuation support at the same time,
+I left emphasis scenario tests out of that list for now.&lt;/p&gt;
+&lt;p&gt;It was a brutal process, but I was used to it (somewhat) by now.  Working through the list,
+I copied a series of tests from the series before it, changed the function name and
+the function description, and changed the internals.  Then the process was a
+simple one: change the Markdown sample to demonstrate the scenario, verify with
+Babelmark that &lt;a href="https://commonmark.org/"&gt;CommonMark&lt;/a&gt; produces the same HTML results
+that I calculated, and then run the tests themselves.  With the test output, I then
+verified that the HTML output matched CommonMark and that the generated PyMarkdown
+tokens looked correct.  Lather rinse repeat.  Many times.&lt;/p&gt;
+&lt;h2 id="more-work-yet-to-come"&gt;More Work Yet To Come&lt;a class="headerlink" href="#more-work-yet-to-come" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
+&lt;p&gt;I am done generating the 166 new scenario tests.  Along the way, I noticed that
+33 of those scenario tests were not functioning properly, so I marked them as
+skipped.  My plan for this week is to start attacking that list and see how many
+of the scenario tests I can get working by the end of the weekend.  Since it
+is the Labor Day holiday weekend, I am going to take it somewhat easy, but I
+still want to make significant progress on this task.&lt;/p&gt;
+&lt;p&gt;On one hand, the items have lasted almost two years without any progress, so
+what is another week.  But that is not good enough for me!  Now that I have an
+idea of the work involved,  I want to solve any issues and finally put whitespace issues to
+rest.  Stay tuned for the progress!&lt;/p&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry><entry><title>Figuring Out The Best Course of Action</title><link href="https://jackdewinter.github.io/2022/08/22/figuring-out-the-best-course-of-action/" rel="alternate"></link><published>2022-08-22T00:00:00-07:00</published><updated>2022-08-22T00:00:00-07:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2022-08-22:/2022/08/22/figuring-out-the-best-course-of-action/</id><summary type="html">
 &lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
 &lt;p&gt;In my
 &lt;a href="https://jackdewinter.github.io/2022/08/15/dealing-with-long-standing-issues/"&gt;last article&lt;/a&gt;, I talked
@@ -4524,191 +4657,4 @@ Stay tuned!&lt;/p&gt;
 &lt;p&gt;Yes, I know that the &lt;code&gt;F&lt;/code&gt; in RTFM stands for something else. &lt;a class="footnote-backref" href="#fnref:yes" title="Jump back to footnote 1 in the text"&gt;↩&lt;/a&gt;&lt;/p&gt;
 &lt;/li&gt;
 &lt;/ol&gt;
-&lt;/div&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry><entry><title>Improving Quality - Just Get It Done</title><link href="https://jackdewinter.github.io/2021/12/13/improving-quality-just-get-it-done/" rel="alternate"></link><published>2021-12-13T00:00:00-08:00</published><updated>2021-12-13T00:00:00-08:00</updated><author><name>Jack De Winter</name></author><id>tag:jackdewinter.github.io,2021-12-13:/2021/12/13/improving-quality-just-get-it-done/</id><summary type="html">
-&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;In my
-&lt;a href="https://jackdewinter.github.io/2021/12/06/improving-quality-sometimes-there-is-no-easy-way/"&gt;last article&lt;/a&gt;, I talked
-about making hard choices when it comes to projects.  In this article, I talk
-about the follow-through with the choice that I needed to make last week.&lt;/p&gt;
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Having decided that I needed to replace the whitespace processing in the &lt;a href="https://github.com/jackdewinter/pymarkdown"&gt;PyMarkdown&lt;/a&gt;
-parser, the …&lt;/p&gt;</summary><content type="html">
-&lt;h2 id="summary"&gt;Summary&lt;a class="headerlink" href="#summary" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;In my
-&lt;a href="https://jackdewinter.github.io/2021/12/06/improving-quality-sometimes-there-is-no-easy-way/"&gt;last article&lt;/a&gt;, I talked
-about making hard choices when it comes to projects.  In this article, I talk
-about the follow-through with the choice that I needed to make last week.&lt;/p&gt;
-&lt;h2 id="introduction"&gt;Introduction&lt;a class="headerlink" href="#introduction" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Having decided that I needed to replace the whitespace processing in the &lt;a href="https://github.com/jackdewinter/pymarkdown"&gt;PyMarkdown&lt;/a&gt;
-parser, the follow through was brutal.  As of last week’s article, I had burnt
-through all except twenty-five scenario tests.  Experience led me to believe
-that those remaining tests were going to be the hard ones.  Either fortunately
-or unfortunately for me, depending on one’s viewpoint, my estimates on
-the PyMarkdown project and work to be done have been spot on lately.  It was
-going to be on hell of a week!&lt;/p&gt;
-&lt;h2 id="what-is-the-audience-for-this-article"&gt;What Is the Audience for This Article?&lt;a class="headerlink" href="#what-is-the-audience-for-this-article" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;While detailed more eloquently in
-&lt;a href="https://jackdewinter.github.io/2020/04/05/what-is-the-audience-for-my-blog/#what-is-the-audience-for-my-blog"&gt;this article&lt;/a&gt;,
-my goal for this technical article is to focus on the reasoning behind my solutions,
-rather than the solutions themselves.
-For a full record of the changes talked about in
-this article, please consult the commits that occurred between
-&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/35f869d34dfa65c12daa9e1f6c8890d4d45eead5"&gt;05 Dec 2021&lt;/a&gt;
-and
-&lt;a href="https://github.com/jackdewinter/pymarkdown/commit/fd9707d86520688c39e175e1433b74807bacd8c2"&gt;12 Dec 2021&lt;/a&gt;.&lt;/p&gt;
-&lt;h2 id="setting-perspective"&gt;Setting Perspective&lt;a class="headerlink" href="#setting-perspective" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;There are often diverse ways of saying the same thing. The gist of what I
-remember from one lecture that I attended is that the lecturer, someone smarter
-than me by far, was talking about how 80% of coding is just following established
-patterns.  He further went on to say that the remaining 20% is a mixed bag of tasks
-that will either prove you to be a competent developer or force you to hurl your
-monitor out the window in frustration.  For sure, that might seem like
-hyperbole to most. But if you ask most software
-developers to be honest about whether they have thought about throwing things around
-the office, including their computer or monitor, most will admit that they have had
-those thoughts.&lt;/p&gt;
-&lt;p&gt;That frustration is just a natural thing.  Software does exactly what you it is
-told to do, no more and no less.  It then follows that if a developer has an incomplete
-picture of what they want to do, then the result is a program that is incomplete.
-And while the high-level picture of what to be done is always clear, that picture
-gets grainier as the software developer zooms in to individual sections of that
-picture.  As a result, the gap between “the ideal” and “the reality” are what are
-known as bugs.  The real question that faces most developers is whether they can
-find all the relevant bugs before the users of their programs do.&lt;/p&gt;
-&lt;p&gt;For the last week, I had been in a forest where there were tons of those bugs
-lurking around every corner.  While it took a bit of work to get through them,
-I had managed to vanquish most of the bugs about whitespaces.  But the reality
-of software development is that the easy to find bugs are almost always the first
-to go, leaving the trickier bugs to diagnose and fix.  That is where I started
-this week.  With tricky bugs.&lt;/p&gt;
-&lt;h2 id="dealing-with-tabs"&gt;Dealing With Tabs&lt;a class="headerlink" href="#dealing-with-tabs" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;As I talked about in the
-&lt;a href="https://jackdewinter.github.io/2021/12/06/improving-quality-sometimes-there-is-no-easy-way/#the-bad"&gt;last article&lt;/a&gt;,
-tabs in Markdown are treated
-as tab stops and not just blindly replaced with four space characters.  With eight
-unresolved tests that dealt with tab characters, this was not something that I could
-delay addressing for much longer.  There was no other choice other than trying to
-tackle this issue head on.&lt;/p&gt;
-&lt;p&gt;Dear readers:  I know you might think I am not being truthful about taking a good
-day and a half to think about the impact of tabs on the parser. But I did. In my
-usual fashion, I scribbled things out on paper and talked to myself, working through
-the various issues that could arise with different solutions.  There were a half-dozen
-“half-solutions” that I produced, but each was quickly discarded.  To be honest,
-calling them half-solutions is probably generous.  In each case, I was trying
-to deal with the effects of having tabs without dealing with the actual
-tab characters themselves.&lt;/p&gt;
-&lt;p&gt;That did not work very well for me.  Those solutions did take care of resolving
-the perceived size of each tab character, but it introduced more problems.  Specifically,
-they often included passing extra lengths around and made some calculations a
-lot more difficult in the process.  On top of that, even with helper functions,
-I found that I was coding variations of how to use those helper functions in multiple
-places. It was just messy and not very maintainable.&lt;/p&gt;
-&lt;p&gt;So, after deciding to use all those scribbles as kindling in our fireplace, I decided
-to go for what I consider to be the nuclear option.  Instead of creating a maintenance
-nightmare in the rest of the code, I decided to add this code to the Container Block
-Processor:&lt;/p&gt;
-&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="s2"&gt;"&lt;/span&gt;&lt;span class="se"&gt;\t&lt;/span&gt;&lt;span class="s2"&gt;"&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;position_marker&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;text_to_parse&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
-    &lt;span class="n"&gt;line_to_parse&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;ParserHelper&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;detabify_string&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
-        &lt;span class="n"&gt;position_marker&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;text_to_parse&lt;/span&gt;
-    &lt;span class="p"&gt;)&lt;/span&gt;
-    &lt;span class="n"&gt;position_marker&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;PositionMarker&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
-        &lt;span class="n"&gt;position_marker&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;line_number&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-        &lt;span class="n"&gt;position_marker&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;index_number&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-        &lt;span class="n"&gt;line_to_parse&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-        &lt;span class="n"&gt;position_marker&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;index_indent&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;
-    &lt;span class="p"&gt;)&lt;/span&gt;
-&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;Adding a new &lt;code&gt;detabify_string&lt;/code&gt; function to the &lt;code&gt;ParserHelper&lt;/code&gt; class, I called it
-from the start of the Container Block Processor and its handling of each line.
-I used it to replace any tabs characters in the string in
-that one place.  I used almost identical code once in the Markdown generator to
-process the test data before the Markdown comparison there.&lt;/p&gt;
-&lt;p&gt;And except for some altered test data that needed to be addressed, I was done.
-There was no “including tab counts” that needed to be altered and passed around.
-There was no need to know if I had preprocessed a given string or if I still had
-to do that.  There was no weird &lt;code&gt;if&lt;/code&gt; statements to deal with tab characters.
-Just one &lt;code&gt;if&lt;/code&gt; statement in the parser code, and one &lt;code&gt;if&lt;/code&gt; statement in the test
-code and it was done.&lt;/p&gt;
-&lt;h3 id="why-the-long-journey"&gt;Why The Long Journey?&lt;a class="headerlink" href="#why-the-long-journey" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h3&gt;
-&lt;p&gt;So why did it take me so long to come to that conclusion?  Data integrity. At
-the start of this project, I wanted to ensure that the integrity of the parser
-was as high as possible at every stage.  I had it in my head that translating
-the tab characters in any way was violating that rule. So, I tried to take the
-long way around and deal with the effect instead of the character itself.&lt;/p&gt;
-&lt;p&gt;And I guess in a certain way, it is changing things.  But the question that I ended
-up asking myself was whether that violation was relevant to the tokenizer.  I could
-easily argue that from the viewpoint of parsing the Markdown as a HTML parser, it
-was crossing the line.  That was crystal clear.  But from the point of view of a
-tokenizer, I ended up wavering on that viewpoint.  The tokens are just truthful
-representations of what was parsed.  As the specification is clear that tokens are
-to be interpreted as the corresponding number of space characters, there was a
-new question.  That question was whether an uninterpreted or interpreted
-representation of that tab character was the best choice.&lt;/p&gt;
-&lt;p&gt;But it was not an easy journey or choice.  And as with all hard choices, it just
-took a while for me to work through things and make sure that it was the right
-choice.&lt;/p&gt;
-&lt;h2 id="dialing-in-the-remaining-tests"&gt;Dialing In The Remaining Tests&lt;a class="headerlink" href="#dialing-in-the-remaining-tests" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;With the tab tests out of the way, I needed to apply my normal work ethic
-to get movement on the remaining issues.  But with a firm guideline on
-how to approach the whitespace, it only took a couple of days before I had
-the remaining scenario tests passing, with caveats.  I just focused on making
-sure that the right whitespace was being applied to the properly scoped token,
-and that helped a lot.  It was still challenging work getting everything assigned
-properly, but a simpler set of rules made decisions easy to make.&lt;/p&gt;
-&lt;p&gt;What were the caveats?  There are still a couple of scenario tests that
-I disabled instead of getting them to work, and they fall into two groups. The
-first group is a set of tests that have three or more levels of nesting.  While
-there are some tests that “just work”, I want to make sure to spend some time
-and effort to properly scope and focus on each combination and make sure that
-it works.  The second group are scenario tests involving changing indentation,
-usually from the Block Quote characters.  Once again, there are some simple
-combinations, but I feel that the right thing to do is to specifically focus
-on those combinations in their own scoped issues.&lt;/p&gt;
-&lt;p&gt;And to be clear, everything still parses properly.  It is just the calculation
-of the whitespace lengths that is in question.  And I want to get those right,
-not just kind of right.  I passionately believe that it is a good enough reason to
-handle them separately.&lt;/p&gt;
-&lt;h2 id="cleaning-up"&gt;Cleaning Up&lt;a class="headerlink" href="#cleaning-up" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;With the remaining tests either passing or skipped, it was time to start cleaning
-up after the mess of making those changes.  There were a handful of places where
-I had forgot to change
-from my “in the moment” variable names (like &lt;code&gt;abc&lt;/code&gt;, &lt;code&gt;foo&lt;/code&gt;, and &lt;code&gt;gg&lt;/code&gt;) to variable
-names that describe their function.  Using &lt;a href="https://sourcery.ai"&gt;Sourcery&lt;/a&gt;, I
-was able to calculate a relative health of each function, and I kept on refactoring
-until that measurement was at least 40 for every function in the project.
-Using &lt;a href="https://www.code-inspector.com"&gt;Code Inspector&lt;/a&gt;, I was able to quickly
-figure out what PyLint issues needed to be addressed.&lt;/p&gt;
-&lt;p&gt;To be honest, this part of the process was just relaxing.  Each of the refactoring
-steps I took were easily tested, thanks to a complete set of passing scenario tests.
-If I made a change and one of the tests failed, I just rolled back the last change
-and tried again.  While it did take three or four hours to complete, there was
-very almost no stress associated with those changes.  It was a pleasant change for
-working over the weekend.&lt;/p&gt;
-&lt;h2 id="watching-the-issues-fall"&gt;Watching The Issues Fall&lt;a class="headerlink" href="#watching-the-issues-fall" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Finishing the prior work just before noon, I took a rather leisurely lunch and
-got some of my energy back.  It was a hard slog getting everything finished and
-tidied up, but it was nice to get there.&lt;/p&gt;
-&lt;p&gt;The issues that I could choose to work on had as much potential to be easy issues
-as they had to be difficult issues.  I knew that the first one,
-&lt;a href="https://github.com/jackdewinter/pymarkdown/issues/99"&gt;Issue 99&lt;/a&gt; was going to be
-easy as this work had all kicked off because of the problems I had addressing that
-issue.  But what about the others?&lt;/p&gt;
-&lt;p&gt;As I made my way through the other issues registered around the same time as Issue 99,
-only one issue out of seven logged was not at once resolved.  I was fine leaving
-those issues for another week.  It just felt good that the work that I had undertaken
-to correct those other issues had cleaned up six other issues.&lt;/p&gt;
-&lt;h2 id="what-was-my-experience-so-far"&gt;What Was My Experience So Far?&lt;a class="headerlink" href="#what-was-my-experience-so-far" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;I know it may sound funny to some people, but I was sure that the heavy sigh I
-made when I finished working on the tests could be heard throughout my house.  It
-was just a good feeling to simplify something that was complex and difficult
-to maintain. It was even better to see multiple tests resolving themselves because
-of me refactoring the whitespace from the containers.&lt;/p&gt;
-&lt;p&gt;But I know that I need to focus more on cleaning up the remaining issues in both
-the GitHub issues list and my own Issues List.  So hopefully I will be able to get
-both of those cleaned up.  I know I am making timely progress though, and that gives
-me hope that I can clean things up nicely within a couple of weeks.&lt;/p&gt;
-&lt;h2 id="what-is-next"&gt;What is Next?&lt;a class="headerlink" href="#what-is-next" title="Permanent link"&gt;¶&lt;/a&gt;&lt;/h2&gt;
-&lt;p&gt;Having finished the changes to address whitespace issues, I am eager to get back
-to a mixture of refactoring code and fixing issues.  Not sure what mix of those
-two is going to happen yet, but I am fairly sure I want a good balance of both.
-Stay tuned!&lt;/p&gt;</content><category term="Software Quality"></category><category term="extract method"></category></entry></feed>
+&lt;/div&gt;</content><category term="Software Quality"></category><category term="markdown linter"></category><category term="core linter"></category></entry></feed>
